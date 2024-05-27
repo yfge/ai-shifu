@@ -3,18 +3,8 @@ from sqlalchemy.dialects.mysql import BIGINT
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 from ...dao import db
+from .consts import *
 
-
-
-BUY_STATUS_INIT = 501
-BUY_STATUS_SUCCESS = 502
-BUY_STATUS_REFUND = 503
-
-
-ATTEND_STATUS_NOT_STARTED = 601
-ATTEND_STATUS_IN_PROGRESS = 602
-ATTEND_STATUS_COMPLETED = 603
-ATTEND_STATUS_REFUND = 604
 ### AI Course
 ### Todo
 ### 加入购买渠道

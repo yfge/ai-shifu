@@ -17,13 +17,16 @@ class Dict:
     def __init__(self, name, display,items:list[DictItem]):
         self.name = name
         self.display = display
+        self.items = items
     def __json__(self):
         return {
             "name": self.name,
             "display": self.display,
-            "items": [item.__json__() for item in self.items]
+            "items": self.items
         }
 def register_dict(name,desp,items:dict):
+    if name in DICTS:
+        return
     dictItems = []
     for key in items.keys():
         dictItems.append(DictItem(key,items[key]))

@@ -100,7 +100,7 @@ DB_SAVE_DICT_MAP= {
 
 
 
-def update_lesson_info(app:Flask,doc_id:str,table_id:str,title:str=None,index:int=None):
+def update_lesson_info(app:Flask,doc_id:str,table_id:str,title:str=None,index:int=None,lesson_type:int = LESSON_TYPE_NORMAL):
     with app.app_context():
         # 检查课程
         course = AICourse.query.filter_by(course_feishu_id = doc_id).first()
@@ -129,6 +129,7 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,title:str=None,index:in
             parent_lesson.status = 1
             parent_lesson.lesson_no = lessonNo
             parent_lesson.lesson_feishu_id = table_id
+            parent_lesson.lesson_type = lesson_type
             db.session.add(parent_lesson)
         else:
             parent_lesson.lesson_name = title
@@ -137,10 +138,10 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,title:str=None,index:in
             parent_lesson.lesson_no = lessonNo
             parent_lesson.status = 1
             parent_lesson.lesson_feishu_id = table_id
+            parent_lesson.lesson_type = lesson_type
      
         subIndex = 0
         childLessons = [AILesson]
-        last_lesson = None
         script_index = 0
         while True:
             resp = list_records(app,doc_id,table_id,page_token=page_token,page_size=100)
@@ -166,12 +167,14 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,title:str=None,index:in
                         lesson.status = 1
                         lesson.lesson_feishu_id = table_id
                         lesson.lesson_no = lessonNo + str(subIndex).zfill(2) 
+                        lesson.lesson_type = lesson_type
                         db.session.add(lesson)
                     else:
                         lesson.lesson_name = title
                         lesson.lesson_desc = ''
                         lesson.status = 1
                         lesson.lesson_feishu_id = table_id
+                        lesson.lesson_type = lesson_type
                         lesson.lesson_no = lessonNo + str(subIndex).zfill(2) 
                     childLessons.append(lesson)
                 script_index = script_index + 1
