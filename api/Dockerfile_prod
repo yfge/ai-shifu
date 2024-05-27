@@ -1,10 +1,10 @@
 ### 使用一个官方Python运行时作为父镜像
-#FROM python:3.11
+FROM python:3.11
 
-#RUN apt-get update && apt-get install -y python3-pip
+RUN apt-get update && apt-get install -y python3-pip
 
 # 把上边 更新的python 环境 单独制作基础镜像。
-FROM registry.cn-hangzhou.aliyuncs.com/kattgatt-base/python-smart-home-plugins:v4
+# FROM registry.cn-hangzhou.aliyuncs.com/kattgatt-base/python-smart-home-plugins:v4
 
 
 ### 设置工作目录

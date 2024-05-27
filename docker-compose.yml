@@ -5,8 +5,6 @@ services:
     container_name: ai-study-api
     image: ai-study-api:latest
     command:  gunicorn -w 4 -b 0.0.0.0:5800 "flaskr:create_app('prod_docker')"  --timeout 300 --log-level debug --access-logfile /var/log/app.log  --capture-output
-    ports:
-      - "5800:5800"
   ai-study-web:
     container_name: ai-study-web
     image:  ai-study-web:latest

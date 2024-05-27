@@ -8,8 +8,8 @@ WORKDIR /usr/src/app
 # 复制package.json和package-lock.json文件
 COPY package*.json ./
 #RUN npm install --force
-#RUN npm install --registry=https://registry.npm.taobao.org --force
-RUN npm install  --force
+RUN npm install --registry=http://registry.npm.taobao.org --force
+# RUN npm install  --force
 
 
 
