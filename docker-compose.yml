@@ -12,7 +12,7 @@ services:
     image:  ai-study-web:latest
     command:  ["serve", "-s", "build", "-l", "5000"]
     depends_on:
-      - chat-plugin-background
+      - ai-study-api
     # ports: 
     #  - "5000:5000"
   # chat-plugin-nginx:
