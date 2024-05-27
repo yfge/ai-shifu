@@ -59,8 +59,9 @@ jsonschema-specifications==2023.7.1
 jupyter_client==8.3.0
 jupyter_core==5.3.1
 langchain==0.0.327
+langchain-core==0.2.1
 langfuse==2.4.2
-langsmith==0.0.56
+langsmith==0.1.63
 lazy-object-proxy==1.9.0
 litereval==0.0.11
 markdown2==2.4.10
@@ -74,12 +75,13 @@ multidict==6.0.4
 mypy-extensions==1.0.0
 nest-asyncio==1.5.6
 numpy==1.25.2
-openai==1.6.1
+openai==1.25.1
 openapi-core==0.18.1
 openapi-schema-validator==0.6.2
 openapi-spec-validator==0.6.0
+orjson==3.10.3
 oss2==2.18.1
-packaging==23.1
+packaging==23.2
 pandas==2.0.3
 parse==1.19.1
 parso==0.8.3
