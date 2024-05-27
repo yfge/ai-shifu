@@ -6,7 +6,6 @@ import { createFromIconfontCN, PlusCircleOutlined } from "@ant-design/icons";
 import { Dropdown } from "antd";
 import { useState, forwardRef, useImperativeHandle } from "react";
 import { Empty } from "antd";
-import { GetAllChatsList } from "../../Api/chat";
 import create from "@ant-design/icons/lib/components/IconFont";
 import { getLessonTree } from "../../Api/lesson";
 
@@ -158,10 +157,7 @@ const ChatList = forwardRef(
     };
 
     const queryAllChatsList = () => {
-      GetAllChatsList(params.chat_title).then((res) => {
-        setData(res.data);
-        setLoading(false);
-      });
+     
 
       getLessonTree().then((res) => {
         setLessonData(res.data);

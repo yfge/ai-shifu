@@ -2,21 +2,12 @@ import json
 from flask import Flask, request, jsonify, make_response
 from ..service.user import *
 from functools import wraps
-from .common import make_common_response
+from .common import make_common_response,bypass_token_validation,by_pass_login_func
+
 
 def register_user_handler(app:Flask,path_prefix:str)->Flask:
 
-    # 装饰器函数，用于跳过Token校验
-    def bypass_token_validation(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            app.logger.info("bypass_token_validation")
-            if not getattr(func, 'bypass_login', False):
-            # 在这里执行登录态验证逻辑
-            # 如果未登录，则返回相应的响应或重定向到登录页面
-                # pass
-                return func(*args, **kwargs)
-        return wrapper
+
     @app.route(path_prefix+'/register', methods=['POST'])
     @bypass_token_validation
     def register():
@@ -47,7 +38,7 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
         app.logger.info("before_request")
         # 在这里进行其他预处理操作
         app.logger.info('request.endpoint:'+str(request.endpoint))
-        if request.endpoint in ['login', 'register','require_reset_code','reset_password','invoke','update_lesson']:
+        if request.endpoint in ['login', 'register','require_reset_code','reset_password','invoke','update_lesson'] or request.endpoint in by_pass_login_func:
             # 在登录和注册处理函数中绕过登录态验证
             return
             # 检查装饰器标记，跳过Token校验

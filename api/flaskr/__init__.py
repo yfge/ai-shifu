@@ -43,26 +43,20 @@ def create_app(test_config=None):
     api.init_langfuse(app)
     dao.init_db(app)
     dao.init_redis(app)
-    # dao.init_milvus(app)
   
     # ensure the instance folder exists
     try:
         os.makedirs(app.instance_path)
     except OSError:
         pass
+    
     from . import route
 
     prefix = app.config['PATH_PREFIX']
     # chat with the bot using sse
     app = route.register_common_handler(app)
     app = route.register_user_handler(app,prefix+'/user')
-    app = route.register_chat_route(app,prefix+'/chat')
-    app = route.register_resource_route(app,prefix+'/resource')
-    app = route.register_contact_handler(app,prefix+'/contact')
-    app = route.register_document_handler(app,prefix+'/document')
-    app = route.register_schedule_handler(app,prefix+'/schedule')
-    app = route.register_todo_handler(app,prefix+'/todo')
-    app = route.register_api_handler(app,prefix+'/api')
     app = route.register_lesson_handler(app,prefix+'/lesson')
     app = route.register_study_handler(app,prefix+'/study')
+    app = route.register_dict_handler(app,prefix+'/dict')
     return app

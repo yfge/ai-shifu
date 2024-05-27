@@ -8,8 +8,6 @@ import uuid
 import chardet
 from flask import Flask,g,request
 
-from .. import plugin
-from .. service import chat as chat_service 
 from . livedata import check
 from .. service import check_risk as check_risk_service
 import traceback

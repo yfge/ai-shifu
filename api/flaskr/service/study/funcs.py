@@ -61,7 +61,6 @@ def get_current_lesson(app: Flask, lesssons:list[AICourseLessonAttendDTO] )->AIC
 # 1
 
 
-
 def get_next_script(app: Flask,attend_id:str)->AILessonScript:
         attend_info = AICourseLessonAttend.query.filter(AICourseLessonAttend.attend_id ==attend_id ).first()
         if attend_info.status == ATTEND_STATUS_NOT_STARTED:
@@ -81,7 +80,6 @@ def get_next_script(app: Flask,attend_id:str)->AILessonScript:
         return script_info
 def get_script_by_id(app: Flask,script_id:str)->AILessonScript:
     return AILessonScript.query.filter_by(script_id=script_id).first()
-
 
 def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,input:str=None, script_id: str=None)->Generator[ScriptDTO,None,None]:
     with app.app_context():
@@ -156,7 +154,6 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                             profile_tosave = json.loads(values)
                             save_user_profiles(app,user_id,profile_tosave)
                             input = None
-
                     else:
                         for i in script_info.script_prompt:
                             yield make_script_dto("text",i,script_info.script_id)
@@ -198,9 +195,6 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
         data = ScriptDTO("text_end","")
         msg =  'data: '+json.dumps(data,default=fmt)+'\n\n'
         yield msg
-
-        
-
 
 
 def run_current_script(app: Flask, user_id: str, course_id: str, lesson_id: str, script_id: str):
