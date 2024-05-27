@@ -1,4 +1,4 @@
-SQLALCHEMY_DATABASE_URI = 'mysql://root:Pa88word@mysql-server:3306/ai_asistant?charset=utf8mb4'
+SQLALCHEMY_DATABASE_URI = 'mysql://root:Pa88word@mysql-server:3306/ai-python?charset=utf8mb4'
 SQLALCHEMY_POOL_SIZE =20
 SQLALCHEMY_POOL_TIMEOUT = 30 
 SQLALCHEMY_POOL_RECYCLE = 3600
