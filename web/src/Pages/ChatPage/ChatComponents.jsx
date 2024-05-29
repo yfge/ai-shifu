@@ -13,7 +13,7 @@ import { ReactMarkdown } from "react-markdown/lib/react-markdown";
 
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { CopyOutlined, SendOutlined } from "@ant-design/icons";
+import { CopyOutlined, NodeExpandOutlined, SendOutlined } from "@ant-design/icons";
 import { message } from "antd";
 import { enabled, set } from "store";
 
@@ -91,6 +91,7 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className }, ref) => {
   const [scriptId, setScriptId] = React.useState("");
   const [inputPlaceholder, setInputPlaceholder] = React.useState("请输入");
   const [inputDisabled,setInputDisabled]=React.useState(false);
+  const [lessonId,setLessonId]=React.useState("");
 
   function handleSend(type, val) {
 
@@ -112,7 +113,10 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className }, ref) => {
       setTyping(true);
       let lastMsg = null;
 
-      RunScript(chatId, undefined,val,val, sendScriptId,(response) => {
+
+      console.log("lesson_id",lessonId);
+
+      RunScript(chatId, lessonId,val,val, sendScriptId,(response) => {
         try {
           console.log(response);
           setChatId(response.chat_id);
@@ -157,6 +161,7 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className }, ref) => {
           }else if (response.type === "input"){
             setInputPlaceholder(response.content);
             setScriptId(response.id);
+            setInputDisabled(false);
 
           } else if (response.type === "buttons"){
             lastMsg = {
@@ -166,8 +171,12 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className }, ref) => {
               position: "right" 
             };
             appendMsg(lastMsg);
+            setInputDisabled(true);
           }else if (response.type === "title") {
             onTitleUpdate(response.chat_id, response.text, response.created);
+          }else if (response.type === "study_complete"){
+            // setLessonId(response.lesson_id);
+
           }
         } catch (e) {
           // console.log("error", e);
@@ -269,9 +278,17 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className }, ref) => {
       }
     });
   }
+  
+  const switchLesson = (lessonInfo) => {
+    console.log("switch Lesson",lessonInfo);
+    setLessonId(lessonInfo.lesson_id);
+    
+
+  }
 
   useImperativeHandle(ref, () => ({
     loadMsg,
+    switchLesson
   }));
 
   function renderBeforeMessageList() {
@@ -289,7 +306,6 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className }, ref) => {
           <Empty
             className="chatui_empty"
             children={
-              <>
                 <div className="empty_header">
                   <div className="title">
                     <img
@@ -302,34 +318,6 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className }, ref) => {
                   <div className="slogan">AI私教</div>
                 </div>
 
-                <div className="quick-operstion_container">
-                  {quickOperstionList.map((item, index) => {
-                    return (
-                      <>
-                        <div
-                          className="quick-operstion_card"
-                          onClick={(e) => {handleSend("text", item.question)}}
-                        >
-                          <div className="quick-operstion_content">
-                            <div className="quick-operstion_header">
-                              <img src={item.icon} alt="" />
-                              <div>{item.title}</div>
-                            </div>
-                            <div className="quick-operstion_body">
-                              {item.question}
-                            </div>
-                          </div>
-                          <div className="quick-operstion_sider__right">
-                            {/* <SendOutlined
-                              style={{ fontSize: 24 }}
-                            ></SendOutlined> */}
-                          </div>
-                        </div>
-                      </>
-                    );
-                  })}
-                </div>
-              </>
             }
           ></Empty>
         </div>
@@ -346,7 +334,6 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className }, ref) => {
       renderBeforeMessageList={renderBeforeMessageList}
       recorder={{ canRecord: true }}
       placeholder={inputPlaceholder}
-      // inputType="voice"
       inputOptions={{disabled:inputDisabled}}
     />
   );

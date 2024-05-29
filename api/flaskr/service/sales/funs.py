@@ -87,4 +87,5 @@ def init_trial_lesson(app:Flask ,user_id:str,course_id:str)->list[AICourseLesson
        db.session.add(attend)
        if  lesson.is_final():
            response.append(AICourseLessonAttendDTO(attend.attend_id,attend.lesson_id,attend.course_id,attend.user_id,attend.status,lesson.lesson_index))
+       db.session.commit()
     return response

@@ -84,10 +84,16 @@ def get_profile_array(profile:str)->list:
 
 def get_fmt_prompt(app:Flask,user_id:str,profile_tmplate:str,input:str=None,profile_array_str:str=None)->str:
 
-    if not profile_array_str:
+    if not profile_array_str and not input:
         return profile_tmplate
-    propmpt_keys = get_profile_array(profile_array_str) 
-    profiles = get_user_profiles(app,user_id,propmpt_keys)
+    propmpt_keys = []
+    profiles = {}
+    if profile_array_str:
+        propmpt_keys = get_profile_array(profile_array_str) 
+        profiles = get_user_profiles(app,user_id,propmpt_keys)
+    if input:
+        profiles['input'] = input
+        propmpt_keys.append('input')
     prompt_template = PromptTemplate(input_variables=propmpt_keys, template=profile_tmplate)
     prompt = prompt_template.format(**profiles)
     return prompt
@@ -145,6 +151,7 @@ def generation_attend(app:Flask,attend:AICourseLessonAttendDTO,script_info:AILes
 
 
 def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,input:str=None, script_id: str=None)->Generator[ScriptDTO,None,None]:
+    
     with app.app_context():
         attend = AICourseLessonAttendDTO
         if not lesson_id:
@@ -162,8 +169,14 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
             attend_info = AICourseLessonAttend.query.filter_by(user_id=user_id, course_id=course_id,lesson_id=lesson_id).first()
             if not attend_info:
                 app.logger.info('no attend record found')
-            attend = AICourseLessonAttendDTO(attend_info.attend_id,attend_info.lesson_id,attend_info.course_id,attend_info.user_id,attend_info.status,attend_info.index)
-        app.logger.info('attend info:{},lesson_id :{}'.format(attend.attend_id,lesson_id))
+                # 没有课程记录
+                for i in "请购买课程":
+                    yield make_script_dto("text",i,None)
+                    time.sleep(0.04)
+                yield make_script_dto("text_end","",None)
+                return
+            attend = AICourseLessonAttendDTO(attend_info.attend_id,attend_info.lesson_id,attend_info.course_id,attend_info.user_id,attend_info.status,attend_info.script_index)
+        app.logger.info('attend info:{},lesson_id :{}'.format(attend_info.attend_id,lesson_id))
         db.session.commit()
         check_success = False
         while True:
@@ -179,17 +192,9 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
             # 得到脚本
                 if script_info.script_type == SCRIPT_TYPE_FIX:
                     if script_id and input:
-
-                       
-                        vars = {"input":input}
-                        prompt_template = PromptTemplate(input_variables=list(vars.keys()), template=script_info.script_check_prompt)
-                        prompt = prompt_template.format(**vars)
                         check_flag = script_info.script_check_flag
-
-
-                        prompt = get_fmt_prompt(app,user_id,script_info.script_check_prompt,input)
+                        prompt = get_fmt_prompt(app,user_id,script_info.script_check_prompt,input,script_info.script_profile)
                         ## todo 换成通用的
-                        app.logger.info('prompt:{}'.format(prompt))
                         resp = client.chat.completions.create(
                             model="gpt-3.5-turbo-0125",
                             stream=True,
@@ -255,6 +260,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     yield make_script_dto("buttons",script_info.script_ui_content,script_info.script_id)
                     break
             else:
+                yield make_script_dto("study_complete","",None)
                 break
         data = ScriptDTO("text_end","")
         msg =  'data: '+json.dumps(data,default=fmt)+'\n\n'
@@ -264,6 +270,13 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
 
 def get_lesson_tree_to_study(app:Flask,user_id:str,course_id:str)->list[AILessonAttendDTO]:
     with app.app_context():
+          # 检查有没有购课记录
+        buy_record = AICourseBuyRecord.query.filter_by(user_id=user_id, course_id=course_id).first() 
+        if not buy_record:
+            app.logger.info('no buy record found')
+            # 没有购课记录
+            # 生成体验课记录
+            init_trial_lesson(app, user_id, course_id)
         lessons = AILesson.query.filter(course_id==course_id,AILesson.status==1).all()
         lessons = sorted(lessons, key=lambda x: (len(x.lesson_no), x.lesson_no))
         lesson_ids =  [ i.lesson_id  for  i in lessons]
