@@ -19,4 +19,3 @@ class AICourseLessonAttendScript(db.Model):
     status = Column(Integer, nullable=False, default=0, comment='Status of the attend')
     created = Column(TIMESTAMP, nullable=False, default=func.now(), comment='Creation time')
     updated = Column(TIMESTAMP, nullable=False, default=func.now(), onupdate=func.now(), comment='Update time')
- 

@@ -22,15 +22,16 @@ const ChatPage = () => {
     chatList.current.onTitleUpdate(chatId, chatTitle, created);
   };
 
-  const onClickCreateNewChat = () => {
+  const onClickMenuItem = (lessonInfo) => {
+    console.log(lessonInfo);
     chatComponents.current.loadMsg("", "");
   };
 
   return (
     <div className="chat-page full-height">
-      <ChatList
+      <ChatList 
         onClickListItem={onClickListItem}
-        onClickCreateNewChat={onClickCreateNewChat}
+        onClickMenuItem={onClickMenuItem}
         ref={chatList}
       ></ChatList>
       <ChatComponents

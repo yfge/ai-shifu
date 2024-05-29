@@ -15,7 +15,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { CopyOutlined, SendOutlined } from "@ant-design/icons";
 import { message } from "antd";
-import { set } from "store";
+import { enabled, set } from "store";
 
 const generateUUID = () => {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
@@ -25,7 +25,6 @@ const generateUUID = () => {
   });
 };
 const quickOperstionList = [
-  
 ];
 
 const MarkdownBubble = (props) => {
@@ -91,6 +90,7 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className }, ref) => {
   const [chatId, setChatId] = React.useState("");
   const [scriptId, setScriptId] = React.useState("");
   const [inputPlaceholder, setInputPlaceholder] = React.useState("请输入");
+  const [inputDisabled,setInputDisabled]=React.useState(false);
 
   function handleSend(type, val) {
 
@@ -166,7 +166,6 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className }, ref) => {
               position: "right" 
             };
             appendMsg(lastMsg);
-          
           }else if (response.type === "title") {
             onTitleUpdate(response.chat_id, response.text, response.created);
           }
@@ -178,7 +177,6 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className }, ref) => {
   }
 
   function onButtonClick(){
-    console.log("click");
     handleSend("button","点击了按钮");
 
   }
@@ -228,10 +226,9 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className }, ref) => {
       return (
         <Bubble>
         <Card size="xl">
-      <CardTitle>我们要做什么</CardTitle>
+      <CardTitle>接下来</CardTitle>
       <CardActions>
-        <Button onClick={onButtonClick}>{content}</Button>
-        {/* <Button color="primary">Primary button</Button> */}
+        <Button onClick={onButtonClick} >{content}</Button>
       </CardActions>
     </Card>
     </Bubble>
@@ -302,7 +299,7 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className }, ref) => {
                     />
                     <div className="system-name"></div>
                   </div>
-                  <div className="slogan">AI 助手帮助你高效工作! </div>
+                  <div className="slogan">AI私教</div>
                 </div>
 
                 <div className="quick-operstion_container">
@@ -311,7 +308,7 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className }, ref) => {
                       <>
                         <div
                           className="quick-operstion_card"
-                          onClick={(e) => handleSend("text", item.question)}
+                          onClick={(e) => {handleSend("text", item.question)}}
                         >
                           <div className="quick-operstion_content">
                             <div className="quick-operstion_header">
@@ -350,6 +347,7 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className }, ref) => {
       recorder={{ canRecord: true }}
       placeholder={inputPlaceholder}
       // inputType="voice"
+      inputOptions={{disabled:inputDisabled}}
     />
   );
 });

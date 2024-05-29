@@ -1,5 +1,7 @@
 from flask import Flask, Response,request 
-from flaskr.service.study.funcs import run_script
+from flaskr.route.common import make_common_response
+from flaskr.service.common.models import raise_param_error
+from flaskr.service.study.funcs import get_lesson_tree_to_study, run_script
 
 
 
@@ -21,4 +23,13 @@ def register_study_handler(app:Flask,path_prefix:str)->Flask:
     @app.route(path_prefix+'/current',methods=['POST'])
     def current_script():
         pass
+
+    @app.route(path_prefix+'/get_lesson_tree', methods=['GET'])
+    def get_lesson_tree_study():
+        course_id = request.args.get('course_id')
+        if not course_id:
+            raise_param_error("doc_id is not found")
+        user_id =request.user.user_id 
+        return make_common_response(get_lesson_tree_to_study(app,user_id,course_id))
+
     return app

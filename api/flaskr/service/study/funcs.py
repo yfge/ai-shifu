@@ -5,20 +5,69 @@ import re
 import openai
 from typing import Generator
 from flask import Flask
+from flaskr.service.lesson.funs import AILessonInfoDTO
 from flaskr.service.profile.funcs import get_user_profiles, save_user_profiles
+from flaskr.service.sales.consts import ATTEND_STATUS_TYPES, ATTEND_STATUS_UNAVAILABE, ATTEND_STATUS_VALUES
 from langchain_core.prompts import PromptTemplate
 
 
 from flaskr.service.lesson.const import SCRIPT_TYPE_FIX, SCRIPT_TYPE_PORMPT, UI_TYPE_BUTTON, UI_TYPE_CONTINUED, UI_TYPE_INPUT
 from ...dao import db
 
-from flaskr.service.lesson.models import AILessonScript
+from flaskr.service.lesson.models import AILesson, AILessonScript
 from flaskr.service.sales.funs import AICourseLessonAttendDTO, init_trial_lesson
 from flaskr.service.sales.models import ATTEND_STATUS_COMPLETED, ATTEND_STATUS_IN_PROGRESS, ATTEND_STATUS_NOT_STARTED, AICourseBuyRecord, AICourseLessonAttend
+from .models import *
 import time 
 
 
-client = openai.Client(api_key="sk-proj-TsOFXPGAkp6GZKt1AUinT3BlbkFJiFiJO0hAu7om7TOl4RRY")#,base_url="https://openai-api.kattgatt.com/v1")
+
+class AILessonAttendDTO:
+    def __init__(self,lesson_no:str,lesson_name:str,lesson_id:str,status,children) -> None:
+        self.lesson_no = lesson_no
+        self.lesson_name = lesson_name
+        self.lesson_id = lesson_id
+        self.children = children
+        self.status = status
+    def __json__(self):
+        return {
+            'lesson_no':self.lesson_no,
+            'lesson_name':self.lesson_name,
+            'lesson_id':self.lesson_id,
+            'status':self.status,
+            'children':self.children
+        }
+
+
+class AICourseLessonAttendScriptDTO:
+    def __init__(self, attend_id, script_id, lesson_id, course_id, user_id, script_index, script_role, script_content, status):
+        self.attend_id = attend_id
+        self.script_id = script_id
+        self.lesson_id = lesson_id
+        self.course_id = course_id
+        self.user_id = user_id
+        self.script_index = script_index
+        self.script_role = script_role
+        self.script_content = script_content
+        self.status = status
+
+    def __json__(self):
+        return {
+            "attend_id": self.attend_id,
+            "script_id": self.script_id,
+            "lesson_id": self.lesson_id,
+            "course_id": self.course_id,
+            "user_id": self.user_id,
+            "script_index": self.script_index,
+            "script_role": self.script_role,
+            "script_content": self.script_content,
+            "status": self.status
+        }
+
+
+
+
+client = openai.Client(api_key="sk-proj-TsOFXPGAkp6GZKt1AUinT3BlbkFJiFiJO0hAu7om7TOl4RRY") #,base_url="https://openai-api.kattgatt.com/v1")
 
 
 def fmt(o):
@@ -33,7 +82,15 @@ def fmt(o):
 def get_profile_array(profile:str)->list:
     return re.findall(r'\[(.*?)\]', profile)
 
+def get_fmt_prompt(app:Flask,user_id:str,profile_tmplate:str,input:str=None,profile_array_str:str=None)->str:
 
+    if not profile_array_str:
+        return profile_tmplate
+    propmpt_keys = get_profile_array(profile_array_str) 
+    profiles = get_user_profiles(app,user_id,propmpt_keys)
+    prompt_template = PromptTemplate(input_variables=propmpt_keys, template=profile_tmplate)
+    prompt = prompt_template.format(**profiles)
+    return prompt
 #
 #   
 #
@@ -56,9 +113,6 @@ def make_script_dto(script_type,script_content,script_id)->str:
 def get_current_lesson(app: Flask, lesssons:list[AICourseLessonAttendDTO] )->AICourseLessonAttendDTO:
     return lesssons[0]
 
-# Path: flaskr/service/study/funcs.py
-# 运行脚本
-# 1
 
 
 def get_next_script(app: Flask,attend_id:str)->AILessonScript:
@@ -80,6 +134,15 @@ def get_next_script(app: Flask,attend_id:str)->AILessonScript:
         return script_info
 def get_script_by_id(app: Flask,script_id:str)->AILessonScript:
     return AILessonScript.query.filter_by(script_id=script_id).first()
+def generation_attend(app:Flask,attend:AICourseLessonAttendDTO,script_info:AILessonScript)->AICourseLessonAttendScript:
+    attendScript = AICourseLessonAttendScript()
+    attendScript.attend_id = attend.attend_id
+    attendScript.user_id = attend.user_id
+    attendScript.lesson_id =  script_info.lesson_id
+    attendScript.course_id = attend.course_id   
+    attendScript.script_id = script_info.script_id
+    return attendScript
+
 
 def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,input:str=None, script_id: str=None)->Generator[ScriptDTO,None,None]:
     with app.app_context():
@@ -112,22 +175,27 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
             else:
                 script_info = get_next_script(app,attend.attend_id)
             if script_info:
+                app.logger.info("begin to run script:{}".format(script_info.script_id))
             # 得到脚本
                 if script_info.script_type == SCRIPT_TYPE_FIX:
                     if script_id and input:
+
+                       
                         vars = {"input":input}
                         prompt_template = PromptTemplate(input_variables=list(vars.keys()), template=script_info.script_check_prompt)
                         prompt = prompt_template.format(**vars)
                         check_flag = script_info.script_check_flag
+
+
+                        prompt = get_fmt_prompt(app,user_id,script_info.script_check_prompt,input)
                         ## todo 换成通用的
                         app.logger.info('prompt:{}'.format(prompt))
                         resp = client.chat.completions.create(
                             model="gpt-3.5-turbo-0125",
                             stream=True,
-                            temperature=0.5,
+                            temperature=0.1,
                             messages=[
                                 {"role": "user", "content": prompt}
-                              
                             ])
                         response_text = ""
                         check_success = False
@@ -155,25 +223,21 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                             save_user_profiles(app,user_id,profile_tosave)
                             input = None
                     else:
-                        for i in script_info.script_prompt:
+                        prompt = get_fmt_prompt(app,user_id,script_info.script_prompt,profile_array_str=script_info.script_profile)
+                        for i in prompt:
                             yield make_script_dto("text",i,script_info.script_id)
-                            time.sleep(0.1)
+                            time.sleep(0.04)
                     data = ScriptDTO("text_end","")
                     msg =  'data: '+json.dumps(data,default=fmt)+'\n\n'
                     yield msg
                 elif script_info.script_type == SCRIPT_TYPE_PORMPT: 
-                    propmpt_keys = get_profile_array(script_info.script_profile) 
-                    profiles = get_user_profiles(app,user_id,propmpt_keys)
-                    prompt_template = PromptTemplate(input_variables=propmpt_keys, template=script_info.script_prompt)
-                    prompt = prompt_template.format(**profiles)
-                    app.logger.info('prompt:{}'.format(prompt))
+                    prompt = get_fmt_prompt(app,user_id,script_info.script_prompt,profile_array_str=script_info.script_profile)
                     resp = client.chat.completions.create(
                         model="gpt-3.5-turbo-0125",
                         stream=True,
                         temperature=0.5,
                         messages=[
                             {"role": "user", "content": prompt}
-                          
                         ])
                     response_text = ""
                     for chunk in resp:
@@ -197,5 +261,29 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
         yield msg
 
 
-def run_current_script(app: Flask, user_id: str, course_id: str, lesson_id: str, script_id: str):
-    pass
+
+def get_lesson_tree_to_study(app:Flask,user_id:str,course_id:str)->list[AILessonAttendDTO]:
+    with app.app_context():
+        lessons = AILesson.query.filter(course_id==course_id,AILesson.status==1).all()
+        lessons = sorted(lessons, key=lambda x: (len(x.lesson_no), x.lesson_no))
+        lesson_ids =  [ i.lesson_id  for  i in lessons]
+        app.logger.info("lesson ids :{}".format(lesson_ids))
+        app.logger.info("user_id:"+user_id)
+        attend_infos = AICourseLessonAttend.query.filter(AICourseLessonAttend.user_id == user_id,AICourseLessonAttend.course_id == course_id).all()
+        app.logger.info("attends count:{}".format(len(attend_infos)))
+        attend_infos_map = {i.lesson_id:i for i in attend_infos}
+        lessonInfos = []
+        lesson_dict = {}
+        for lesson in lessons:
+            attend_info = attend_infos_map.get(lesson.lesson_id,None)
+            status = ATTEND_STATUS_VALUES[attend_info.status if  attend_info else  ATTEND_STATUS_UNAVAILABE]
+            lessonInfo = AILessonAttendDTO(lesson.lesson_no,lesson.lesson_name,lesson.lesson_id,status, [])
+            lesson_dict[lessonInfo.lesson_no] = lessonInfo
+            if len(lessonInfo.lesson_no) == 2:  # 假设2位数是根节点
+                lessonInfos.append(lessonInfo)
+            else:
+                # 获取父节点编号
+                parent_no = lessonInfo.lesson_no[:-2]
+                if parent_no in lesson_dict:
+                    lesson_dict[parent_no].children.append(lessonInfo)
+        return lessonInfos

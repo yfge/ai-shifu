@@ -215,7 +215,7 @@ create table ai_course_lesson_attend(
   KEY `idx_lesson_id_ai_course_lesson_attend` (`lesson_id`),
   KEY `idx_course_id_ai_course_lesson_attend` (`course_id`),
   KEY `idx_user_id_ai_course_lesson_attend` (`user_id`)
-)
+);
 
 create table ai_course_lesson_attendscript(
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT 'Unique ID',
