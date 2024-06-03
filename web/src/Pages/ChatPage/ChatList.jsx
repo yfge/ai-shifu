@@ -4,7 +4,7 @@ import { Input, Button } from "antd";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { createFromIconfontCN, PlusCircleOutlined } from "@ant-design/icons";
 import { Dropdown } from "antd";
-import { useState, forwardRef, useImperativeHandle } from "react";
+import { useState, forwardRef, useImperativeHandle, useEffect } from "react";
 import { Empty } from "antd";
 import create from "@ant-design/icons/lib/components/IconFont";
 import { getLessonTree } from "../../Api/lesson";
@@ -13,6 +13,7 @@ import { getLessonTree } from "../../Api/lesson";
 import { Menu ,Badge} from 'antd';
 import { MailOutlined, AppstoreOutlined, SettingOutlined } from '@ant-design/icons';
 import { CheckCircleOutlined, PlayCircleOutlined,LockOutlined } from '@ant-design/icons';
+import { Get } from "../../Api/lesson";
 
 const { SubMenu } = Menu;
 
@@ -29,7 +30,8 @@ const ChatList = forwardRef(
     const [selectedSortOrder, setSelectedSortOrder] = useState();
     const [loading, setLoading] = useState();
     const [data, setData] = useState([]);
-    const [lessonData,setLessonData] = useState([]);
+    const [lessonData,setLessonData] = useState([])
+    const [courseId,setCourseId]=useState("")
     const params = {};
     const dataLength = 100;
     const onSearch = (chat_title) => {
@@ -63,13 +65,29 @@ const ChatList = forwardRef(
       queryAllChatsList: () => {
         queryAllChatsList({ chat_title: "" });
       },
+      updateLessonAttendInfo: (updateAttendInfo)=>{
+        console.log('udpate attend info',updateAttendInfo)
+        if  (lessonData){
+          for( let i in lessonData){
+            if(lessonData[i].lesson_id === updateAttendInfo.lesson_id){
+              lessonData[i].status = updateAttendInfo.status  
+            }
+            for(let c in lessonData[i].children){
+              if(lessonData[i].children[c].lesson_id === updateAttendInfo.lesson_id){
+              lessonData[i].children[c].status = updateAttendInfo.status  
+              } 
+            }
+          }
+          const newLessonData = lessonData.map(l=>l)
+          setLessonData(newLessonData)
+        } 
+      }
     }));
   
     const queryAllChatsList = () => {
-     
-
       getLessonTree().then((res) => {
-        setLessonData(res.data);
+        setLessonData(res.data.lessons);
+        setCourseId(res.data.course_id)
       })
     };
 
@@ -77,28 +95,34 @@ const ChatList = forwardRef(
       setLoading(true);
       queryAllChatsList();
     }, []);
+    useEffect(()=>{
+      console.log('update lesson',lessonData)
+
+    },[lessonData])
 
     const clickMenuItem=(e,lessonInfo)=>{
 
       if(onClickMenuItem){
-      onClickMenuItem(lessonInfo);
+      onClickMenuItem({...lessonInfo, course_id:courseId});
       }
     }
     const getIcon = (sender)=>{
       let icon =   <CheckCircleOutlined style={{ color: 'green', float: 'right' }} />
-
-      
-      let status= sender.dataSource ?  sender.dataSource.status : sender.status;
+      let status= sender.datasource ?  sender.datasource.status : sender.status;
       switch(status){
         case "未开始":
-          icon = <PlayCircleOutlined style={{ color: 'red', float: 'right' }} />
+          icon = <PlayCircleOutlined style={{ color: 'green', float: 'right' }} />
           break;
         case "进行中":
-          icon = <PlayCircleOutlined style={{ color: 'red', float: 'right' }} />
+          icon = <PlayCircleOutlined style={{ color: 'green', float: 'right' }} />
           break;
         case "已完成":
           icon = <CheckCircleOutlined style={{ color: 'green', float: 'right' }} />
           break;
+        case "未解锁":
+            icon = <LockOutlined style={{ color: 'green', float: 'right' }} />
+            break;
+            
         default:
           icon = <LockOutlined style={{ color: 'green', float: 'right' }} />
           break;
@@ -112,16 +136,14 @@ const ChatList = forwardRef(
       <Menu
         mode="inline"
         expandIcon={getIcon}
-        expandIconPosition="right"
         
       >
         {
           lessonData.map((item,index)=>{
-            return <SubMenu key={index}  title={item.lesson_name } dataSource={item}  >
-              {/* {getIcon(item.status)} */}
+            return <SubMenu key={index}  title={item.lesson_name } datasource={item}  >
               {
                 item.children.map((chapter,index)=>{
-                  return <Menu.Item key={chapter.lesson_no} dataSource={chapter} onClick={(e)=>clickMenuItem(e,chapter)}  >
+                  return <Menu.Item key={chapter.lesson_no} datasource={chapter} onClick={(e)=>clickMenuItem(e,chapter)}  >
                     {chapter.lesson_name} 
                   { getIcon(chapter)}
                     </Menu.Item>

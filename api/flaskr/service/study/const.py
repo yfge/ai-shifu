@@ -1,0 +1,8 @@
+ROLE_TEACHER = 1
+ROLE_STUDENT = 2
+
+
+ROLE_VALUES = {
+    ROLE_TEACHER: "老师",
+    ROLE_STUDENT: "学生"
+}

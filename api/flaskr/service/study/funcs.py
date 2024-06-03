@@ -8,13 +8,14 @@ from flask import Flask
 from flaskr.service.lesson.funs import AILessonInfoDTO
 from flaskr.service.profile.funcs import get_user_profiles, save_user_profiles
 from flaskr.service.sales.consts import ATTEND_STATUS_TYPES, ATTEND_STATUS_UNAVAILABE, ATTEND_STATUS_VALUES
+from flaskr.service.study.const import ROLE_STUDENT, ROLE_TEACHER, ROLE_VALUES
 from langchain_core.prompts import PromptTemplate
 
 
-from flaskr.service.lesson.const import SCRIPT_TYPE_FIX, SCRIPT_TYPE_PORMPT, UI_TYPE_BUTTON, UI_TYPE_CONTINUED, UI_TYPE_INPUT
+from flaskr.service.lesson.const import CONTENT_TYPE_IMAGE, LESSON_TYPE_BRANCH_HIDDEN, SCRIPT_TYPE_FIX, SCRIPT_TYPE_PORMPT, UI_TYPE_BUTTON, UI_TYPE_CONTINUED, UI_TYPE_INPUT
 from ...dao import db
 
-from flaskr.service.lesson.models import AILesson, AILessonScript
+from flaskr.service.lesson.models import AICourse, AILesson, AILessonScript
 from flaskr.service.sales.funs import AICourseLessonAttendDTO, init_trial_lesson
 from flaskr.service.sales.models import ATTEND_STATUS_COMPLETED, ATTEND_STATUS_IN_PROGRESS, ATTEND_STATUS_NOT_STARTED, AICourseBuyRecord, AICourseLessonAttend
 from .models import *
@@ -23,7 +24,7 @@ import time
 
 
 class AILessonAttendDTO:
-    def __init__(self,lesson_no:str,lesson_name:str,lesson_id:str,status,children) -> None:
+    def __init__(self,lesson_no:str,lesson_name:str,lesson_id:str,status,children=None) -> None:
         self.lesson_no = lesson_no
         self.lesson_name = lesson_name
         self.lesson_id = lesson_id
@@ -36,6 +37,17 @@ class AILessonAttendDTO:
             'lesson_id':self.lesson_id,
             'status':self.status,
             'children':self.children
+        }
+class AICourseDTO:
+    def __init__(self,course_id:str,course_name:str,lessons:list[AILessonAttendDTO]) -> None:
+        self.course_id = course_id
+        self.course_name = course_name
+        self.lessons=lessons
+    def __json__(self):
+        return {
+            'course_id':self.course_id,
+            'course_name':self.course_name,
+            'lessons':self.lessons
         }
 
 
@@ -96,10 +108,9 @@ def get_fmt_prompt(app:Flask,user_id:str,profile_tmplate:str,input:str=None,prof
         propmpt_keys.append('input')
     prompt_template = PromptTemplate(input_variables=propmpt_keys, template=profile_tmplate)
     prompt = prompt_template.format(**profiles)
+    app.logger.info('fomat input:{}'.format(prompt))
     return prompt
-#
-#   
-#
+
 class ScriptDTO:
     def __init__(self,script_type,script_content,script_id=None):
         self.script_type = script_type
@@ -124,12 +135,9 @@ def get_current_lesson(app: Flask, lesssons:list[AICourseLessonAttendDTO] )->AIC
 def get_next_script(app: Flask,attend_id:str)->AILessonScript:
         attend_info = AICourseLessonAttend.query.filter(AICourseLessonAttend.attend_id ==attend_id ).first()
         if attend_info.status == ATTEND_STATUS_NOT_STARTED:
-            # 还没开始
             attend_info.status = ATTEND_STATUS_IN_PROGRESS
             attend_info.script_index = 1
-           # 获取第一个脚本
         else:
-            # 获取下一个脚本
             attend_info.script_index = attend_info.script_index + 1
         script_info = AILessonScript.query.filter(AILessonScript.lesson_id==attend_info.lesson_id,AILessonScript.script_index==attend_info.script_index).first()
         if not script_info:
@@ -149,26 +157,21 @@ def generation_attend(app:Flask,attend:AICourseLessonAttendDTO,script_info:AILes
     attendScript.script_id = script_info.script_id
     return attendScript
 
-
 def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,input:str=None, script_id: str=None)->Generator[ScriptDTO,None,None]:
-    
     with app.app_context():
         attend = AICourseLessonAttendDTO
         if not lesson_id:
             # 检查有没有购课记录
             buy_record = AICourseBuyRecord.query.filter_by(user_id=user_id, course_id=course_id).first() 
             if not buy_record:
-                app.logger.info('no buy record found')
-                # 没有购课记录
-                # 生成体验课记录
                 lessons = init_trial_lesson(app, user_id, course_id)
                 attend = get_current_lesson(app,lessons)
                 lesson_id = attend.lesson_id
         else:
             # 获取课程记录
+            app.logger.info("user_id:{},course_id:{},lesson_id:{}".format(user_id,course_id,lesson_id))
             attend_info = AICourseLessonAttend.query.filter_by(user_id=user_id, course_id=course_id,lesson_id=lesson_id).first()
             if not attend_info:
-                app.logger.info('no attend record found')
                 # 没有课程记录
                 for i in "请购买课程":
                     yield make_script_dto("text",i,None)
@@ -176,7 +179,6 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                 yield make_script_dto("text_end","",None)
                 return
             attend = AICourseLessonAttendDTO(attend_info.attend_id,attend_info.lesson_id,attend_info.course_id,attend_info.user_id,attend_info.status,attend_info.script_index)
-        app.logger.info('attend info:{},lesson_id :{}'.format(attend_info.attend_id,lesson_id))
         db.session.commit()
         check_success = False
         while True:
@@ -188,13 +190,17 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
             else:
                 script_info = get_next_script(app,attend.attend_id)
             if script_info:
-                app.logger.info("begin to run script:{}".format(script_info.script_id))
+                app.logger.info("begin to run script:{},model:{}".format(script_info.script_id,script_info.script_model))
+                log_script = generation_attend(app,attend,script_info)
             # 得到脚本
-                if script_info.script_type == SCRIPT_TYPE_FIX:
-                    if script_id and input:
+                if script_id and input:
                         check_flag = script_info.script_check_flag
                         prompt = get_fmt_prompt(app,user_id,script_info.script_check_prompt,input,script_info.script_profile)
                         ## todo 换成通用的
+                        log_script = generation_attend(app,attend,script_info)
+                        log_script.script_content = input
+                        log_script.script_role = ROLE_STUDENT 
+                        db.session.add(log_script)
                         resp = client.chat.completions.create(
                             model="gpt-3.5-turbo-0125",
                             stream=True,
@@ -227,11 +233,27 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                             profile_tosave = json.loads(values)
                             save_user_profiles(app,user_id,profile_tosave)
                             input = None
+                            continue
+                        else:
+                            log_script = generation_attend(app,attend,script_info)
+                            log_script.script_content = response_text
+                            log_script.script_role = ROLE_TEACHER
+                            db.session.add(log_script)
+                            break
+                if script_info.script_type == SCRIPT_TYPE_FIX:
+                    prompt = ""
+                    if script_info.script_content_type == CONTENT_TYPE_IMAGE:
+                        prompt = "![img]({})".format(script_info.script_media_url)
+                        yield make_script_dto("text",prompt,script_info.script_id)
                     else:
                         prompt = get_fmt_prompt(app,user_id,script_info.script_prompt,profile_array_str=script_info.script_profile)
                         for i in prompt:
                             yield make_script_dto("text",i,script_info.script_id)
                             time.sleep(0.04)
+                    log_script = generation_attend(app,attend,script_info)
+                    log_script.script_content = prompt
+                    log_script.script_role = ROLE_TEACHER
+                    db.session.add(log_script)
                     data = ScriptDTO("text_end","")
                     msg =  'data: '+json.dumps(data,default=fmt)+'\n\n'
                     yield msg
@@ -250,6 +272,10 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         if isinstance(current_content ,str):
                             response_text += current_content
                             yield make_script_dto("text", current_content,script_info.script_id)
+                    log_script = generation_attend(app,attend,script_info)
+                    log_script.script_content = response_text
+                    log_script.script_role = ROLE_TEACHER
+                    db.session.add(log_script)
                     yield make_script_dto("text_end","",None)
                 if script_info.script_ui_type == UI_TYPE_CONTINUED:
                     continue
@@ -261,14 +287,72 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     break
             else:
                 yield make_script_dto("study_complete","",None)
+                attend_updates = update_attend_lesson_info(app,attend_id=attend_info.attend_id)
+                # 更新到课信息
+                if len (attend_updates) > 0 :
+                    for attend_update in attend_updates:
+                        yield make_script_dto("lesson_update",attend_update.__json__(),"")
                 break
-        data = ScriptDTO("text_end","")
-        msg =  'data: '+json.dumps(data,default=fmt)+'\n\n'
-        yield msg
+        db.session.commit()
+
+
+def get_lesson_and_attend_info(app:Flask,parent_no,course_id,user_id):
+    lessons = AILesson.query.filter(AILesson.lesson_no.like(parent_no+'%'),AILesson.course_id ==course_id,AILesson.lesson_type !=LESSON_TYPE_BRANCH_HIDDEN, AILesson.status==1 ).all()
+    if len(lessons)==0:
+        return [] 
+    attend_infos = AICourseLessonAttend.query.filter(AICourseLessonAttend.lesson_id.in_([lesson.lesson_id for lesson in lessons]),AICourseLessonAttend.user_id == user_id ).all()
+    app.logger.info("attends:{}".format(",".join(a.attend_id for a in attend_infos)))
+    attend_lesson_infos = [{'attend':attend,'lesson': [lesson for lesson in lessons if lesson.lesson_id == attend.lesson_id][0]} for attend in attend_infos]
+    attend_lesson_infos =  sorted(attend_lesson_infos, key=lambda x: (len(x['lesson'].lesson_no), x['lesson'].lesson_no)) 
+    return attend_lesson_infos
+
+def update_attend_lesson_info(app:Flask,attend_id:str)->list[AILessonAttendDTO]:
+    res = []
+    attend_info = AICourseLessonAttend.query.filter(AICourseLessonAttend.attend_id ==attend_id).first()
+    lesson = AILesson.query.filter(AILesson.lesson_id == attend_info.lesson_id).first()
+    lesson_no = lesson.lesson_no
+    parent_no = lesson_no
+    attend_info.status = ATTEND_STATUS_COMPLETED
+    res.append(AILessonAttendDTO(lesson_no,lesson.lesson_name,lesson.lesson_id,ATTEND_STATUS_VALUES[ATTEND_STATUS_COMPLETED]))
+ 
+    if len(parent_no)>2:
+        parent_no = parent_no[:2]
+    attend_lesson_infos =  get_lesson_and_attend_info(app,parent_no,lesson.course_id,attend_info.user_id)
+    if attend_lesson_infos[-1]['attend'].attend_id == attend_id:
+        # 最后一个已经完课
+        # 整体章节完课
+        attend_lesson_infos[0]['attend'].status = ATTEND_STATUS_COMPLETED
+        res.append(AILessonAttendDTO(attend_lesson_infos[0]['lesson'].lesson_no,attend_lesson_infos[0]['lesson'].lesson_name,attend_lesson_infos[0]['lesson'].lesson_id,ATTEND_STATUS_VALUES[ATTEND_STATUS_COMPLETED]))
+        # 找到下一章节进行解锁
+        next_no = str(int(parent_no)+1).zfill(2)
+        next_lessons = get_lesson_and_attend_info(app,next_no,lesson.course_id,attend_info.user_id)
+        if len(next_lessons) > 0 :
+            # 解锁
+            for next_lesson_attend in next_lessons:
+                if next_lesson_attend['lesson'].lesson_no == next_no:
+                    next_lesson_attend['attend'].status = ATTEND_STATUS_NOT_STARTED
+                    res.append(AILessonAttendDTO(next_lesson_attend['lesson'].lesson_no,next_lesson_attend['lesson'].lesson_name,next_lesson_attend['lesson'].lesson_id,ATTEND_STATUS_VALUES[ATTEND_STATUS_NOT_STARTED]))
+                if next_lesson_attend['lesson'].lesson_no == next_no+'01':
+                    next_lesson_attend['attend'].status = ATTEND_STATUS_NOT_STARTED
+                    res.append(AILessonAttendDTO(next_lesson_attend['lesson'].lesson_no,next_lesson_attend['lesson'].lesson_name,next_lesson_attend['lesson'].lesson_id,ATTEND_STATUS_VALUES[ATTEND_STATUS_NOT_STARTED]))
+
+    for i in range(len(attend_lesson_infos)):
+        app.logger.info(i)
+        if i>0 and  attend_lesson_infos[i-1]['attend'].attend_id == attend_id:
+            # 更新下一节
+            app.logger.info('to update' + attend_lesson_infos[i]['lesson'].lesson_no)
+            attend_lesson_infos[i]['attend'].status = ATTEND_STATUS_NOT_STARTED
+            res.append(AILessonAttendDTO( attend_lesson_infos[i]['lesson'].lesson_no,  attend_lesson_infos[i]['lesson'].lesson_name,  attend_lesson_infos[i]['lesson'].lesson_id,ATTEND_STATUS_VALUES[ATTEND_STATUS_NOT_STARTED]))
+    return res
 
 
 
-def get_lesson_tree_to_study(app:Flask,user_id:str,course_id:str)->list[AILessonAttendDTO]:
+
+
+
+
+
+def get_lesson_tree_to_study(app:Flask,user_id:str,course_id:str)->AICourseDTO:
     with app.app_context():
           # 检查有没有购课记录
         buy_record = AICourseBuyRecord.query.filter_by(user_id=user_id, course_id=course_id).first() 
@@ -277,7 +361,7 @@ def get_lesson_tree_to_study(app:Flask,user_id:str,course_id:str)->list[AILesson
             # 没有购课记录
             # 生成体验课记录
             init_trial_lesson(app, user_id, course_id)
-        lessons = AILesson.query.filter(course_id==course_id,AILesson.status==1).all()
+        lessons = AILesson.query.filter(course_id==course_id,AILesson.lesson_type !=LESSON_TYPE_BRANCH_HIDDEN, AILesson.status==1).all()
         lessons = sorted(lessons, key=lambda x: (len(x.lesson_no), x.lesson_no))
         lesson_ids =  [ i.lesson_id  for  i in lessons]
         app.logger.info("lesson ids :{}".format(lesson_ids))
@@ -299,4 +383,29 @@ def get_lesson_tree_to_study(app:Flask,user_id:str,course_id:str)->list[AILesson
                 parent_no = lessonInfo.lesson_no[:-2]
                 if parent_no in lesson_dict:
                     lesson_dict[parent_no].children.append(lessonInfo)
-        return lessonInfos
+        course_info = AICourse.query.filter(AICourse.course_id == course_id).first()
+        return AICourseDTO(course_id=course_id,course_name=course_info.course_name,lessons=lessonInfos)
+    
+
+
+class StudyRecordDTO:
+    def __init__(self,script_index,script_role,script_type,script_content):
+        self.script_index = script_index
+        self.script_role = script_role
+        self.script_type = script_type
+        self.script_content = script_content
+    def __json__(self):
+        return {
+            "script_index": self.script_index,
+            "script_role": self.script_role,
+            "script_type": self.script_type,
+            "script_content": self.script_content
+        }
+
+def get_study_record(app:Flask,user_id:str,lesson_id:str)->list[StudyRecordDTO]:
+    with app.app_context():
+        attend_info = AICourseLessonAttend.query.filter_by(user_id=user_id,lesson_id=lesson_id).first()
+        if not attend_info:
+            return None
+        attend_scripts = AICourseLessonAttendScript.query.filter_by(attend_id=attend_info.attend_id).all()
+        return [StudyRecordDTO(i.script_index,ROLE_VALUES[i.script_role],0,i.script_content) for i in attend_scripts]

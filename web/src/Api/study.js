@@ -1,6 +1,7 @@
 import { SSE } from "sse.js";
 import Cookies from "js-cookie";
 import store from "store";
+import request from "../Service/Request";
 
 const url = (process.env.REACT_APP_BASEURL || "") + "/api/study/run";
 
@@ -44,3 +45,14 @@ export const RunScript = (course_id,lesson_id,input,input_type, script_id,onMess
   source.stream();
   return source;
 };
+
+
+
+
+
+export const getLessonStudyRecord = async (lesson_id) => {
+  return request({
+    url: "/api/study/get_lesson_study_record?lesson_id="+ lesson_id,
+    method: "get",
+  });
+}

@@ -1,7 +1,7 @@
 from flask import Flask, Response,request 
-from flaskr.route.common import make_common_response
+from flaskr.route.common import bypass_token_validation, make_common_response
 from flaskr.service.common.models import raise_param_error
-from flaskr.service.study.funcs import get_lesson_tree_to_study, run_script
+from flaskr.service.study.funcs import get_lesson_tree_to_study, get_study_record, run_script, update_attend_lesson_info
 
 
 
@@ -32,5 +32,24 @@ def register_study_handler(app:Flask,path_prefix:str)->Flask:
             raise_param_error("doc_id is not found")
         user_id =request.user.user_id 
         return make_common_response(get_lesson_tree_to_study(app,user_id,course_id))
+    @app.route(path_prefix+'/get_lesson_study_record', methods=['GET'])
+    def get_lesson_study_record():
+        lesson_id = request.args.get('lesson_id')
+        if not lesson_id:
+            raise_param_error("lesson_id is not found")
+        user_id =request.user.user_id
+        return make_common_response(get_study_record(app,user_id,lesson_id))
+    
+
+    @app.route(path_prefix+"/test_attend",methods=['GET'])
+    @bypass_token_validation
+    def test_attend():
+
+
+        attend_id = request.args.get("attend_id")
+
+
+        return make_common_response(update_attend_lesson_info(app,attend_id))
+
 
     return app

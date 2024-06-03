@@ -29,6 +29,7 @@ class AILesson(db.Model):
     lesson_feishu_id = Column(String(255), nullable=False, default='', comment='Lesson feishu ID')
     lesson_status = Column(Integer, nullable=False, default=0, comment='Lesson status')
     lesson_type = Column(Integer, nullable=False, default=0, comment='Lesson type')
+    pre_lesson_no = Column(String(255), nullable=False, default='', comment='pre_lesson_no')
     created = Column(TIMESTAMP, nullable=False, default=func.now(), comment='Creation time')
     updated = Column(TIMESTAMP, nullable=False, default=func.now(), onupdate=func.now(), comment='Update time')
     status = Column(Integer, nullable=False, default=0, comment='Status of the lesson')

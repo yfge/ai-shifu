@@ -83,6 +83,7 @@ DB_SAVE_MAP = {
     '解析用户输入内容':'script_ui_profile',
     '媒体URL':'script_media_url',
     '输入框提示': 'script_ui_content',
+    '按钮组配置': 'script_ui_content',
     '后续交互':'script_ui_type',
     '按钮标题': 'script_ui_content'
 
@@ -94,11 +95,6 @@ DB_SAVE_DICT_MAP= {
     '内容格式': CONTENT_TYPES,
     '后续交互': UI_TYPES
 }
-
-
-
-
-
 
 def update_lesson_info(app:Flask,doc_id:str,table_id:str,title:str=None,index:int=None,lesson_type:int = LESSON_TYPE_NORMAL):
     with app.app_context():
@@ -130,6 +126,10 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,title:str=None,index:in
             parent_lesson.lesson_no = lessonNo
             parent_lesson.lesson_feishu_id = table_id
             parent_lesson.lesson_type = lesson_type
+            if int(index) > 1 :
+                parent_lesson.pre_lesson_no = str(int(index) -1 ).zfill(2)
+            else:
+                parent_lesson.pre_lesson_no ="" 
             db.session.add(parent_lesson)
         else:
             parent_lesson.lesson_name = title
@@ -139,7 +139,10 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,title:str=None,index:in
             parent_lesson.status = 1
             parent_lesson.lesson_feishu_id = table_id
             parent_lesson.lesson_type = lesson_type
-     
+            if int(index) > 1 :
+                parent_lesson.pre_lesson_no = str(int(index) -1 ).zfill(2)
+            else:
+                parent_lesson.pre_lesson_no ="" 
         subIndex = 0
         childLessons = [AILesson]
         script_index = 0
@@ -147,10 +150,13 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,title:str=None,index:in
             resp = list_records(app,doc_id,table_id,page_token=page_token,page_size=100)
             records = resp['data']['items']
             for record in records:
-                title = "".join(t['text'] for t in  record['fields']['小节']).strip()
-                if title is None:
-                    app.logger.info('title is None')
-                lesson = next((l for l in childLessons if hasattr(l, 'lesson_name') and  l.lesson_name == title), None)
+                if record['fields'].get('小节',None):
+                    title = "".join(t['text'] for t in  record['fields']['小节']).strip()
+                    if title is None:
+                        app.logger.info('title is None')
+                    lesson = next((l for l in childLessons if hasattr(l, 'lesson_name') and  l.lesson_name == title), None)
+                else:
+                    lesson = parent_lesson
                 if lesson is None:
                     ## 新来的一个小节
                     script_index = 0
@@ -168,6 +174,10 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,title:str=None,index:in
                         lesson.lesson_feishu_id = table_id
                         lesson.lesson_no = lessonNo + str(subIndex).zfill(2) 
                         lesson.lesson_type = lesson_type
+                        if subIndex>1:
+                            lesson.pre_lesson_no =  lessonNo + str(subIndex-1).zfill(2) 
+                        else:
+                            lesson.pre_lesson_no = ""
                         db.session.add(lesson)
                     else:
                         lesson.lesson_name = title
@@ -176,6 +186,10 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,title:str=None,index:in
                         lesson.lesson_feishu_id = table_id
                         lesson.lesson_type = lesson_type
                         lesson.lesson_no = lessonNo + str(subIndex).zfill(2) 
+                        if subIndex>1:
+                            lesson.pre_lesson_no =  lessonNo + str(subIndex-1).zfill(2) 
+                        else:
+                            lesson.pre_lesson_no = ""
                     childLessons.append(lesson)
                 script_index = script_index + 1
                 record_id = record['record_id']
@@ -193,7 +207,8 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,title:str=None,index:in
                 scripDb['script_check_prompt']=''
                 scripDb['script_check_flag']=''
                 scripDb['script_index']=script_index
-               
+                scripDb['script_ui_type']=UI_TYPE_BUTTON
+                scripDb['script_ui_content']='继续'
                 for field  in record['fields']:
                     val_obj = record['fields'][field]
                     db_field = DB_SAVE_MAP.get(field.strip())
@@ -201,13 +216,11 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,title:str=None,index:in
                     if isinstance(val_obj,str):
                         val = val_obj
                     elif isinstance(val_obj , list):
-
                         val = "".join( t["text"] if  isinstance(t,dict) else "["+t+"]"  for  t in val_obj)
                     elif isinstance(val_obj,dict):
                         val = val_obj.get('text')
                     else:
                         app.logger.info('val_obj:'+str(val_obj))
-                    
                     if db_field :
                         if field in DB_SAVE_DICT_MAP:
                             orig_val = val
@@ -219,18 +232,13 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,title:str=None,index:in
                         if unconf_fields.count(field)==0:
                             unconf_fields.append(field)
                     continue
-
                 scrip = AILessonScript.query.filter(AILessonScript.script_feishu_id == record_id).first()
-               
                 if scrip is None:
                     scripDb['script_id']= str(generate_id(app))
                     db.session.add(AILessonScript(**scripDb))
                 else:
-                    
                     for key in scripDb:
                         setattr(scrip,key,scripDb[key])
-                    # db.session.update(scrip)
-               
             if resp['data']['has_more']:
                 page_token = resp['data']['page_token']
             else:
@@ -238,7 +246,6 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,title:str=None,index:in
         app.logger.info('unconf_fields:'+str(unconf_fields))
         db.session.commit()
         return
-    
 
 def get_lesson_scripts(app:Flask,lesson_id:str):
     pass

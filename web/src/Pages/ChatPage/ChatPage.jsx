@@ -11,22 +11,24 @@ const ChatPage = () => {
   const chatComponents = useRef(null);
   const chatList = useRef(null);
   const onClickListItem = (chatInfo) => {
-    UploadEvent("view_chatInfo", { page: "chatPage" });
-    GetChatDetail(chatInfo.chat_id).then((res) => {
-      chatComponents.current.loadMsg(chatInfo.chat_id, res.data);
-    });
+    // UploadEvent("view_chatInfo", { page: "chatPage" });
+
   };
 
   const onTitleUpdate = (chatId, chatTitle, created) => {
     console.log(chatId, chatTitle, created);
     chatList.current.onTitleUpdate(chatId, chatTitle, created);
   };
-
   const onClickMenuItem = (lessonInfo) => {
     if(lessonInfo && chatComponents.current){
       chatComponents.current.switchLesson(lessonInfo)
     }
   };
+
+  const lessonStatusUpdate = (lessonUpdate)=>{
+    console.debug('lessonupdate',lessonUpdate)
+    chatList.current.updateLessonAttendInfo(lessonUpdate)
+  }
 
   return (
     <div className="chat-page full-height">
@@ -39,6 +41,7 @@ const ChatPage = () => {
         className="chat-components"
         ref={chatComponents}
         onTitleUpdate={onTitleUpdate}
+        lessonStatusUpdate = {lessonStatusUpdate}
       />
     </div>
   );
