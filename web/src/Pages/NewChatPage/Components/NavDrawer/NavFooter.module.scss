@@ -1,0 +1,19 @@
+.navFooter {
+  padding: 10px 30px 30px 30px;
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: space-between;
+
+  .settingBtn {
+    display: flex;
+    flex-flow: column nowrap;
+    align-items: center;
+    &:hover {
+      cursor: pointer;
+    }
+    
+    .btnText {
+      margin-top: 8px;
+    }
+  }
+}

@@ -1,4 +1,4 @@
-
+const cracoAlias = require("craco-alias");
 
 module.exports = {
     // webpack: {
@@ -7,6 +7,15 @@ module.exports = {
     //         return webpackConfig;
     //     },
     // },
+    plugins: [
+        {
+            plugin: cracoAlias,
+            options: {
+                baseUrl: "./src",
+                source: "jsconfig",
+            }
+        }
+    ],
     devServer:{
         client:{
             overlay: {

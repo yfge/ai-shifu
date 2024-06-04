@@ -1,0 +1,26 @@
+.navHeader {
+  height: 60px;
+  padding: 0 20px;
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  justify-content: space-between;
+
+  .logoArea {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+
+    .productName {
+      font-weight: var(--font-weight-bold); 
+      color: var(--font-color-title);
+      margin-left: 10px;
+    }
+  }
+
+  .actionBtn {
+    &:hover {
+      cursor: pointer;
+    }
+  }
+}
