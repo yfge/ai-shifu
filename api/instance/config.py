@@ -47,6 +47,6 @@ MILVUS_ALIAS = "default"
 LOGGING_PATH = "./log/ai-asistant.log"
 
 
-LANGFUSE_PUBLIC_KEY='pk-lf-28c763b8-7e39-4ed9-bb12-0ff5ba429b89'
-LANGFUSE_SECRET_KEY='sk-lf-36c115d2-41fe-4fc0-a84b-49059e5aae43'
-LANGFUSE_HOST='http://123.57.143.145:32002'
+LANGFUSE_PUBLIC_KEY='pk-lf-f6fd29f7-8bee-4834-857f-594292b277f0'
+LANGFUSE_SECRET_KEY='sk-lf-f948e1dc-a560-470b-b6a0-369ad6f0a7e2'
+LANGFUSE_HOST='https://langfuse.agiclass.cn'

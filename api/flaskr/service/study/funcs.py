@@ -9,7 +9,7 @@ from flaskr.service.lesson.funs import AILessonInfoDTO
 from flaskr.service.profile.funcs import get_user_profiles, save_user_profiles
 from flaskr.service.sales.consts import ATTEND_STATUS_TYPES, ATTEND_STATUS_UNAVAILABE, ATTEND_STATUS_VALUES
 from flaskr.service.study.const import *
-from langchain_core.prompts import PromptTemplate
+from langchain.prompts import PromptTemplate
 
 
 from flaskr.service.lesson.const import CONTENT_TYPE_IMAGE, LESSON_TYPE_BRANCH_HIDDEN, SCRIPT_TYPE_FIX, SCRIPT_TYPE_PORMPT, UI_TYPE_BUTTON, UI_TYPE_CONTINUED, UI_TYPE_INPUT, UI_TYPE_SELECTION
@@ -21,7 +21,7 @@ from flaskr.service.sales.models import ATTEND_STATUS_COMPLETED, ATTEND_STATUS_I
 from .models import *
 import time 
 
-
+from ...api.langfuse import langfuse_client as langfuse
 
 class AILessonAttendDTO:
     def __init__(self,lesson_no:str,lesson_name:str,lesson_id:str,status,children=None) -> None:
@@ -96,6 +96,7 @@ def get_profile_array(profile:str)->list:
 
 def get_fmt_prompt(app:Flask,user_id:str,profile_tmplate:str,input:str=None,profile_array_str:str=None)->str:
 
+    app.logger.info("raw prompt:"+profile_tmplate)
     propmpt_keys = []
     profiles = {}
     if profile_array_str:
@@ -108,14 +109,14 @@ def get_fmt_prompt(app:Flask,user_id:str,profile_tmplate:str,input:str=None,prof
         profiles['input'] = input
         propmpt_keys.append('input')
     app.logger.info(propmpt_keys)
+    app.logger.info(profiles)
     
     prompt_template = PromptTemplate(input_variables=propmpt_keys, template=profile_tmplate)
+    # prompt_keys = prompt_template.
     prompt = prompt_template.format(**profiles)
     app.logger.info('fomat input:{}'.format(prompt))
     return prompt.encode('utf-8').decode('utf-8')
  
-
-
 class ScriptDTO:
     def __init__(self,script_type,script_content,script_id=None):
         self.script_type = script_type
@@ -166,9 +167,29 @@ def generation_attend(app:Flask,attend:AICourseLessonAttendDTO,script_info:AILes
     return attendScript
 
 
-def get_lesson_system(app:Flask,session_id:str)->str:
+# 得到一个课程的System Prompt
 
-    pass
+def get_lesson_system(app:Flask,lesson_id:str)->str:
+    with app.app_context:
+        # 缓存逻辑 
+        lesson_ids = [lesson_id]
+        lesson = AILesson.query.filter(AILesson.lesson_id == lesson_id).first()
+        lesson_no = lesson.lesson_no 
+        parent_no = lesson_no
+ 
+        if len(parent_no)>2:
+            parent_no = parent_no[:2]
+        if parent_no != lesson_no:
+            parent_lesson = AILesson.query.filter(AILesson.lesson_no == parent_no).first()
+            if parent_lesson:
+                lesson_ids.append(parent_lesson.lesson_id)
+        scripts = AILessonScript.query.filter(AILessonScript.lesson_id.in_(lesson_ids) == True,AILessonScript.script_content_type).all()
+        if len(scripts)>0:
+            for script in scripts:
+                if script.lesson_id == lesson_id:
+                    return script.script_prompt
+            return scripts[0].script_prompt
+        return None
 
 def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,input:str=None,input_type:str=None)->Generator[ScriptDTO,None,None]:
     with app.app_context():
@@ -193,6 +214,18 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                 return
             attend = AICourseLessonAttendDTO(attend_info.attend_id,attend_info.lesson_id,attend_info.course_id,attend_info.user_id,attend_info.status,attend_info.script_index)
         db.session.commit()
+
+
+        # Langfuse 集成 
+
+        trace_args ={}
+        trace_args['user_id'] = user_id
+        trace_args['session_id'] = attend.attend_id
+        trace_args['input'] = input 
+        trace_args['name'] = "ai-python"
+        trace = langfuse.trace(**trace_args)
+        trace_args["output"]=""
+
         check_success = False
         next = False
         if input_type == INPUT_TYPE_CONTINUE:
@@ -200,8 +233,9 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
         while True:
             # 如果有用户输入,就得到当前这一条,否则得到下一条
             script_info = get_script(app,attend_id=attend.attend_id,next=next)
+         
             if script_info:
-                app.logger.info("begin to run script:{},model:{}".format(script_info.script_id,script_info.script_model))
+                app.logger.info("begin to run script:{},model:{},input_type:{}".format(script_info.script_id,script_info.script_model,input_type))
                 log_script = generation_attend(app,attend,script_info)
                 # 得到脚本
         
@@ -214,6 +248,11 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     log_script.script_content = input
                     log_script.script_role = ROLE_STUDENT 
                     db.session.add(log_script)
+
+                    span = trace.span(name="user_input",input=input)
+
+                    generation = span.generation( model="gpt-3.5-turbo-0125",input=[{"role": "user", "content": prompt}])
+                     
                     resp = client.chat.completions.create(
                         model="gpt-3.5-turbo-0125",
                         stream=True,
@@ -240,6 +279,9 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                             if stream:
                                 yield make_script_dto("text", current_content,script_info.script_id)
                     app.logger.info('response_text:{}'.format(response_text))
+                    generation.end(output=response_text)
+
+
                     if check_success:
                         app.logger.info('check success')
                         values = response_text.replace(check_flag,"")
@@ -249,15 +291,26 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         input = None
                         next = True
                         input_type = INPUT_TYPE_CONTINUE
+                        span.end()
                         continue
                     else:
                         log_script = generation_attend(app,attend,script_info)
                         log_script.script_content = response_text
                         log_script.script_role = ROLE_TEACHER
                         db.session.add(log_script)
+                        span.end(output=response_text)
+
+                        trace_args ["output"] = trace_args["output"]+"\r\n"+response_text
+                        trace.update(**trace_args)
                         break
                 elif input_type == INPUT_TYPE_CONTINUE:
-                    
+                    log_script = generation_attend(app,attend,script_info)
+                    log_script.script_content = "继续"
+                    log_script.script_role = ROLE_STUDENT
+                    db.session.add(log_script)
+
+                    span = trace.span(name="user_continue",input=input)
+                    span.end()
 
                     pass
                 elif input_type == INPUT_TYPE_SELECT:
@@ -267,10 +320,18 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     for k in profile_keys:
                         profile_tosave[k]=input
                     save_user_profiles(app,user_id,profile_tosave)
+                  
+
+
+                    log_script = generation_attend(app,attend,script_info)
+                    log_script.script_content = input
+                    log_script.script_role = ROLE_STUDENT
+                    db.session.add(log_script)
                     input = None
                     next = True
                     input_type = INPUT_TYPE_CONTINUE
-
+                    span = trace.span(name="user_select",input=input)
+                    span.end()
                     continue 
                 if script_info.script_type == SCRIPT_TYPE_FIX:
                     prompt = ""
@@ -288,12 +349,27 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     log_script.script_role = ROLE_TEACHER
                     db.session.add(log_script)
                     data = ScriptDTO("text_end","")
+
+                    span = trace.span(name="fix_script")
+                    span.end(output=prompt)
+
+                    trace_args ["output"] = trace_args["output"]+"\r\n"+prompt
+                    trace.update(**trace_args)
                     msg =  'data: '+json.dumps(data,default=fmt)+'\n\n'
                     app.logger.info(msg)
+
+
                     yield msg
                     
-                elif script_info.script_type == SCRIPT_TYPE_PORMPT: 
+                elif script_info.script_type == SCRIPT_TYPE_PORMPT:
+                    span = trace.span(name="prompt_sript")
+                    
                     prompt = get_fmt_prompt(app,user_id,script_info.script_prompt,profile_array_str=script_info.script_profile)
+
+
+                    generation = span.generation( model="gpt-3.5-turbo-0125",input=[
+                            {"role": "user", "content": prompt}
+                        ])
                     resp = client.chat.completions.create(
                         model="gpt-3.5-turbo-0125",
                         stream=True,
@@ -307,6 +383,12 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         if isinstance(current_content ,str):
                             response_text += current_content
                             yield make_script_dto("text", current_content,script_info.script_id)
+                    generation.end(output=response_text)
+                    span.end(output=response_text)
+
+
+                    trace_args ["output"] = trace_args["output"]+"\r\n"+prompt
+                    trace.update(**trace_args)
                     log_script = generation_attend(app,attend,script_info)
                     log_script.script_content = response_text
                     log_script.script_role = ROLE_TEACHER
