@@ -96,6 +96,7 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className ,lessonStatusUpdat
 
   function handleSend(type, val) {
 
+    console.log('handle send',type,val)
     let sendScriptId = scriptId;
     if (type === "text" && val.trim()) {
       appendMsg({
@@ -113,11 +114,8 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className ,lessonStatusUpdat
     }
     setTyping(true);
     let lastMsg = null;
-
-
-    RunScript(chatId, lessonId, val, val, sendScriptId, (response) => {
+    RunScript(chatId, lessonId,  val,type, (response) => {
       try {
-        console.log(response);
         setChatId(response.chat_id);
         let id = generateUUID();
         if (lastMsg !== null && lastMsg.content.type === "calling") {
@@ -139,6 +137,7 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className ,lessonStatusUpdat
             function_name: response.function_name,
           });
         } else if (response.type === "text") {
+          console.log('lastmsg',lastMsg)
           if (lastMsg !== null && lastMsg.content.type === "text") {
             lastMsg.content.text = lastMsg.content.text + response.content;
             updateMsg(lastMsg._id, lastMsg);
@@ -148,7 +147,7 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className ,lessonStatusUpdat
               type: response.type,
               content: {
                 type: response.type,
-                text: response.content.replace(/<br\/>/g, "\n"),
+                text: response.content,
               },
               position: "left",
               user: { avatar: require("../../Assets/chat/sunner_icon.jpg") },
@@ -161,8 +160,7 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className ,lessonStatusUpdat
           setInputPlaceholder(response.content);
           setScriptId(response.id);
           setInputDisabled(false);
-
-        } else if (response.type === "buttons") {
+        } else if (response.type === "button") {
           lastMsg = {
             _id: id,
             type: "card",
@@ -171,9 +169,18 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className ,lessonStatusUpdat
           };
           appendMsg(lastMsg);
           setInputDisabled(true);
-        } else if (response.type === "title") {
-          onTitleUpdate(response.chat_id, response.text, response.created);
-        } else if (response.type === "study_complete") {
+        }else if (response.type === "buttons") {
+          console.log(response)
+          lastMsg = {
+            _id: id,
+            type: "card",
+            content: response.content,
+            position: "right"
+          };
+          appendMsg(lastMsg);
+          setInputDisabled(true); 
+          
+        }else if (response.type === "study_complete") {
           // setLessonId(response.lesson_id);
 
         }else if (response.type === "lesson_update"){
@@ -185,11 +192,10 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className ,lessonStatusUpdat
         // console.log("error", e);
       }
     });
-
   }
 
-  function onButtonClick() {
-    handleSend("button", "点击了按钮");
+  function onButtonClick(type,content) {
+    handleSend(type, content);
 
   }
   function renderMessageContent(msg) {
@@ -234,12 +240,18 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className ,lessonStatusUpdat
       return <MarkdownBubble content={content.text} />;
     } else if (content.type === "init") {
     } else if (msg.type === "card") {
+      const type = content.buttons.length > 1 ? "select": "continue"
       return (
         <Bubble>
           <Card size="xl">
-            <CardTitle>接下来</CardTitle>
+            <CardTitle>{content.title}</CardTitle>
             <CardActions>
-              <Button onClick={onButtonClick} >{content}</Button>
+              {
+                content.buttons.map(btn=>{
+                 return  <Button onClick={()=>onButtonClick(type,btn.value)} >{btn.label}</Button>
+                })
+              }
+            
             </CardActions>
           </Card>
         </Bubble>
@@ -248,14 +260,13 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className ,lessonStatusUpdat
     return null;
   }
 
-  function loadMsg(chatId, messages) {
-    resetList();
-    // setChatId(chatId);
-    // console.log("loadMsg,chatId:",chatId)
-    if (messages === undefined || messages === null) {
+  function loadMsg(chatId, newMessages) {
+    resetList()
+    if (newMessages === undefined || newMessages === null) {
       return;
     }
-    messages.forEach((item) => {
+    
+    newMessages.forEach((item) => {
       if (item.script_role === "学生") {
         appendMsg({
           _id: generateUUID(),
@@ -284,18 +295,33 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className ,lessonStatusUpdat
         }
       }
     });
-  }
 
+  }
+  function checkResetListComplete() {
+    return new Promise((resolve) => {
+      const intervalId = setInterval(() => {
+        if (messages !== undefined && messages !== null && messages.length === 0) {
+          clearInterval(intervalId);
+          resolve();
+        }
+      }, 100);
+    });
+  }
   const switchLesson = (lessonInfo) => {
     console.log("switch Lesson", lessonInfo);
     setLessonId(lessonInfo.lesson_id);
     setChatId(lessonInfo.course_id);
     if (lessonInfo.status === "未开始") {
-      handleSend("text","")
+      // loadMsg(lessonInfo.lesson_id, [])
 
+      // checkResetListComplete().then(()=>{
+          handleSend("start","")
+      // })
+
+    
     } else {
       getLessonStudyRecord(lessonInfo.lesson_id).then((res) => {
-        console.log("getLessonStudyRecord", res);
+        // console.log("getLessonStudyRecord", res);
         loadMsg(lessonInfo.lesson_id, res.data);
       });
     }

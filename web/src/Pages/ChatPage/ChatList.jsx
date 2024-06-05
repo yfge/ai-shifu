@@ -97,7 +97,6 @@ const ChatList = forwardRef(
     }, []);
     useEffect(()=>{
       console.log('update lesson',lessonData)
-
     },[lessonData])
 
     const clickMenuItem=(e,lessonInfo)=>{

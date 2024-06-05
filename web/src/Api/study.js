@@ -5,12 +5,12 @@ import request from "../Service/Request";
 
 const url = (process.env.REACT_APP_BASEURL || "") + "/api/study/run";
 
-export const RunScript = (course_id,lesson_id,input,input_type, script_id,onMessage) => {
+export const RunScript = (course_id,lesson_id,input,input_type,onMessage) => {
 
   var source = new SSE(url + "?token=" + store.get("token"), {
     headers: { "Content-Type": "application/json" },
     payload: JSON.stringify({
-        course_id,lesson_id,input,input_type,script_id
+        course_id,lesson_id,input,input_type
     }),
   });
   source.onmessage = (event) => {

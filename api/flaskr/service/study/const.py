@@ -6,3 +6,9 @@ ROLE_VALUES = {
     ROLE_TEACHER: "老师",
     ROLE_STUDENT: "学生"
 }
+
+
+INPUT_TYPE_TEXT = "text"
+INPUT_TYPE_CONTINUE = "continue"
+INPUT_TYPE_START = "start"
+INPUT_TYPE_SELECT = "select"

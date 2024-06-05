@@ -72,20 +72,24 @@ def init_trial_lesson(app:Flask ,user_id:str,course_id:str)->list[AICourseLesson
     app.logger.info('init trial lesson:{}'.format(lessons))
 
     for lesson in lessons:
-       app.logger.info('init trial lesson:{} ,is trail:{}'.format(lesson.lesson_id,lesson.is_final()))
-       attend = AICourseLessonAttend.query.filter(AICourseLessonAttend.user_id==user_id,AICourseLessonAttend.lesson_id==lesson.lesson_id).first()
-       if attend :
-           if lesson.is_final():
-               response.append(AICourseLessonAttendDTO(attend.attend_id,attend.lesson_id,attend.course_id,attend.user_id,attend.status,lesson.lesson_index))
-           continue
-       attend = AICourseLessonAttend()
-       attend.attend_id = str(get_uuid(app))
-       attend.course_id = course_id
-       attend.lesson_id = lesson.lesson_id
-       attend.user_id = user_id
-       attend.status = ATTEND_STATUS_NOT_STARTED
-       db.session.add(attend)
-       if  lesson.is_final():
-           response.append(AICourseLessonAttendDTO(attend.attend_id,attend.lesson_id,attend.course_id,attend.user_id,attend.status,lesson.lesson_index))
-       db.session.commit()
+        app.logger.info('init trial lesson:{} ,is trail:{}'.format(lesson.lesson_id,lesson.is_final()))
+        attend = AICourseLessonAttend.query.filter(AICourseLessonAttend.user_id==user_id,AICourseLessonAttend.lesson_id==lesson.lesson_id).first()
+        if attend :
+            if lesson.is_final():
+                response.append(AICourseLessonAttendDTO(attend.attend_id,attend.lesson_id,attend.course_id,attend.user_id,attend.status,lesson.lesson_index))
+            continue
+        attend = AICourseLessonAttend()
+        attend.attend_id = str(get_uuid(app))
+        attend.course_id = course_id
+        attend.lesson_id = lesson.lesson_id
+        attend.user_id = user_id
+        if lesson.lesson_no in ['00','0001']:
+            attend.status = ATTEND_STATUS_NOT_STARTED
+        else:
+            attend.status = ATTEND_STATUS_LOCKED
+        
+        db.session.add(attend)
+        if  lesson.is_final():
+            response.append(AICourseLessonAttendDTO(attend.attend_id,attend.lesson_id,attend.course_id,attend.user_id,attend.status,lesson.lesson_index))
+        db.session.commit()
     return response

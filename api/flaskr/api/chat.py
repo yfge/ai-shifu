@@ -11,8 +11,8 @@ from flask import Flask,g,request
 from . livedata import check
 from .. service import check_risk as check_risk_service
 import traceback
-from .zhipuchat import get_chat_response as zhipuchat
-from .minimaxChat import miniMaxChat
+from .llm.zhipuchat import get_chat_response as zhipuchat
+from .llm.minimaxChat import miniMaxChat
 
 
 

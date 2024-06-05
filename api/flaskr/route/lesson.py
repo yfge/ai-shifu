@@ -16,6 +16,7 @@ def register_lesson_handler(app:Flask,path_prefix:str)->Flask:
         table_id = request.args.get('table_id')
         title = request.args.get('title')
         index = request.args.get('index')
+        view_id = request.args.get('view_id')
         lesson_type = request.args.get('lesson_type',LESSON_TYPE_NORMAL)
         if not doc_id:
             raise_param_error("doc_id is not found")
@@ -26,7 +27,7 @@ def register_lesson_handler(app:Flask,path_prefix:str)->Flask:
         if not index:
             raise_param_error("index is not found")
         
-        return make_common_response(update_lesson_info(app,doc_id,table_id,title,index,lesson_type))
+        return make_common_response(update_lesson_info(app,doc_id,table_id,view_id,title,index,lesson_type))
     @app.route(path_prefix+'/get_lesson_tree', methods=['GET'])
     def get_lesson_tree():
         course_id = request.args.get('course_id')

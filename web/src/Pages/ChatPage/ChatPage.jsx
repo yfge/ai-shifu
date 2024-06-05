@@ -21,6 +21,7 @@ const ChatPage = () => {
   };
   const onClickMenuItem = (lessonInfo) => {
     if(lessonInfo && chatComponents.current){
+      console.log('onClickMenuItem',lessonInfo)
       chatComponents.current.switchLesson(lessonInfo)
     }
   };

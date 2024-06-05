@@ -41,6 +41,7 @@ def save_user_profile(app:Flask, user_id:str, profile_key:str, profile_value:str
 
 def save_user_profiles(app:Flask,user_id:str, profiles:dict):
     with app.app_context():
+        app.logger.info("select user profiles:{}".format(profiles))
         for key, value in profiles.items():
             user_profile = UserProfile.query.filter_by(user_id=user_id, profile_key=key).first()
             if user_profile:

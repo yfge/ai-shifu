@@ -3,9 +3,9 @@ import requests
 from flask import Flask 
 import json
 
-APP_ID = "39320262"
-APP_KEY = "TQWXOHq4WwrGEX8W7h69hjRs"
-SECRECT_KEY = "dnsP9oxdG51U3Gxq3dmDQyMTKY0KDwti"
+APP_ID = "78406161"
+APP_KEY = "hjNn1BkZ29SzsC7XRxN6Te1w"
+SECRECT_KEY = "R2Sl0w5KX4uSuGJOxPyMOvwkh1pZnXrX"
 
 
 def get_access_token():

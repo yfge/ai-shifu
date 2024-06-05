@@ -83,7 +83,7 @@ DB_SAVE_MAP = {
     '解析用户输入内容':'script_ui_profile',
     '媒体URL':'script_media_url',
     '输入框提示': 'script_ui_content',
-    '按钮组配置': 'script_ui_content',
+    '按钮组配置': 'script_other_conf',
     '后续交互':'script_ui_type',
     '按钮标题': 'script_ui_content'
 
@@ -96,7 +96,7 @@ DB_SAVE_DICT_MAP= {
     '后续交互': UI_TYPES
 }
 
-def update_lesson_info(app:Flask,doc_id:str,table_id:str,title:str=None,index:int=None,lesson_type:int = LESSON_TYPE_NORMAL):
+def update_lesson_info(app:Flask,doc_id:str,table_id:str,view_id:str,title:str=None,index:int=None,lesson_type:int = LESSON_TYPE_NORMAL):
     with app.app_context():
         # 检查课程
         course = AICourse.query.filter_by(course_feishu_id = doc_id).first()
@@ -147,7 +147,7 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,title:str=None,index:in
         childLessons = [AILesson]
         script_index = 0
         while True:
-            resp = list_records(app,doc_id,table_id,page_token=page_token,page_size=100)
+            resp = list_records(app,doc_id,table_id,view_id=view_id,page_token=page_token,page_size=100)
             records = resp['data']['items']
             for record in records:
                 if record['fields'].get('小节',None):
