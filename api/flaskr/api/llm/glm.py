@@ -5,13 +5,23 @@ import jwt
 import time 
 import json
 URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
-API_KEY = "9b09b77367c0df57048e1fb774bfbb25.2fuft4LocUYKd234"
+API_KEY = "40c6f6bbdcd16b6458b1f6c3e72fea68.hkUiwx5S0GR9Jueu"
 
 
-# MINIMAX_URL=""
-MINIMAX_KEY="eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJHcm91cE5hbWUiOiLokZvkupHpo54iLCJVc2VyTmFtZSI6IuiRm-S6kemjniIsIkFjY291bnQiOiIiLCJTdWJqZWN0SUQiOiIxNzI5MzM5MjE0NTM5MDAyNDU0IiwiUGhvbmUiOiIxODYxMjMxMjMyNiIsIkdyb3VwSUQiOiIxNzI5MzM5MjE0NTM0ODA4MDg1IiwiUGFnZU5hbWUiOiIiLCJNYWlsIjoiIiwiQ3JlYXRlVGltZSI6IjIwMjQtMDMtMjYgMTU6Mzc6MDIiLCJpc3MiOiJtaW5pbWF4In0.NsMbB91gDqdtb8M688qn5JaFdQj3Ac2qtCboj5hQHtO7tmFnGNaHIVFM9Q3RnEO-eaSPdixWoEUcjAUO_rKEbAaW9XLD5Dnfr3eEzEgu4T2BJTHPLfxwkJMrQAoWQR2x0xKdoVG3E5ucUGafvCbmPFQeacztMeW-JzikAkA1RoJCq1SfKvfuU-BtRCDfDZ_hT6Jb3ibTrwTPAOBOTB8jUhwoWf_DcmU3_lumGarv0dqMYBOAFGGwtuogTqr_QelnmlBbPHOjozNrx4-IiKWnnK7GNdBdJRwZN2txSxAFvyb4tNAFOzfuqUIyb1rqmST5TGb7Jz0JqhUFdzB1-0NKTg"
-MINIMAX_URL="https://api.minimax.chat/v1/text/chatcompletion_v2"
+# # MINIMAX_URL=""
+# MINIMAX_KEY="eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJHcm91cE5hbWUiOiLokZvkupHpo54iLCJVc2VyTmFtZSI6IuiRm-S6kemjniIsIkFjY291bnQiOiIiLCJTdWJqZWN0SUQiOiIxNzI5MzM5MjE0NTM5MDAyNDU0IiwiUGhvbmUiOiIxODYxMjMxMjMyNiIsIkdyb3VwSUQiOiIxNzI5MzM5MjE0NTM0ODA4MDg1IiwiUGFnZU5hbWUiOiIiLCJNYWlsIjoiIiwiQ3JlYXRlVGltZSI6IjIwMjQtMDMtMjYgMTU6Mzc6MDIiLCJpc3MiOiJtaW5pbWF4In0.NsMbB91gDqdtb8M688qn5JaFdQj3Ac2qtCboj5hQHtO7tmFnGNaHIVFM9Q3RnEO-eaSPdixWoEUcjAUO_rKEbAaW9XLD5Dnfr3eEzEgu4T2BJTHPLfxwkJMrQAoWQR2x0xKdoVG3E5ucUGafvCbmPFQeacztMeW-JzikAkA1RoJCq1SfKvfuU-BtRCDfDZ_hT6Jb3ibTrwTPAOBOTB8jUhwoWf_DcmU3_lumGarv0dqMYBOAFGGwtuogTqr_QelnmlBbPHOjozNrx4-IiKWnnK7GNdBdJRwZN2txSxAFvyb4tNAFOzfuqUIyb1rqmST5TGb7Jz0JqhUFdzB1-0NKTg"
+# MINIMAX_URL="https://api.minimax.chat/v1/text/chatcompletion_v2"
 
+
+URLS = {
+    "glm-4-0520":"https://open.bigmodel.cn/api/paas/v4/chat/completions",
+    "glm-4":"https://open.bigmodel.cn/api/paas/v4/chat/completions",
+    "glm-4-air":"https://open.bigmodel.cn/api/paas/v4/chat/completions",
+    "glm-4-airx":"https://open.bigmodel.cn/api/paas/v4/chat/completions",
+    "glm-4-flash":"https://open.bigmodel.cn/api/paas/v4/chat/completions",
+    "glm-4v":"https://open.bigmodel.cn/api/paas/v4/chat/completions",
+    "glm-3-turbo":"https://open.bigmodel.cn/api/paas/v4/chat/completions"
+}
 class ChatResponse:
     def __init__(self, id,created,model,choices,usage=None,object=None):
         self.id:str = id
@@ -74,19 +84,24 @@ def get_chat_response(app:Flask, msg:str)->Generator[ChatResponse,None,None]:
         yield res
 
 
+def invoke_glm(app:Flask,model,message,system=None,**args)->Generator[ChatResponse,None,None]:
 
 
-def invoke_glm(app:Flask,**args)->Generator[ChatResponse,None,None]:
-    # token = get_token(app)
+    messages = []
+
+    if system:
+        message.append({"content":system,"role":"system"})
+    messages.append({"content":message,"role":"user"})
     data = {
-        "model":"abab6-chat",
-        "stream": True,
+        "model": model,
+        "messages": messages,
+        "stream": True
     }
+
     data = {**data,**args}
-    headers = {"Authorization": "Bearer "+MINIMAX_KEY}
-    response = requests.post(MINIMAX_URL, json=data, headers=headers)
-
-
+    
+    headers = {"Authorization": "Bearer "+API_KEY}
+    response = requests.post(URLS[model], json=data, headers=headers)
     app.logger.info('request data: {}'.format(json.dumps(data)))
     for res in response.iter_lines():
         res = res.decode('utf-8')
@@ -100,4 +115,6 @@ def invoke_glm(app:Flask,**args)->Generator[ChatResponse,None,None]:
             parsed_data = json.loads(json_data)
             yield ChatResponse(**parsed_data)
 
- 
+
+def get_zhipu_models(app:Flask)->list[str]:
+    return list(URLS.keys())

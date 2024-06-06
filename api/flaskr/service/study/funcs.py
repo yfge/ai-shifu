@@ -22,6 +22,7 @@ from .models import *
 import time 
 
 from ...api.langfuse import langfuse_client as langfuse
+from ...api.llm import invoke_llm
 
 class AILessonAttendDTO:
     def __init__(self,lesson_no:str,lesson_name:str,lesson_id:str,status,children=None) -> None:
@@ -253,13 +254,11 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
 
                     generation = span.generation( model="gpt-3.5-turbo-0125",input=[{"role": "user", "content": prompt}])
                      
-                    resp = client.chat.completions.create(
-                        model="gpt-3.5-turbo-0125",
+                    resp = invoke_llm(app,
+                        model="glm-3-turbo",
                         stream=True,
                         temperature=0.1,
-                        messages=[
-                            {"role": "user", "content": prompt}
-                        ])
+                        message=prompt)
                     response_text = ""
                     check_success = False
                     stream = False
@@ -273,15 +272,13 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                                     for text in response_text:
                                         yield make_script_dto("text",text,script_info.script_id)
                                         time.sleep(0.1)
-                        current_content = i.choices[0].delta.content
+                        current_content = i.result
                         if isinstance(current_content ,str):
                             response_text += current_content
                             if stream:
                                 yield make_script_dto("text", current_content,script_info.script_id)
                     app.logger.info('response_text:{}'.format(response_text))
                     generation.end(output=response_text)
-
-
                     if check_success:
                         app.logger.info('check success')
                         values = response_text.replace(check_flag,"")
@@ -299,7 +296,6 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         log_script.script_role = ROLE_TEACHER
                         db.session.add(log_script)
                         span.end(output=response_text)
-
                         trace_args ["output"] = trace_args["output"]+"\r\n"+response_text
                         trace.update(**trace_args)
                         break
@@ -358,7 +354,6 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     msg =  'data: '+json.dumps(data,default=fmt)+'\n\n'
                     app.logger.info(msg)
 
-
                     yield msg
                     
                 elif script_info.script_type == SCRIPT_TYPE_PORMPT:
@@ -370,16 +365,14 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     generation = span.generation( model="gpt-3.5-turbo-0125",input=[
                             {"role": "user", "content": prompt}
                         ])
-                    resp = client.chat.completions.create(
-                        model="gpt-3.5-turbo-0125",
+                    resp = invoke_llm(app,
+                        model="glm-3-turbo",
                         stream=True,
-                        temperature=0.5,
-                        messages=[
-                            {"role": "user", "content": prompt}
-                        ])
+                        temperature=0.1,
+                        message=prompt)
                     response_text = ""
                     for chunk in resp:
-                        current_content = chunk.choices[0].delta.content
+                        current_content = chunk.result
                         if isinstance(current_content ,str):
                             response_text += current_content
                             yield make_script_dto("text", current_content,script_info.script_id)

@@ -1,11 +1,20 @@
 import requests
+
+
+
+# 百度千帆调用
+# 目前只用流式
+
+
+
+import requests
 # from ..dao import redis_client
 from flask import Flask 
 import json
 
-APP_ID = "78406161"
-APP_KEY = "hjNn1BkZ29SzsC7XRxN6Te1w"
-SECRECT_KEY = "R2Sl0w5KX4uSuGJOxPyMOvwkh1pZnXrX"
+APP_ID = "39320262"
+APP_KEY = "TQWXOHq4WwrGEX8W7h69hjRs"
+SECRECT_KEY = "dnsP9oxdG51U3Gxq3dmDQyMTKY0KDwti"
 
 
 def get_access_token():

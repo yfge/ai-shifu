@@ -11,20 +11,15 @@ from flask import Flask,g,request
 from . livedata import check
 from .. service import check_risk as check_risk_service
 import traceback
-from .llm.zhipuchat import get_chat_response as zhipuchat
+# from .llm.glm import get_chat_response as zhipuchat
 from .llm.minimaxChat import miniMaxChat
 
 
 
 
 client = openai.Client(api_key="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",base_url="https://openai-api.kattgatt.com/v1")
-# client = AzureOpenAI(api_key="8d352f1c7489428faaf28c580d706578",
-#                      api_version="2024-02-01",
-#                      azure_endpoint="https://function-gpt4.openai.azure.com/")
 def ChatFunc(app :Flask,text):
     return ChatFunSSE(app, text)
-
-
 def get_current_time(app):
     # 返回当前系统时间，格式为：2021年3月1日 12:00，用到的函数为time.strftime("%Y年%m月%d日 %H:%M", time.localtime())
     # 得到星期几
