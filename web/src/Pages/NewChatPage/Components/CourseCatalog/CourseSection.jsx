@@ -3,7 +3,7 @@ import styles from './CourseSection.module.scss';
 import { SECTION_STATUS } from 'constants/courseContants.js';
 import style from 'react-syntax-highlighter/dist/esm/styles/hljs/a11y-dark';
 
-export const CourseSection = ({ status = SECTION_STATUS.notStart, selected }) => {
+export const CourseSection = ({ status = SECTION_STATUS.learning, selected }) => {
   const genIconClassName = () => {
     switch (status) {
       case SECTION_STATUS.notStart:
@@ -25,8 +25,10 @@ export const CourseSection = ({ status = SECTION_STATUS.notStart, selected }) =>
           (status === SECTION_STATUS.notStart || status === SECTION_STATUS.unavailable) 
           && <div className={styles.smallIcon}></div>
         }
-        { status === SECTION_STATUS.learning && <img src={require('@Assets/newchat/light/icon16-learning.png')} alt="" /> }
-        { status === SECTION_STATUS.completed && <img src={require('@Assets/newchat/light/icon16-learn-completed.png')} alt="" /> }
+        { status === SECTION_STATUS.learning 
+          && <img className={styles.bigIcon} src={require('@Assets/newchat/light/icon16-learning.png')} alt="" /> }
+        { status === SECTION_STATUS.completed 
+          && <img className={styles.bigIcon} src={require('@Assets/newchat/light/icon16-learn-completed.png')} alt="" /> }
       </div>
       <div className={styles.bottomLine}></div>
     </div>

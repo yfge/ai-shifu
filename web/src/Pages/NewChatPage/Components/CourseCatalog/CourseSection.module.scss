@@ -30,7 +30,7 @@
     .topLine {
       width: 1px;
       background-color: var(--color-9);
-      height: 12px;
+      height: 8px;
     }
 
     .icon {
@@ -42,6 +42,11 @@
         height: 4px;
         border-radius: 50%;
         background: var(--color-9);
+      }
+
+      .bigIcon {
+        width: 16px;
+        height: 16px;
       }
     }
 
