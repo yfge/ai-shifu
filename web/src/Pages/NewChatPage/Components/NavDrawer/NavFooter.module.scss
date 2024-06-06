@@ -1,8 +1,24 @@
 .navFooter {
-  padding: 10px 30px 30px 30px;
+  padding: 25px 30px;
   display: flex;
   flex-flow: row nowrap;
   justify-content: space-between;
+  background-color: var(--color-5-1);
+
+  &.collapse {
+    padding-left: 0;
+    padding-right: 0;
+    width: 56px;
+    flex-flow: column nowrap;
+
+    .settingBtn {
+      margin-top: 20px;
+      .btnText {
+        display: none;
+      }
+    }
+  }
+
 
   .settingBtn {
     display: flex;

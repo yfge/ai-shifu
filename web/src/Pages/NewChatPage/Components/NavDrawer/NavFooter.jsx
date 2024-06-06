@@ -9,7 +9,7 @@ export const NavFooter = ({
   onSettingsClick = () => {},
 }) => {
   const iconStyle = { fontSize: '16px' };
-  return (<div className={styles.navFooter}>
+  return (<div className={classNames(styles.navFooter, isCollapse ? styles.collapse : '') }>
     <div className={styles.settingBtn} onClick={onFilingClick} >
       <ApartmentOutlined style={iconStyle} />
       <div className={styles.btnText}>备案</div>

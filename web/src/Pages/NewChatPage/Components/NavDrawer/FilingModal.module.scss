@@ -1,0 +1,18 @@
+.filingModal {
+  font-size: var(--font-size-5-1);
+  padding: 10px;
+  line-height: 1.6em;
+  
+
+  :global(.ant-modal-content) {
+    padding: 0;
+  }
+
+  .btnGroup {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
