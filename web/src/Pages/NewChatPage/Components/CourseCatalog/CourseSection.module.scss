@@ -1,0 +1,60 @@
+.courseSection {
+  &:first-child {
+    .iconWrapper {
+      .topLine {
+        // background-color: transparent;
+      }
+    }
+  }
+
+  display: flex;
+  flex-flow: row nowrap;
+
+  .iconWrapper {
+    width: 16px;
+    display: flex;
+    flex-flow: column nowrap;
+    align-items: center;
+    flex: 0 0 auto;
+
+    &.small {
+      .icon {
+        width: 4px;
+      }
+
+      .topLine {
+        height: 14px;
+      }
+    }
+
+    .topLine {
+      width: 1px;
+      background-color: var(--color-9);
+      height: 12px;
+    }
+
+    .icon {
+      padding: 5px 0;
+      width: 100%;
+
+      .smallIcon {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: var(--color-9);
+      }
+    }
+
+    .bottomLine {
+      flex: 1 1 auto;
+      width: 1px;
+      background-color: var(--color-9);
+    }
+  }
+
+  .textArea {
+    margin-left: 5px;
+    padding: 10px 15px;
+    border-radius: 10px;
+  }
+}

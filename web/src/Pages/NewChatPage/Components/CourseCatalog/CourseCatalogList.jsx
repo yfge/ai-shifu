@@ -2,7 +2,7 @@
 import CourseCatalog from "./CourseCatalog.jsx";
 import styles from './CourseCatalogList.module.scss';
 
-export const CourseCatalogList = ({ catalogs = [{ id: 1, chapterList: []}] }) => {
+export const CourseCatalogList = ({ catalogs = [{ id: 1 }] }) => {
   return (<div className={styles.courseCatalogList}>
     <div className={styles.titleRow}>
       <div className={styles.titleArea}>
@@ -13,7 +13,7 @@ export const CourseCatalogList = ({ catalogs = [{ id: 1, chapterList: []}] }) =>
     </div>
     <div className={styles.listRow}>
       {catalogs.map((catalog) => {
-        return <CourseCatalog key={catalog.id} chapterList={catalog.chapterList} />
+        return <CourseCatalog key={catalog.id} />
       })}
     </div>
 
