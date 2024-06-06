@@ -28,7 +28,7 @@ const NewChatPage = (props) => {
 
   return (
     <div className={classNames(styles.newChatPage)}>
-      <AppContext.Provider value={{frameLayout, isLogin: false, userInfo: null, theme: '' }}>
+      <AppContext.Provider value={{frameLayout, isLogin: true, userInfo: null, theme: ''}}>
         <NavDrawer />
         <ChatUi />
       </AppContext.Provider>

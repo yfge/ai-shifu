@@ -10,7 +10,7 @@ import NavFooter from './NavFooter.jsx';
 import FillingModal from './FilingModal.jsx';
 import ThemeWindow from './ThemeWindow.jsx';
 import SettingWindow from './SettingWindow.jsx';
-
+import CourseCatalogList from '../CourseCatalog/CourseCatalogList.jsx';
 import styles from './NavDrawer.module.scss';
 
 import {
@@ -26,6 +26,14 @@ import {
  */
 export const NAV_SHOW_TYPE_NORMAL = 0;
 export const NAV_SHOW_TYPE_DRAWER = 1;
+
+/**
+ * 小窗口状态
+ */
+export const POPUP_WINDOW_STATE_CLOSE = 0;
+export const POPUP_WINDOW_STATE_THEME = 2;
+export const POPUP_WINDOW_STATE_SETTING = 3;
+export const POPUP_WINDOW_STATE_FILING = 1;
 
 const calcNavWidth = (frameLayout) => {
   if (frameLayout === FRAME_LAYOUT_MOBILE) {
@@ -43,9 +51,9 @@ const calcNavWidth = (frameLayout) => {
 const COLLAPSE_WIDTH = '60px';
 
 const NavDrawer = ({ showType = NAV_SHOW_TYPE_NORMAL }) => {
-  const { frameLayout } = useContext(AppContext);
+  const { frameLayout, isLogin } = useContext(AppContext);
   const [isCollapse, setIsCollapse] = useState(false);
-  const [isFillingModalOpen, setIsFillingModalOpen] = useState(false);
+  const [popupModalState, setPopupModalState] = useState(POPUP_WINDOW_STATE_CLOSE);
 
   const onHeaderCloseHandler = () => {
     console.log('onHeaderCloseHandler');
@@ -55,9 +63,8 @@ const NavDrawer = ({ showType = NAV_SHOW_TYPE_NORMAL }) => {
     setIsCollapse(isCollapse);
   }
 
-  const onFilingModalClose = () => {
-    console.log('onFilingModalClose');
-    setIsFillingModalOpen(false);  
+  const onPopupModalClose = () => {
+    setPopupModalState(POPUP_WINDOW_STATE_CLOSE);
   }
 
   const popupWindowStyle = {
@@ -73,17 +80,29 @@ const NavDrawer = ({ showType = NAV_SHOW_TYPE_NORMAL }) => {
           isCollapse={isCollapse}
         />
         <div style={{flex: '1 1 auto'}}>
-          { !isCollapse && <NavBody /> }
+          { !isCollapse && (isLogin ? <CourseCatalogList /> : <NavBody />) }
         </div>
         <NavFooter
           isCollapse={isCollapse}
-          onFilingClick={() => {
-            setIsFillingModalOpen(true)
-          }}
+          onFilingClick={() => { setPopupModalState(POPUP_WINDOW_STATE_FILING) }}
+          onThemeClick={() => { setPopupModalState(POPUP_WINDOW_STATE_THEME) }}
+          onSettingsClick={() => { setPopupModalState(POPUP_WINDOW_STATE_SETTING) }}
         />
-        <FillingModal open={false} style={popupWindowStyle} />
-        <ThemeWindow open={false} style={popupWindowStyle} />
-        <SettingWindow open={true} style={popupWindowStyle} />
+        <FillingModal
+          open={popupModalState === POPUP_WINDOW_STATE_FILING}
+          style={popupWindowStyle}
+          onClose={onPopupModalClose}
+        />
+        <ThemeWindow 
+          open={popupModalState === POPUP_WINDOW_STATE_THEME}
+          style={popupWindowStyle}
+          onClose={onPopupModalClose}
+        />
+        <SettingWindow
+          open={popupModalState === POPUP_WINDOW_STATE_SETTING}
+          style={popupWindowStyle}
+          onClose={onPopupModalClose}
+        />
       </div>
     </div>
   );

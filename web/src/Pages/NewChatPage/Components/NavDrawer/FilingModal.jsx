@@ -1,4 +1,5 @@
 import PopupModal from '@Components/PopupModal';
+import { Button } from 'antd';
 
 import styles from './FilingModal.module.scss';
 
@@ -11,11 +12,11 @@ export const FillingModal = ({ open, onClose, style }) => {
         <div>京ICP备2024060606</div>
         <div>京公安网备gaxxxxxxxxxx</div>
         <div className={styles.btnGroup}>
-          <div>提交反馈</div>
+          <Button type="link" className={styles.actionBtn}>提交反馈</Button>
           <div>|</div>
-          <div>服务协议</div>
+          <Button type="link" className={styles.actionBtn}>服务协议</Button>
           <div>|</div>
-          <div>隐私政策</div>
+          <Button type="link" className={styles.actionBtn}>隐私政策</Button>
         </div>
       </div>
     </PopupModal>
