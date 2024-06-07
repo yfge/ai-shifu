@@ -28,7 +28,7 @@ export const CourseSection = ({ status = SECTION_STATUS.learning, selected }) =>
         { status === SECTION_STATUS.learning 
           && <img className={styles.bigIcon} src={require('@Assets/newchat/light/icon16-learning.png')} alt="" /> }
         { status === SECTION_STATUS.completed 
-          && <img className={styles.bigIcon} src={require('@Assets/newchat/light/icon16-learn-completed.png')} alt="" /> }
+          && <img className={styles.bigIcon} src={require('@Assets/newchat/light/icon16-learning-completed.png')} alt="" /> }
       </div>
       <div className={styles.bottomLine}></div>
     </div>
