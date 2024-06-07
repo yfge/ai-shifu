@@ -66,7 +66,7 @@ CREATE TABLE `user_info` (
   KEY `idx_username_user_info` (`username`),
   KEY `idx_email_user_info` (`email`),
   KEY `idx_mobile_user_info` (`mobile`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -113,7 +113,7 @@ create table user_profile(
   `status` int NOT NULL DEFAULT '0' COMMENT '0 for deleted, 1 for active',
   PRIMARY KEY (`id`),
   KEY `idx_user_id_user_profile` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4; 
 
 create table ai_course(
 `id` bigint NOT NULL AUTO_INCREMENT COMMENT 'Unique ID',

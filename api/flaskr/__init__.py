@@ -52,7 +52,7 @@ def create_app(test_config=None):
     
     from . import route
 
-    prefix = app.config['PATH_PREFIX']
+    prefix = app.config.get('PATH_PREFIX','')
     # chat with the bot using sse
     app = route.register_common_handler(app)
     app = route.register_user_handler(app,prefix+'/user')
