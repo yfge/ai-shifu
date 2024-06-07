@@ -1,3 +1,5 @@
+import ChatInput from "./ChatInput"
+
 /**
  * 聊天区的整体画布
  */
@@ -8,7 +10,9 @@ export const ChatUi = (props) => {
       background: '#F8FBFC',
       flex: '1 1 auto',
     }
-  }></div>);
+  }>
+    <ChatInput/>
+  </div>);
 };
 
 export default ChatUi;
