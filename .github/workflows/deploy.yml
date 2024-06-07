@@ -1,4 +1,4 @@
-name: Build and Sync to Alibaba Cloud Host
+name: deploy sifu api test
 
 on:
   push:
