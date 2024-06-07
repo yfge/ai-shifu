@@ -207,10 +207,11 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,view_id:str,title:str=N
                 scripDb['script_check_prompt']=''
                 scripDb['script_check_flag']=''
                 scripDb['script_index']=script_index
-                scripDb['script_ui_type']=UI_TYPE_BUTTON
+                scripDb['script_ui_type']=UI_TYPE_CONTINUED
                 scripDb['script_ui_content']='继续'
                 scripDb['script_type']=SCRIPT_TYPE_FIX
                 scripDb['script_content_type']=CONTENT_TYPE_TEXT
+                scripDb['script_model']='ERNIE-Speed-8K'
                 for field  in record['fields']:
                     val_obj = record['fields'][field]
                     db_field = DB_SAVE_MAP.get(field.strip())

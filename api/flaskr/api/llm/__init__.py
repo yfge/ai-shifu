@@ -33,7 +33,9 @@ class LLMStreamResponse:
 
 
 def invoke_llm(app:Flask,model,message,system=None,**kwargs)->Generator[LLMStreamResponse,None,None]:
+    app.logger.info(f"invoke_llm {model} {message}")
     kwargs.update({"stream":True})  
+    app.logger.info(f"invoke_llm {model} {ERNIE_MODELS}")
     if model in OPENAI_MODELS:
         messages = []
         if system:
@@ -47,8 +49,9 @@ def invoke_llm(app:Flask,model,message,system=None,**kwargs)->Generator[LLMStrea
                                     res.choices[0].finish_reason,None)
     elif model in ERNIE_MODELS:
         if system:
-            kwargs.update({"system":system})  
-        response = get_chat_response(app,model,msg = message,**kwargs)
+            kwargs.update({"system":system}) 
+        app.logger.info(f"invoke_llm {kwargs}") 
+        response = get_ernie_response(app,model, message,**kwargs)
         for res in response:
             yield LLMStreamResponse(res.id,res.is_end,res.is_truncated,res.result,res.finish_reason,res.usage.__dict__)
     elif model in GLM_MODELS:

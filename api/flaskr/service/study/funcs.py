@@ -170,8 +170,7 @@ def generation_attend(app:Flask,attend:AICourseLessonAttendDTO,script_info:AILes
 
 # 得到一个课程的System Prompt
 
-def get_lesson_system(app:Flask,lesson_id:str)->str:
-    with app.app_context:
+def get_lesson_system(lesson_id:str)->str:
         # 缓存逻辑 
         lesson_ids = [lesson_id]
         lesson = AILesson.query.filter(AILesson.lesson_id == lesson_id).first()
@@ -252,10 +251,10 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
 
                     span = trace.span(name="user_input",input=input)
 
-                    generation = span.generation( model="gpt-3.5-turbo-0125",input=[{"role": "user", "content": prompt}])
+                    generation = span.generation( model=script_info.script_model,input=[{"role": "user", "content": prompt}])
                      
                     resp = invoke_llm(app,
-                        model="glm-3-turbo",
+                        model=script_info.script_model,
                         stream=True,
                         temperature=0.1,
                         message=prompt)
@@ -358,16 +357,27 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     
                 elif script_info.script_type == SCRIPT_TYPE_PORMPT:
                     span = trace.span(name="prompt_sript")
+
+
+                    system = get_lesson_system(script_info.lesson_id)
+
+
+                    system_prompt = None if system == None else get_fmt_prompt(app,user_id,system)
                     
                     prompt = get_fmt_prompt(app,user_id,script_info.script_prompt,profile_array_str=script_info.script_profile)
 
 
-                    generation = span.generation( model="gpt-3.5-turbo-0125",input=[
-                            {"role": "user", "content": prompt}
-                        ])
+                    generation_input = []
+                    if system_prompt:
+                        generation_input.append({"role": "system", "content": system_prompt})
+                    generation_input.append({"role": "user", "content": prompt})
+                    
+
+                    generation = span.generation( model=script_info.script_model,input=generation_input)
                     resp = invoke_llm(app,
-                        model="glm-3-turbo",
+                        model=script_info.script_model,
                         stream=True,
+                        system=system_prompt,
                         temperature=0.1,
                         message=prompt)
                     response_text = ""
@@ -388,6 +398,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     db.session.add(log_script)
                     yield make_script_dto("text_end","",None)
                 if script_info.script_ui_type == UI_TYPE_CONTINUED:
+                    next = True
                     continue
                 elif script_info.script_ui_type == UI_TYPE_INPUT and not check_success:
                     yield  make_script_dto("input",script_info.script_ui_content,script_info.script_id) 

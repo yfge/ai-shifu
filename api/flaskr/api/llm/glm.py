@@ -86,6 +86,7 @@ def get_chat_response(app:Flask, msg:str)->Generator[ChatResponse,None,None]:
 
 def invoke_glm(app:Flask,model,message,system=None,**args)->Generator[ChatResponse,None,None]:
 
+    app.logger.info("input data: model:{},message:{},system:{}".format(model,message,system))
 
     messages = []
 

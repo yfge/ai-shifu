@@ -15,7 +15,7 @@ class ErnieUsage :
         self.total_tokens=total_tokens
 
 class ErnieStreamResponse:
-    def __init__(self,id,object,created,sentence_id,is_end,is_truncated,result,need_clear_history,finish_reason,usage):
+    def __init__(self,id,object,created,sentence_id,is_end,is_truncated,result,need_clear_history,finish_reason=None,usage=None):
         self.id = id
         self.object = object
         self.created = created
@@ -61,12 +61,15 @@ URLS = {
     "ERNIE-3.5-8K":"https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions",
     "ERNIE-3.5-8K-0205":"https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-3.5-8k-0205",
     "ERNIE-3.5-8K-Preview":"https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-3.5-8k-preview",
-    "ERNIE-3.5-128K":"https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-3.5-128k"
+    "ERNIE-3.5-128K":"https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-3.5-128k",
+    "ERNIE-Speed-8K":"https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie_speed",
+    "ERNIE-Speed-128K":"https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-speed-128k",
+
+
 }
 
 
-def get_chat_response(app,model,msg,**args)->Generator[ErnieStreamResponse,None,None]:
-    # url = "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/eb-instant"
+def get_ernie_response(app,model,msg,**args)->Generator[ErnieStreamResponse,None,None]:
     url = URLS[model]
     params = {
         "access_token": get_access_token()
@@ -78,7 +81,7 @@ def get_chat_response(app,model,msg,**args)->Generator[ErnieStreamResponse,None,
     response = requests.post(url, params=params, json = data)
     for res in response.iter_lines():
         res = res.decode('utf-8')
-        app.logger.info('zhipu response data: {}'.format(res))
+        app.logger.info('ernie response data: {}'.format(res))
         if res.startswith('data:'):
             # 提取 'data:' 后面的内容
             json_data = res[5:].strip()
