@@ -10,6 +10,7 @@ import {
 } from "@ant-design/icons";
 import SettingPage from "../Pages/SettingPage/SettingPage";
 import BeforeEach from "./BeforeEach";
+import NewChatPage from "../Pages/NewChatPage/NewChatPage.jsx";
 
 /**
  * @description 用于存放导航栏的需要权限的路由，同时 系统的导航菜单也是基于此路由表进行渲染的
@@ -97,6 +98,10 @@ const routes = [
     path: "/register",
     element: <RegisterPage></RegisterPage>,
   },
+  {
+    path: '/newchat',
+    element: <NewChatPage></NewChatPage>
+  }
 ];
 export { authRoutes };
 

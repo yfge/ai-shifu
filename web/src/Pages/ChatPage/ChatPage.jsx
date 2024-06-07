@@ -6,6 +6,7 @@ import ChatComponents from "./ChatComponents";
 import { GetChatDetail } from "../../Api/chat";
 import { useRef } from "react";
 import "./ChatPage.css";
+
 const ChatPage = () => {
   UploadEvent("ChatPage", { page: "chatPage" });
   const chatComponents = useRef(null);
