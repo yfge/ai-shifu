@@ -18,12 +18,6 @@ def register_study_handler(app:Flask,path_prefix:str)->Flask:
         user_id = request.user.user_id
         return Response(run_script(app,course_id=course_id,lesson_id=lesson_id,user_id=user_id,input=input,input_type=input_type), mimetype="text/event-stream")
    
-    @app.route(path_prefix+'/next',methods=['POST'])
-    def next_script():
-        pass
-    @app.route(path_prefix+'/current',methods=['POST'])
-    def current_script():
-        pass
 
     @app.route(path_prefix+'/get_lesson_tree', methods=['GET'])
     def get_lesson_tree_study():

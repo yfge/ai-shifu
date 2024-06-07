@@ -3,7 +3,7 @@ import json
 
 from flaskr.service.common.models import raise_param_error
 from flaskr.service.lesson.const import LESSON_TYPE_NORMAL
-from .common import make_common_response
+from .common import bypass_token_validation, make_common_response
 from ..service.lesson import update_lesson_info,get_lessons
 
 from ..api.feishu import get_document_info,list_records
@@ -11,6 +11,7 @@ from ..api.feishu import get_document_info,list_records
 def register_lesson_handler(app:Flask,path_prefix:str)->Flask:
 
     @app.route(path_prefix+'/update_lesson', methods=['GET'])
+    @bypass_token_validation
     def update_lesson():
         doc_id = request.args.get('doc_id')
         table_id = request.args.get('table_id')
@@ -34,4 +35,5 @@ def register_lesson_handler(app:Flask,path_prefix:str)->Flask:
         if not course_id:
             raise_param_error("doc_id is not found")
         return make_common_response(get_lessons(app,None,course_id))
+    
     return app

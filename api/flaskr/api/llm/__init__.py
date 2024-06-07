@@ -5,16 +5,17 @@ from flask import Flask
 
 
 
-client = openai.Client(api_key="sk-proj-TsOFXPGAkp6GZKt1AUinT3BlbkFJiFiJO0hAu7om7TOl4RRY") 
+client = openai.Client(api_key="sk-proj-TsOFXPGAkp6GZKt1AUinT3BlbkFJiFiJO0hAu7om7TOl4RRY",base_url="https://openai-api.kattgatt.com/v1") 
 
 
-
-OPENAI_MODELS = [i.id for i in client.models.list().data]
+try:
+    OPENAI_MODELS = [i.id for i in client.models.list().data if i.id.startswith("gpt")]
+except:
+    OPENAI_MODELS = []
 ERNIE_MODELS = get_erine_models(Flask(__name__))
 GLM_MODELS = get_zhipu_models(Flask(__name__))
 
 
-print(OPENAI_MODELS)
 
 class LLMStreamaUsage:
     def __init__(self,prompt_tokens,completion_tokens,total_tokens):
@@ -63,3 +64,9 @@ def invoke_llm(app:Flask,model,message,system=None,**kwargs)->Generator[LLMStrea
                                     res.choices[0].finish_reason,None)    
     else:
         raise Exception("model not found")
+
+
+
+def get_current_models(app:Flask)->list[str]:
+    app.logger.info([i.id for i in client.models.list().data])
+    return OPENAI_MODELS+ERNIE_MODELS+GLM_MODELS

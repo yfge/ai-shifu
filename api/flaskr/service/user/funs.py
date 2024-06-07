@@ -54,6 +54,9 @@ def create_new_user(app:Flask, username: str, name: str, raw_password: str, emai
         token = generate_token(app,user_id=user_id)
         return UserToken(UserInfo(user_id=user_id, username=username, name=name, email=email, mobile=mobile,model=new_user.default_model),token=token)
 
+def generate_temp_user(app:Flask,temp_id:str)->UserToken:
+    with app.app_context():
+        pass
 
 
 def generate_token(app:Flask, user_id: str) -> str:
@@ -145,6 +148,7 @@ def require_reset_pwd_code(app:Flask,login:str):
             raise USER_NOT_FOUND
         
 def reset_pwd(app:Flask,login:str,code:int,newpwd:str):
+
     with app.app_context():
         user = User.query.filter((User.username == login) | (User.email == login) | (User.mobile == login)).first()
         if user:
