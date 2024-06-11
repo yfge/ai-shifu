@@ -19,11 +19,13 @@ SENDCLOUD_KEY = "8dc379ed9a133f1edb24cc343d8fda54"
 CORS_LOGGING = True
 
 
+
+
 REDIS_HOST = "agiclass.redis.rds.aliyuncs.com"
 REDIS_PORT = 6379
 REDIS_DB = 0
-REDIS_PASSWORD = "sifu_test NLxhMN6bdxGhvqLf"
-# REDIS_USER = ""
+REDIS_PASSWORD = "NLxhMN6bdxGhvqLf"
+REDIS_USER = "sifu_test"
 
 JWT_KEY = "Pa88word"
 TOKEN_EXPIRE_TIME = 3600*24*7
