@@ -1,5 +1,7 @@
 import json
 from flask import Flask, request, jsonify, make_response
+
+from flaskr.service.common.models import raise_param_error
 from ..service.user import *
 from functools import wraps
 from .common import make_common_response,bypass_token_validation,by_pass_login_func
@@ -82,5 +84,21 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
         code = request.get_json().get('code', None)
         new_password = request.get_json().get('new_password', None)
         return make_common_response(reset_pwd(app,username,code,new_password))
+    
+    @app.route(path_prefix+'/require_tmp',methods=['POST'])
+    @bypass_token_validation
+    def require_tmp():
+        tmp_id = request.get_json().get('temp_id',None)
+        source = request.get_json().get('source','web')
+        if not tmp_id:
+            raise_param_error('temp_id')
+        user_token = generate_temp_user(app,tmp_id,source)
+        resp = make_response(make_common_response(user_token))
+        resp.headers.add('Set-Cookie', 'token={};'.format(user_token.token))
+        return resp
+    
     return app
+
+
+    
 

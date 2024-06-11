@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from ...dao import db,redis_client as redis
 from ...api.sendcloud import send_email
 import uuid
-from .models import User
+from .models import User, UserConversion
 import hashlib
 from ..common import USER_NOT_FOUND,USER_PASSWORD_ERROR,USER_ALREADY_EXISTS,USER_TOKEN_EXPIRED,USER_NOT_LOGIN,OLD_PASSWORD_ERROR,RESET_PWD_CODE_EXPIRED,RESET_PWD_CODE_ERROR
 import jwt
@@ -54,9 +54,24 @@ def create_new_user(app:Flask, username: str, name: str, raw_password: str, emai
         token = generate_token(app,user_id=user_id)
         return UserToken(UserInfo(user_id=user_id, username=username, name=name, email=email, mobile=mobile,model=new_user.default_model),token=token)
 
-def generate_temp_user(app:Flask,temp_id:str)->UserToken:
+def generate_temp_user(app:Flask,temp_id:str,user_source = 'web')->UserToken:
     with app.app_context():
-        pass
+        convert_user = UserConversion.query.filter(UserConversion.conversion_id==temp_id,UserConversion.conversion_source == user_source).first()
+        if not convert_user:
+            user_id = str(uuid.uuid4()).replace('-', '')
+            new_convert_user = UserConversion(user_id=user_id,conversion_uuid=temp_id, conversion_id=temp_id, conversion_source=user_source, conversion_status=0)
+            new_user = User(user_id=user_id)
+            db.session.add(new_convert_user)
+            db.session.add(new_user)
+            db.session.commit()
+
+            token = generate_token(app,user_id=user_id)
+            return UserToken(UserInfo(user_id=user_id, username="", name="", email="", mobile="",model=new_user.default_model),token=token)
+        else:
+            user = User.query.filter_by(user_id=convert_user.user_id).first()
+            token = generate_token(app,user_id=user.user_id)
+            return UserToken(UserInfo(user_id=user.user_id, username=user.username, name=user.name, email=user.email, mobile=user.mobile,model=user.default_model),token=token)     
+
 
 
 def generate_token(app:Flask, user_id: str) -> str:
