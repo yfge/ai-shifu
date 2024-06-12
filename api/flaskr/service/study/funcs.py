@@ -96,7 +96,6 @@ def get_profile_array(profile:str)->list:
     return re.findall(r'\[(.*?)\]', profile)
 
 def get_fmt_prompt(app:Flask,user_id:str,profile_tmplate:str,input:str=None,profile_array_str:str=None)->str:
-
     app.logger.info("raw prompt:"+profile_tmplate)
     propmpt_keys = []
     profiles = {}
@@ -111,12 +110,24 @@ def get_fmt_prompt(app:Flask,user_id:str,profile_tmplate:str,input:str=None,prof
         propmpt_keys.append('input')
     app.logger.info(propmpt_keys)
     app.logger.info(profiles)
-    
-    prompt_template = PromptTemplate(input_variables=propmpt_keys, template=profile_tmplate)
+
+    prompt_template = PromptTemplate.from_template(profile_tmplate)
+    keys = prompt_template.input_variables
+
+    fmt_keys = {}
+
+    for key in keys:
+        if key in profiles:
+            fmt_keys[key] = profiles[key]
+
+
+   
+    # app.logger.info('unused keys:{}'.format(keys))
     # prompt_keys = prompt_template.
-    prompt = prompt_template.format(**profiles)
+    prompt = prompt_template.format(**fmt_keys)
     app.logger.info('fomat input:{}'.format(prompt))
     return prompt.encode('utf-8').decode('utf-8')
+    
  
 class ScriptDTO:
     def __init__(self,script_type,script_content,script_id=None):
@@ -252,11 +263,8 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     log_script.script_content = input
                     log_script.script_role = ROLE_STUDENT 
                     db.session.add(log_script)
-
                     span = trace.span(name="user_input",input=input)
-
                     generation = span.generation( model=script_info.script_model,input=[{"role": "user", "content": prompt}])
-                     
                     resp = invoke_llm(app,
                         model=script_info.script_model,
                         stream=True,
@@ -368,8 +376,9 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
 
                     system = get_lesson_system(script_info.lesson_id)
 
+                    app.logger.info("system:"+system)
 
-                    system_prompt = None if system == None else get_fmt_prompt(app,user_id,system)
+                    system_prompt = None if system == None or system == "" else get_fmt_prompt(app,user_id,system)
                     
                     prompt = get_fmt_prompt(app,user_id,script_info.script_prompt,profile_array_str=script_info.script_profile)
 

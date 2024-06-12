@@ -87,6 +87,7 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
                     type: string
                     description: 密码
         """
+        app.logger.info("login")
         username = request.get_json().get('username', '')
         password = request.get_json().get('password', '')
         user_token = verify_user(app,username,password)

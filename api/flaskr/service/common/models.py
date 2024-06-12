@@ -32,7 +32,7 @@ ERROR_CODE = {
 }
 
 ERROR_MESSAGE = {
-    'USER_NOT_FOUND': '没有找到用户3',
+    'USER_NOT_FOUND': '没有找到用户',
     'USER_ALREADY_EXISTS': '用户已经存在',
     'USER_PASSWORD_ERROR': '用户密码错误',
     'USER_NOT_LOGIN': '用户没有登录',

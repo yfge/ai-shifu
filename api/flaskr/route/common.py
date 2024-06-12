@@ -13,7 +13,7 @@ def bypass_token_validation(func):
     by_pass_login_func.append(func.__name__)
     @wraps(func)
     def wrapper(*args, **kwargs):
-        print('bypass_token_validation')
+        # print('bypass_token_validation')
         return func(*args, **kwargs) 
     return wrapper
 
