@@ -10,7 +10,6 @@ by_pass_login_func = []
 
 # 装饰器函数，用于跳过Token校验
 def bypass_token_validation(func):
-    print('bypass_token_validation'+ func.__name__)
     by_pass_login_func.append(func.__name__)
     @wraps(func)
     def wrapper(*args, **kwargs):

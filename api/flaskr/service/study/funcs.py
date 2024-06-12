@@ -193,6 +193,10 @@ def get_lesson_system(lesson_id:str)->str:
 
 def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,input:str=None,input_type:str=None)->Generator[ScriptDTO,None,None]:
     with app.app_context():
+        course_info = AICourse.query.filter(AICourse.course_id == course_id).first()
+        if not course_info:
+            course_info = AICourse.query.first()
+            course_id = course_info.course_id
         attend = AICourseLessonAttendDTO
         if not lesson_id:
             # 检查有没有购课记录
