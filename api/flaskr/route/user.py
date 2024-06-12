@@ -21,7 +21,7 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
         mobile = request.get_json().get('mobile', '')
         user_token = create_new_user(app,username,name,password,email,mobile)
         resp = make_response(make_common_response(user_token.userInfo))
-        resp.headers.add('Set-Cookie', 'token={};'.format(user_token.token))
+        resp.headers.add('Set-Cookie', 'token={};Path=/'.format(user_token.token))
         # resp.set_cookie('token', user_token.token,path="")
         return resp 
     
@@ -32,7 +32,7 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
         password = request.get_json().get('password', '')
         user_token = verify_user(app,username,password)
         resp = make_response(make_common_response(user_token))
-        resp.headers.add('Set-Cookie', 'token={};'.format(user_token.token))
+        resp.headers.add('Set-Cookie', 'token={};Path=/'.format(user_token.token))
         return resp
     
     @app.before_request
@@ -94,7 +94,7 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
             raise_param_error('temp_id')
         user_token = generate_temp_user(app,tmp_id,source)
         resp = make_response(make_common_response(user_token))
-        resp.headers.add('Set-Cookie', 'token={};'.format(user_token.token))
+        resp.headers.add('Set-Cookie', 'token={};Path=/'.format(user_token.token))
         return resp
 
     @app.route(path_prefix+'/generate_chk_code',methods=['POST'])

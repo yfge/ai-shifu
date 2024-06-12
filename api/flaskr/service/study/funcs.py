@@ -292,6 +292,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         next = True
                         input_type = INPUT_TYPE_CONTINUE
                         span.end()
+                        db.session.commit()
                         continue
                     else:
                         log_script = generation_attend(app,attend,script_info)
@@ -301,6 +302,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         span.end(output=response_text)
                         trace_args ["output"] = trace_args["output"]+"\r\n"+response_text
                         trace.update(**trace_args)
+                        db.session.commit()
                         break
                 elif input_type == INPUT_TYPE_CONTINUE:
                     log_script = generation_attend(app,attend,script_info)
@@ -331,6 +333,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     input_type = INPUT_TYPE_CONTINUE
                     span = trace.span(name="user_select",input=input)
                     span.end()
+                    db.session.commit()
                     continue 
                 if script_info.script_type == SCRIPT_TYPE_FIX:
                     prompt = ""
@@ -546,3 +549,15 @@ def get_study_record(app:Flask,user_id:str,lesson_id:str)->list[StudyRecordDTO]:
             return None
         attend_scripts = AICourseLessonAttendScript.query.filter_by(attend_id=attend_info.attend_id).all()
         return [StudyRecordDTO(i.script_index,ROLE_VALUES[i.script_role],0,i.script_content) for i in attend_scripts]
+    
+
+
+def reset_user_study_info(app:Flask,user_id:str):
+    with app.app_context():
+        db.session.execute(text("delete from ai_course_buy_record where user_id = :user_id"),{"user_id":user_id})
+        db.session.execute(text("delete from ai_course_lesson_attend where user_id = :user_id"),{"user_id":user_id})
+        db.session.execute(text("delete from ai_course_lesson_attendscript where user_id = :user_id"),{"user_id":user_id})
+        db.session.execute(text("delete from ai_course_lesson_generation where user_id = :user_id"),{"user_id":user_id})
+        db.session.execute(text("delete from user_profile where user_id = :user_id"),{"user_id":user_id})
+        db.session.commit()
+        return True

@@ -7,7 +7,6 @@ from flask_cors import CORS
 from . import api 
 from . import dao
 
-from pyppdf import patch_pyppeteer
 import pymysql
 pymysql.install_as_MySQLdb()
 from .common import *
@@ -19,7 +18,6 @@ from .common import *
 def create_app(test_config=None):
 
     # 在程序开始时调用 patch_pyppeteer()
-    patch_pyppeteer.patch_pyppeteer()
     app = Flask(__name__, instance_relative_config=True)
 
   
@@ -59,4 +57,5 @@ def create_app(test_config=None):
     app = route.register_lesson_handler(app,prefix+'/lesson')
     app = route.register_study_handler(app,prefix+'/study')
     app = route.register_dict_handler(app,prefix+'/dict')
+    app = route.register_tools_handler(app,prefix+'/tools')
     return app
