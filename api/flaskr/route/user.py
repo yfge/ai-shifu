@@ -96,7 +96,37 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
         resp = make_response(make_common_response(user_token))
         resp.headers.add('Set-Cookie', 'token={};'.format(user_token.token))
         return resp
+
+    @app.route(path_prefix+'/generate_chk_code',methods=['POST'])
+    # @bypass_token_validation
+    def generate_chk_code():
+        mobile = request.get_json().get('mobile',None)
+        if not mobile:
+            raise_param_error('mobile')
+        return make_common_response(generation_img_chk(app,mobile))
     
+    @app.route(path_prefix+'/send_sms_code',methods=['POST'])
+    @bypass_token_validation
+    def send_sms_code_api():
+        mobile = request.get_json().get('mobile',None)
+        check_code = request.get_json().get('check_code',None)  
+        if not mobile:
+            raise_param_error('mobile')
+        if not check_code:
+            raise_param_error('check_code')
+        return make_common_response(send_sms_code(app,mobile,check_code))
+    
+    @app.route(path_prefix+'/verify_sms_code',methods=['POST'])
+    def verify_sms_code_api():
+        mobile = request.get_json().get('mobile',None)
+        sms_code = request.get_json().get('sms_code',None)
+        user_id =request.user.user_id
+        if not mobile:
+            raise_param_error('mobile')
+        if not sms_code:
+            raise_param_error('sms_code')
+        return make_common_response(verify_sms_code(app,user_id,mobile,sms_code))
+
     return app
 
 

@@ -1,5 +1,7 @@
 # SQLALCHEMY_DATABASE_URI = 'mysql://root:txy1234.@127.0.0.1:13306/ai_asistant?charset=utf8mb4'
-SQLALCHEMY_DATABASE_URI = 'mysql://root:Pa88word@127.0.0.1:13306/ai_asistant?charset=utf8mb4'
+
+SQLALCHEMY_DATABASE_URI = 'mysql://sifu_test:P14FQWzjcKNWKvZ4@rm-2ze59ehub1no8i221vo.mysql.rds.aliyuncs.com/agi-sifu-test'
+#SQLALCHEMY_DATABASE_URI = 'mysql://root:Pa88word@127.0.0.1:13306/ai_asistant?charset=utf8mb4'
 SQLALCHEMY_POOL_SIZE = 20
 SQLALCHEMY_POOL_TIMEOUT = 30
 SQLALCHEMY_POOL_RECYCLE = 3600
@@ -20,18 +22,41 @@ SENDCLOUD_KEY = "8dc379ed9a133f1edb24cc343d8fda54"
 CORS_LOGGING = True
 
 
-REDIS_HOST = "127.0.0.1"
+# REDIS_HOST = "127.0.0.1"
+# REDIS_PORT = 6379
+# REDIS_DB = 0
+# REDIS_PASSWORD = ""
+
+
+
+REDIS_HOST = "agiclass.redis.rds.aliyuncs.com"
 REDIS_PORT = 6379
 REDIS_DB = 0
-REDIS_PASSWORD = ""
+REDIS_PASSWORD = "NLxhMN6bdxGhvqLf"
+REDIS_USER = "sifu_test"
 
 JWT_KEY = "Pa88word"
 TOKEN_EXPIRE_TIME = 3600*24*7
 
+# 整体的redis key前缀
 REDIS_KEY_PRRFIX = "ai:asistant:"
+# Token的前缀
 REDIS_KEY_PRRFIX_USER = REDIS_KEY_PRRFIX + "user:"
+# 重置密码的前缀
 REDIS_KEY_PRRFIX_RESET_PWD = REDIS_KEY_PRRFIX + "reset_pwd:"
+# 重置密码的过期时间
 RESET_PWD_CODE_EXPIRE_TIME = 60*5
+# 图形验证码的前缀
+REDIS_KEY_PRRFIX_CAPTCHA = REDIS_KEY_PRRFIX + "captcha:"
+# 图形验证码的过期时间
+CAPTCHA_CODE_EXPIRE_TIME = 60*5
+# 手机验证码的前缀
+REDIS_KEY_PRRFIX_PHONE_CODE = REDIS_KEY_PRRFIX + "phone_code:"
+# 手机验证码的过期时间
+PHONE_CODE_EXPIRE_TIME = 60*5
+
+
+
 PATH_PREFIX = '/api'
 
 
@@ -45,6 +70,13 @@ MILVUS_ALIAS = "default"
 
 
 LOGGING_PATH = "./log/ai-asistant.log"
+
+# 阿里云 
+ALIBABA_CLOUD_ACCESS_KEY_ID ='LTAI5tBhhK8nBACsNzqTMj5N'
+ALIBABA_CLOUD_ACCESS_KEY_SECRET='LBePEFEo4A46vVaKzQr8A77ITgS2o8'
+ALIBABA_CLOUD_SMS_SIGN_NAME = "AGI课堂"
+ALIBABA_CLOUD_SMS_TEMPLATE_CODE = "SMS_467950042"
+
 
 
 LANGFUSE_PUBLIC_KEY='pk-lf-f6fd29f7-8bee-4834-857f-594292b277f0'

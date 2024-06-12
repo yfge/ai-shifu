@@ -482,6 +482,11 @@ def update_attend_lesson_info(app:Flask,attend_id:str)->list[AILessonAttendDTO]:
 
 def get_lesson_tree_to_study(app:Flask,user_id:str,course_id:str)->AICourseDTO:
     with app.app_context():
+
+        course_info = AICourse.query.filter(AICourse.course_id == course_id).first()
+        if not course_info:
+            course_info = AICourse.query.first()
+            course_id = course_info.course_id
           # 检查有没有购课记录
         buy_record = AICourseBuyRecord.query.filter_by(user_id=user_id, course_id=course_id).first() 
         if not buy_record:

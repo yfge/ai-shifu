@@ -30,8 +30,23 @@ REDIS_USER = "sifu_test"
 JWT_KEY = "Pa88word"
 TOKEN_EXPIRE_TIME = 3600*24*7
 
+
+# 整体的redis key前缀
 REDIS_KEY_PRRFIX = "ai:asistant:"
+# Token的前缀
 REDIS_KEY_PRRFIX_USER = REDIS_KEY_PRRFIX + "user:"
+# 重置密码的前缀
+REDIS_KEY_PRRFIX_RESET_PWD = REDIS_KEY_PRRFIX + "reset_pwd:"
+# 重置密码的过期时间
+RESET_PWD_CODE_EXPIRE_TIME = 60*5
+# 图形验证码的前缀
+REDIS_KEY_PRRFIX_CAPTCHA = REDIS_KEY_PRRFIX + "captcha:"
+# 图形验证码的过期时间
+CAPTCHA_CODE_EXPIRE_TIME = 60*5
+# 手机验证码的前缀
+REDIS_KEY_PRRFIX_PHONE_CODE = REDIS_KEY_PRRFIX + "phone_code:"
+# 手机验证码的过期时间
+PHONE_CODE_EXPIRE_TIME = 60*5
 
 
 LOGGING_PATH = "/var/log/ai-asistant.log"
@@ -39,6 +54,12 @@ LOGGING_PATH = "/var/log/ai-asistant.log"
 
 PATH_PREFIX = '/api'
 
+
+# 阿里云 
+ALIBABA_CLOUD_ACCESS_KEY_ID ='LTAI5tBhhK8nBACsNzqTMj5N'
+ALIBABA_CLOUD_ACCESS_KEY_SECRET='LBePEFEo4A46vVaKzQr8A77ITgS2o8'
+ALIBABA_CLOUD_SMS_SIGN_NAME = "AGI课堂"
+ALIBABA_CLOUD_SMS_TEMPLATE_CODE = "SMS_467950042"
 
 
 
