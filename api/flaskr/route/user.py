@@ -58,7 +58,7 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
         mobile = request.get_json().get('mobile', '')
         user_token = create_new_user(app,username,name,password,email,mobile)
         resp = make_response(make_common_response(user_token.userInfo))
-        resp.headers.add('Set-Cookie', 'token={};Path=/'.format(user_token.token))
+        # resp.headers.add('Set-Cookie', 'token={};Path=/'.format(user_token.token))
         # resp.set_cookie('token', user_token.token,path="")
         return resp 
     
@@ -91,31 +91,29 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
         password = request.get_json().get('password', '')
         user_token = verify_user(app,username,password)
         resp = make_response(make_common_response(user_token))
-        resp.headers.add('Set-Cookie', 'token={};Path=/'.format(user_token.token))
+        # resp.headers.add('Set-Cookie', 'token={};Path=/'.format(user_token.token))
         return resp
     
     @app.before_request
     def before_request():
-        app.logger.info("before_request")
-        # 在这里进行其他预处理操作
-        # app.logger.info('request.endpoint:'+str(request.endpoint))
-        app.logger.info('request.endpoint:'+str(request.path))
-        if request.path.startswith('/apidocs') or request.path.startswith('/flasgger_static') or request.path.startswith('/apispec_1.json'):
+       
+        if request.endpoint is None:
             return
         if request.endpoint in ['login', 'register','require_reset_code','reset_password','invoke','update_lesson'] or request.endpoint in by_pass_login_func:
             # 在登录和注册处理函数中绕过登录态验证
             return
             # 检查装饰器标记，跳过Token校验
-        if hasattr(request.endpoint, 'bypass_token_validation'):
-            return
+        
         # 在这里执行登录态验证逻辑
-        token = request.cookies.get('token')
+        token = request.cookies.get('token',None)
         if not token:
-            token = request.args.get('token')
+            token = request.args.get('token',None)
         if not token:
-            token = request.headers.get('Token')
+            token = request.headers.get('Token',None)
             # app.logger.info('headers token:'+str(token))
         token = str(token)
+        if not token and request.endpoint in by_pass_login_func:
+            return
         user = validate_user(app,token)
         request.user = user
     
@@ -156,11 +154,11 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
             raise_param_error('temp_id')
         user_token = generate_temp_user(app,tmp_id,source)
         resp = make_response(make_common_response(user_token))
-        resp.headers.add('Set-Cookie', 'token={};Path=/'.format(user_token.token))
+        # resp.headers.add('Set-Cookie', 'token={};Path=/'.format(user_token.token))
         return resp
 
     @app.route(path_prefix+'/generate_chk_code',methods=['POST'])
-    # @bypass_token_validation
+    @bypass_token_validation
     def generate_chk_code():
         mobile = request.get_json().get('mobile',None)
         if not mobile:
@@ -179,10 +177,11 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
         return make_common_response(send_sms_code(app,mobile,check_code))
     
     @app.route(path_prefix+'/verify_sms_code',methods=['POST'])
+    @bypass_token_validation
     def verify_sms_code_api():
         mobile = request.get_json().get('mobile',None)
         sms_code = request.get_json().get('sms_code',None)
-        user_id =request.user.user_id
+        user_id =  None if  getattr(request,'user',None) is None else  request.user.user_id
         if not mobile:
             raise_param_error('mobile')
         if not sms_code:

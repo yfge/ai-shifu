@@ -6,7 +6,7 @@ import json
 import traceback
 
 
-by_pass_login_func = ['apidocs']
+by_pass_login_func = ['login', 'register','require_reset_code','reset_password','invoke','update_lesson']
 
 # 装饰器函数，用于跳过Token校验
 def bypass_token_validation(func):

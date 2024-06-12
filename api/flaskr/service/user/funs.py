@@ -237,8 +237,9 @@ def send_sms_code(app:Flask,phone:str,chekcode:str)->str:
             } 
         
 # 验证短信验证码
-def verify_sms_code(app:Flask,user_id,phone:str,chekcode:str)->UserInfo:
+def verify_sms_code(app:Flask,user_id,phone:str,chekcode:str)->UserToken:
     with app.app_context():
+        app.logger.info("phone:"+phone+" chekcode:"+chekcode)
         check_save = redis.get(app.config["REDIS_KEY_PRRFIX_PHONE_CODE"] + phone)
         if check_save == None:
             raise RESET_PWD_CODE_EXPIRED
@@ -246,7 +247,15 @@ def verify_sms_code(app:Flask,user_id,phone:str,chekcode:str)->UserInfo:
         if chekcode != check_save_str:
             raise RESET_PWD_CODE_ERROR
         else:
-            user_info = User.query.filter_by(user_id=user_id).first()
-            user_info.mobile = phone
+            if user_id:
+                user_info = User.query.filter_by(user_id=user_id).first()
+                user_info.mobile = phone
+            else:
+                user_info = User.query.filter_by(mobile=phone).first()
+            if user_info is None:
+                user_id = str(uuid.uuid4()).replace('-', '')
+                user_info = UserInfo(user_id=user_id, username="", name="", email="", mobile=phone,model=app.config["OPENAI_DEFAULT_MODEL"])
+                db.session.add(User(user_id=user_id, username="", name="", email="", mobile=phone,default_model=app.config["OPENAI_DEFAULT_MODEL"]))
+            token = generate_token(app,user_id=user_info.user_id)
             db.session.commit()
-            return UserInfo(user_id=user_id, username=user_info.username, name=user_info.name, email=user_info.email, mobile=user_info.mobile,model=user_info.default_model)
+            return UserToken(UserInfo(user_id=user_info.user_id, username=user_info.username, name=user_info.name, email=user_info.email, mobile=user_info.mobile,model=user_info.default_model),token)
