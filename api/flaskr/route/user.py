@@ -154,8 +154,8 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
         if not tmp_id:
             raise_param_error('temp_id')
         user_token = generate_temp_user(app,tmp_id,source)
+        resp.headers.add('Set-Cookie', 'token={};Path=/'.format(user_token.token))
         resp = make_response(make_common_response(user_token))
-        # resp.headers.add('Set-Cookie', 'token={};Path=/'.format(user_token.token))
         return resp
 
     @app.route(path_prefix+'/generate_chk_code',methods=['POST'])
@@ -187,6 +187,7 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
             raise_param_error('mobile')
         if not sms_code:
             raise_param_error('sms_code')
+        
         return make_common_response(verify_sms_code(app,user_id,mobile,sms_code))
 
     return app
