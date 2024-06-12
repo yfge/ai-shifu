@@ -13,6 +13,43 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
     @app.route(path_prefix+'/register', methods=['POST'])
     @bypass_token_validation
     def register():
+        """
+        注册用户
+        ---
+        tags:
+          - 用户
+        parameters:
+          - in: body
+            name: body
+            required: true
+            schema:
+              id: UserInfo 
+              required:
+                - username
+                - password
+                - email
+                - name
+                - mobile
+        definitions:
+            UserInfo:
+                type: object
+                properties:
+                    user_id:
+                        type: string
+                        description: 用户ID
+                    username:
+                        type: string
+                        description: 用户名
+                    email:
+                        type: string
+                        description: 邮箱
+                    name:
+                        type: string
+                        description: 姓名
+                    mobile:
+                        type: string
+                        description: 手机号
+        """
         app.logger.info("register")
         username = request.get_json().get('username', '')
         password = request.get_json().get('password', '')
@@ -28,6 +65,28 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
     @app.route(path_prefix+'/login', methods=['POST'])
     @bypass_token_validation
     def login():
+        """
+        用户登录
+        ---
+        tags:
+            -   用户
+        parameters:
+            -   in: body
+                name: body
+                required: true
+                schema:
+                id: login
+                required:
+                    - username
+                    - password
+                properties:
+                    username:
+                    type: string
+                    description: 用户名
+                    password:
+                    type: string
+                    description: 密码
+        """
         username = request.get_json().get('username', '')
         password = request.get_json().get('password', '')
         user_token = verify_user(app,username,password)
@@ -39,7 +98,10 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
     def before_request():
         app.logger.info("before_request")
         # 在这里进行其他预处理操作
-        app.logger.info('request.endpoint:'+str(request.endpoint))
+        # app.logger.info('request.endpoint:'+str(request.endpoint))
+        app.logger.info('request.endpoint:'+str(request.path))
+        if request.path.startswith('/apidocs') or request.path.startswith('/flasgger_static') or request.path.startswith('/apispec_1.json'):
+            return
         if request.endpoint in ['login', 'register','require_reset_code','reset_password','invoke','update_lesson'] or request.endpoint in by_pass_login_func:
             # 在登录和注册处理函数中绕过登录态验证
             return

@@ -11,7 +11,7 @@ import pymysql
 pymysql.install_as_MySQLdb()
 from .common import *
 
-
+from flasgger import Swagger
 
 
 
@@ -19,6 +19,7 @@ def create_app(test_config=None):
 
     # 在程序开始时调用 patch_pyppeteer()
     app = Flask(__name__, instance_relative_config=True)
+    swagger = Swagger(app)
 
   
     
