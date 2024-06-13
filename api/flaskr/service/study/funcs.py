@@ -372,17 +372,10 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     
                 elif script_info.script_type == SCRIPT_TYPE_PORMPT:
                     span = trace.span(name="prompt_sript")
-
-
                     system = get_lesson_system(script_info.lesson_id)
-
                     app.logger.info("system:"+system)
-
                     system_prompt = None if system == None or system == "" else get_fmt_prompt(app,user_id,system)
-                    
                     prompt = get_fmt_prompt(app,user_id,script_info.script_prompt,profile_array_str=script_info.script_profile)
-
-
                     generation_input = []
                     if system_prompt:
                         generation_input.append({"role": "system", "content": system_prompt})

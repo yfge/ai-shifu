@@ -20,6 +20,9 @@ CORS_LOGGING = True
 
 
 
+OPENAI_DEFAULT_MODEL = "gpt-3.5-turbo-0613"
+
+
 
 REDIS_HOST = "agiclass.redis.rds.aliyuncs.com"
 REDIS_PORT = 6379
