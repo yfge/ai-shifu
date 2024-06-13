@@ -1,14 +1,52 @@
 from flask import Flask, Response,request 
 from flaskr.route.common import bypass_token_validation, make_common_response
 from flaskr.service.common.models import raise_param_error
-from flaskr.service.study.funcs import get_lesson_tree_to_study, get_study_record, run_script, update_attend_lesson_info
-
+from flaskr.service.lesson.funs import AICourseDTO
+from flaskr.service.study.funcs import AILessonAttendDTO, get_lesson_tree_to_study, get_study_record, run_script, update_attend_lesson_info
+from marshmallow import Schema
 
 
 def register_study_handler(app:Flask,path_prefix:str)->Flask:
+
+
     app.logger.info('register_study_handler is called, path_prefix is {}'.format(path_prefix))
     @app.route(path_prefix+'/run',methods=['POST'])
     def run_lesson_script():
+        '''
+        运行课程脚本
+        ---
+        tags:
+        - 学习
+        parameters:
+            -   in: body
+                name: body
+                description: 运行课程脚本的请求体
+                required: true
+                schema:
+                    type: object
+                    properties:
+                        course_id:
+                            type: string
+                            default: dfca19aab2654fe4882e002a58567240
+                            description: 课程id
+                        lesson_id:
+                            type: string
+                            description: 课时id
+                        input:
+                            type: string
+                            description: 输入内容
+                        input_type:
+                            type: string 
+                            default: start
+                            description: 输入类型（默认为 start）
+        responses:
+            200:
+                description: 返回脚本运行结果
+                content:
+                    text/event-stream:
+                        schema:
+                        type: string
+        '''
         course_id = request.get_json().get('course_id', 'dfca19aab2654fe4882e002a58567240')
         lesson_id = request.get_json().get('lesson_id', None)
         input = request.get_json().get('input', None)
@@ -21,6 +59,26 @@ def register_study_handler(app:Flask,path_prefix:str)->Flask:
 
     @app.route(path_prefix+'/get_lesson_tree', methods=['GET'])
     def get_lesson_tree_study():
+        """
+        获取课程树
+        ---
+        tags:
+        - 学习
+        parameters:
+        -   name: course_id
+            in: query
+            type: string
+            required: true
+            description: 课程ID
+        responses:
+            200:
+                description: 返回课程树
+                schema:
+                    type: AICourseDTOSchema
+                    $ref: '#/components/schemas/AICourseDTO'
+            400:
+                description: 参数错误
+        """
         course_id = request.args.get('course_id')
         if not course_id:
             raise_param_error("doc_id is not found")

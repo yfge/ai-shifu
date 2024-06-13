@@ -18,21 +18,11 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
         ---
         tags:
           - 用户
-        parameters:
-          - in: body
-            name: body
-            required: true
-            schema:
-              id: UserInfo 
-              required:
-                - username
-                - password
-                - email
-                - name
-                - mobile
+       
         definitions:
             UserInfo:
                 type: object
+                
                 properties:
                     user_id:
                         type: string
@@ -49,6 +39,18 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
                     mobile:
                         type: string
                         description: 手机号
+        parameters:
+          - in: body
+            name: UserInfo
+            required: true
+            schema:
+              id: UserInfo 
+              required:
+                - username
+                - password
+                - email
+                - name
+                - mobile
         """
         app.logger.info("register")
         username = request.get_json().get('username', '')
@@ -75,10 +77,11 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
                 name: body
                 required: true
                 schema:
-                id: login
-                required:
-                    - username
-                    - password
+                    id: login
+                    required:
+                        - username
+                        - password
+                    
                 properties:
                     username:
                     type: string
@@ -86,6 +89,22 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
                     password:
                     type: string
                     description: 密码
+        responses:
+            200:
+                description: 登录成功
+                schema:
+                    id: login_response
+                    properties:
+                        code:
+                            type: integer
+                            description: 返回码
+                        message:
+                            type: string
+                            description: 返回信息
+                        data:
+                            type: UserInfo
+                            ref: '#/definitions/UserInfo'
+                          
         """
         app.logger.info("login")
         username = request.get_json().get('username', '')
@@ -97,9 +116,8 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
     
     @app.before_request
     def before_request():
-       
-        if request.endpoint is None:
-            return
+
+        app.logger.info('request.endpoint:'+str(request.endpoint))
         if request.endpoint in ['login', 'register','require_reset_code','reset_password','invoke','update_lesson'] or request.endpoint in by_pass_login_func:
             # 在登录和注册处理函数中绕过登录态验证
             return

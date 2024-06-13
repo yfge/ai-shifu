@@ -15,7 +15,9 @@ from ..common import USER_NOT_FOUND,USER_PASSWORD_ERROR,USER_ALREADY_EXISTS,USER
 import jwt
 import time
 from captcha.image import ImageCaptcha 
+from marshmallow_dataclass import dataclass
 
+@dataclass
 class UserInfo:
     def __init__(self, user_id, username, name, email, mobile,model):
         self.user_id = user_id
@@ -34,7 +36,7 @@ class UserInfo:
         }
     def __html__(self):
         return self.__json__()
-
+@dataclass
 class UserToken:
     def __init__(self,userInfo:UserInfo, token):
         self.userInfo = userInfo
@@ -258,4 +260,4 @@ def verify_sms_code(app:Flask,user_id,phone:str,chekcode:str)->UserToken:
                 db.session.add(User(user_id=user_id, username="", name="", email="", mobile=phone,default_model=app.config["OPENAI_DEFAULT_MODEL"]))
             token = generate_token(app,user_id=user_info.user_id)
             db.session.commit()
-            return UserToken(UserInfo(user_id=user_info.user_id, username=user_info.username, name=user_info.name, email=user_info.email, mobile=user_info.mobile,model=user_info.default_model),token)
+            return UserToken(UserInfo(user_id=user_info.user_id, username=user_info.username, name=user_info.name, email=user_info.email, mobile=user_info.mobile,model=user_info.model),token)

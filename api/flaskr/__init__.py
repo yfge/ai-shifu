@@ -4,14 +4,17 @@ import time
 import logging
 from flask import Flask, Response, g,request,send_from_directory,make_response
 from flask_cors import CORS
+from flask_restful import Api
+
+from flaskr.service.lesson.funs import AICourseDTO
 from . import api 
 from . import dao
 
 import pymysql
 pymysql.install_as_MySQLdb()
 from .common import *
-
 from flasgger import Swagger
+
 
 
 
@@ -19,7 +22,7 @@ def create_app(test_config=None):
 
     # 在程序开始时调用 patch_pyppeteer()
     app = Flask(__name__, instance_relative_config=True)
-    swagger = Swagger(app)
+  
 
   
     
@@ -29,14 +32,11 @@ def create_app(test_config=None):
         SECRET_KEY='dev',
         DATABASE=os.path.join(app.instance_path, 'flaskr.sqlite'),
     )
-
     app.logger.info('create_app is called')
     if test_config is None:
-        # load the instance config, if it exists, when not testing
         app.config.from_pyfile('config.py', silent=True)
     else:
         app.logger.info('test_config is not None, load the '+test_config+'_config.py')
-        # load the test config if passed in
         app.config.from_pyfile(test_config+'_config.py', silent=True)
     init_log(app)
     api.init_langfuse(app)
@@ -49,14 +49,17 @@ def create_app(test_config=None):
     except OSError:
         pass
     
-    from . import route
 
+    from . import route
     prefix = app.config.get('PATH_PREFIX','')
-    # chat with the bot using sse
     app = route.register_common_handler(app)
     app = route.register_user_handler(app,prefix+'/user')
     app = route.register_lesson_handler(app,prefix+'/lesson')
     app = route.register_study_handler(app,prefix+'/study')
     app = route.register_dict_handler(app,prefix+'/dict')
     app = route.register_tools_handler(app,prefix+'/tools')
+
+    # swagger = Swagger(app)
+ 
+
     return app

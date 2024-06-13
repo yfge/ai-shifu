@@ -5,8 +5,10 @@ from ..service.common import AppException
 import json
 import traceback
 
+from marshmallow_dataclass import dataclass
 
-by_pass_login_func = ['login', 'register','require_reset_code','reset_password','invoke','update_lesson']
+
+by_pass_login_func = ['flasgger.apispec_1','flasgger.apidocs','flasgger.static','login', 'register','require_reset_code','reset_password','invoke','update_lesson']
 
 # 装饰器函数，用于跳过Token校验
 def bypass_token_validation(func):

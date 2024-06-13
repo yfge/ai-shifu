@@ -5,6 +5,7 @@ import re
 import openai
 from typing import Generator
 from flask import Flask
+from flaskr.common import register_schema_to_swagger
 from flaskr.service.lesson.funs import AILessonInfoDTO
 from flaskr.service.profile.funcs import get_user_profiles, save_user_profiles
 from flaskr.service.sales.consts import ATTEND_STATUS_TYPES, ATTEND_STATUS_UNAVAILABE, ATTEND_STATUS_VALUES
@@ -24,6 +25,12 @@ import time
 from ...api.langfuse import langfuse_client as langfuse
 from ...api.llm import invoke_llm
 
+
+from marshmallow_dataclass import dataclass
+
+
+@dataclass
+@register_schema_to_swagger
 class AILessonAttendDTO:
     def __init__(self,lesson_no:str,lesson_name:str,lesson_id:str,status,children=None) -> None:
         self.lesson_no = lesson_no
@@ -39,6 +46,9 @@ class AILessonAttendDTO:
             'status':self.status,
             'children':self.children
         }
+
+@dataclass
+@register_schema_to_swagger
 class AICourseDTO:
     def __init__(self,course_id:str,course_name:str,lessons:list[AILessonAttendDTO]) -> None:
         self.course_id = course_id
@@ -51,7 +61,8 @@ class AICourseDTO:
             'lessons':self.lessons
         }
 
-
+@dataclass
+@register_schema_to_swagger
 class AICourseLessonAttendScriptDTO:
     def __init__(self, attend_id, script_id, lesson_id, course_id, user_id, script_index, script_role, script_content, status):
         self.attend_id = attend_id
@@ -77,8 +88,7 @@ class AICourseLessonAttendScriptDTO:
             "status": self.status
         }
 
-
-
+# dd = AICourseLessonAttendDTO.__schema__() 
 
 client = openai.Client(api_key="sk-proj-TsOFXPGAkp6GZKt1AUinT3BlbkFJiFiJO0hAu7om7TOl4RRY") #,base_url="https://openai-api.kattgatt.com/v1")
 
@@ -380,7 +390,6 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     if system_prompt:
                         generation_input.append({"role": "system", "content": system_prompt})
                     generation_input.append({"role": "user", "content": prompt})
-                    
 
                     generation = span.generation( model=script_info.script_model,input=generation_input)
                     resp = invoke_llm(app,
