@@ -59,7 +59,7 @@ def create_app(test_config=None):
     app = route.register_dict_handler(app,prefix+'/dict')
     app = route.register_tools_handler(app,prefix+'/tools')
 
-    # swagger = Swagger(app)
+    swagger = Swagger(app)
  
 
     return app

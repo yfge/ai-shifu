@@ -167,6 +167,13 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
     @app.route(path_prefix+'/require_tmp',methods=['POST'])
     @bypass_token_validation
     def require_tmp():
+        """
+        临时登录用户
+        ---
+        tags:
+            - 用户
+        
+        """
         tmp_id = request.get_json().get('temp_id',None)
         source = request.get_json().get('source','web')
         if not tmp_id:
@@ -180,6 +187,12 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
     @app.route(path_prefix+'/generate_chk_code',methods=['POST'])
     @bypass_token_validation
     def generate_chk_code():
+        """
+        生成图形验证码
+        ---
+        tags:
+            - 用户
+        """
         mobile = request.get_json().get('mobile',None)
         if not mobile:
             raise_param_error('mobile')
@@ -188,6 +201,14 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
     @app.route(path_prefix+'/send_sms_code',methods=['POST'])
     @bypass_token_validation
     def send_sms_code_api():
+        """
+        发送短信验证码
+        ---
+        tags: 
+           - 用户
+        
+        
+        """
         mobile = request.get_json().get('mobile',None)
         check_code = request.get_json().get('check_code',None)  
         if not mobile:
