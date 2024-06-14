@@ -5,12 +5,17 @@ from flaskr.service.lesson.funs import AICourseDTO
 from flaskr.service.study.funcs import AILessonAttendDTO, get_lesson_tree_to_study, get_study_record, run_script, update_attend_lesson_info
 from marshmallow import Schema
 
+from flask_restx import Api, fields, Resource
+
 
 def register_study_handler(app:Flask,path_prefix:str)->Flask:
 
 
+    api = Api(app)
+
     app.logger.info('register_study_handler is called, path_prefix is {}'.format(path_prefix))
     @app.route(path_prefix+'/run',methods=['POST'])
+    # @api.model('RunLessonScript')
     def run_lesson_script():
         '''
         运行课程脚本
@@ -58,6 +63,8 @@ def register_study_handler(app:Flask,path_prefix:str)->Flask:
    
 
     @app.route(path_prefix+'/get_lesson_tree', methods=['GET'])
+    
+
     def get_lesson_tree_study():
         """
         获取课程树
@@ -76,7 +83,15 @@ def register_study_handler(app:Flask,path_prefix:str)->Flask:
                 content:
                     application/json:
                         schema:
-                            $ref: "#/components/schemas/AICourseDTO"
+                            properties:
+                                code:
+                                    type: integer
+                                    description: 返回码
+                                message:
+                                    type: string
+                                    description: 返回信息
+                                data:
+                                    $ref: "#/components/schemas/AICourseDTO"
             400:
                 description: 参数错误
         """
@@ -87,11 +102,41 @@ def register_study_handler(app:Flask,path_prefix:str)->Flask:
         return make_common_response(get_lesson_tree_to_study(app,user_id,course_id))
     @app.route(path_prefix+'/get_lesson_study_record', methods=['GET'])
     def get_lesson_study_record():
+        """
+        获取课程学习记录
+        ---
+        tags:
+        - 学习
+        parameters:
+        -   name: lesson_id
+            in: query
+            type: string
+            required: true
+            description: 课时ID
+        responses:
+            200:
+                description: 返回课程学习记录
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                code:
+                                    type: integer
+                                    description: 返回码
+                                message:
+                                    type: string
+                                    description: 返回信息
+                                data:
+                                    $ref: "#/components/schemas/StudyRecordDTO"
+            400:
+                description: 参数错误
+        """
         lesson_id = request.args.get('lesson_id')
         if not lesson_id:
             raise_param_error("lesson_id is not found")
         user_id =request.user.user_id
         return make_common_response(get_study_record(app,user_id,lesson_id))
+ 
     
 
     @app.route(path_prefix+"/test_attend",methods=['GET'])

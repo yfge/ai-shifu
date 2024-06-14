@@ -1,11 +1,15 @@
 import datetime
 from functools import wraps
 from flask import Flask, request, jsonify, make_response
+
+from flaskr.common.swagger import register_schema_to_swagger
 from ..service.common import AppException
 import json
 import traceback
 
 from marshmallow_dataclass import dataclass
+
+from typing import TypeVar, Generic
 
 
 by_pass_login_func = ['flasgger.apispec_1','flasgger.apidocs','flasgger.static','login', 'register','require_reset_code','reset_password','invoke','update_lesson']
@@ -40,6 +44,24 @@ def fmt(o):
         return o.isoformat()
     else:
         return o.__json__()
+    
+
+T = TypeVar('T')
+
+    
+
+ 
+@register_schema_to_swagger
+class CommonResponse(Generic[T]):
+    code:int
+    message:str
+    data:T 
+    def __init__(self) -> None:
+        super().__init__()
+        self.code = 0
+        self.message = 'success'
+        self.data = None
 def make_common_response(data):
+
     response = json.dumps({'code':0,'message': 'success','data': data},default=fmt,ensure_ascii=False)
     return response

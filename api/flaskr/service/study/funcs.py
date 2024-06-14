@@ -103,19 +103,12 @@ class AICourseLessonAttendScriptDTO:
             "status": self.status
         }
 
-# dd = AICourseLessonAttendDTO.__schema__() 
-
-client = openai.Client(api_key="sk-proj-TsOFXPGAkp6GZKt1AUinT3BlbkFJiFiJO0hAu7om7TOl4RRY") #,base_url="https://openai-api.kattgatt.com/v1")
-
 
 def fmt(o):
     if isinstance(o, datetime.datetime):
         return o.isoformat()
     else:
         return o.__json__()
-    
-    
-
 
 def get_profile_array(profile:str)->list:
     return re.findall(r'\[(.*?)\]', profile)
@@ -135,25 +128,18 @@ def get_fmt_prompt(app:Flask,user_id:str,profile_tmplate:str,input:str=None,prof
         propmpt_keys.append('input')
     app.logger.info(propmpt_keys)
     app.logger.info(profiles)
-
     prompt_template = PromptTemplate.from_template(profile_tmplate)
     keys = prompt_template.input_variables
-
     fmt_keys = {}
-
     for key in keys:
         if key in profiles:
             fmt_keys[key] = profiles[key]
-
-
-   
-    # app.logger.info('unused keys:{}'.format(keys))
-    # prompt_keys = prompt_template.
     prompt = prompt_template.format(**fmt_keys)
     app.logger.info('fomat input:{}'.format(prompt))
     return prompt.encode('utf-8').decode('utf-8')
     
- 
+
+@register_schema_to_swagger 
 class ScriptDTO:
     def __init__(self,script_type,script_content,script_id=None):
         self.script_type = script_type
@@ -169,14 +155,12 @@ class ScriptDTO:
 
 def make_script_dto(script_type,script_content,script_id)->str:
     return    'data: '+json.dumps(ScriptDTO(script_type,script_content,script_id),default=fmt)+'\n\n'.encode('utf-8').decode('utf-8')
-                
+
 def get_current_lesson(app: Flask, lesssons:list[AICourseLessonAttendDTO] )->AICourseLessonAttendDTO:
     return lesssons[0]
 
 
 def get_script(app:Flask,attend_id:str,next:bool)->AILessonScript:
-
- 
     attend_info = AICourseLessonAttend.query.filter(AICourseLessonAttend.attend_id ==attend_id).first()
     app.logger.info("get next script,current:{},next:{}".format(attend_info.script_index,next))
     if attend_info.status == ATTEND_STATUS_NOT_STARTED:
@@ -188,7 +172,6 @@ def get_script(app:Flask,attend_id:str,next:bool)->AILessonScript:
     if not script_info:
         # 没有下一个脚本
         attend_info.status = ATTEND_STATUS_COMPLETED
-        app.logger.info('no script found')
     db.session.commit()
     return script_info
 
@@ -235,7 +218,6 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
             course_id = course_info.course_id
         attend = AICourseLessonAttendDTO
         if not lesson_id:
-            # 检查有没有购课记录
             buy_record = AICourseBuyRecord.query.filter_by(user_id=user_id, course_id=course_id).first() 
             if not buy_record:
                 lessons = init_trial_lesson(app, user_id, course_id)
@@ -254,7 +236,6 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                 return
             attend = AICourseLessonAttendDTO(attend_info.attend_id,attend_info.lesson_id,attend_info.course_id,attend_info.user_id,attend_info.status,attend_info.script_index)
         db.session.commit()
-
 
         # Langfuse 集成 
 
@@ -392,9 +373,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     trace.update(**trace_args)
                     msg =  'data: '+json.dumps(data,default=fmt)+'\n\n'
                     app.logger.info(msg)
-
                     yield msg
-                    
                 elif script_info.script_type == SCRIPT_TYPE_PORMPT:
                     span = trace.span(name="prompt_sript")
                     system = get_lesson_system(script_info.lesson_id)
@@ -405,7 +384,6 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     if system_prompt:
                         generation_input.append({"role": "system", "content": system_prompt})
                     generation_input.append({"role": "user", "content": prompt})
-
                     generation = span.generation( model=script_info.script_model,input=generation_input)
                     resp = invoke_llm(app,
                         model=script_info.script_model,
@@ -515,7 +493,6 @@ def update_attend_lesson_info(app:Flask,attend_id:str)->list[AILessonAttendDTO]:
 
 def get_lesson_tree_to_study(app:Flask,user_id:str,course_id:str)->AICourseDTO:
     with app.app_context():
-
         course_info = AICourse.query.filter(AICourse.course_id == course_id).first()
         if not course_info:
             course_info = AICourse.query.first()
@@ -554,7 +531,12 @@ def get_lesson_tree_to_study(app:Flask,user_id:str,course_id:str)->AICourseDTO:
     
 
 
-class StudyRecordDTO:
+@register_schema_to_swagger
+class StudyRecordItemDTO:
+    script_index:int
+    script_role:str
+    script_type:int
+    script_content:str
     def __init__(self,script_index,script_role,script_type,script_content):
         self.script_index = script_index
         self.script_role = script_role
@@ -567,16 +549,62 @@ class StudyRecordDTO:
             "script_type": self.script_type,
             "script_content": self.script_content
         }
+    
 
-def get_study_record(app:Flask,user_id:str,lesson_id:str)->list[StudyRecordDTO]:
+@register_schema_to_swagger
+class StudyUIDTO:
+    type: str 
+    content: object
+    def __init__(self,type,content):
+        self.type = type
+        self.content = content
+    def __json__(self):
+        return {
+            "type": self.type,
+            "content": self.content
+        }
+@register_schema_to_swagger 
+class StudyRecordDTO:
+    records:List[StudyRecordItemDTO]
+    ui:StudyUIDTO
+    def __init__(self,records,ui=None):
+        self.records = records
+        self.ui = ui
+    def __json__(self):
+        return {
+            "records": self.records,
+            "ui":self.ui
+        }
+    
+
+
+def get_study_record(app:Flask,user_id:str,lesson_id:str)->StudyRecordDTO:
     with app.app_context():
         attend_info = AICourseLessonAttend.query.filter_by(user_id=user_id,lesson_id=lesson_id).first()
         if not attend_info:
             return None
         attend_scripts = AICourseLessonAttendScript.query.filter_by(attend_id=attend_info.attend_id).all()
-        return [StudyRecordDTO(i.script_index,ROLE_VALUES[i.script_role],0,i.script_content) for i in attend_scripts]
-    
+        items =  [StudyRecordItemDTO(i.script_index,ROLE_VALUES[i.script_role],0,i.script_content) for i in attend_scripts]
+        ret = StudyRecordDTO(items)
+        last_script_id = attend_scripts[-1].script_id
 
+        last_script = AILessonScript.query.filter_by(script_id=last_script_id).first()
+        app.logger.info("last_script:{}".format(last_script)) 
+        if last_script.script_ui_type == UI_TYPE_INPUT:
+            ret.ui = StudyUIDTO("input",last_script.script_ui_content)
+        elif last_script.script_ui_type == UI_TYPE_BUTTON:
+            btn = [{
+                        "label":last_script.script_ui_content,
+                        "value":last_script.script_ui_content
+                    }]
+            ret.ui = StudyUIDTO("buttons",{"title":"接下来","buttons":btn})
+        elif last_script.script_ui_type == UI_TYPE_CONTINUED:
+            ret.ui = StudyUIDTO("buttons",{"title":"继续","buttons":[{"label":"继续","value":"继续"}]})
+        elif last_script.script_ui_type == UI_TYPE_SELECTION:
+            ret.ui = StudyUIDTO("buttons",{"title":last_script.script_ui_content,"buttons":json.loads(last_script.script_other_conf)["btns"]})
+
+        return ret
+    
 
 def reset_user_study_info(app:Flask,user_id:str):
     with app.app_context():

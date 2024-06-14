@@ -12,25 +12,14 @@ swagger_config = {
     'optional_fields': ['components'],
     "components": {
         "schemas": {
-            # "AILessonAttendDTO": AILessonAttendDTOSchema,
-            # "AICourseDTO": AICourseDTOSchema
         }
     },
-    # "definitions": {},
-    
-     "specs": [
+    "specs": [
         {
             "endpoint": 'apispec_1',
             "route": '/apispec_1.json',
-          #  "rule_filter": lambda rule: True,  # all in
-          #  "model_filter": lambda tag: True,  # all in
         }
     ],
-    # # "host": "localhost:5000",  # 指定主机
-    # "basePath": "/",  # 指定基础路径
-    # "schemes": [
-    #     "http"
-    # ],
 }
 
 
