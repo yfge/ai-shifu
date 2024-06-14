@@ -1,4 +1,7 @@
 import decimal
+from typing import List
+
+from flaskr.common.swagger import register_schema_to_swagger
 from .models import *
 from flask import Flask
 from ...dao import db
@@ -7,8 +10,15 @@ from .models import AICourseLessonAttend
 from ...util.uuid import generate_id as get_uuid
 from ..lesson.const import *
 
-
+@register_schema_to_swagger
 class AICourseLessonAttendDTO:
+    attend_id:str
+    lesson_id:str
+    course_id:str
+    user_id:str
+    status:int
+    index:int
+
     def __init__(self, attend_id, lesson_id, course_id, user_id, status,index):
         self.attend_id = attend_id
         self.lesson_id = lesson_id
@@ -67,7 +77,7 @@ def success_buy_record(app: Flask,record_id:str):
 
 def init_trial_lesson(app:Flask ,user_id:str,course_id:str)->list[AICourseLessonAttendDTO]:
     app.logger.info('init trial lesson for user:{} course:{}'.format(user_id,course_id))
-    response = []
+    response =[]
     lessons = AILesson.query.filter(AILesson.course_id==course_id,AILesson.lesson_type == LESSON_TYPE_TRIAL).all()
     app.logger.info('init trial lesson:{}'.format(lessons))
 
@@ -76,7 +86,8 @@ def init_trial_lesson(app:Flask ,user_id:str,course_id:str)->list[AICourseLesson
         attend = AICourseLessonAttend.query.filter(AICourseLessonAttend.user_id==user_id,AICourseLessonAttend.lesson_id==lesson.lesson_id).first()
         if attend :
             if lesson.is_final():
-                response.append(AICourseLessonAttendDTO(attend.attend_id,attend.lesson_id,attend.course_id,attend.user_id,attend.status,lesson.lesson_index))
+                item =AICourseLessonAttendDTO(attend.attend_id,attend.lesson_id,attend.course_id,attend.user_id,attend.status,lesson.lesson_index)
+                response.append(item)
             continue
         attend = AICourseLessonAttend()
         attend.attend_id = str(get_uuid(app))

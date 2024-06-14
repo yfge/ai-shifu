@@ -4,7 +4,7 @@ import json
 import re
 import openai
 from typing import Generator
-from flask import Flask
+from flask import Flask, typing
 from flaskr.common import register_schema_to_swagger
 from flaskr.service.lesson.funs import AILessonInfoDTO
 from flaskr.service.profile.funcs import get_user_profiles, save_user_profiles
@@ -24,14 +24,19 @@ import time
 
 from ...api.langfuse import langfuse_client as langfuse
 from ...api.llm import invoke_llm
+from typing import List
 
 
-from marshmallow_dataclass import dataclass
 
 
-@dataclass
 @register_schema_to_swagger
 class AILessonAttendDTO:
+    lesson_no:str
+    lesson_name:str
+    lesson_id:str
+    status:str
+    children:List[AICourseLessonAttendDTO]
+    status:str
     def __init__(self,lesson_no:str,lesson_name:str,lesson_id:str,status,children=None) -> None:
         self.lesson_no = lesson_no
         self.lesson_name = lesson_name
@@ -47,10 +52,12 @@ class AILessonAttendDTO:
             'children':self.children
         }
 
-@dataclass
 @register_schema_to_swagger
 class AICourseDTO:
-    def __init__(self,course_id:str,course_name:str,lessons:list[AILessonAttendDTO]) -> None:
+    course_id:str
+    course_name:str
+    lessons:list[AILessonAttendDTO]
+    def __init__(self,course_id:str,course_name:str,lessons:List[AILessonAttendDTO]) -> None:
         self.course_id = course_id
         self.course_name = course_name
         self.lessons=lessons
@@ -61,9 +68,17 @@ class AICourseDTO:
             'lessons':self.lessons
         }
 
-@dataclass
 @register_schema_to_swagger
 class AICourseLessonAttendScriptDTO:
+    attend_id:str
+    script_id:str
+    lesson_id:str
+    course_id:str
+    user_id:str
+    script_index:int
+    script_role:str
+    script_content:str
+    status:str
     def __init__(self, attend_id, script_id, lesson_id, course_id, user_id, script_index, script_role, script_content, status):
         self.attend_id = attend_id
         self.script_id = script_id

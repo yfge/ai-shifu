@@ -1,5 +1,6 @@
 
 from dataclasses import fields
+import typing
 from marshmallow_dataclass import dataclass
 from marshmallow import Schema, fields
 swagger_config = {
@@ -8,12 +9,14 @@ swagger_config = {
         "title": "枕头编程-API 文档",
         "version": "1.0.0"
     },
+    'optional_fields': ['components'],
     "components": {
         "schemas": {
             # "AILessonAttendDTO": AILessonAttendDTOSchema,
             # "AICourseDTO": AICourseDTOSchema
         }
     },
+    # "definitions": {},
     
      "specs": [
         {
@@ -30,32 +33,54 @@ swagger_config = {
     # ],
 }
 
+
+
+def get_field_schema(typ):
+    field_schema = {}
+    origin = typing.get_origin(typ)
+    args = typing.get_args(typ)
+
+    # 基础类型处理
+    if typ in (str, int, float, bool):
+        field_schema['type'] = typ.__name__
+    # 处理列表类型
+    elif origin == list:
+        item_type = args[0]
+        field_schema['type'] = 'array'
+        field_schema['items'] = get_field_schema(item_type)
+    # 处理字典类型
+    elif origin == dict:
+        key_type, value_type = args
+        field_schema['type'] = 'object'
+        field_schema['additionalProperties'] = get_field_schema(value_type)
+    # 处理复杂类型，使用引用
+    elif hasattr(typ, '__annotations__'):
+        field_schema['$ref'] = f'#/components/schemas/{typ.__name__}'
+    else:
+        field_schema['type'] = 'object'
+
+    return field_schema
+
 def register_schema_to_swagger(cls):
-    if swagger_config['components']['schemas'].get(cls.__name__,None):
-        return swagger_config['components']['schemas'].get(cls.__name__) 
-    attrs = {}
+    if swagger_config['components']['schemas'].get(cls.__name__, None):
+        return swagger_config['components']['schemas'].get(cls.__name__)
+    
+    properties = {}
+    required = []
+
     for name, typ in cls.__annotations__.items():
-        if typ == str:
-            field = fields.String(required=True)
-        elif typ == int:
-            field = fields.Integer(required=True)
-        elif typ == float:
-            field = fields.Float(required=True)
-        elif typ == bool:
-            field = fields.Boolean(required=True)
-        elif typ == list:
-            field = fields.List(fields.Raw(), required=True)
-        elif isinstance(typ, type) and issubclass(typ, (list, dict)):
-            if hasattr(typ, '__args__') and issubclass(typ.__args__[0], (list, dict)):
-                nested_cls = typ.__args__[0]
-                nested_schema = register_schema_to_swagger(nested_cls)
-                field = fields.List(fields.Nested(nested_schema), required=True)
-            else:
-                field = fields.Raw(required=True)
-        else:
-            field = fields.Raw(required=True)
-        attrs[name] = field
-    schema_cls = type(cls.__name__ + 'Schema', (Schema,), attrs)
-    swagger_config['components']['schemas'][cls.__name__] = schema_cls
-    return schema_cls
-    # return cls
+        field_schema = get_field_schema(typ)
+        properties[name] = field_schema
+        required.append(name)
+
+    schema = {
+        'type': 'object',
+        'properties': properties,
+        'required': required
+    }
+    swagger_config['components']['schemas'][cls.__name__] = schema
+
+    # return schema
+    
+    # return schema_cls
+    return cls

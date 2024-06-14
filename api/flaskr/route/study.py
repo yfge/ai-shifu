@@ -73,9 +73,10 @@ def register_study_handler(app:Flask,path_prefix:str)->Flask:
         responses:
             200:
                 description: 返回课程树
-                schema:
-                    type: AICourseDTOSchema
-                    $ref: '#/components/schemas/AICourseDTO'
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/AICourseDTO"
             400:
                 description: 参数错误
         """
@@ -96,11 +97,7 @@ def register_study_handler(app:Flask,path_prefix:str)->Flask:
     @app.route(path_prefix+"/test_attend",methods=['GET'])
     @bypass_token_validation
     def test_attend():
-
-
         attend_id = request.args.get("attend_id")
-
-
         return make_common_response(update_attend_lesson_info(app,attend_id))
 
 

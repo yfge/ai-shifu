@@ -72,39 +72,6 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
         ---
         tags:
             -   用户
-        parameters:
-            -   in: body
-                name: body
-                required: true
-                schema:
-                    id: login
-                    required:
-                        - username
-                        - password
-                    
-                properties:
-                    username:
-                    type: string
-                    description: 用户名
-                    password:
-                    type: string
-                    description: 密码
-        responses:
-            200:
-                description: 登录成功
-                schema:
-                    id: login_response
-                    properties:
-                        code:
-                            type: integer
-                            description: 返回码
-                        message:
-                            type: string
-                            description: 返回信息
-                        data:
-                            type: UserInfo
-                            ref: '#/definitions/UserInfo'
-                          
         """
         app.logger.info("login")
         username = request.get_json().get('username', '')
