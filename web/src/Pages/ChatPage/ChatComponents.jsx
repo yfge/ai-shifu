@@ -325,7 +325,7 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className, lessonStatusUpdat
     console.log("switch Lesson", lessonInfo);
     setLessonId(lessonInfo.lesson_id);
     setChatId(lessonInfo.course_id);
-    if (lessonInfo.status === "未开始") {
+    if (lessonInfo.status === "可学习") {
       handleSend("start", "")
     } else {
       getLessonStudyRecord(lessonInfo.lesson_id).then((res) => {

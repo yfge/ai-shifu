@@ -9,6 +9,7 @@ COURSE["tbl93C7esgLzrtNT"]=["用AI做代码调试","vewlGkI2Jp"]
 COURSE["tbl9MytJGjsfvhvT"]=["用AI调整代码","vewlGkI2Jp"]
 
 HOST="http://127.0.0.1:5800"
+HOST="https://test-api-sifu.agiclass.cn/"
 
 
 i = 0 

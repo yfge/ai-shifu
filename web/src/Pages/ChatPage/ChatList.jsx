@@ -112,6 +112,9 @@ const ChatList = forwardRef(
         case "未开始":
           icon = <PlayCircleOutlined style={{ color: 'green', float: 'right' }} />
           break;
+        case "可学习":
+            icon = <PlayCircleOutlined style={{ color: 'green', float: 'right' }} />
+            break;
         case "进行中":
           icon = <PlayCircleOutlined style={{ color: 'green', float: 'right' }} />
           break;

@@ -365,7 +365,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     log_script.script_content = prompt
                     log_script.script_role = ROLE_TEACHER
                     db.session.add(log_script)
-                    data = ScriptDTO("text_end","")
+                    data = ScriptDTO("text_end",script_info.script_id)
 
                     span = trace.span(name="fix_script")
                     span.end(output=prompt)
@@ -408,7 +408,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     log_script.script_content = response_text
                     log_script.script_role = ROLE_TEACHER
                     db.session.add(log_script)
-                    yield make_script_dto("text_end","",None)
+                    yield make_script_dto("text_end","",script_info.script_id)
                 if script_info.script_ui_type == UI_TYPE_CONTINUED:
                     next = True
                     continue
