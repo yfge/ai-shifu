@@ -13,7 +13,7 @@ from flaskr.service.study.const import *
 from langchain.prompts import PromptTemplate
 
 
-from flaskr.service.lesson.const import CONTENT_TYPE_IMAGE, LESSON_TYPE_BRANCH_HIDDEN, SCRIPT_TYPE_FIX, SCRIPT_TYPE_PORMPT, UI_TYPE_BUTTON, UI_TYPE_CONTINUED, UI_TYPE_INPUT, UI_TYPE_SELECTION
+from flaskr.service.lesson.const import CONTENT_TYPE_IMAGE, LESSON_TYPE_BRANCH_HIDDEN, SCRIPT_TYPE_FIX, SCRIPT_TYPE_PORMPT, SCRIPT_TYPE_SYSTEM, UI_TYPE_BUTTON, UI_TYPE_CONTINUED, UI_TYPE_INPUT, UI_TYPE_SELECTION
 from ...dao import db
 
 from flaskr.service.lesson.models import AICourse, AILesson, AILessonScript
@@ -149,7 +149,7 @@ class ScriptDTO:
         return {
             "type": self.script_type,
             "content": self.script_content,
-            "id": self.script_id    
+            "script_id": self.script_id    
         }
 
 
@@ -202,7 +202,7 @@ def get_lesson_system(lesson_id:str)->str:
             parent_lesson = AILesson.query.filter(AILesson.lesson_no == parent_no).first()
             if parent_lesson:
                 lesson_ids.append(parent_lesson.lesson_id)
-        scripts = AILessonScript.query.filter(AILessonScript.lesson_id.in_(lesson_ids) == True,AILessonScript.script_content_type).all()
+        scripts = AILessonScript.query.filter(AILessonScript.lesson_id.in_(lesson_ids) == True,AILessonScript.script_content_type==SCRIPT_TYPE_SYSTEM).all()
         if len(scripts)>0:
             for script in scripts:
                 if script.lesson_id == lesson_id:
@@ -210,7 +210,7 @@ def get_lesson_system(lesson_id:str)->str:
             return scripts[0].script_prompt
         return None
 
-def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,input:str=None,input_type:str=None)->Generator[ScriptDTO,None,None]:
+def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,input:str=None,input_type:str=None,script_id:str = None)->Generator[ScriptDTO,None,None]:
     with app.app_context():
         course_info = AICourse.query.filter(AICourse.course_id == course_id).first()
         if not course_info:
@@ -253,13 +253,14 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
             next=True
         while True:
             # 如果有用户输入,就得到当前这一条,否则得到下一条
-            script_info = get_script(app,attend_id=attend.attend_id,next=next)
-         
+            if script_id and not next:
+                script_info = get_script_by_id(app,script_id)
+            else:
+                script_info = get_script(app,attend_id=attend.attend_id,next=next)
             if script_info:
                 app.logger.info("begin to run script:{},model:{},input_type:{}".format(script_info.script_id,script_info.script_model,input_type))
                 log_script = generation_attend(app,attend,script_info)
                 # 得到脚本
-        
                 # 输入校验
                 if input_type == INPUT_TYPE_TEXT:
                     check_flag = script_info.script_check_flag
@@ -506,11 +507,7 @@ def get_lesson_tree_to_study(app:Flask,user_id:str,course_id:str)->AICourseDTO:
             init_trial_lesson(app, user_id, course_id)
         lessons = AILesson.query.filter(course_id==course_id,AILesson.lesson_type !=LESSON_TYPE_BRANCH_HIDDEN, AILesson.status==1).all()
         lessons = sorted(lessons, key=lambda x: (len(x.lesson_no), x.lesson_no))
-        lesson_ids =  [ i.lesson_id  for  i in lessons]
-        app.logger.info("lesson ids :{}".format(lesson_ids))
-        app.logger.info("user_id:"+user_id)
         attend_infos = AICourseLessonAttend.query.filter(AICourseLessonAttend.user_id == user_id,AICourseLessonAttend.course_id == course_id).all()
-        app.logger.info("attends count:{}".format(len(attend_infos)))
         attend_infos_map = {i.lesson_id:i for i in attend_infos}
         lessonInfos = []
         lesson_dict = {}

@@ -44,22 +44,26 @@ def register_study_handler(app:Flask,path_prefix:str)->Flask:
                             type: string 
                             default: start
                             description: 输入类型（默认为 start）
+                        script_id:  
+                            type: string
+                            description: 脚本ID,如果为空则运行下一条，否则运行指定脚本
         responses:
             200:
                 description: 返回脚本运行结果
                 content:
                     text/event-stream:
                         schema:
-                        type: string
+                        # $ref: "#/components/schemas/ScriptDTO"
         '''
         course_id = request.get_json().get('course_id', 'dfca19aab2654fe4882e002a58567240')
         lesson_id = request.get_json().get('lesson_id', None)
+        script_id = request.get_json().get('script_id', None)
         input = request.get_json().get('input', None)
         input_type = request.get_json().get('input_type','start')
         if course_id =="" or course_id is None:
             course_id = 'dfca19aab2654fe4882e002a58567240' 
         user_id = request.user.user_id
-        return Response(run_script(app,course_id=course_id,lesson_id=lesson_id,user_id=user_id,input=input,input_type=input_type), mimetype="text/event-stream")
+        return Response(run_script(app,course_id=course_id,lesson_id=lesson_id,user_id=user_id,input=input,input_type=input_type,script_id = script_id), mimetype="text/event-stream")
    
 
     @app.route(path_prefix+'/get_lesson_tree', methods=['GET'])
