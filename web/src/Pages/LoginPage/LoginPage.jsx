@@ -7,7 +7,7 @@ import { Space, Row } from "antd";
 import store from "store";
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { login } from "../../Api/user";
+import { login ,requireTmp} from "../../Api/user";
 import { useState } from "react";
 import { UploadEvent } from "../../Api/UploadEvent";
 import ForgetPasswordModal from "./forgetPasswordModal/ForgetPasswordModal";
@@ -18,6 +18,15 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import "swiper/css/autoplay";
+
+
+const generateUUID = () => {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    var r = (Math.random() * 16) | 0,
+      v = c == "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
 
 const LoginForm = ({ handLogin }) => {
   const navigate = useNavigate();
@@ -31,6 +40,27 @@ const LoginForm = ({ handLogin }) => {
   useEffect(() => {
     form.setFieldsValue(rememberInfo);
   });
+
+
+  const tmpLogin = ()=>{
+    setLoading(true)
+
+    const uuid = generateUUID()
+    requireTmp(uuid,'web').then((res)=>{
+      console.log(res);
+        store.set("userInfo", res.data.userInfo);
+        store.set("token", res.data.token);
+        UploadEvent("config", {
+          user_unique_id: res.data.userInfo.user_id,
+        });
+        navigate("/"); 
+    })
+    .catch(() => {
+      setLoading(false);
+    });
+
+
+  }
 
   const onFinish = ({ username, password, remember }) => {
     setLoading(true);
@@ -227,6 +257,16 @@ const LoginForm = ({ handLogin }) => {
                 loading={loading}
               >
                 登录
+              </Button>
+              <Button
+                style={{ height: "52px" }}
+                // type="primary"
+                htmlType="submit"
+                className="login-form-button"
+                loading={loading}
+                onClick={tmpLogin}
+              >
+                游客
               </Button>
             </Form.Item>
             <Form.Item>

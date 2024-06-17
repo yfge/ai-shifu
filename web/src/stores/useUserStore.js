@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { getUserInfo } from '@Api/user.js';
 import { tokenStore, userInfoStore } from '@Service/storeUtil.js';
+import { C, er } from '@fullcalendar/core/internal-common';
 
 export const useUserStore = create((set) => ({
   isLogin: false,
@@ -34,6 +35,7 @@ export const useUserStore = create((set) => ({
         }
       })
     } catch (err) {
+      console.log(err)
       if (err.status && err.status === 403) {
         set(() => {
           return {

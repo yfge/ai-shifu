@@ -1,4 +1,4 @@
-import Chat, { Bubble, useMessages, Empty, Card, CardMedia, CardTitle, CardText, CardActions } from "@chatui/core";
+import Chat, { Bubble, useMessages, Empty, Card, CardTitle, CardActions } from "@chatui/core";
 import { Button } from "antd";
 import { Image } from "antd";
 
@@ -84,7 +84,7 @@ const MarkdownBubble = (props) => {
   );
 };
 
-const ChatComponents = forwardRef(({ onTitleUpdate, className ,lessonStatusUpdate}, ref) => {
+const ChatComponents = forwardRef(({ onTitleUpdate, className, lessonStatusUpdate }, ref) => {
   const { messages, appendMsg, setTyping, updateMsg, resetList } = useMessages(
     [],
   );
@@ -96,7 +96,7 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className ,lessonStatusUpdat
 
   function handleSend(type, val) {
 
-    console.log('handle send',type,val)
+    console.log('handle send', type, val)
     let sendScriptId = scriptId;
     if (type === "text" && val.trim()) {
       appendMsg({
@@ -114,7 +114,7 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className ,lessonStatusUpdat
     }
     setTyping(true);
     let lastMsg = null;
-    RunScript(chatId, lessonId,  val,type, (response) => {
+    RunScript(chatId, lessonId, val, type, (response) => {
       try {
         setChatId(response.chat_id);
         let id = generateUUID();
@@ -137,7 +137,7 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className ,lessonStatusUpdat
             function_name: response.function_name,
           });
         } else if (response.type === "text") {
-          console.log('lastmsg',lastMsg)
+          console.log('lastmsg', lastMsg)
           if (lastMsg !== null && lastMsg.content.type === "text") {
             lastMsg.content.text = lastMsg.content.text + response.content;
             updateMsg(lastMsg._id, lastMsg);
@@ -169,7 +169,7 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className ,lessonStatusUpdat
           };
           appendMsg(lastMsg);
           setInputDisabled(true);
-        }else if (response.type === "buttons") {
+        } else if (response.type === "buttons") {
           console.log(response)
           lastMsg = {
             _id: id,
@@ -178,15 +178,15 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className ,lessonStatusUpdat
             position: "right"
           };
           appendMsg(lastMsg);
-          setInputDisabled(true); 
-          
-        }else if (response.type === "study_complete") {
+          setInputDisabled(true);
+
+        } else if (response.type === "study_complete") {
           // setLessonId(response.lesson_id);
 
-        }else if (response.type === "lesson_update"){
-            if (lessonStatusUpdate){
-              lessonStatusUpdate(response.content)
-            }
+        } else if (response.type === "lesson_update") {
+          if (lessonStatusUpdate) {
+            lessonStatusUpdate(response.content)
+          }
         }
       } catch (e) {
         // console.log("error", e);
@@ -194,7 +194,7 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className ,lessonStatusUpdat
     });
   }
 
-  function onButtonClick(type,content) {
+  function onButtonClick(type, content) {
     handleSend(type, content);
 
   }
@@ -240,18 +240,18 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className ,lessonStatusUpdat
       return <MarkdownBubble content={content.text} />;
     } else if (content.type === "init") {
     } else if (msg.type === "card") {
-      const type = content.buttons.length > 1 ? "select": "continue"
+      const type = content.buttons.length > 1 ? "select" : "continue"
       return (
         <Bubble>
           <Card size="xl">
             <CardTitle>{content.title}</CardTitle>
             <CardActions>
               {
-                content.buttons.map(btn=>{
-                 return  <Button onClick={()=>onButtonClick(type,btn.value)} >{btn.label}</Button>
+                content.buttons.map(btn => {
+                  return <Button onClick={() => onButtonClick(type, btn.value)} >{btn.label}</Button>
                 })
               }
-            
+
             </CardActions>
           </Card>
         </Bubble>
@@ -260,41 +260,55 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className ,lessonStatusUpdat
     return null;
   }
 
-  function loadMsg(chatId, newMessages) {
+  function loadMsg(chatId, newMessages, ui) {
     resetList()
-    if (newMessages === undefined || newMessages === null) {
-      return;
-    }
-    
-    newMessages.forEach((item) => {
-      if (item.script_role === "学生") {
-        appendMsg({
-          _id: generateUUID(),
-          type: "text",
-          content: { type: "text", text: item.script_content },
-          position: "right",
-        });
-      } else {
-        if (item.function_call) {
-          appendMsg({
-            content: {
-              function_name: item.function_call,
-              type: "calling",
-              isProcessed: true,
-            },
-            _id: generateUUID(),
-          });
-        } else {
+    if (newMessages && newMessages.length > 0) {
+      newMessages.forEach((item) => {
+        if (item.script_role === "学生") {
           appendMsg({
             _id: generateUUID(),
             type: "text",
             content: { type: "text", text: item.script_content },
-            position: "left",
-            user: { avatar: require("../../Assets/chat/sunner_icon.jpg") },
+            position: "right",
           });
+        } else {
+          if (item.function_call) {
+            appendMsg({
+              content: {
+                function_name: item.function_call,
+                type: "calling",
+                isProcessed: true,
+              },
+              _id: generateUUID(),
+            });
+          } else {
+            appendMsg({
+              _id: generateUUID(),
+              type: "text",
+              content: { type: "text", text: item.script_content },
+              position: "left",
+              user: { avatar: require("../../Assets/chat/sunner_icon.jpg") },
+            });
+          }
         }
-      }
-    });
+      });
+    }
+    if (ui) {
+      if (ui.type === "input") {
+        setInputPlaceholder(ui.content);
+      }else if(ui.type === "buttons"){
+
+        appendMsg( {
+          _id: generateUUID(),
+          type: "card",
+          content: ui.content,
+          position: "right"
+        });
+
+      setScriptId(ui.script_id);
+    }
+  }
+
 
   }
   function checkResetListComplete() {
@@ -312,18 +326,11 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className ,lessonStatusUpdat
     setLessonId(lessonInfo.lesson_id);
     setChatId(lessonInfo.course_id);
     if (lessonInfo.status === "未开始") {
-      // loadMsg(lessonInfo.lesson_id, [])
-
-      // checkResetListComplete().then(()=>{
-          handleSend("start","")
-      // })
-
-    
+      handleSend("start", "")
     } else {
       getLessonStudyRecord(lessonInfo.lesson_id).then((res) => {
-        // console.log("getLessonStudyRecord", res);
-        loadMsg(lessonInfo.lesson_id, res.data);
-      });
+        loadMsg(lessonInfo.lesson_id, res.data.records, res.data.ui)
+      })
     }
   }
   useImperativeHandle(ref, () => ({

@@ -79,3 +79,12 @@ export const resetPassword = (username, new_password, code) => {
     data: { username, new_password, code }
   })
 }
+
+
+export const requireTmp = (temp_id,source)=>{
+  return request({
+    url: '/api/user/require_tmp',
+    method: 'post',
+    data: { temp_id, source }
+  });
+}

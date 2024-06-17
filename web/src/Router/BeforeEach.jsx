@@ -7,7 +7,7 @@ const BeforeEach=({children, authRoutes})=>{
     window.addEventListener(
         "apiError",
         ({detail})=>{
-          console.log(detail);
+          console.log('apiError',detail);
           if(detail.code === 1005 || detail.code === 1001){
             navigate("/login");
           }
