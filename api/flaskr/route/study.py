@@ -53,7 +53,7 @@ def register_study_handler(app:Flask,path_prefix:str)->Flask:
                 content:
                     text/event-stream:
                         schema:
-                        # $ref: "#/components/schemas/ScriptDTO"
+                             $ref: "#/components/schemas/ScriptDTO"
         '''
         course_id = request.get_json().get('course_id', 'dfca19aab2654fe4882e002a58567240')
         lesson_id = request.get_json().get('lesson_id', None)

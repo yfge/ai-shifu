@@ -141,6 +141,9 @@ def get_fmt_prompt(app:Flask,user_id:str,profile_tmplate:str,input:str=None,prof
 
 @register_schema_to_swagger 
 class ScriptDTO:
+    script_type:str
+    script_content:str
+    script_id:str
     def __init__(self,script_type,script_content,script_id=None):
         self.script_type = script_type
         self.script_content = script_content
@@ -378,7 +381,6 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                 elif script_info.script_type == SCRIPT_TYPE_PORMPT:
                     span = trace.span(name="prompt_sript")
                     system = get_lesson_system(script_info.lesson_id)
-                    app.logger.info("system:"+system)
                     system_prompt = None if system == None or system == "" else get_fmt_prompt(app,user_id,system)
                     prompt = get_fmt_prompt(app,user_id,script_info.script_prompt,profile_array_str=script_info.script_profile)
                     generation_input = []

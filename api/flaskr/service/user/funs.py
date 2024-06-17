@@ -6,6 +6,9 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
 from flaskr.api.aliyun import send_sms_code_ali
+from flaskr.common.swagger import register_schema_to_swagger
+from flaskr.service.common.models import CHECK_CODE_ERROR, CHECK_CODE_EXPIRED, SMS_CHECK_ERROR, SMS_SEND_EXPIRED
+from flaskr.service.user.const import USE_STATE_VALUES, USER_STATE_REGISTERED, USER_STATE_UNTEGISTERED
 from ...dao import db,redis_client as redis
 from ...api.sendcloud import send_email
 import uuid
@@ -17,15 +20,23 @@ import time
 from captcha.image import ImageCaptcha 
 from marshmallow_dataclass import dataclass
 
-@dataclass
+@register_schema_to_swagger
 class UserInfo:
-    def __init__(self, user_id, username, name, email, mobile,model):
+    user_id: str
+    username: str
+    name: str
+    email: str
+    mobile: str
+    model: str
+    user_state: str
+    def __init__(self, user_id, username, name, email, mobile,model,user_state):
         self.user_id = user_id
         self.username = username
         self.name = name
         self.email = email
         self.mobile = mobile
         self.model = model
+        self.user_state = USE_STATE_VALUES[user_state]
     def __json__(self):
         return {
             "user_id": self.user_id,
@@ -33,11 +44,16 @@ class UserInfo:
             "name": self.name,
             "email": self.email,
             "mobile": self.mobile,
+            "state": self.user_state,
         }
     def __html__(self):
         return self.__json__()
-@dataclass
+
+
+@register_schema_to_swagger
 class UserToken:
+    userInfo: UserInfo
+    token: str
     def __init__(self,userInfo:UserInfo, token):
         self.userInfo = userInfo
         self.token = token
@@ -60,7 +76,7 @@ def create_new_user(app:Flask, username: str, name: str, raw_password: str, emai
         db.session.add(new_user)
         db.session.commit()
         token = generate_token(app,user_id=user_id)
-        return UserToken(UserInfo(user_id=user_id, username=username, name=name, email=email, mobile=mobile,model=new_user.default_model),token=token)
+        return UserToken(UserInfo(user_id=user_id, username=username, name=name, email=email, mobile=mobile,model=new_user.default_model,user_state= new_user.user_state),token=token)
 
 def generate_temp_user(app:Flask,temp_id:str,user_source = 'web')->UserToken:
     with app.app_context():
@@ -68,17 +84,16 @@ def generate_temp_user(app:Flask,temp_id:str,user_source = 'web')->UserToken:
         if not convert_user:
             user_id = str(uuid.uuid4()).replace('-', '')
             new_convert_user = UserConversion(user_id=user_id,conversion_uuid=temp_id, conversion_id=temp_id, conversion_source=user_source, conversion_status=0)
-            new_user = User(user_id=user_id)
+            new_user = User(user_id=user_id,user_state=USER_STATE_UNTEGISTERED)
             db.session.add(new_convert_user)
             db.session.add(new_user)
             db.session.commit()
-
             token = generate_token(app,user_id=user_id)
-            return UserToken(UserInfo(user_id=user_id, username="", name="", email="", mobile="",model=new_user.default_model),token=token)
+            return UserToken(UserInfo(user_id=user_id, username="", name="", email="", mobile="",model=new_user.default_model,user_state=new_user.user_state),token=token)
         else:
             user = User.query.filter_by(user_id=convert_user.user_id).first()
             token = generate_token(app,user_id=user.user_id)
-            return UserToken(UserInfo(user_id=user.user_id, username=user.username, name=user.name, email=user.email, mobile=user.mobile,model=user.default_model),token=token)     
+            return UserToken(UserInfo(user_id=user.user_id, username=user.username, name=user.name, email=user.email, mobile=user.mobile,model=user.default_model,user_state=user.user_state),token=token)     
 
 
 
@@ -95,7 +110,7 @@ def verify_user(app:Flask, login: str, raw_password: str) ->UserToken:
             password_hash = hashlib.md5((user.user_id + raw_password).encode()).hexdigest()
             if password_hash == user.password_hash:
                 token = generate_token(app,user_id=user.user_id)  
-                return UserToken(UserInfo(user_id=user.user_id, username=user.username, name=user.name, email=user.email, mobile=user.mobile,model=user.default_model),token=token)
+                return UserToken(UserInfo(user_id=user.user_id, username=user.username, name=user.name, email=user.email, mobile=user.mobile,model=user.default_model,user_state=user.user_state),token=token)
             else:
                 raise USER_PASSWORD_ERROR
         else:
@@ -113,7 +128,7 @@ def validate_user(app:Flask, token: str) -> UserInfo:
             if set_token == token:
                 user = User.query.filter_by(user_id=user_id).first()
                 if user:
-                    return UserInfo(user_id=user.user_id, username=user.username, name=user.name, email=user.email, mobile=user.mobile,model=user.default_model)
+                    return UserInfo(user_id=user.user_id, username=user.username, name=user.name, email=user.email, mobile=user.mobile,model=user.default_model, user_state=user.user_state)
                 else:
                     raise USER_TOKEN_EXPIRED
             else:
@@ -133,7 +148,7 @@ def update_user_info(app:Flask,user:UserInfo,name,email=None,mobile=None)->UserI
             if(mobile != None):
                 dbuser.mobile = mobile
             db.session.commit()
-            return UserInfo(user_id=user.user_id, username=user.username, name=user.name, email=user.email, mobile=user.mobile,model=dbuser.default_model)
+            return UserInfo(user_id=user.user_id, username=user.username, name=user.name, email=user.email, mobile=user.mobile,model=dbuser.default_model,user_state=dbuser.user_state)
         else:
             raise USER_NOT_FOUND
 
@@ -145,7 +160,7 @@ def change_user_passwd(app:Flask,user:UserInfo,oldpwd,newpwd)->UserInfo:
             if password_hash == user.password_hash:
                 user.password_hash = hashlib.md5((user.user_id + newpwd).encode()).hexdigest()
                 db.session.commit()
-                return UserInfo(user_id=user.user_id, username=user.username, name=user.name, email=user.email, mobile=user.mobile,model=user.default_model)
+                return UserInfo(user_id=user.user_id, username=user.username, name=user.name, email=user.email, mobile=user.mobile,model=user.default_model,user_state=user.user_state)
             else:
                 raise OLD_PASSWORD_ERROR
         else:
@@ -154,7 +169,7 @@ def get_user_info(app:Flask,user_id:str)->UserInfo:
     with app.app_context():
         user = User.query.filter_by(user_id=user_id).first()
         if user:
-            return UserInfo(user_id=user.user_id, username=user.username, name=user.name, email=user.email, mobile=user.mobile,model=user.default_model)
+            return UserInfo(user_id=user.user_id, username=user.username, name=user.name, email=user.email, mobile=user.mobile,model=user.default_model,user_state=user.user_state)
         else:
             raise USER_NOT_FOUND
 
@@ -222,11 +237,11 @@ def send_sms_code(app:Flask,phone:str,chekcode:str)->str:
 
         check_save = redis.get(app.config["REDIS_KEY_PRRFIX_CAPTCHA"] + phone)
         if check_save == None:
-            raise RESET_PWD_CODE_EXPIRED
+            raise CHECK_CODE_EXPIRED
         check_save_str = str(check_save,encoding="utf-8") 
         app.logger.info("check_save_str:"+check_save_str+" chekcode:"+chekcode)
         if chekcode != check_save_str:
-            raise RESET_PWD_CODE_ERROR
+            raise CHECK_CODE_ERROR
         else:
             characters =  string.digits
             # Generate a random string of length 4
@@ -235,7 +250,7 @@ def send_sms_code(app:Flask,phone:str,chekcode:str)->str:
             redis.set(app.config["REDIS_KEY_PRRFIX_PHONE_CODE"] + phone, random_string,ex=app.config['PHONE_CODE_EXPIRE_TIME'])
             send_sms_code_ali(app,phone,random_string)
             return {
-            "expire_in":app.config['PHONE_CODE_EXPIRE_TIME']
+                "expire_in":app.config['PHONE_CODE_EXPIRE_TIME']
             } 
         
 # 验证短信验证码
@@ -244,20 +259,22 @@ def verify_sms_code(app:Flask,user_id,phone:str,chekcode:str)->UserToken:
         app.logger.info("phone:"+phone+" chekcode:"+chekcode)
         check_save = redis.get(app.config["REDIS_KEY_PRRFIX_PHONE_CODE"] + phone)
         if check_save == None:
-            raise RESET_PWD_CODE_EXPIRED
+            raise SMS_SEND_EXPIRED
         check_save_str = str(check_save,encoding="utf-8") 
         if chekcode != check_save_str:
-            raise RESET_PWD_CODE_ERROR
+            raise SMS_CHECK_ERROR
         else:
             if user_id:
                 user_info = User.query.filter_by(user_id=user_id).first()
                 user_info.mobile = phone
+                user_info.user_state = USER_STATE_REGISTERED 
             else:
                 user_info = User.query.filter_by(mobile=phone).first()
             if user_info is None:
                 user_id = str(uuid.uuid4()).replace('-', '')
                 user_info = User(user_id=user_id, username="", name="", email="", mobile=phone,default_model=app.config["OPENAI_DEFAULT_MODEL"])
+                user_info.user_state = USER_STATE_REGISTERED
                 db.session.add(user_info)
             token = generate_token(app,user_id=user_info.user_id)
             db.session.commit()
-            return UserToken(UserInfo(user_id=user_info.user_id, username=user_info.username, name=user_info.name, email=user_info.email, mobile=user_info.mobile,model=user_info.default_model),token)
+            return UserToken(UserInfo(user_id=user_info.user_id, username=user_info.username, name=user_info.name, email=user_info.email, mobile=user_info.mobile,model=user_info.default_model,user_state=user_info.user_state),token)

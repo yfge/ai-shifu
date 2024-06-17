@@ -139,6 +139,35 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
         ---
         tags:
             - 用户
+        parameters:
+            -   in: body
+                required: true
+                schema:
+                    properties:
+                        temp_id:
+                            type: string
+                            description: 临时用户ID
+                        source:
+                            type: string
+                            description: 来源
+        responses:
+            200:
+                description: 临时用户登录成功
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                code:
+                                    type: integer
+                                    description: 返回码
+                                message:
+                                    type: string
+                                    description: 返回信息
+                                data:
+                                    $ref: "#/components/schemas/UserToken"
+            400:
+                description: 参数错误
+            
         
         """
         tmp_id = request.get_json().get('temp_id',None)
@@ -173,7 +202,45 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
         ---
         tags: 
            - 用户
-        
+
+        parameters:
+          - in: body
+            required: true
+            schema:
+              properties:
+                mobile:
+                  type: string
+                  description: 手机号
+                check_code:
+                  type: string
+                  description: 图形验证码
+              required:
+                - mobile
+                - check_code 
+        responses:
+            200:
+                description: 发送成功
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                code:
+                                    type: integer
+                                    description: 返回码
+                                message:
+                                    type: string
+                                    description: 返回信息
+                                data:
+                                    description: 短信验证码
+                                    schema:
+                                        properties:
+                                            expire_in:
+                                                type: integer
+                                                description: 短信验证码
+
+                                
+            400:
+                description: 参数错误
         
         """
         mobile = request.get_json().get('mobile',None)
@@ -198,6 +265,7 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
         return make_common_response(verify_sms_code(app,user_id,mobile,sms_code))
 
     return app
+
 
 
     
