@@ -334,14 +334,15 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     pass
                 elif input_type == INPUT_TYPE_SELECT:
                     profile_keys = get_profile_array(script_info.script_ui_profile)
-
                     profile_tosave = {}
+                    if len(profile_keys) == 0 :
+                        btns = json.loads(script_info.script_other_conf)
+                        conf_key = btns.get('var_name','input')
+                        profile_tosave[conf_key] = input
+                        
                     for k in profile_keys:
                         profile_tosave[k]=input
                     save_user_profiles(app,user_id,profile_tosave)
-                  
-
-
                     log_script = generation_attend(app,attend,script_info)
                     log_script.script_content = input
                     log_script.script_role = ROLE_STUDENT
@@ -537,20 +538,23 @@ class StudyRecordItemDTO:
     script_type:int
     script_content:str
     lesson_id: str
+    id: str
     
-    def __init__(self,script_index,script_role,script_type,script_content,lesson_id):
+    def __init__(self,script_index,script_role,script_type,script_content,lesson_id,id):
         self.script_index = script_index
         self.script_role = script_role
         self.script_type = script_type
         self.script_content = script_content
         self.lesson_id = lesson_id
+        self.id = id
     def __json__(self):
         return {
             "script_index": self.script_index,
             "script_role": self.script_role,
             "script_type": self.script_type,
             "script_content": self.script_content,
-            "lesson_id":self.lesson_id
+            "lesson_id":self.lesson_id,
+            "id":self.id
         }
     
 
@@ -597,7 +601,6 @@ def get_study_record(app:Flask,user_id:str,lesson_id:str)->StudyRecordDTO:
         if len(lesson_info.lesson_no) <= 2:
             lesson_infos = AILesson.query.filter(AILesson.lesson_no.like(lesson_info.lesson_no+'%')).all()
             lesson_ids = [lesson.lesson_id for lesson in lesson_infos]
-
         app.logger.info("lesson_ids:{}".format(lesson_ids))
         attend_infos = AICourseLessonAttend.query.filter(AICourseLessonAttend.user_id==user_id,  AICourseLessonAttend.lesson_id.in_(lesson_ids)).all()
         if not attend_infos:
@@ -608,14 +611,14 @@ def get_study_record(app:Flask,user_id:str,lesson_id:str)->StudyRecordDTO:
         app.logger.info("attend_scripts:{}".format(len(attend_scripts)))
         if len(attend_scripts) == 0:
             return StudyRecordDTO(None)
-        items =  [StudyRecordItemDTO(i.script_index,ROLE_VALUES[i.script_role],0,i.script_content,i.lesson_id) for i in attend_scripts]
+        items =  [StudyRecordItemDTO(i.script_index,ROLE_VALUES[i.script_role],0,i.script_content,i.lesson_id,i.id) for i in attend_scripts]
         ret = StudyRecordDTO(items)
         last_script_id = attend_scripts[-1].script_id
 
         last_script = AILessonScript.query.filter_by(script_id=last_script_id).first()
         app.logger.info("last_script:{}".format(last_script)) 
         if last_script.script_ui_type == UI_TYPE_INPUT:
-            ret.ui = StudyUIDTO("input",last_script.script_ui_content)
+            ret.ui = StudyUIDTO("input",last_script.script_ui_content,last_script.lesson_id)
         elif last_script.script_ui_type == UI_TYPE_BUTTON:
             btn = [{
                         "label":last_script.script_ui_content,
