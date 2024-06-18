@@ -606,6 +606,8 @@ def get_study_record(app:Flask,user_id:str,lesson_id:str)->StudyRecordDTO:
         app.logger.info("attend_ids:{}".format(attend_ids))
         attend_scripts = AICourseLessonAttendScript.query.filter(AICourseLessonAttendScript.attend_id.in_(attend_ids)).all()
         app.logger.info("attend_scripts:{}".format(len(attend_scripts)))
+        if len(attend_scripts) == 0:
+            return StudyRecordDTO(None)
         items =  [StudyRecordItemDTO(i.script_index,ROLE_VALUES[i.script_role],0,i.script_content,i.lesson_id) for i in attend_scripts]
         ret = StudyRecordDTO(items)
         last_script_id = attend_scripts[-1].script_id
