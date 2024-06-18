@@ -2,6 +2,7 @@ import json
 from flask import Flask, request, jsonify, make_response
 
 from flaskr.service.common.models import raise_param_error
+from flaskr.service.profile.funcs import get_user_profiles
 from ..service.user import *
 from functools import wraps
 from .common import make_common_response,bypass_token_validation,by_pass_login_func
@@ -264,7 +265,34 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
         
         return make_common_response(verify_sms_code(app,user_id,mobile,sms_code))
 
+    @app.route(path_prefix+'/get_profile',methods=['GET'])
+    def get_profile():
+        """
+        获取用户信息
+        ---
+        tags:
+            - 用户
+        responses:
+            200:
+                description: 返回用户信息
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                code:
+                                    type: integer
+                                    description: 返回码
+                                message:
+                                    type: string
+                                    description: 返回信息
+                                data:
+                                    type: object
+                                    description: 用户信息
+        
+        """
+        return make_common_response(get_user_profiles(app,request.user.user_id))
     return app
+
 
 
 

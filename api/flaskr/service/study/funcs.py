@@ -536,17 +536,21 @@ class StudyRecordItemDTO:
     script_role:str
     script_type:int
     script_content:str
-    def __init__(self,script_index,script_role,script_type,script_content):
+    lesson_id: str
+    
+    def __init__(self,script_index,script_role,script_type,script_content,lesson_id):
         self.script_index = script_index
         self.script_role = script_role
         self.script_type = script_type
         self.script_content = script_content
+        self.lesson_id = lesson_id
     def __json__(self):
         return {
             "script_index": self.script_index,
             "script_role": self.script_role,
             "script_type": self.script_type,
-            "script_content": self.script_content
+            "script_content": self.script_content,
+            "lesson_id":self.lesson_id
         }
     
 
@@ -554,13 +558,16 @@ class StudyRecordItemDTO:
 class StudyUIDTO:
     type: str 
     content: object
-    def __init__(self,type,content):
+    lesson_id:str
+    def __init__(self,type,content,lesson_id):
         self.type = type
         self.content = content
+        self.lesson_id = lesson_id
     def __json__(self):
         return {
             "type": self.type,
-            "content": self.content
+            "content": self.content,
+            "lesson_id":self.lesson_id
         }
 @register_schema_to_swagger 
 class StudyRecordDTO:
@@ -577,13 +584,29 @@ class StudyRecordDTO:
     
 
 
+
+# 获取学习记录
+
 def get_study_record(app:Flask,user_id:str,lesson_id:str)->StudyRecordDTO:
     with app.app_context():
-        attend_info = AICourseLessonAttend.query.filter_by(user_id=user_id,lesson_id=lesson_id).first()
-        if not attend_info:
+
+        lesson_info = AILesson.query.filter_by(lesson_id=lesson_id).first()
+        lesson_ids = [lesson_id]
+        if not lesson_info:
             return None
-        attend_scripts = AICourseLessonAttendScript.query.filter_by(attend_id=attend_info.attend_id).all()
-        items =  [StudyRecordItemDTO(i.script_index,ROLE_VALUES[i.script_role],0,i.script_content) for i in attend_scripts]
+        if len(lesson_info.lesson_no) <= 2:
+            lesson_infos = AILesson.query.filter(AILesson.lesson_no.like(lesson_info.lesson_no+'%')).all()
+            lesson_ids = [lesson.lesson_id for lesson in lesson_infos]
+
+        app.logger.info("lesson_ids:{}".format(lesson_ids))
+        attend_infos = AICourseLessonAttend.query.filter(AICourseLessonAttend.user_id==user_id,  AICourseLessonAttend.lesson_id.in_(lesson_ids)).all()
+        if not attend_infos:
+            return None
+        attend_ids = [attend_info.attend_id for attend_info in attend_infos]
+        app.logger.info("attend_ids:{}".format(attend_ids))
+        attend_scripts = AICourseLessonAttendScript.query.filter(AICourseLessonAttendScript.attend_id.in_(attend_ids)).all()
+        app.logger.info("attend_scripts:{}".format(len(attend_scripts)))
+        items =  [StudyRecordItemDTO(i.script_index,ROLE_VALUES[i.script_role],0,i.script_content,i.lesson_id) for i in attend_scripts]
         ret = StudyRecordDTO(items)
         last_script_id = attend_scripts[-1].script_id
 
@@ -596,15 +619,17 @@ def get_study_record(app:Flask,user_id:str,lesson_id:str)->StudyRecordDTO:
                         "label":last_script.script_ui_content,
                         "value":last_script.script_ui_content
                     }]
-            ret.ui = StudyUIDTO("buttons",{"title":"接下来","buttons":btn})
+            ret.ui = StudyUIDTO("buttons",{"title":"接下来","buttons":btn},last_script.lesson_id)
         elif last_script.script_ui_type == UI_TYPE_CONTINUED:
-            ret.ui = StudyUIDTO("buttons",{"title":"继续","buttons":[{"label":"继续","value":"继续"}]})
+            ret.ui = StudyUIDTO("buttons",{"title":"继续","buttons":[{"label":"继续","value":"继续"}]},last_script.lesson_id)
         elif last_script.script_ui_type == UI_TYPE_SELECTION:
-            ret.ui = StudyUIDTO("buttons",{"title":last_script.script_ui_content,"buttons":json.loads(last_script.script_other_conf)["btns"]})
+            ret.ui = StudyUIDTO("buttons",{"title":last_script.script_ui_content,"buttons":json.loads(last_script.script_other_conf)["btns"]},last_script.lesson_id)
 
         return ret
     
 
+# 重置用户信息
+# 重置用户学习信息
 def reset_user_study_info(app:Flask,user_id:str):
     with app.app_context():
         db.session.execute(text("delete from ai_course_buy_record where user_id = :user_id"),{"user_id":user_id})
