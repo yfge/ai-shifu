@@ -42,6 +42,6 @@ def get_chat_response(app,msg):
     data = {"messages":[{
         "role": "user",
         "content": msg
-    }],"stream":False}
+    }],"stream":True}
     response = requests.post(url, params=params, json = data)
     app.logger.info(response.json())

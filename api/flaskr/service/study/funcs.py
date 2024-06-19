@@ -8,7 +8,7 @@ from flask import Flask, typing
 from flaskr.common import register_schema_to_swagger
 from flaskr.service.lesson.funs import AILessonInfoDTO
 from flaskr.service.profile.funcs import get_user_profiles, save_user_profiles
-from flaskr.service.sales.consts import ATTEND_STATUS_TYPES, ATTEND_STATUS_UNAVAILABE, ATTEND_STATUS_VALUES
+from flaskr.service.sales.consts import ATTEND_STATUS_BRANCH, ATTEND_STATUS_TYPES, ATTEND_STATUS_UNAVAILABE, ATTEND_STATUS_VALUES
 from flaskr.service.study.const import *
 from langchain.prompts import PromptTemplate
 
@@ -164,7 +164,6 @@ def make_script_dto(script_type,script_content,script_id)->str:
 def get_current_lesson(app: Flask, lesssons:list[AICourseLessonAttendDTO] )->AICourseLessonAttendDTO:
     return lesssons[0]
 
-
 def get_script(app:Flask,attend_id:str,next:bool) :
     attend_info = AICourseLessonAttend.query.filter(AICourseLessonAttend.attend_id ==attend_id).first()
     attend_infos = []
@@ -182,22 +181,18 @@ def get_script(app:Flask,attend_id:str,next:bool) :
         if len(lesson.lesson_no)>=2 and lesson.lesson_no[-2:] == '01':
             # 第一节课
             app.logger.info('first lesson')
-
             parent_lesson = AILesson.query.filter(AILesson.lesson_no == lesson.lesson_no[:-2]).first()
             parent_attend = AICourseLessonAttend.query.filter(AICourseLessonAttend.lesson_id == parent_lesson.lesson_id,AICourseLessonAttend.user_id == attend_info.user_id).first()
             if parent_attend.status == ATTEND_STATUS_NOT_STARTED:
                 parent_attend.status = ATTEND_STATUS_IN_PROGRESS
-                # parent_attend.script_index = 1
                 attend_infos.append(AILessonAttendDTO(parent_lesson.lesson_no,parent_lesson.lesson_name,parent_lesson.lesson_id,ATTEND_STATUS_VALUES[ATTEND_STATUS_IN_PROGRESS]))
- 
-                # db.session.commit()
-
-
+    elif attend_info.status == ATTEND_STATUS_BRANCH:
+        pass
     elif next:
         attend_info.script_index = attend_info.script_index + 1
     script_info = AILessonScript.query.filter(AILessonScript.lesson_id==attend_info.lesson_id,AILessonScript.script_index==attend_info.script_index).first()
     if not script_info:
-        # 没有下一个脚本
+
         attend_info.status = ATTEND_STATUS_COMPLETED
     db.session.commit()
     return script_info,attend_infos

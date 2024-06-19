@@ -78,7 +78,7 @@ def get_ernie_response(app,model,msg,**args)->Generator[ErnieStreamResponse,None
         "role": "user",
         "content": msg
     }],"stream":True}
-    response = requests.post(url, params=params, json = data)
+    response = requests.post(url, params=params, json = data,headers={"Content-Type":"application/json"},stream=True)
     for res in response.iter_lines():
         res = res.decode('utf-8')
         app.logger.info('ernie response data: {}'.format(res))
