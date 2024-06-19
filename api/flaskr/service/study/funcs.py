@@ -139,9 +139,11 @@ def get_fmt_prompt(app:Flask,user_id:str,profile_tmplate:str,input:str=None,prof
     return prompt.encode('utf-8').decode('utf-8')
     
 
+
+# 更新课程信息
 @register_schema_to_swagger 
 class ScriptDTO:
-    script_type:str
+    script_type:str #  "'text' 'input' 'buttons' 'text_end'"
     script_content:str
     script_id:str
     def __init__(self,script_type,script_content,script_id=None):
@@ -163,12 +165,34 @@ def get_current_lesson(app: Flask, lesssons:list[AICourseLessonAttendDTO] )->AIC
     return lesssons[0]
 
 
-def get_script(app:Flask,attend_id:str,next:bool)->AILessonScript:
+def get_script(app:Flask,attend_id:str,next:bool) :
     attend_info = AICourseLessonAttend.query.filter(AICourseLessonAttend.attend_id ==attend_id).first()
+    attend_infos = []
     app.logger.info("get next script,current:{},next:{}".format(attend_info.script_index,next))
     if attend_info.status == ATTEND_STATUS_NOT_STARTED:
         attend_info.status = ATTEND_STATUS_IN_PROGRESS
         attend_info.script_index = 1
+           # 检查是否是第一节课
+        lesson = AILesson.query.filter(AILesson.lesson_id == attend_info.lesson_id).first()
+        attend_infos.append(AILessonAttendDTO(lesson.lesson_no,lesson.lesson_name,lesson.lesson_id,ATTEND_STATUS_VALUES[ATTEND_STATUS_IN_PROGRESS]))
+ 
+        app.logger.info(lesson.lesson_no)
+        app.logger.info(lesson.lesson_no[-2:])   
+
+        if len(lesson.lesson_no)>=2 and lesson.lesson_no[-2:] == '01':
+            # 第一节课
+            app.logger.info('first lesson')
+
+            parent_lesson = AILesson.query.filter(AILesson.lesson_no == lesson.lesson_no[:-2]).first()
+            parent_attend = AICourseLessonAttend.query.filter(AICourseLessonAttend.lesson_id == parent_lesson.lesson_id,AICourseLessonAttend.user_id == attend_info.user_id).first()
+            if parent_attend.status == ATTEND_STATUS_NOT_STARTED:
+                parent_attend.status = ATTEND_STATUS_IN_PROGRESS
+                # parent_attend.script_index = 1
+                attend_infos.append(AILessonAttendDTO(parent_lesson.lesson_no,parent_lesson.lesson_name,parent_lesson.lesson_id,ATTEND_STATUS_VALUES[ATTEND_STATUS_IN_PROGRESS]))
+ 
+                # db.session.commit()
+
+
     elif next:
         attend_info.script_index = attend_info.script_index + 1
     script_info = AILessonScript.query.filter(AILessonScript.lesson_id==attend_info.lesson_id,AILessonScript.script_index==attend_info.script_index).first()
@@ -176,7 +200,7 @@ def get_script(app:Flask,attend_id:str,next:bool)->AILessonScript:
         # 没有下一个脚本
         attend_info.status = ATTEND_STATUS_COMPLETED
     db.session.commit()
-    return script_info
+    return script_info,attend_infos
 
 def get_script_by_id(app: Flask,script_id:str)->AILessonScript:
     return AILessonScript.query.filter_by(script_id=script_id).first()
@@ -259,7 +283,13 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
             if script_id and not next:
                 script_info = get_script_by_id(app,script_id)
             else:
-                script_info = get_script(app,attend_id=attend.attend_id,next=next)
+                script_info,attend_updates = get_script(app,attend_id=attend.attend_id,next=next)
+                if len(attend_updates)>0:
+                    for attend_update in attend_updates:
+                        if len(attend_update.lesson_no) > 2:
+                            yield make_script_dto("lesson_update",attend_update.__json__(),"")
+                        else:
+                            yield make_script_dto("chapter_update",attend_update.__json__(),"") 
             if script_info:
                 app.logger.info("begin to run script:{},model:{},input_type:{}".format(script_info.script_id,script_info.script_model,input_type))
                 log_script = generation_attend(app,attend,script_info)
@@ -404,7 +434,6 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     generation.end(output=response_text)
                     span.end(output=response_text)
 
-
                     trace_args ["output"] = trace_args["output"]+"\r\n"+prompt
                     trace.update(**trace_args)
                     log_script = generation_attend(app,attend,script_info)
@@ -434,7 +463,10 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                 # 更新到课信息
                 if len (attend_updates) > 0 :
                     for attend_update in attend_updates:
-                        yield make_script_dto("lesson_update",attend_update.__json__(),"")
+                        if len(attend_update.lesson_no) > 2:
+                            yield make_script_dto("lesson_update",attend_update.__json__(),"")
+                        else:
+                            yield make_script_dto("chapter_update",attend_update.__json__(),"")
                 break
         db.session.commit()
 

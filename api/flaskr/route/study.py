@@ -50,6 +50,7 @@ def register_study_handler(app:Flask,path_prefix:str)->Flask:
         responses:
             200:
                 description: 返回脚本运行结果
+                
                 content:
                     text/event-stream:
                         schema:
