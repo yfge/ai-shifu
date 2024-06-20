@@ -13,7 +13,7 @@ from flaskr.service.study.const import *
 from langchain.prompts import PromptTemplate
 
 
-from flaskr.service.lesson.const import CONTENT_TYPE_IMAGE, LESSON_TYPE_BRANCH_HIDDEN, SCRIPT_TYPE_FIX, SCRIPT_TYPE_PORMPT, SCRIPT_TYPE_SYSTEM, UI_TYPE_BUTTON, UI_TYPE_CHECKCODE, UI_TYPE_CONTINUED, UI_TYPE_INPUT, UI_TYPE_PHONE, UI_TYPE_SELECTION
+from flaskr.service.lesson.const import CONTENT_TYPE_IMAGE, LESSON_TYPE_BRANCH_HIDDEN, SCRIPT_TYPE_FIX, SCRIPT_TYPE_PORMPT, SCRIPT_TYPE_SYSTEM, UI_TYPE_BUTTON, UI_TYPE_CHECKCODE, UI_TYPE_CONTINUED, UI_TYPE_INPUT, UI_TYPE_LOGIN, UI_TYPE_PHONE, UI_TYPE_SELECTION
 from ...dao import db
 
 from flaskr.service.lesson.models import AICourse, AILesson, AILessonScript
@@ -415,10 +415,10 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     db.session.commit()
                     continue
                 elif input_type == INPUT_TYPE_PHONE:
-
+                    next = True
                     pass
                 elif  input_type == INPUT_TYPE_CHECKCODE:
-                    
+                    next = True
                     pass
                 
                 # 执行脚本
@@ -502,9 +502,13 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     yield make_script_dto("phone",script_info.script_ui_content,script_info.script_id)
                     break
                 elif script_info.script_ui_type == UI_TYPE_CHECKCODE:
-                    
-                    
-                    pass
+                    yield make_script_dto("checkcode",script_info.script_ui_content,script_info.script_id)
+                    break
+                elif script_info.script_ui_type == UI_TYPE_LOGIN:
+                    yield make_script_dto("login",script_info.script_ui_content,script_info.script_id)
+                    break
+                else:
+                    break
             else:
                 # 更新完课信息
                 attend_updates = update_attend_lesson_info(app,attend_id=attend_info.attend_id)
