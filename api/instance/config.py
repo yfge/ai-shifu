@@ -1,7 +1,8 @@
 # SQLALCHEMY_DATABASE_URI = 'mysql://root:txy1234.@127.0.0.1:13306/ai_asistant?charset=utf8mb4'
 
-SQLALCHEMY_DATABASE_URI = 'mysql://sifu_test:P14FQWzjcKNWKvZ4@rm-2ze59ehub1no8i221vo.mysql.rds.aliyuncs.com/agi-sifu-test'
-#SQLALCHEMY_DATABASE_URI = 'mysql://root:Pa88word@127.0.0.1:13306/ai_asistant?charset=utf8mb4'
+
+# SQLALCHEMY_DATABASE_URI = 'mysql://sifu_test:P14FQWzjcKNWKvZ4@rm-2ze59ehub1no8i221vo.mysql.rds.aliyuncs.com/agi-sifu-test'
+SQLALCHEMY_DATABASE_URI = 'mysql://root:Pa88word@127.0.0.1:13306/ai_asistant?charset=utf8mb4'
 SQLALCHEMY_POOL_SIZE = 20
 SQLALCHEMY_POOL_TIMEOUT = 30
 SQLALCHEMY_POOL_RECYCLE = 3600
@@ -55,6 +56,9 @@ REDIS_KEY_PRRFIX_PHONE_CODE = REDIS_KEY_PRRFIX + "phone_code:"
 # 手机验证码的过期时间
 PHONE_CODE_EXPIRE_TIME = 60*5
 
+## 用户手机临时存储前缀
+REDIS_KEY_PRRFIX_PHONE =  REDIS_KEY_PRRFIX + "phone:"
+PHONE_EXPIRE_TIME = 60*30
 
 
 PATH_PREFIX = '/api'
