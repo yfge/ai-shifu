@@ -479,6 +479,8 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     log_script.script_role = ROLE_TEACHER
                     db.session.add(log_script)
                     yield make_script_dto("text_end","",script_info.script_id)
+                else:
+                    next = True
                 # 返回下一轮的交互方式
                 if script_info.script_ui_type == UI_TYPE_CONTINUED:
                     next = True
