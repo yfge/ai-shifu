@@ -2,7 +2,7 @@ from flask import Flask
 
 from .models import UserProfile
 from ...dao import db
-
+from ..user.models import User
 
 class UserProfileDTO:
     def __init__(self, user_id, profile_key, profile_value, profile_type):

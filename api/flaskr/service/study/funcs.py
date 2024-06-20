@@ -5,6 +5,8 @@ import re
 import openai
 from typing import Generator
 from flask import Flask, typing
+from flaskr.service.common  import AppException
+from flaskr.service.user.funs import send_sms_code_without_check, verify_sms_code, verify_sms_code_without_phone
 from flaskr.common import register_schema_to_swagger
 from flaskr.service.lesson.funs import AILessonInfoDTO
 from flaskr.service.profile.funcs import get_user_profiles, save_user_profiles
@@ -415,9 +417,38 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     db.session.commit()
                     continue
                 elif input_type == INPUT_TYPE_PHONE:
+                    try:
+                        send_sms_code_without_check(app,user_id,input)
+                    except AppException as e:
+                        for i in e.message:
+                            yield make_script_dto("text",i,script_info.script_id)
+                            time.sleep(0.1)
+                        break 
+                    log_script = generation_attend(app,attend,script_info)
+                    log_script.script_content = input
+                    log_script.script_role = ROLE_STUDENT
+                    db.session.add(log_script)
+                    input = None
+                    input_type = INPUT_TYPE_CONTINUE 
+                    span = trace.span(name="user_input_phone",input=input)
+                    span.end()
                     next = True
-                    pass
+                    continue
                 elif  input_type == INPUT_TYPE_CHECKCODE:
+                    try:
+                        verify_sms_code_without_phone(app,user_id,input)
+                    except AppException as e:
+                        for i in e.message:
+                            yield make_script_dto("text",i,script_info.script_id)
+                            time.sleep(0.1)
+                        break
+                    input = None
+                    input_type = INPUT_TYPE_CONTINUE 
+                    span = trace.span(name="user_input_phone",input=input)
+                    span.end()
+                    next = True
+                    continue
+                elif  input_type == INPUT_TYPE_LOGIN:
                     next = True
                     pass
                 
@@ -499,13 +530,13 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     yield make_script_dto("buttons",{"title":script_info.script_ui_content,"buttons":json.loads(script_info.script_other_conf)["btns"]},script_info.script_id)
                     break
                 elif script_info.script_ui_type == UI_TYPE_PHONE:
-                    yield make_script_dto("phone",script_info.script_ui_content,script_info.script_id)
+                    yield make_script_dto(INPUT_TYPE_PHONE,script_info.script_ui_content,script_info.script_id)
                     break
                 elif script_info.script_ui_type == UI_TYPE_CHECKCODE:
-                    yield make_script_dto("checkcode",script_info.script_ui_content,script_info.script_id)
+                    yield make_script_dto(INPUT_TYPE_CHECKCODE,script_info.script_ui_content,script_info.script_id)
                     break
                 elif script_info.script_ui_type == UI_TYPE_LOGIN:
-                    yield make_script_dto("login",script_info.script_ui_content,script_info.script_id)
+                    yield make_script_dto(INPUT_TYPE_LOGIN,script_info.script_ui_content,script_info.script_id)
                     break
                 else:
                     break

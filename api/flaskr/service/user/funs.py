@@ -213,7 +213,6 @@ def generation_img_chk(app:Flask,mobile:str)->str:
     with app.app_context():
         image_captcha = ImageCaptcha()
         characters = string.ascii_uppercase + string.digits
-
         # Generate a random string of length 4
         random_string = ''.join(random.choices(characters, k=4))
         captcha_image = image_captcha.generate_image(random_string)
@@ -230,7 +229,6 @@ def generation_img_chk(app:Flask,mobile:str)->str:
         }
 
 
-
 # 发送短信验证码
 def send_sms_code(app:Flask,phone:str,chekcode:str)->str:
     with app.app_context():
@@ -239,7 +237,7 @@ def send_sms_code(app:Flask,phone:str,chekcode:str)->str:
             raise CHECK_CODE_EXPIRED
         check_save_str = str(check_save,encoding="utf-8") 
         app.logger.info("check_save_str:"+check_save_str+" chekcode:"+chekcode)
-        if chekcode != check_save_str:
+        if chekcode.lower() != check_save_str.lower():
             raise CHECK_CODE_ERROR
         else:
             characters =  string.digits
@@ -269,7 +267,7 @@ def send_sms_code_without_check(app:Flask,user_id:str,phone:str)->str:
         } 
 def get_sms_code_info(app:Flask,user_id:str,resend:bool):
     with app.app_context():
-        phone = redis.get(app.config["REDIS_KEY_PRRFIX_PHONE"]+user_id,None)
+        phone = redis.get(app.config["REDIS_KEY_PRRFIX_PHONE"]+user_id)
         if phone == None:
             user = User.query.filter(User.user_id == user_id).first()
             phone = user.mobile 
@@ -280,15 +278,15 @@ def get_sms_code_info(app:Flask,user_id:str,resend:bool):
 
 def verify_sms_code_without_phone(app:Flask,user_id:str,checkcode):
     with app.app_context():
-        phone = redis.get(app.config["REDIS_KEY_PRRFIX_PHONE"]+user_id,None)
+        phone = redis.get(app.config["REDIS_KEY_PRRFIX_PHONE"]+user_id)
         if phone == None:
             user = User.query.filter(User.user_id == user_id).first()
             phone = user.mobile
         else:
             phone = str(phone,encoding="utf-8")
-        verify_sms_code(app,user_id,phone,checkcode)
+        verify_sms_code(app,user_id,phone,checkcode,False)
 # 验证短信验证码
-def verify_sms_code(app:Flask,user_id,phone:str,chekcode:str)->UserToken:
+def verify_sms_code(app:Flask,user_id,phone:str,chekcode:str,updateToken=True)->UserToken:
     with app.app_context():
         app.logger.info("phone:"+phone+" chekcode:"+chekcode)
         check_save = redis.get(app.config["REDIS_KEY_PRRFIX_PHONE_CODE"] + phone)
@@ -309,6 +307,9 @@ def verify_sms_code(app:Flask,user_id,phone:str,chekcode:str)->UserToken:
                 user_info = User(user_id=user_id, username="", name="", email="", mobile=phone,default_model=app.config["OPENAI_DEFAULT_MODEL"])
                 user_info.user_state = USER_STATE_REGISTERED
                 db.session.add(user_info)
-            token = generate_token(app,user_id=user_info.user_id)
+            if updateToken:
+                token = generate_token(app,user_id=user_info.user_id)
+            else:
+                token = ""
             db.session.commit()
             return UserToken(UserInfo(user_id=user_info.user_id, username=user_info.username, name=user_info.name, email=user_info.email, mobile=user_info.mobile,model=user_info.default_model,user_state=user_info.user_state),token)
