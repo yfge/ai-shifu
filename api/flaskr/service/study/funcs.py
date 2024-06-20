@@ -5,6 +5,7 @@ import re
 import openai
 from typing import Generator
 from flask import Flask, typing
+from flaskr.service.user.models import User
 from flaskr.service.common  import AppException
 from flaskr.service.user.funs import send_sms_code_without_check, verify_sms_code, verify_sms_code_without_phone
 from flaskr.common import register_schema_to_swagger
@@ -15,7 +16,7 @@ from flaskr.service.study.const import *
 from langchain.prompts import PromptTemplate
 
 
-from flaskr.service.lesson.const import CONTENT_TYPE_IMAGE, LESSON_TYPE_BRANCH_HIDDEN, SCRIPT_TYPE_FIX, SCRIPT_TYPE_PORMPT, SCRIPT_TYPE_SYSTEM, UI_TYPE_BUTTON, UI_TYPE_CHECKCODE, UI_TYPE_CONTINUED, UI_TYPE_INPUT, UI_TYPE_LOGIN, UI_TYPE_PHONE, UI_TYPE_SELECTION
+from flaskr.service.lesson.const import CONTENT_TYPE_IMAGE, LESSON_TYPE_BRANCH_HIDDEN, SCRIPT_TYPE_FIX, SCRIPT_TYPE_PORMPT, SCRIPT_TYPE_SYSTEM, UI_TYPE_BUTTON, UI_TYPE_CHECKCODE, UI_TYPE_CONTINUED, UI_TYPE_INPUT, UI_TYPE_LOGIN, UI_TYPE_PHONE, UI_TYPE_SELECTION, UI_TYPE_TO_PAY
 from ...dao import db
 
 from flaskr.service.lesson.models import AICourse, AILesson, AILessonScript
@@ -314,10 +315,17 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
             if script_info:
                 app.logger.info("begin to run script:{},model:{},input_type:{}".format(script_info.script_id,script_info.script_model,input_type))
                 log_script = generation_attend(app,attend,script_info)
+
+                #  检查后续操作是否为手机号和验证码
+                #  如果用户已经注册,则跳过
+                if script_info.script_ui_type == UI_TYPE_PHONE or script_info.script_ui_type == UI_TYPE_CHECKCODE:
+                    user = User.query.filter_by(user_id=user_id).first()
+                    if user.user_state > 0:
+                        next = True
+                        continue
                 # 得到脚本
                 # 输入校验
                 if input_type == INPUT_TYPE_TEXT:
-                    check_flag = script_info.script_check_flag
                     prompt = get_fmt_prompt(app,user_id,script_info.script_check_prompt,input,script_info.script_profile)
                     ## todo 换成通用的
                     log_script = generation_attend(app,attend,script_info)
@@ -417,18 +425,11 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     db.session.commit()
                     continue
                 elif input_type == INPUT_TYPE_PHONE:
-                    try:
-                        send_sms_code_without_check(app,user_id,input)
-                    except AppException as e:
-                        for i in e.message:
-                            yield make_script_dto("text",i,script_info.script_id)
-                            time.sleep(0.1)
-                        break 
                     log_script = generation_attend(app,attend,script_info)
                     log_script.script_content = input
                     log_script.script_role = ROLE_STUDENT
                     db.session.add(log_script)
-                    input = None
+                    # input = None
                     input_type = INPUT_TYPE_CONTINUE 
                     span = trace.span(name="user_input_phone",input=input)
                     span.end()
@@ -451,7 +452,6 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                 elif  input_type == INPUT_TYPE_LOGIN:
                     next = True
                     pass
-                
                 # 执行脚本
                 if script_info.script_type == SCRIPT_TYPE_FIX:
                     prompt = ""
@@ -533,10 +533,25 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     yield make_script_dto(INPUT_TYPE_PHONE,script_info.script_ui_content,script_info.script_id)
                     break
                 elif script_info.script_ui_type == UI_TYPE_CHECKCODE:
-                    yield make_script_dto(INPUT_TYPE_CHECKCODE,script_info.script_ui_content,script_info.script_id)
-                    break
+                    try:
+                        expires = send_sms_code_without_check(app,user_id,input)
+                        yield make_script_dto(INPUT_TYPE_CHECKCODE,expires,script_info.script_id)
+                        break
+                    except AppException as e:
+                        for i in e.message:
+                            yield make_script_dto("text",i,script_info.script_id)
+                            time.sleep(0.1)
+                        break 
+                   
                 elif script_info.script_ui_type == UI_TYPE_LOGIN:
                     yield make_script_dto(INPUT_TYPE_LOGIN,script_info.script_ui_content,script_info.script_id)
+                    break
+                elif script_info.script_ui_type == UI_TYPE_TO_PAY: 
+                    btn = [{
+                        "label":script_info.script_ui_content,
+                        "value":script_info.script_ui_content
+                    }]
+                    yield make_script_dto("order",{"title":"买课！","buttons":btn},script_info.script_id)
                     break
                 else:
                     break

@@ -263,7 +263,8 @@ def send_sms_code_without_check(app:Flask,user_id:str,phone:str)->str:
         send_sms_code_ali(app,phone,random_string)
         db.session.commit()
         return {
-            "expire_in":app.config['PHONE_CODE_EXPIRE_TIME']
+            "expire_in":app.config['PHONE_CODE_EXPIRE_TIME'],
+            "phone":phone
         } 
 def get_sms_code_info(app:Flask,user_id:str,resend:bool):
     with app.app_context():
