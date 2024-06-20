@@ -87,9 +87,7 @@ def miniMaxChat(app:Flask,**args)->Generator[ChatResponse,None,None]:
     }
     data = {**data,**args}
     headers = {"Authorization": "Bearer "+MINIMAX_KEY}
-    response = requests.post(MINIMAX_URL, json=data, headers=headers)
-
-
+    response = requests.post(MINIMAX_URL, json=data, headers=headers,stream=True)
     app.logger.info('request data: {}'.format(json.dumps(data)))
     for res in response.iter_lines():
         res = res.decode('utf-8')

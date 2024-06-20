@@ -33,16 +33,19 @@ class LLMStreamResponse:
         self.usage = LLMStreamaUsage(**usage) if usage else None
 
 
-def invoke_llm(app:Flask,model,message,system=None,**kwargs)->Generator[LLMStreamResponse,None,None]:
+def invoke_llm(app:Flask,model:str,message:str,system:str=None,json:bool=False,**kwargs)->Generator[LLMStreamResponse,None,None]:
     app.logger.info(f"invoke_llm {model} {message}")
     kwargs.update({"stream":True})  
     app.logger.info(f"invoke_llm {model} {ERNIE_MODELS}")
-    if model in OPENAI_MODELS:
+    if model in OPENAI_MODELS or model.startswith("gpt"):
         messages = []
         if system:
             messages.append({"content":system,"role":"system"})
         messages.append({"content":message,"role":"user"})
-        response = client.chat.completions.create(model=model,messages=messages,**kwargs)
+
+        if json:
+            kwargs["response_format"] ={ "type": "json_object" }
+        response = client.chat.completions.create(model=model,messages=messages, **kwargs)
         for res in response:
             yield LLMStreamResponse(res.id,
                                     True if res.choices[0].finish_reason else False,
@@ -52,6 +55,8 @@ def invoke_llm(app:Flask,model,message,system=None,**kwargs)->Generator[LLMStrea
         if system:
             kwargs.update({"system":system}) 
         app.logger.info(f"invoke_llm {kwargs}") 
+        if json:
+            kwargs["response_format"]="json_object"
         response = get_ernie_response(app,model, message,**kwargs)
         for res in response:
             yield LLMStreamResponse(res.id,res.is_end,res.is_truncated,res.result,res.finish_reason,res.usage.__dict__)

@@ -13,7 +13,7 @@ from flaskr.service.study.const import *
 from langchain.prompts import PromptTemplate
 
 
-from flaskr.service.lesson.const import CONTENT_TYPE_IMAGE, LESSON_TYPE_BRANCH_HIDDEN, SCRIPT_TYPE_FIX, SCRIPT_TYPE_PORMPT, SCRIPT_TYPE_SYSTEM, UI_TYPE_BUTTON, UI_TYPE_CONTINUED, UI_TYPE_INPUT, UI_TYPE_SELECTION
+from flaskr.service.lesson.const import CONTENT_TYPE_IMAGE, LESSON_TYPE_BRANCH_HIDDEN, SCRIPT_TYPE_FIX, SCRIPT_TYPE_PORMPT, SCRIPT_TYPE_SYSTEM, UI_TYPE_BUTTON, UI_TYPE_CHECKCODE, UI_TYPE_CONTINUED, UI_TYPE_INPUT, UI_TYPE_PHONE, UI_TYPE_SELECTION
 from ...dao import db
 
 from flaskr.service.lesson.models import AICourse, AILesson, AILessonScript
@@ -158,12 +158,37 @@ class ScriptDTO:
         }
 
 
+
+# 从文本中提取json对象
+def extract_json(app:Flask,text:str):
+    stack = []
+    start = None
+
+    for i, char in enumerate(text):
+        if char == '{':
+            if not stack:
+                start = i
+            stack.append(char)
+        elif char == '}':
+            if stack:
+                stack.pop()
+                if not stack:
+                    json_str = text[start:i+1]
+                    try:
+                        json_obj = json.loads(json_str)
+                        return json_obj
+                        # json_objects.append(json_obj)
+                    except json.JSONDecodeError:
+                        pass
+
+    return {}
+    # return json_objects
+
+
 def make_script_dto(script_type,script_content,script_id)->str:
     return    'data: '+json.dumps(ScriptDTO(script_type,script_content,script_id),default=fmt)+'\n\n'.encode('utf-8').decode('utf-8')
-
 def get_current_lesson(app: Flask, lesssons:list[AICourseLessonAttendDTO] )->AICourseLessonAttendDTO:
     return lesssons[0]
-
 def get_script(app:Flask,attend_id:str,next:bool) :
     attend_info = AICourseLessonAttend.query.filter(AICourseLessonAttend.attend_id ==attend_id).first()
     attend_infos = []
@@ -217,7 +242,6 @@ def get_lesson_system(lesson_id:str)->str:
         lesson = AILesson.query.filter(AILesson.lesson_id == lesson_id).first()
         lesson_no = lesson.lesson_no 
         parent_no = lesson_no
- 
         if len(parent_no)>2:
             parent_no = parent_no[:2]
         if parent_no != lesson_no:
@@ -302,35 +326,39 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     generation = span.generation( model=script_info.script_model,input=[{"role": "user", "content": prompt}])
                     resp = invoke_llm(app,
                         model=script_info.script_model,
+                        json=True,
                         stream=True,
                         temperature=0.1,
                         message=prompt)
                     response_text = ""
                     check_success = False
                     stream = False
+
                     for i in resp:
-                        if len(response_text) >= len(check_flag):
-                            if response_text.find(check_flag) in [0,1]:
-                                check_success = True
-                            else:
-                                if stream == False:
-                                    stream = True
-                                    for text in response_text:
-                                        yield make_script_dto("text",text,script_info.script_id)
-                                        time.sleep(0.1)
+                        # if len(response_text) >= len(check_flag):
+                        #     if response_text.find(check_flag) in [0,1]:
+                        #         check_success = True
+                        #     else:
+                        #         if stream == False:
+                        #             stream = True
+                        #             for text in response_text:
+                        #                 yield make_script_dto("text",text,script_info.script_id)
+                        #                 time.sleep(0.1)
                         current_content = i.result
                         if isinstance(current_content ,str):
                             response_text += current_content
-                            if stream:
-                                yield make_script_dto("text", current_content,script_info.script_id)
+                            # if stream:
+                                # yield make_script_dto("text", current_content,script_info.script_id)
                     app.logger.info('response_text:{}'.format(response_text))
+                    jsonObj = extract_json(app,response_text)
                     generation.end(output=response_text)
+                    check_success = jsonObj.get("result","")=="ok"
                     if check_success:
                         app.logger.info('check success')
-                        values = response_text.replace(check_flag,"")
-                        if values.strip() != "":
-                            profile_tosave = json.loads(values)
-                            save_user_profiles(app,user_id,profile_tosave)
+                        # values = response_text.replace(check_flag,"")
+                        # if values.strip() != "":
+                        profile_tosave = jsonObj.get("parse_vars")
+                        save_user_profiles(app,user_id,profile_tosave)
                         input = None
                         next = True
                         input_type = INPUT_TYPE_CONTINUE
@@ -338,6 +366,13 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         db.session.commit()
                         continue
                     else:
+                        reason = jsonObj.get("reason")
+                        for text in reason:
+                            yield make_script_dto("text",text,script_info.script_id)
+                            time.sleep(0.1)
+                        
+                        yield make_script_dto("text_end","",script_info.script_id)
+
                         log_script = generation_attend(app,attend,script_info)
                         log_script.script_content = response_text
                         log_script.script_role = ROLE_TEACHER
@@ -378,7 +413,15 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     span = trace.span(name="user_select",input=input)
                     span.end()
                     db.session.commit()
-                    continue 
+                    continue
+                elif input_type == INPUT_TYPE_PHONE:
+
+                    pass
+                elif  input_type == INPUT_TYPE_CHECKCODE:
+                    
+                    pass
+                
+                # 执行脚本
                 if script_info.script_type == SCRIPT_TYPE_FIX:
                     prompt = ""
                     if script_info.script_content_type == CONTENT_TYPE_IMAGE:
@@ -436,6 +479,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     log_script.script_role = ROLE_TEACHER
                     db.session.add(log_script)
                     yield make_script_dto("text_end","",script_info.script_id)
+                # 返回下一轮的交互方式
                 if script_info.script_ui_type == UI_TYPE_CONTINUED:
                     next = True
                     continue
@@ -452,6 +496,13 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                 elif script_info.script_ui_type == UI_TYPE_SELECTION:
                     yield make_script_dto("buttons",{"title":script_info.script_ui_content,"buttons":json.loads(script_info.script_other_conf)["btns"]},script_info.script_id)
                     break
+                elif script_info.script_ui_type == UI_TYPE_PHONE:
+                    yield make_script_dto("phone",script_info.script_ui_content,script_info.script_id)
+                    break
+                elif script_info.script_ui_type == UI_TYPE_CHECKCODE:
+                    
+                    
+                    pass
             else:
                 # 更新完课信息
                 attend_updates = update_attend_lesson_info(app,attend_id=attend_info.attend_id)

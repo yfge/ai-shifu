@@ -204,8 +204,10 @@ def list_records(app:Flask,app_token:str,table_id:str,view_id:str=None,page_toke
     }
     if view_id:
         body["view_id"]= view_id
+    app.logger.info('list_records:'+str(body))
     r = requests.post(url, headers=headers,data=json.dumps(body))
-    app.logger.info('list_records:'+str(r.json()))
+    # app.logger.info('list_records:'+str(r.json()))
+    
     return r.json() 
 
 

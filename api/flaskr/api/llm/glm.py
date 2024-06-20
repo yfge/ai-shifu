@@ -102,7 +102,7 @@ def invoke_glm(app:Flask,model,message,system=None,**args)->Generator[ChatRespon
     data = {**data,**args}
     
     headers = {"Authorization": "Bearer "+API_KEY}
-    response = requests.post(URLS[model], json=data, headers=headers)
+    response = requests.post(URLS[model], json=data, headers=headers,stream=True)
     app.logger.info('request data: {}'.format(json.dumps(data)))
     for res in response.iter_lines():
         res = res.decode('utf-8')

@@ -149,12 +149,16 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,view_id:str,title:str=N
         while True:
             resp = list_records(app,doc_id,table_id,view_id=view_id,page_token=page_token,page_size=100)
             records = resp['data']['items']
+            app.logger.info('records:'+str(len(records)))
             for record in records:
                 if record['fields'].get('小节',None):
                     title = "".join(t['text'] for t in  record['fields']['小节']).strip()
                     if title is None:
                         app.logger.info('title is None')
-                    lesson = next((l for l in childLessons if hasattr(l, 'lesson_name') and  l.lesson_name == title), None)
+                    if title is None or title == '' and lesson is not None:
+                        pass
+                    else:
+                        lesson = next((l for l in childLessons if hasattr(l, 'lesson_name') and  l.lesson_name == title), None)
                 else:
                     lesson = parent_lesson
                 if lesson is None:
