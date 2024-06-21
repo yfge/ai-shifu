@@ -36,7 +36,6 @@ class LLMStreamResponse:
 def invoke_llm(app:Flask,model:str,message:str,system:str=None,json:bool=False,**kwargs)->Generator[LLMStreamResponse,None,None]:
     app.logger.info(f"invoke_llm {model} {message}")
     kwargs.update({"stream":True})  
-    app.logger.info(f"invoke_llm {model} {ERNIE_MODELS}")
     if model in OPENAI_MODELS or model.startswith("gpt"):
         messages = []
         if system:
@@ -45,7 +44,7 @@ def invoke_llm(app:Flask,model:str,message:str,system:str=None,json:bool=False,*
 
         # if json:
         #     kwargs["response_format"] ={ type: "json_object" }
-        #     kwargs["temperature"]=0.0
+        kwargs["temperature"]=0.0
         response = client.chat.completions.create(model=model,messages=messages, **kwargs)
         for res in response:
             yield LLMStreamResponse(res.id,

@@ -87,7 +87,8 @@ DB_SAVE_MAP = {
     '输入框提示': 'script_ui_content',
     '按钮组配置': 'script_other_conf',
     '后续交互':'script_ui_type',
-    '按钮标题': 'script_ui_content'
+    '按钮标题': 'script_ui_content',
+    '跳转配置': 'script_other_conf'
 
 }
 

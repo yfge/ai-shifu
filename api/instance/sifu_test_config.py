@@ -52,6 +52,10 @@ REDIS_KEY_PRRFIX_PHONE_CODE = REDIS_KEY_PRRFIX + "phone_code:"
 PHONE_CODE_EXPIRE_TIME = 60*5
 
 
+## 用户手机临时存储前缀
+REDIS_KEY_PRRFIX_PHONE =  REDIS_KEY_PRRFIX + "phone:"
+PHONE_EXPIRE_TIME = 60*30
+
 LOGGING_PATH = "/var/log/ai-asistant.log"
 
 

@@ -16,7 +16,7 @@ from flaskr.service.study.const import *
 from langchain.prompts import PromptTemplate
 
 
-from flaskr.service.lesson.const import CONTENT_TYPE_IMAGE, LESSON_TYPE_BRANCH_HIDDEN, SCRIPT_TYPE_FIX, SCRIPT_TYPE_PORMPT, SCRIPT_TYPE_SYSTEM, UI_TYPE_BUTTON, UI_TYPE_CHECKCODE, UI_TYPE_CONTINUED, UI_TYPE_INPUT, UI_TYPE_LOGIN, UI_TYPE_PHONE, UI_TYPE_SELECTION, UI_TYPE_TO_PAY
+from flaskr.service.lesson.const import CONTENT_TYPE_IMAGE, LESSON_TYPE_BRANCH_HIDDEN, SCRIPT_TYPE_FIX, SCRIPT_TYPE_PORMPT, SCRIPT_TYPE_SYSTEM, UI_TYPE_BRANCH, UI_TYPE_BUTTON, UI_TYPE_CHECKCODE, UI_TYPE_CONTINUED, UI_TYPE_INPUT, UI_TYPE_LOGIN, UI_TYPE_PHONE, UI_TYPE_SELECTION, UI_TYPE_TO_PAY
 from ...dao import db
 
 from flaskr.service.lesson.models import AICourse, AILesson, AILessonScript
@@ -280,7 +280,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                 # 没有课程记录
                 for i in "请购买课程":
                     yield make_script_dto("text",i,None)
-                    time.sleep(0.04)
+                    time.sleep(0.01)
                 yield make_script_dto("text_end","",None)
                 return
             attend = AICourseLessonAttendDTO(attend_info.attend_id,attend_info.lesson_id,attend_info.course_id,attend_info.user_id,attend_info.status,attend_info.script_index)
@@ -379,7 +379,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         reason = jsonObj.get("reason")
                         for text in reason:
                             yield make_script_dto("text",text,script_info.script_id)
-                            time.sleep(0.1)
+                            time.sleep(0.01)
                         
                         yield make_script_dto("text_end","",script_info.script_id)
 
@@ -397,11 +397,9 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     log_script.script_content = "继续"
                     log_script.script_role = ROLE_STUDENT
                     db.session.add(log_script)
-
                     span = trace.span(name="user_continue",input=input)
                     span.end()
-
-                    pass
+                    next=True
                 elif input_type == INPUT_TYPE_SELECT:
                     profile_keys = get_profile_array(script_info.script_ui_profile)
                     profile_tosave = {}
@@ -441,7 +439,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     except AppException as e:
                         for i in e.message:
                             yield make_script_dto("text",i,script_info.script_id)
-                            time.sleep(0.1)
+                            time.sleep(0.01)
                         break
                     input = None
                     input_type = INPUT_TYPE_CONTINUE 
@@ -463,7 +461,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         for i in prompt:
                             msg =  make_script_dto("text",i,script_info.script_id)
                             yield msg
-                            time.sleep(0.04)
+                            time.sleep(0.01)
                     log_script = generation_attend(app,attend,script_info)
                     log_script.script_content = prompt
                     log_script.script_role = ROLE_TEACHER
@@ -526,6 +524,13 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     }]
                     yield make_script_dto("buttons",{"title":"接下来","buttons":btn},script_info.script_id)
                     break
+                elif script_info.script_ui_type == UI_TYPE_BRANCH:
+                    btn = [{
+                        "label":script_info.script_ui_content,
+                        "value":script_info.script_ui_content
+                    }]
+                    yield make_script_dto("buttons",{"title":"接下来","buttons":btn},script_info.script_id)
+                    break
                 elif script_info.script_ui_type == UI_TYPE_SELECTION:
                     yield make_script_dto("buttons",{"title":script_info.script_ui_content,"buttons":json.loads(script_info.script_other_conf)["btns"]},script_info.script_id)
                     break
@@ -540,12 +545,12 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     except AppException as e:
                         for i in e.message:
                             yield make_script_dto("text",i,script_info.script_id)
-                            time.sleep(0.1)
+                            time.sleep(0.01)
                         break 
                    
                 elif script_info.script_ui_type == UI_TYPE_LOGIN:
                     yield make_script_dto(INPUT_TYPE_LOGIN,script_info.script_ui_content,script_info.script_id)
-                    break
+                    next=True
                 elif script_info.script_ui_type == UI_TYPE_TO_PAY:
                     order =  init_buy_record(app,user_id,course_id,999)
                     btn = [{
@@ -740,7 +745,7 @@ def get_study_record(app:Flask,user_id:str,lesson_id:str)->StudyRecordDTO:
             return None
         attend_ids = [attend_info.attend_id for attend_info in attend_infos]
         app.logger.info("attend_ids:{}".format(attend_ids))
-        attend_scripts = AICourseLessonAttendScript.query.filter(AICourseLessonAttendScript.attend_id.in_(attend_ids)).all()
+        attend_scripts = AICourseLessonAttendScript.query.filter(AICourseLessonAttendScript.attend_id.in_(attend_ids)).order_by(AICourseLessonAttendScript.id).all()
         app.logger.info("attend_scripts:{}".format(len(attend_scripts)))
         if len(attend_scripts) == 0:
             return StudyRecordDTO(None)
