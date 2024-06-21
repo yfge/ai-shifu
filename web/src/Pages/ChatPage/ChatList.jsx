@@ -81,6 +81,9 @@ const ChatList = forwardRef(
           const newLessonData = lessonData.map(l=>l)
           setLessonData(newLessonData)
         } 
+      },
+      updateLessonList:()=>{
+        queryAllChatsList()
       }
     }));
   

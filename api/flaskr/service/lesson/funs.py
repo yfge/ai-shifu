@@ -234,7 +234,8 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,view_id:str,title:str=N
                             val = DB_SAVE_DICT_MAP[field.strip()].get(orig_val.strip())
                             if val is None:
                                 app.logger.info('val is None:'+field+",value:"+orig_val)
-                        scripDb[db_field] = val
+                        if val is not None:   
+                            scripDb[db_field] = val
                     else:
                         if unconf_fields.count(field)==0:
                             unconf_fields.append(field)

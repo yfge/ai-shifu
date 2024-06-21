@@ -11,7 +11,7 @@ from flaskr.service.user.funs import send_sms_code_without_check, verify_sms_cod
 from flaskr.common import register_schema_to_swagger
 from flaskr.service.lesson.funs import AILessonInfoDTO
 from flaskr.service.profile.funcs import get_user_profiles, save_user_profiles
-from flaskr.service.sales.consts import ATTEND_STATUS_BRANCH, ATTEND_STATUS_TYPES, ATTEND_STATUS_UNAVAILABE, ATTEND_STATUS_VALUES
+from flaskr.service.order.consts import ATTEND_STATUS_BRANCH, ATTEND_STATUS_TYPES, ATTEND_STATUS_UNAVAILABE, ATTEND_STATUS_VALUES
 from flaskr.service.study.const import *
 from langchain.prompts import PromptTemplate
 
@@ -20,8 +20,8 @@ from flaskr.service.lesson.const import CONTENT_TYPE_IMAGE, LESSON_TYPE_BRANCH_H
 from ...dao import db
 
 from flaskr.service.lesson.models import AICourse, AILesson, AILessonScript
-from flaskr.service.sales.funs import AICourseLessonAttendDTO, init_trial_lesson
-from flaskr.service.sales.models import ATTEND_STATUS_COMPLETED, ATTEND_STATUS_IN_PROGRESS, ATTEND_STATUS_NOT_STARTED, AICourseBuyRecord, AICourseLessonAttend
+from flaskr.service.order.funs import AICourseLessonAttendDTO, init_buy_record, init_trial_lesson
+from flaskr.service.order.models import ATTEND_STATUS_COMPLETED, ATTEND_STATUS_IN_PROGRESS, ATTEND_STATUS_NOT_STARTED, AICourseBuyRecord, AICourseLessonAttend
 from .models import *
 import time 
 
@@ -546,10 +546,11 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                 elif script_info.script_ui_type == UI_TYPE_LOGIN:
                     yield make_script_dto(INPUT_TYPE_LOGIN,script_info.script_ui_content,script_info.script_id)
                     break
-                elif script_info.script_ui_type == UI_TYPE_TO_PAY: 
+                elif script_info.script_ui_type == UI_TYPE_TO_PAY:
+                    order =  init_buy_record(app,user_id,course_id,999)
                     btn = [{
                         "label":script_info.script_ui_content,
-                        "value":script_info.script_ui_content
+                        "value":order.record_id
                     }]
                     yield make_script_dto("order",{"title":"买课！","buttons":btn},script_info.script_id)
                     break
@@ -646,6 +647,8 @@ def get_lesson_tree_to_study(app:Flask,user_id:str,course_id:str)->AICourseDTO:
         lesson_dict = {}
         for lesson in lessons:
             attend_info = attend_infos_map.get(lesson.lesson_id,None)
+            if not attend_info:
+                continue
             status = ATTEND_STATUS_VALUES[attend_info.status if  attend_info else  ATTEND_STATUS_UNAVAILABE]
             lessonInfo = AILessonAttendDTO(lesson.lesson_no,lesson.lesson_name,lesson.lesson_id,status, [])
             lesson_dict[lessonInfo.lesson_no] = lessonInfo

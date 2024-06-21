@@ -24,7 +24,6 @@ def register_chat_route(app: Flask, path_prefix: str):
     def chat_detail():
         user_id = request.user.user_id
         chat_id = request.args.get('chat_id')
-        
         return make_common_response(get_chat(app, user_id, chat_id))
 
 

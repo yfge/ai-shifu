@@ -58,6 +58,7 @@ def create_app(test_config=None):
     app = route.register_study_handler(app,prefix+'/study')
     app = route.register_dict_handler(app,prefix+'/dict')
     app = route.register_tools_handler(app,prefix+'/tools')
+    app = route.register_order_handler(app,prefix+'/order')
 
     app.logger.info(swagger_config["components"]["schemas"].keys())
     # app.logger.info(swagger_config.keys())

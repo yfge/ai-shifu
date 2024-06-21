@@ -4,3 +4,4 @@ from .lesson import register_lesson_handler
 from .study import register_study_handler
 from .dicts import register_dict_handler
 from .tools import register_tools_handler
+from .order import register_order_handler

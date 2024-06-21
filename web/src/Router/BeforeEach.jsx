@@ -8,6 +8,7 @@ const BeforeEach=({children, authRoutes})=>{
         "apiError",
         ({detail})=>{
           console.log('apiError',detail);
+          
           if(detail.code === 1005 || detail.code === 1001){
             navigate("/login");
           }

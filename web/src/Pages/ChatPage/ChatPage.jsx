@@ -3,10 +3,9 @@ import ChatList from "./ChatList";
 import { useState } from "react";
 import { UploadEvent } from "../../Api/UploadEvent";
 import ChatComponents from "./ChatComponents";
-import { GetChatDetail } from "../../Api/chat";
 import { useRef } from "react";
 import "./ChatPage.css";
-
+import {testOrder} from "../../Api/order";
 const ChatPage = () => {
   UploadEvent("ChatPage", { page: "chatPage" });
   const chatComponents = useRef(null);
@@ -32,11 +31,23 @@ const ChatPage = () => {
     chatList.current.updateLessonAttendInfo(lessonUpdate)
   }
 
+  const onOrderBy = (orderBy) => {
+
+
+    console.log("onOrderBy", orderBy);
+    testOrder(orderBy).then((res) => {
+      console.log("res", res)
+
+      chatList.current.updateLessonList()
+    })
+
+  };
   return (
     <div className="chat-page full-height">
       <ChatList 
         onClickListItem={onClickListItem}
         onClickMenuItem={onClickMenuItem}
+
         ref={chatList}
       ></ChatList>
       <ChatComponents
@@ -44,6 +55,7 @@ const ChatPage = () => {
         ref={chatComponents}
         onTitleUpdate={onTitleUpdate}
         lessonStatusUpdate = {lessonStatusUpdate}
+        orderBuy={onOrderBy}
       />
     </div>
   );

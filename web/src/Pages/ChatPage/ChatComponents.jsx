@@ -18,6 +18,7 @@ import { message } from "antd";
 import { enabled, set } from "store";
 import { getLessonStudyRecord } from "../../Api/study";
 
+
 const generateUUID = () => {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
     var r = (Math.random() * 16) | 0,
@@ -84,7 +85,7 @@ const MarkdownBubble = (props) => {
   );
 };
 
-const ChatComponents = forwardRef(({ onTitleUpdate, className, lessonStatusUpdate }, ref) => {
+const ChatComponents = forwardRef(({ onTitleUpdate, className, lessonStatusUpdate,orderBuy }, ref) => {
   const { messages, appendMsg, setTyping, updateMsg, resetList } = useMessages(
     [],
   );
@@ -93,12 +94,15 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className, lessonStatusUpdat
   const [inputPlaceholder, setInputPlaceholder] = React.useState("请输入");
   const [inputDisabled, setInputDisabled] = React.useState(false);
   const [lessonId, setLessonId] = React.useState("");
+  const [inputType,setInputType] = React.useState("text");
 
   function handleSend(type, val) {
 
+    var sendType = type;
     console.log('handle send', type, val)
     let sendScriptId = scriptId;
     if (type === "text" && val.trim()) {
+      sendType = inputType
       appendMsg({
         _id: generateUUID(),
         type: "text",
@@ -114,7 +118,7 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className, lessonStatusUpdat
     }
     setTyping(true);
     let lastMsg = null;
-    RunScript(chatId, lessonId, val, type, (response) => {
+    RunScript(chatId, lessonId, val, sendType, (response) => {
       try {
         setChatId(response.chat_id);
         let id = generateUUID();
@@ -157,9 +161,16 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className, lessonStatusUpdat
         } else if (response.type === "text_end") {
           lastMsg = null;
         } else if (response.type === "input") {
+          setInputType("text");
           setInputPlaceholder(response.content);
           setScriptId(response.id);
           setInputDisabled(false);
+        }else if (response.type === "phone" || response.type ==="checkcode") {
+          setInputType(response.type);
+          setInputPlaceholder(response.content);
+          setScriptId(response.id);
+          setInputDisabled(false);
+
         } else if (response.type === "button") {
           lastMsg = {
             _id: id,
@@ -180,10 +191,21 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className, lessonStatusUpdat
           appendMsg(lastMsg);
           setInputDisabled(true);
 
+        }  else if (response.type === "order") {
+          console.log(response)
+          lastMsg = {
+            _id: id,
+            type: "order",
+            content: response.content,
+            position: "right"
+          };
+          appendMsg(lastMsg);
+          setInputDisabled(true);
+
         } else if (response.type === "study_complete") {
           // setLessonId(response.lesson_id);
 
-        } else if (response.type === "lesson_update") {
+        } else if (response.type === "lesson_update" || response.type === "chapter_update") {
           if (lessonStatusUpdate) {
             lessonStatusUpdate(response.content)
           }
@@ -194,6 +216,17 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className, lessonStatusUpdat
     });
   }
 
+  function onOrderButtonClick(orderId) {
+
+    console.log('order id', orderId)
+
+    if (orderBuy) {
+      orderBuy(orderId)
+    }else{
+      console.log('order buy not defined')
+    }
+
+  }
   function onButtonClick(type, content) {
     handleSend(type, content);
 
@@ -239,7 +272,7 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className, lessonStatusUpdat
     } else if (content.type === "text") {
       return <MarkdownBubble content={content.text} />;
     } else if (content.type === "init") {
-    } else if (msg.type === "card") {
+    } else if (msg.type === "card" ) {
       const type = content.buttons.length > 1 ? "select" : "continue"
       return (
         <Bubble>
@@ -249,6 +282,23 @@ const ChatComponents = forwardRef(({ onTitleUpdate, className, lessonStatusUpdat
               {
                 content.buttons.map(btn => {
                   return <Button onClick={() => onButtonClick(type, btn.value)} >{btn.label}</Button>
+                })
+              }
+
+            </CardActions>
+          </Card>
+        </Bubble>
+      )
+    }else if (msg.type === "order" ) {
+      const type = content.buttons.length > 1 ? "select" : "continue"
+      return (
+        <Bubble>
+          <Card size="xl">
+            <CardTitle>{content.title}</CardTitle>
+            <CardActions>
+              {
+                content.buttons.map(btn => {
+                  return <Button onClick={() => onOrderButtonClick( btn.value)} >{btn.label}</Button>
                 })
               }
 
