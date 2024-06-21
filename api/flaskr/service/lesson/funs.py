@@ -33,17 +33,19 @@ class AILessonDTO:
         self.lesson_status = lesson_status
         self.status = status
 class AILessonInfoDTO:
-    def __init__(self,lesson_no:str,lesson_name:str,lesson_id:str,children) -> None:
+    def __init__(self,lesson_no:str,lesson_name:str,lesson_id:str,feishu_id:str,lesson_type) -> None:
         self.lesson_no = lesson_no
         self.lesson_name = lesson_name
         self.lesson_id = lesson_id
-        self.children = children
+        self.feishu_id = feishu_id
+        self.lesson_type = lesson_type
     def __json__(self):
         return {
             'lesson_no':self.lesson_no,
             'lesson_name':self.lesson_name,
             'lesson_id':self.lesson_id,
-            'children':self.children
+            'feishu_id':self.feishu_id,
+            'lesson_type':self.lesson_type
         }
 class AIScriptDTO:
     def __init__(self, script_id, lesson_id, script_name, script_desc, script_index, script_feishu_id, script_version, script_no, script_type, script_content_type, script_prompt, script_model, script_profile, script_media_url, script_ui_type, script_ui_content, script_check_prompt, script_check_flag, script_ui_profile, script_end_action, script_other_conf, status):
@@ -268,22 +270,17 @@ def run_lesson_script(app:Flask,lesson_id:str,script_id:str):
             return None
         return script
 # 得到课程列表
-def get_lessons(app:Flask,user_id:str,course_id:str)->list[AILessonInfoDTO]:
+def get_lessons(app:Flask,feshu_doc_id)->list[AILessonInfoDTO]:
     with app.app_context():
-        lessons = AILesson.query.filter(course_id==course_id,AILesson.status==1).all()
+        course = AICourse.query.filter(AICourse.course_feishu_id == feshu_doc_id).first()
+        if course is None:
+            return []
+        lessons = AILesson.query.filter(AILesson.status==1,AILesson.course_id==course.course_id, func.length(AILesson.lesson_no) ==2).all()
         lessons = sorted(lessons, key=lambda x: (len(x.lesson_no), x.lesson_no))
         lessonInfos = []
-        lesson_dict = {}
-      
         for lesson in lessons:
-            lessonInfo = AILessonInfoDTO(lesson.lesson_no,lesson.lesson_name,lesson.lesson_id,[])
-            lesson_dict[lessonInfo.lesson_no] = lessonInfo
-            if len(lessonInfo.lesson_no) == 2:  # 假设2位数是根节点
-                lessonInfos.append(lessonInfo)
-            else:
-                # 获取父节点编号
-                parent_no = lessonInfo.lesson_no[:-2]
-                if parent_no in lesson_dict:
-                    lesson_dict[parent_no].children.append(lessonInfo)
+            lessonInfo = AILessonInfoDTO(lesson.lesson_no,lesson.lesson_name,lesson.lesson_id,lesson.lesson_feishu_id,lesson.lesson_type)
+            lessonInfos.append(lessonInfo)
         return lessonInfos
+     
     

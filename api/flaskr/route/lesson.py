@@ -29,11 +29,13 @@ def register_lesson_handler(app:Flask,path_prefix:str)->Flask:
             raise_param_error("index is not found")
         
         return make_common_response(update_lesson_info(app,doc_id,table_id,view_id,title,index,lesson_type))
-    @app.route(path_prefix+'/get_lesson_tree', methods=['GET'])
-    def get_lesson_tree():
-        course_id = request.args.get('course_id')
+    
+    @app.route(path_prefix+'/get_chatper_info', methods=['GET'])
+    @bypass_token_validation
+    def get_chatper_info():
+        course_id = request.args.get('doc_id')
         if not course_id:
             raise_param_error("doc_id is not found")
-        return make_common_response(get_lessons(app,None,course_id))
+        return make_common_response(get_lessons(app,course_id))
     
     return app
