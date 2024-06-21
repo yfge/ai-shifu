@@ -15,7 +15,6 @@ def register_study_handler(app:Flask,path_prefix:str)->Flask:
 
     app.logger.info('register_study_handler is called, path_prefix is {}'.format(path_prefix))
     @app.route(path_prefix+'/run',methods=['POST'])
-    # @api.model('RunLessonScript')
     def run_lesson_script():
         '''
         运行课程脚本

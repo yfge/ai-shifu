@@ -735,7 +735,7 @@ def get_study_record(app:Flask,user_id:str,lesson_id:str)->StudyRecordDTO:
             lesson_infos = AILesson.query.filter(AILesson.lesson_no.like(lesson_info.lesson_no+'%')).all()
             lesson_ids = [lesson.lesson_id for lesson in lesson_infos]
         app.logger.info("lesson_ids:{}".format(lesson_ids))
-        attend_infos = AICourseLessonAttend.query.filter(AICourseLessonAttend.user_id==user_id,  AICourseLessonAttend.lesson_id.in_(lesson_ids)).all()
+        attend_infos = AICourseLessonAttend.query.filter(AICourseLessonAttend.user_id==user_id,  AICourseLessonAttend.lesson_id.in_(lesson_ids)).order_by(AICourseLessonAttend.id).all()
         if not attend_infos:
             return None
         attend_ids = [attend_info.attend_id for attend_info in attend_infos]
