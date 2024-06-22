@@ -24,7 +24,7 @@ def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
   
 
-  
+
     
     CORS(app, resources={r"/*": {"supports_credentials": True}})
     app.logger.info('config: {}'.format(test_config))

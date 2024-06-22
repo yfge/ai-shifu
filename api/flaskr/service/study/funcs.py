@@ -366,7 +366,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         save_user_profiles(app,user_id,profile_tosave)
                         input = None
                         next = True
-                        input_type = INPUT_TYPE_CONTINUE
+                        input_type = None 
                         span.end()
                         db.session.commit()
                         continue
@@ -384,6 +384,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         trace_args ["output"] = trace_args["output"]+"\r\n"+response_text
                         trace.update(**trace_args)
                         db.session.commit()
+                        make_script_dto("input",script_info.script_ui_content,script_info.script_id) 
                         break
                 elif input_type == INPUT_TYPE_CONTINUE:
                     log_script = generation_attend(app,attend,script_info)
@@ -393,6 +394,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     span = trace.span(name="user_continue",input=input)
                     span.end()
                     next=True
+                    continue
                 elif input_type == INPUT_TYPE_SELECT:
                     profile_keys = get_profile_array(script_info.script_ui_profile)
                     profile_tosave = {}
@@ -410,7 +412,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     db.session.add(log_script)
                     input = None
                     next = True
-                    input_type = INPUT_TYPE_CONTINUE
+                    input_type = None
                     span = trace.span(name="user_select",input=input)
                     span.end()
                     db.session.commit()
@@ -421,7 +423,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     log_script.script_role = ROLE_STUDENT
                     db.session.add(log_script)
                     # input = None
-                    input_type = INPUT_TYPE_CONTINUE 
+                    input_type =  None 
                     span = trace.span(name="user_input_phone",input=input)
                     span.end()
                     next = True
@@ -435,18 +437,20 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                             time.sleep(0.01)
                         break
                     input = None
-                    input_type = INPUT_TYPE_CONTINUE 
+                    input_type = None 
                     span = trace.span(name="user_input_phone",input=input)
                     span.end()
                     next = True
                     continue
                 elif  input_type == INPUT_TYPE_LOGIN:
                     next = True
-                    pass
                 elif  input_type == INPUT_TYPE_START:
                     next = True
-                    pass
+
+                else:
+                    input_type = None
                 # 执行脚本
+                input_type = None
                 if script_info.script_type == SCRIPT_TYPE_FIX:
                     prompt = ""
                     if script_info.script_content_type == CONTENT_TYPE_IMAGE:
@@ -561,6 +565,11 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     # }]
                     # yield make_script_dto("order",{"title":"买课！","buttons":btn},script_info.script_id)
                     # break
+                elif script_info.script_ui_type == UI_TYPE_CONTINUED:
+                    next = True
+                    input_type= INPUT_TYPE_CONTINUE
+                    continue
+                    
                 else:
                     break
             else:
