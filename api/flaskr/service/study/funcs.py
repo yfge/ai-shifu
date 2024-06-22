@@ -574,7 +574,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     break
             else:
                 # 更新完课信息
-                attend_updates = update_attend_lesson_info(app,attend_id=attend_info.attend_id)
+                attend_updates = update_attend_lesson_info(app,attend_id=attend.attend_id)
                 # 更新到课信息
                 if len (attend_updates) > 0 :
                     for attend_update in attend_updates:
