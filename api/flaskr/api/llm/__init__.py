@@ -34,14 +34,14 @@ class LLMStreamResponse:
 
 
 def invoke_llm(app:Flask,model:str,message:str,system:str=None,json:bool=False,**kwargs)->Generator[LLMStreamResponse,None,None]:
-    app.logger.info(f"invoke_llm {model} {message}")
-    kwargs.update({"stream":True})  
+    app.logger.info(f"invoke_llm [{model}] {message}")
+    kwargs.update({"stream":True})
+    model = model.strip()  
     if model in OPENAI_MODELS or model.startswith("gpt"):
         messages = []
         if system:
             messages.append({"content":system,"role":"system"})
         messages.append({"content":message,"role":"user"})
-
         # if json:
         #     kwargs["response_format"] ={ type: "json_object" }
         kwargs["temperature"]=0.0

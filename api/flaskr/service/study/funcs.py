@@ -784,6 +784,7 @@ def get_study_record(app:Flask,user_id:str,lesson_id:str)->StudyRecordDTO:
                         "value":order.record_id
                     }]
             ret.ui = StudyUIDTO("order",{"title":"买课！","buttons":btn},last_script.lesson_id)
+            ret.ui = StudyUIDTO("buttons",{"title":"继续","buttons":[{"label":"继续","value":"继续"}]},last_script.lesson_id)
         return ret
 # 重置用户信息
 # 重置用户学习信息
