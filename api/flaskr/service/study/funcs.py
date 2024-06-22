@@ -139,7 +139,10 @@ def get_fmt_prompt(app:Flask,user_id:str,profile_tmplate:str,input:str=None,prof
             fmt_keys[key] = profiles[key]
     app.logger.info(fmt_keys)
     if len(fmt_keys) == 0:
-        prompt = profile_tmplate
+        if len(profile_tmplate) == 0:
+            prompt = input
+        else: 
+            prompt = profile_tmplate
     else:
         prompt = prompt_template_lc.format(**fmt_keys)
     app.logger.info('fomat input:{}'.format(prompt))
@@ -350,28 +353,15 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     stream = False
 
                     for i in resp:
-                        # if len(response_text) >= len(check_flag):
-                        #     if response_text.find(check_flag) in [0,1]:
-                        #         check_success = True
-                        #     else:
-                        #         if stream == False:
-                        #             stream = True
-                        #             for text in response_text:
-                        #                 yield make_script_dto("text",text,script_info.script_id)
-                        #                 time.sleep(0.1)
                         current_content = i.result
                         if isinstance(current_content ,str):
                             response_text += current_content
-                            # if stream:
-                                # yield make_script_dto("text", current_content,script_info.script_id)
                     app.logger.info('response_text:{}'.format(response_text))
                     jsonObj = extract_json(app,response_text)
                     generation.end(output=response_text)
                     check_success = jsonObj.get("result","")=="ok"
                     if check_success:
                         app.logger.info('check success')
-                        # values = response_text.replace(check_flag,"")
-                        # if values.strip() != "":
                         profile_tosave = jsonObj.get("parse_vars")
                         save_user_profiles(app,user_id,profile_tosave)
                         input = None
@@ -381,13 +371,11 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         db.session.commit()
                         continue
                     else:
-                        reason = jsonObj.get("reason")
+                        reason = jsonObj.get("reason",response_text)
                         for text in reason:
                             yield make_script_dto("text",text,script_info.script_id)
                             time.sleep(0.01)
-                        
                         yield make_script_dto("text_end","",script_info.script_id)
-
                         log_script = generation_attend(app,attend,script_info)
                         log_script.script_content = response_text
                         log_script.script_role = ROLE_TEACHER
@@ -453,6 +441,9 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     next = True
                     continue
                 elif  input_type == INPUT_TYPE_LOGIN:
+                    next = True
+                    pass
+                elif  input_type == INPUT_TYPE_START:
                     next = True
                     pass
                 # 执行脚本
