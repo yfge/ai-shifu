@@ -51,17 +51,17 @@ def invoke_llm(app:Flask,model:str,message:str,system:str=None,json:bool=False,*
                                     True if res.choices[0].finish_reason else False,
                                     False,res.choices[0].delta.content,
                                     res.choices[0].finish_reason,None)
-    elif model in ERNIE_MODELS:
+    elif model.upper() in ERNIE_MODELS:
         if system:
             kwargs.update({"system":system}) 
         app.logger.info(f"invoke_llm {kwargs}") 
         if json:
             kwargs["response_format"]="json_object"
-        response = get_ernie_response(app,model, message,**kwargs)
+        response = get_ernie_response(app,model.upper(), message,**kwargs)
         for res in response:
             yield LLMStreamResponse(res.id,res.is_end,res.is_truncated,res.result,res.finish_reason,res.usage.__dict__)
-    elif model in GLM_MODELS:
-        response = invoke_glm(app,model,message,system,**kwargs)
+    elif model.lower() in GLM_MODELS:
+        response = invoke_glm(app,model.lower(),message,system,**kwargs)
         for res in response:
             yield LLMStreamResponse(res.id,
                                     True if res.choices[0].finish_reason else False,
