@@ -7,7 +7,7 @@ from typing import Generator
 from flask import Flask, typing
 from flaskr.service.user.models import User
 from flaskr.service.common  import AppException
-from flaskr.service.user.funs import send_sms_code_without_check, verify_sms_code, verify_sms_code_without_phone
+from flaskr.service.user.funs import get_sms_code_info, send_sms_code_without_check, verify_sms_code, verify_sms_code_without_phone
 from flaskr.common import register_schema_to_swagger
 from flaskr.service.lesson.funs import AILessonInfoDTO
 from flaskr.service.profile.funcs import get_user_profiles, save_user_profiles
@@ -131,14 +131,19 @@ def get_fmt_prompt(app:Flask,user_id:str,profile_tmplate:str,input:str=None,prof
         propmpt_keys.append('input')
     app.logger.info(propmpt_keys)
     app.logger.info(profiles)
-    prompt_template = PromptTemplate.from_template(profile_tmplate)
-    keys = prompt_template.input_variables
+    prompt_template_lc = PromptTemplate.from_template(profile_tmplate)
+    keys = prompt_template_lc.input_variables
     fmt_keys = {}
     for key in keys:
         if key in profiles:
             fmt_keys[key] = profiles[key]
-    prompt = prompt_template.format(**fmt_keys)
+    app.logger.info(fmt_keys)
+    if len(fmt_keys) == 0:
+        prompt = profile_tmplate
+    else:
+        prompt = prompt_template_lc.format(**fmt_keys)
     app.logger.info('fomat input:{}'.format(prompt))
+
     return prompt.encode('utf-8').decode('utf-8')
     
 
@@ -552,13 +557,19 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     yield make_script_dto(INPUT_TYPE_LOGIN,script_info.script_ui_content,script_info.script_id)
                     next=True
                 elif script_info.script_ui_type == UI_TYPE_TO_PAY:
-                    order =  init_buy_record(app,user_id,course_id,999)
                     btn = [{
                         "label":script_info.script_ui_content,
-                        "value":order.record_id
+                        "value":script_info.script_ui_content
                     }]
-                    yield make_script_dto("order",{"title":"买课！","buttons":btn},script_info.script_id)
+                    yield make_script_dto("buttons",{"title":"接下来","buttons":btn},script_info.script_id)
                     break
+                    # order =  init_buy_record(app,user_id,course_id,999)
+                    # btn = [{
+                        # "label":script_info.script_ui_content,
+                        # "value":order.record_id
+                    # }]
+                    # yield make_script_dto("order",{"title":"买课！","buttons":btn},script_info.script_id)
+                    # break
                 else:
                     break
             else:
@@ -625,12 +636,6 @@ def update_attend_lesson_info(app:Flask,attend_id:str)->list[AILessonAttendDTO]:
     return res
 
 
-
-
-
-
-
-
 def get_lesson_tree_to_study(app:Flask,user_id:str,course_id:str)->AICourseDTO:
     with app.app_context():
         course_info = AICourse.query.filter(AICourse.course_id == course_id).first()
@@ -666,8 +671,6 @@ def get_lesson_tree_to_study(app:Flask,user_id:str,course_id:str)->AICourseDTO:
                     lesson_dict[parent_no].children.append(lessonInfo)
         course_info = AICourse.query.filter(AICourse.course_id == course_id).first()
         return AICourseDTO(course_id=course_id,course_name=course_info.course_name,lessons=lessonInfos)
-    
-
 
 @register_schema_to_swagger
 class StudyRecordItemDTO:
@@ -767,10 +770,21 @@ def get_study_record(app:Flask,user_id:str,lesson_id:str)->StudyRecordDTO:
             ret.ui = StudyUIDTO("buttons",{"title":"继续","buttons":[{"label":"继续","value":"继续"}]},last_script.lesson_id)
         elif last_script.script_ui_type == UI_TYPE_SELECTION:
             ret.ui = StudyUIDTO("buttons",{"title":last_script.script_ui_content,"buttons":json.loads(last_script.script_other_conf)["btns"]},last_script.lesson_id)
-
+        elif last_script.script_ui_type == UI_TYPE_PHONE:
+            ret.ui = StudyUIDTO(INPUT_TYPE_PHONE,last_script.script_ui_content,last_script.lesson_id)
+        elif last_script.script_ui_type == UI_TYPE_CHECKCODE:
+            expires = get_sms_code_info(app,user_id,False)
+            ret.ui = StudyUIDTO(INPUT_TYPE_CHECKCODE,expires,last_script.lesson_id)
+        elif last_script.script_ui_type == UI_TYPE_LOGIN:
+            ret.ui = StudyUIDTO(INPUT_TYPE_LOGIN,last_script.script_ui_content,last_script.lesson_id)
+        elif last_script.script_ui_type == UI_TYPE_TO_PAY:
+            order =  init_buy_record(app,user_id,last_script.course_id,999)
+            btn = [{
+                        "label":last_script.script_ui_content,
+                        "value":order.record_id
+                    }]
+            ret.ui = StudyUIDTO("order",{"title":"买课！","buttons":btn},last_script.lesson_id)
         return ret
-    
-
 # 重置用户信息
 # 重置用户学习信息
 def reset_user_study_info(app:Flask,user_id:str):

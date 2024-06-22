@@ -275,6 +275,12 @@ def get_sms_code_info(app:Flask,user_id:str,resend:bool):
         else:
             phone = str(phone,encoding="utf-8")
         ttl = redis.ttl(app.config["REDIS_KEY_PRRFIX_PHONE_CODE"] + phone)
+        if ttl < 0 :
+            ttl = 0
+        return {
+            "expire_in":ttl,
+            "phone":phone
+        }
         
 
 def verify_sms_code_without_phone(app:Flask,user_id:str,checkcode):
