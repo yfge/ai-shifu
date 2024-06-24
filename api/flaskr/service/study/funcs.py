@@ -307,6 +307,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
         check_success = False
         next = False
         if input_type == INPUT_TYPE_CONTINUE:
+            input_type = None
             next=True
         while True:
             # 如果有用户输入,就得到当前这一条,否则得到下一条
@@ -321,7 +322,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         else:
                             yield make_script_dto("chapter_update",attend_update.__json__(),"") 
             if script_info:
-                app.logger.info("begin to run script:{},model:{},input_type:{}".format(script_info.script_id,script_info.script_model,input_type))
+                app.logger.info("begin to run script,lesson_id:{},script_index:{},script_id:{},model:{},input_type:{}".format(script_info.lesson_id,script_info.script_index,script_info.script_id,script_info.script_model,input_type))
                 log_script = generation_attend(app,attend,script_info)
 
                 #  检查后续操作是否为手机号和验证码
@@ -364,6 +365,10 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         app.logger.info('check success')
                         profile_tosave = jsonObj.get("parse_vars")
                         save_user_profiles(app,user_id,profile_tosave)
+
+                        for key in profile_tosave:
+                            yield make_script_dto("profile_update",{"key":key,"value":profile_tosave[key]},script_info.script_id)
+                            time.sleep(0.01)
                         input = None
                         next = True
                         input_type = None 
@@ -394,7 +399,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     span = trace.span(name="user_continue",input=input)
                     span.end()
                     next=True
-                    continue
+
                 elif input_type == INPUT_TYPE_SELECT:
                     profile_keys = get_profile_array(script_info.script_ui_profile)
                     profile_tosave = {}
@@ -430,7 +435,10 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     continue
                 elif  input_type == INPUT_TYPE_CHECKCODE:
                     try:
-                        verify_sms_code_without_phone(app,user_id,input)
+                        ret = verify_sms_code_without_phone(app,user_id,input)
+                        yield make_script_dto("profile_update",{"key":"phone","value":ret.userInfo.mobile},script_info.script_id)
+                        yield make_script_dto("user_login",{"phone":ret.userInfo.mobile,"user_id":ret.userInfo.user_id},script_info.script_id)
+
                     except AppException as e:
                         for i in e.message:
                             yield make_script_dto("text",i,script_info.script_id)
@@ -558,16 +566,9 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     }]
                     yield make_script_dto("buttons",{"title":"接下来","buttons":btn},script_info.script_id)
                     break
-                    # order =  init_buy_record(app,user_id,course_id,999)
-                    # btn = [{
-                        # "label":script_info.script_ui_content,
-                        # "value":order.record_id
-                    # }]
-                    # yield make_script_dto("order",{"title":"买课！","buttons":btn},script_info.script_id)
-                    # break
                 elif script_info.script_ui_type == UI_TYPE_CONTINUED:
                     next = True
-                    input_type= INPUT_TYPE_CONTINUE
+                    input_type= None 
                     continue
                     
                 else:
@@ -698,7 +699,6 @@ class StudyRecordItemDTO:
             "id":self.id
         }
     
-
 @register_schema_to_swagger
 class StudyUIDTO:
     type: str 

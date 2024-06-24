@@ -283,7 +283,7 @@ def get_sms_code_info(app:Flask,user_id:str,resend:bool):
         }
         
 
-def verify_sms_code_without_phone(app:Flask,user_id:str,checkcode):
+def verify_sms_code_without_phone(app:Flask,user_id:str,checkcode)->UserToken:
     with app.app_context():
         phone = redis.get(app.config["REDIS_KEY_PRRFIX_PHONE"]+user_id)
         if phone == None:
@@ -291,7 +291,7 @@ def verify_sms_code_without_phone(app:Flask,user_id:str,checkcode):
             phone = user.mobile
         else:
             phone = str(phone,encoding="utf-8")
-        verify_sms_code(app,user_id,phone,checkcode,False)
+        return verify_sms_code(app,user_id,phone,checkcode,False)
 # 验证短信验证码
 def verify_sms_code(app:Flask,user_id,phone:str,chekcode:str,updateToken=True)->UserToken:
     with app.app_context():
