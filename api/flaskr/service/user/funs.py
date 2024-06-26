@@ -19,7 +19,16 @@ import jwt
 import time
 from captcha.image import ImageCaptcha 
 from marshmallow_dataclass import dataclass
+import oss2
 
+
+endpoint = "oss-cn-beijing.aliyuncs.com"
+
+ALI_API_ID="LTAI5tHek7vMAYvpYVn6cPyg"
+ALI_API_SECRET="uV6LPxtupiGRPzkJSp8gQHjQnb0pro"
+base = "https://kt-ai-assistant.oss-cn-beijing.aliyuncs.com"
+auth = oss2.Auth(ALI_API_ID, ALI_API_SECRET)
+bucket = oss2.Bucket(auth, endpoint, 'pillow-avtar')
 @register_schema_to_swagger
 class UserInfo:
     user_id: str

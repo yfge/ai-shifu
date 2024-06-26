@@ -115,8 +115,8 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,view_id:str,title:str=N
         page_token = None
         lessons = []
         unconf_fields = []
-        parent_lesson = AILesson.query.filter(AILesson.course_id ==course_id
-                                                   ,AILesson.lesson_feishu_id==table_id,
+        parent_lesson = AILesson.query.filter(AILesson.course_id ==course_id,
+                                                #    ,AILesson.lesson_feishu_id==table_id,
                                                     func.char_length(AILesson.lesson_no)==2).first()
         lessonNo = str(index).zfill(2)
         if parent_lesson is None:
