@@ -186,7 +186,6 @@ def require_reset_pwd_code(app:Flask,login:str):
             raise USER_NOT_FOUND
         
 def reset_pwd(app:Flask,login:str,code:int,newpwd:str):
-
     with app.app_context():
         user = User.query.filter((User.username == login) | (User.email == login) | (User.mobile == login)).first()
         if user:
@@ -206,7 +205,6 @@ def reset_pwd(app:Flask,login:str,code:int,newpwd:str):
         else:
             raise USER_NOT_FOUND 
     
-
 
 # 生成图片验证码
 def generation_img_chk(app:Flask,mobile:str)->str:
@@ -228,9 +226,8 @@ def generation_img_chk(app:Flask,mobile:str)->str:
             "expire_in":app.config['CAPTCHA_CODE_EXPIRE_TIME']
         }
 
-
 # 发送短信验证码
-def send_sms_code(app:Flask,phone:str,chekcode:str)->str:
+def send_sms_code(app:Flask,phone:str,chekcode:str):
     with app.app_context():
         check_save = redis.get(app.config["REDIS_KEY_PRRFIX_CAPTCHA"] + phone)
         if check_save == None:

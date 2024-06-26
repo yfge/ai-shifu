@@ -147,7 +147,7 @@ def get_fmt_prompt(app:Flask,user_id:str,profile_tmplate:str,input:str=None,prof
         prompt = prompt_template_lc.format(**fmt_keys)
     app.logger.info('fomat input:{}'.format(prompt))
 
-    return prompt.encode('utf-8').decode('utf-8')
+    return prompt
     
 
 
@@ -605,7 +605,6 @@ def update_attend_lesson_info(app:Flask,attend_id:str)->list[AILessonAttendDTO]:
     parent_no = lesson_no
     attend_info.status = ATTEND_STATUS_COMPLETED
     res.append(AILessonAttendDTO(lesson_no,lesson.lesson_name,lesson.lesson_id,ATTEND_STATUS_VALUES[ATTEND_STATUS_COMPLETED]))
- 
     if len(parent_no)>2:
         parent_no = parent_no[:2]
     attend_lesson_infos =  get_lesson_and_attend_info(app,parent_no,lesson.course_id,attend_info.user_id)

@@ -2,7 +2,7 @@ import json
 from flask import Flask, request, jsonify, make_response
 
 from flaskr.service.common.models import raise_param_error
-from flaskr.service.profile.funcs import get_user_profiles
+from flaskr.service.profile.funcs import get_user_profile_labels, get_user_profiles
 from ..service.user import *
 from functools import wraps
 from .common import make_common_response,bypass_token_validation,by_pass_login_func
@@ -290,7 +290,7 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
                                     description: 用户信息
         
         """
-        return make_common_response(get_user_profiles(app,request.user.user_id))
+        return make_common_response(get_user_profile_labels(app,request.user.user_id))
     return app
 
 

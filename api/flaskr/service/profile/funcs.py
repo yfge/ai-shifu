@@ -21,6 +21,40 @@ class UserProfileDTO:
 
 
 
+PROFILES_LABLES = {
+
+    "nickname":{
+        "label":"昵称"
+    },
+    "industry":{
+        "label":"行业"
+    },
+    "occupation":{
+        "label":"职业",
+    },
+    "ai_tools":{
+        "label":"编程工具",
+        "items":[ "GitHub Copilot","通义灵码"]
+    },
+    "style":{
+        "label":"授课风格",
+        "items":[]
+    },
+    "programming":{
+        "label": "编程熟悉程度",
+        "items":[
+            "完全没接触过",
+            "学过但还无法编写程序",
+            "会1门及以上语言"
+        ]
+    },
+    "user_os":{
+        "lable":"用户操作系统",
+
+    }
+}
+
+
 def get_user_profile_by_user_id(app:Flask,user_id:str, profile_key:str)->UserProfileDTO:
     user_profile = UserProfile.query.filter_by(user_id=user_id, profile_key=profile_key).first()
     if user_profile:
@@ -61,4 +95,23 @@ def get_user_profiles(app:Flask,user_id:str,keys:list=None)->dict:
     for user_profile in user_profiles:
         if user_profile.profile_key in keys:
             result[user_profile.profile_key] = user_profile.profile_value
+    return result
+
+
+
+
+
+def get_user_profile_labels(app:Flask,user_id:str):
+    user_profiles = UserProfile.query.filter_by(user_id=user_id).all()
+    result = []
+
+    for user_profile in user_profiles:
+        if user_profile.profile_key in PROFILES_LABLES:
+            result.append({ 
+                "key": user_profile.profile_key,
+                "label": PROFILES_LABLES[user_profile.profile_key]["label"],
+                "value": user_profile.profile_value,
+                "items":PROFILES_LABLES[user_profile.profile_key]["items"] if "items" in PROFILES_LABLES[user_profile.profile_key] else None
+            })  
+                
     return result
