@@ -102,6 +102,7 @@ DB_SAVE_DICT_MAP= {
 def update_lesson_info(app:Flask,doc_id:str,table_id:str,view_id:str,title:str=None,index:int=None,lesson_type:int = LESSON_TYPE_NORMAL):
     with app.app_context():
         # 检查课程
+        # 用飞书的AppId做为课程的唯一标识
         course = AICourse.query.filter_by(course_feishu_id = doc_id).first()
         if course is None:
             course = AICourse()
@@ -115,10 +116,15 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,view_id:str,title:str=N
         page_token = None
         lessons = []
         unconf_fields = []
+      
+      
+        
+        lessonNo = str(index).zfill(2)
+        db.session.execute(text('update ai_lesson set status=0 where course_id=:course_id and lesson_no like :lesson_no'),{"course_id":course_id,"lesson_no": lessonNo+'%'})
         parent_lesson = AILesson.query.filter(AILesson.course_id ==course_id,
+                                              AILesson.lesson_no == str(index).zfill(2),
                                                 #    ,AILesson.lesson_feishu_id==table_id,
                                                     func.char_length(AILesson.lesson_no)==2).first()
-        lessonNo = str(index).zfill(2)
         if parent_lesson is None:
             parent_lesson = AILesson()
             parent_lesson.lesson_id = str(generate_id(app))
