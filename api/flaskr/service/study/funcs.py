@@ -389,7 +389,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         trace_args ["output"] = trace_args["output"]+"\r\n"+response_text
                         trace.update(**trace_args)
                         db.session.commit()
-                        make_script_dto("input",script_info.script_ui_content,script_info.script_id) 
+                        yield make_script_dto("input",script_info.script_ui_content,script_info.script_id) 
                         break
                 elif input_type == INPUT_TYPE_CONTINUE:
                     log_script = generation_attend(app,attend,script_info)

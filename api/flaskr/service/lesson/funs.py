@@ -291,3 +291,13 @@ def get_lessons(app:Flask,feshu_doc_id)->list[AILessonInfoDTO]:
         return lessonInfos
      
     
+
+
+def delete_lesson(app:Flask,table_id:str):
+    with app.app_context():
+        lesson = AILesson.query.filter(AILesson.lesson_feishu_id == table_id).first()
+        if lesson is None:
+            return False
+        lesson.status = 0
+        db.session.commit()
+        return True
