@@ -203,6 +203,7 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,view_id:str,title:str=N
                             lesson.pre_lesson_no =  lessonNo + str(subIndex-1).zfill(2) 
                         else:
                             lesson.pre_lesson_no = ""
+                    db.session.execute(text('update ai_lesson_script set status=0 where lesson_id=:lesson_id'),{"lesson_id":lesson.lesson_id})
                     childLessons.append(lesson)
                 script_index = script_index + 1
                 record_id = record['record_id']

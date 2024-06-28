@@ -50,7 +50,6 @@ PROFILES_LABLES = {
     },
     "user_os":{
         "lable":"用户操作系统",
-
     }
 }
 

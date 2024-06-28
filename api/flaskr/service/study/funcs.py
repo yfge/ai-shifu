@@ -226,7 +226,7 @@ def get_script(app:Flask,attend_id:str,next:bool) :
         pass
     elif next:
         attend_info.script_index = attend_info.script_index + 1
-    script_info = AILessonScript.query.filter(AILessonScript.lesson_id==attend_info.lesson_id,AILessonScript.script_index==attend_info.script_index).first()
+    script_info = AILessonScript.query.filter(AILessonScript.lesson_id==attend_info.lesson_id,AILessonScript.status ==1,AILessonScript.script_index==attend_info.script_index).first()
     if not script_info:
 
         attend_info.status = ATTEND_STATUS_COMPLETED
@@ -373,7 +373,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         next = True
                         input_type = None 
                         span.end()
-                        db.session.commit()
+                        db.session.commit() 
                         continue
                     else:
                         reason = jsonObj.get("reason",response_text)
@@ -451,7 +451,8 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     next = True
                     continue
                 elif  input_type == INPUT_TYPE_LOGIN:
-                    next = True
+                    yield make_script_dto(INPUT_TYPE_LOGIN,{"phone":ret.userInfo.mobile,"user_id":ret.userInfo.user_id},script_info.script_id)
+                    break
                 elif  input_type == INPUT_TYPE_START:
                     next = True
 
