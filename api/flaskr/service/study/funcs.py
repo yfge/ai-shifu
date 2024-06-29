@@ -571,6 +571,11 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     next = True
                     input_type= None 
                     continue
+                
+                elif script_info.script_ui_type == UI_TYPE_BRANCH:
+
+                    # 分支课程
+                    branch_info = json.loads(script_info.script_other_conf)
                     
                 else:
                     break
@@ -785,6 +790,7 @@ def get_study_record(app:Flask,user_id:str,lesson_id:str)->StudyRecordDTO:
                     }]
             ret.ui = StudyUIDTO("order",{"title":"买课！","buttons":btn},last_script.lesson_id)
             ret.ui = StudyUIDTO("buttons",{"title":"继续","buttons":[{"label":"继续","value":"继续"}]},last_script.lesson_id)
+        
         return ret
 # 重置用户信息
 # 重置用户学习信息

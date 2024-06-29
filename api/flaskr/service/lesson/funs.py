@@ -226,6 +226,7 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,view_id:str,title:str=N
                 scripDb['script_type']=SCRIPT_TYPE_FIX
                 scripDb['script_content_type']=CONTENT_TYPE_TEXT
                 scripDb['script_model']='ERNIE-Speed-8K'
+                scripDb['status']=1
                 for field  in record['fields']:
                     val_obj = record['fields'][field]
                     db_field = DB_SAVE_MAP.get(field.strip())
@@ -291,8 +292,6 @@ def get_lessons(app:Flask,feshu_doc_id)->list[AILessonInfoDTO]:
             lessonInfos.append(lessonInfo)
         return lessonInfos
      
-    
-
 
 def delete_lesson(app:Flask,table_id:str):
     with app.app_context():

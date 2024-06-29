@@ -85,7 +85,7 @@ def success_buy_record(app: Flask,record_id:str):
         buy_record = AICourseBuyRecord.query.filter(AICourseBuyRecord.record_id==record_id).first()
         if buy_record:
             buy_record.status = BUY_STATUS_SUCCESS
-            lessons = AILesson.query.filter(AILesson.course_id==buy_record.course_id,AILesson.lesson_type != LESSON_TYPE_TRIAL).all()
+            lessons = AILesson.query.filter(AILesson.course_id==buy_record.course_id,AILesson.status==1,AILesson.lesson_type != LESSON_TYPE_TRIAL).all()
             for lesson in lessons:
                 app.logger.info('init lesson attend for user:{} lesson:{}'.format(buy_record.user_id,lesson.lesson_id))
                 attend = AICourseLessonAttend()
@@ -108,7 +108,7 @@ def success_buy_record(app: Flask,record_id:str):
 def init_trial_lesson(app:Flask ,user_id:str,course_id:str)->list[AICourseLessonAttendDTO]:
     app.logger.info('init trial lesson for user:{} course:{}'.format(user_id,course_id))
     response =[]
-    lessons = AILesson.query.filter(AILesson.course_id==course_id,AILesson.lesson_type == LESSON_TYPE_TRIAL).all()
+    lessons = AILesson.query.filter(AILesson.course_id==course_id,AILesson.lesson_type == LESSON_TYPE_TRIAL,AILesson.status==1).all()
     app.logger.info('init trial lesson:{}'.format(lessons))
     for lesson in lessons:
         app.logger.info('init trial lesson:{} ,is trail:{}'.format(lesson.lesson_id,lesson.is_final()))
