@@ -99,7 +99,7 @@ DB_SAVE_DICT_MAP= {
     '后续交互': UI_TYPES
 }
 
-def update_lesson_info(app:Flask,doc_id:str,table_id:str,view_id:str,title:str=None,index:int=None,lesson_type:int = LESSON_TYPE_NORMAL):
+def update_lesson_info(app:Flask,doc_id:str,table_id:str,view_id:str,title:str='vewlGkI2Jp',index:int=None,lesson_type:int = LESSON_TYPE_NORMAL):
     with app.app_context():
         # 检查课程
         # 用飞书的AppId做为课程的唯一标识
