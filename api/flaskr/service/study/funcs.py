@@ -467,6 +467,8 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         yield make_script_dto("text",prompt,script_info.script_id)
                     else:
                         prompt = get_fmt_prompt(app,user_id,script_info.script_prompt,profile_array_str=script_info.script_profile)
+                        if not prompt:
+                            prompt = ""
                         for i in prompt:
                             msg =  make_script_dto("text",i,script_info.script_id)
                             yield msg
@@ -561,11 +563,13 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     yield make_script_dto(INPUT_TYPE_LOGIN,script_info.script_ui_content,script_info.script_id)
                     next=True
                 elif script_info.script_ui_type == UI_TYPE_TO_PAY:
+                    order =  init_buy_record(app,user_id,course_id,999)
                     btn = [{
                         "label":script_info.script_ui_content,
-                        "value":script_info.script_ui_content
+                        "value":order.record_id
                     }]
-                    yield make_script_dto("buttons",{"title":"接下来","buttons":btn},script_info.script_id)
+                    # ret.ui = StudyUIDTO("order",{"title":"买课！","buttons":btn},last_script.lesson_id)
+                    yield make_script_dto("order",{"title":"买课！","buttons":btn},script_info.script_id)
                     break
                 elif script_info.script_ui_type == UI_TYPE_CONTINUED:
                     next = True
@@ -783,13 +787,13 @@ def get_study_record(app:Flask,user_id:str,lesson_id:str)->StudyRecordDTO:
         elif last_script.script_ui_type == UI_TYPE_LOGIN:
             ret.ui = StudyUIDTO(INPUT_TYPE_LOGIN,last_script.script_ui_content,last_script.lesson_id)
         elif last_script.script_ui_type == UI_TYPE_TO_PAY:
-            order =  init_buy_record(app,user_id,last_script.course_id,999)
+            order =  init_buy_record(app,user_id,lesson_info.course_id,999)
             btn = [{
                         "label":last_script.script_ui_content,
                         "value":order.record_id
                     }]
             ret.ui = StudyUIDTO("order",{"title":"买课！","buttons":btn},last_script.lesson_id)
-            ret.ui = StudyUIDTO("buttons",{"title":"继续","buttons":[{"label":"继续","value":"继续"}]},last_script.lesson_id)
+            # ret.ui = StudyUIDTO("buttons",{"title":"继续","buttons":[{"label":"继续","value":"继续"}]},last_script.lesson_id)
         
         return ret
 # 重置用户信息
