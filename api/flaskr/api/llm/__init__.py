@@ -44,7 +44,7 @@ def invoke_llm(app:Flask,model:str,message:str,system:str=None,json:bool=False,*
         messages.append({"content":message,"role":"user"})
         # if json:
         #     kwargs["response_format"] ={ type: "json_object" }
-        kwargs["temperature"]=0.0
+        kwargs["temperature"]=0.8
         response = client.chat.completions.create(model=model,messages=messages, **kwargs)
         for res in response:
             yield LLMStreamResponse(res.id,

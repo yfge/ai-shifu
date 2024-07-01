@@ -107,6 +107,29 @@ class AICourseLessonAttendScriptDTO:
         }
 
 
+
+   
+
+# 更新课程信息
+@register_schema_to_swagger 
+class ScriptDTO:
+    script_type:str #  "'text' 'input' 'buttons' 'text_end'"
+    script_content:str
+    script_id:str
+    def __init__(self,script_type,script_content,script_id=None):
+        self.script_type = script_type
+        self.script_content = script_content
+        self.script_id = script_id
+    def __json__(self):
+        return {
+            "type": self.script_type,
+            "content": self.script_content,
+            "script_id": self.script_id    
+        }
+
+
+
+
 def fmt(o):
     if isinstance(o, datetime.datetime):
         return o.isoformat()
@@ -146,35 +169,13 @@ def get_fmt_prompt(app:Flask,user_id:str,profile_tmplate:str,input:str=None,prof
     else:
         prompt = prompt_template_lc.format(**fmt_keys)
     app.logger.info('fomat input:{}'.format(prompt))
-
     return prompt
-    
-
-
-# 更新课程信息
-@register_schema_to_swagger 
-class ScriptDTO:
-    script_type:str #  "'text' 'input' 'buttons' 'text_end'"
-    script_content:str
-    script_id:str
-    def __init__(self,script_type,script_content,script_id=None):
-        self.script_type = script_type
-        self.script_content = script_content
-        self.script_id = script_id
-    def __json__(self):
-        return {
-            "type": self.script_type,
-            "content": self.script_content,
-            "script_id": self.script_id    
-        }
-
-
+ 
 
 # 从文本中提取json对象
 def extract_json(app:Flask,text:str):
     stack = []
     start = None
-
     for i, char in enumerate(text):
         if char == '{':
             if not stack:
@@ -188,13 +189,9 @@ def extract_json(app:Flask,text:str):
                     try:
                         json_obj = json.loads(json_str)
                         return json_obj
-                        # json_objects.append(json_obj)
                     except json.JSONDecodeError:
                         pass
-
     return {}
-    # return json_objects
-
 
 def make_script_dto(script_type,script_content,script_id)->str:
     return    'data: '+json.dumps(ScriptDTO(script_type,script_content,script_id),default=fmt)+'\n\n'.encode('utf-8').decode('utf-8')
@@ -210,10 +207,8 @@ def get_script(app:Flask,attend_id:str,next:bool) :
            # 检查是否是第一节课
         lesson = AILesson.query.filter(AILesson.lesson_id == attend_info.lesson_id).first()
         attend_infos.append(AILessonAttendDTO(lesson.lesson_no,lesson.lesson_name,lesson.lesson_id,ATTEND_STATUS_VALUES[ATTEND_STATUS_IN_PROGRESS]))
- 
         app.logger.info(lesson.lesson_no)
         app.logger.info(lesson.lesson_no[-2:])   
-
         if len(lesson.lesson_no)>=2 and lesson.lesson_no[-2:] == '01':
             # 第一节课
             app.logger.info('first lesson')
@@ -223,7 +218,24 @@ def get_script(app:Flask,attend_id:str,next:bool) :
                 parent_attend.status = ATTEND_STATUS_IN_PROGRESS
                 attend_infos.append(AILessonAttendDTO(parent_lesson.lesson_no,parent_lesson.lesson_name,parent_lesson.lesson_id,ATTEND_STATUS_VALUES[ATTEND_STATUS_IN_PROGRESS]))
     elif attend_info.status == ATTEND_STATUS_BRANCH:
-        pass
+        # 分支课程
+        current = attend_info
+        assoation = AICourseAttendAsssotion.query.filter(AICourseAttendAsssotion.from_attend_id==current.attend_id).first()
+        if assoation:
+            current = AICourseLessonAttend.query.filter(AICourseLessonAttend.attend_id==assoation.to_attend_id).first()
+        while current.status == ATTEND_STATUS_BRANCH:
+            # 分支课程
+            assoation = AICourseAttendAsssotion.query.filter(AICourseAttendAsssotion.from_attend_id==current.attend_id).first()
+            if assoation:
+                current = AICourseLessonAttend.query.filter(AICourseLessonAttend.attend_id==assoation.to_attend_id).first()
+        script_info,attend_infos = get_script(app,current.attend_id,next)
+        if script_info:
+            return script_info,[]
+        else:
+            current.status = ATTEND_STATUS_COMPLETED
+            attend_info.status = ATTEND_STATUS_IN_PROGRESS
+            db.session.commit()
+            return get_script(app,attend_id,next)
     elif next:
         attend_info.script_index = attend_info.script_index + 1
     script_info = AILessonScript.query.filter(AILessonScript.lesson_id==attend_info.lesson_id,AILessonScript.status ==1,AILessonScript.script_index==attend_info.script_index).first()
@@ -273,12 +285,13 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
         if not course_info:
             course_info = AICourse.query.first()
             course_id = course_info.course_id
-        attend = AICourseLessonAttendDTO
         if not lesson_id:
             buy_record = AICourseBuyRecord.query.filter_by(user_id=user_id, course_id=course_id).first() 
             if not buy_record:
                 lessons = init_trial_lesson(app, user_id, course_id)
+                app.logger.info("user_id:{},course_id:{},lesson_id:{}".format(user_id,course_id,lesson_id))
                 attend = get_current_lesson(app,lessons)
+                app.logger.info("{}".format(attend))
                 lesson_id = attend.lesson_id
         else:
             # 获取课程记录
@@ -292,10 +305,9 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                 yield make_script_dto("text_end","",None)
                 return
             attend = AICourseLessonAttendDTO(attend_info.attend_id,attend_info.lesson_id,attend_info.course_id,attend_info.user_id,attend_info.status,attend_info.script_index)
-        db.session.commit()
-
+            db.session.commit()
         # Langfuse 集成 
-
+        # attend = AICourseLessonAttendDTO(attend_info.attend_id,attend_info.lesson_id,attend_info.course_id,attend_info.user_id,attend_info.status)
         trace_args ={}
         trace_args['user_id'] = user_id
         trace_args['session_id'] = attend.attend_id
@@ -303,7 +315,6 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
         trace_args['name'] = "ai-python"
         trace = langfuse.trace(**trace_args)
         trace_args["output"]=""
-
         check_success = False
         next = False
         if input_type == INPUT_TYPE_CONTINUE:
@@ -324,7 +335,6 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
             if script_info:
                 app.logger.info("begin to run script,lesson_id:{},script_index:{},script_id:{},model:{},input_type:{}".format(script_info.lesson_id,script_info.script_index,script_info.script_id,script_info.script_model,input_type))
                 log_script = generation_attend(app,attend,script_info)
-
                 #  检查后续操作是否为手机号和验证码
                 #  如果用户已经注册,则跳过
                 if script_info.script_ui_type == UI_TYPE_PHONE or script_info.script_ui_type == UI_TYPE_CHECKCODE:
@@ -365,7 +375,6 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         app.logger.info('check success')
                         profile_tosave = jsonObj.get("parse_vars")
                         save_user_profiles(app,user_id,profile_tosave)
-
                         for key in profile_tosave:
                             yield make_script_dto("profile_update",{"key":key,"value":profile_tosave[key]},script_info.script_id)
                             time.sleep(0.01)
@@ -399,7 +408,6 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     span = trace.span(name="user_continue",input=input)
                     span.end()
                     next=True
-
                 elif input_type == INPUT_TYPE_SELECT:
                     profile_keys = get_profile_array(script_info.script_ui_profile)
                     profile_tosave = {}
@@ -455,7 +463,6 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     break
                 elif  input_type == INPUT_TYPE_START:
                     next = True
-
                 else:
                     input_type = None
                 # 执行脚本
@@ -536,6 +543,32 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     yield make_script_dto("buttons",{"title":"接下来","buttons":btn},script_info.script_id)
                     break
                 elif script_info.script_ui_type == UI_TYPE_BRANCH:
+                      # 分支课程
+                    app.logger.info("branch")
+                    branch_info = json.loads(script_info.script_other_conf)
+                    branch_key = branch_info.get("var_name","")
+                    profile = get_user_profiles(app,user_id,[branch_key])
+                    branch_value = profile.get(branch_key,"")
+                    jump_rule = branch_info.get("jump_rule",[])
+                    for rule in jump_rule:
+                        if branch_value == rule.get("value",""):
+                            attend_info = AICourseLessonAttend.query.filter(AICourseLessonAttend.attend_id == attend.attend_id).first()
+                            next_lesson = AILesson.query.filter(AILesson.lesson_feishu_id == rule.get("lark_table_id",""), AILesson.status == 1, func.length(AILesson.lesson_no)>2).first()
+                            if next_lesson:
+                                next_attend = AICourseLessonAttend.query.filter(AICourseLessonAttend.user_id==user_id, AICourseLessonAttend.course_id==course_id,AICourseLessonAttend.lesson_id==next_lesson.lesson_id).first()
+                                if next_attend:
+                                    assoation =AICourseAttendAsssotion()
+                                    assoation.from_attend_id = attend_info.attend_id
+                                    assoation.to_attend_id = next_attend.attend_id 
+                                    assoation.user_id = user_id
+                                    db.session.add(assoation)
+                                    next_attend.status = ATTEND_STATUS_IN_PROGRESS
+                                    next_attend.script_index =0
+                                    attend_info.status = ATTEND_STATUS_BRANCH
+                                    db.session.commit()
+                                    next = False
+                                    attend_info = next_attend
+                                         
                     btn = [{
                         "label":script_info.script_ui_content,
                         "value":script_info.script_ui_content
@@ -557,10 +590,12 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         for i in e.message:
                             yield make_script_dto("text",i,script_info.script_id)
                             time.sleep(0.01)
+                        yield make_script_dto("text_end","",script_info.script_id)
                         break 
-                   
                 elif script_info.script_ui_type == UI_TYPE_LOGIN:
                     yield make_script_dto(INPUT_TYPE_LOGIN,script_info.script_ui_content,script_info.script_id)
+
+                    # 这里控制暂时是否启用登录
                     next=True
                 elif script_info.script_ui_type == UI_TYPE_TO_PAY:
                     order =  init_buy_record(app,user_id,course_id,999)
@@ -568,19 +603,13 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         "label":script_info.script_ui_content,
                         "value":order.record_id
                     }]
-                    # ret.ui = StudyUIDTO("order",{"title":"买课！","buttons":btn},last_script.lesson_id)
                     yield make_script_dto("order",{"title":"买课！","buttons":btn},script_info.script_id)
                     break
                 elif script_info.script_ui_type == UI_TYPE_CONTINUED:
                     next = True
                     input_type= None 
                     continue
-                
-                elif script_info.script_ui_type == UI_TYPE_BRANCH:
-
-                    # 分支课程
-                    branch_info = json.loads(script_info.script_other_conf)
-                    
+                  
                 else:
                     break
             else:

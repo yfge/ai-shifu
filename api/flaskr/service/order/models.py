@@ -38,3 +38,4 @@ class AICourseLessonAttend(db.Model):
     created = Column(TIMESTAMP, nullable=False, default=func.now(), comment='Creation time')
     updated = Column(TIMESTAMP, nullable=False, default=func.now(), onupdate=func.now(), comment='Update time')
 
+
