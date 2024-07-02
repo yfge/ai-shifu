@@ -2,6 +2,11 @@ from .ernie import *
 from .glm import *
 import openai
 from flask import Flask
+from langfuse.client import StatefulSpanClient
+from langfuse.model import ModelUsage
+
+from openai.types.chat import ChatCompletionStreamOptionsParam
+from openai.types.chat.completion_create_params import ResponseFormat
 
 
 
@@ -33,24 +38,38 @@ class LLMStreamResponse:
         self.usage = LLMStreamaUsage(**usage) if usage else None
 
 
-def invoke_llm(app:Flask,model:str,message:str,system:str=None,json:bool=False,**kwargs)->Generator[LLMStreamResponse,None,None]:
+def invoke_llm(app:Flask,span:StatefulSpanClient,model:str,message:str,system:str=None,json:bool=False,**kwargs)->Generator[LLMStreamResponse,None,None]:
     app.logger.info(f"invoke_llm [{model}] {message}")
     kwargs.update({"stream":True})
-    model = model.strip()  
+    model = model.strip() 
+
+    generation_input = []
+    if system:
+        generation_input.append({"role": "system", "content": system})
+    generation_input.append({"role": "user", "content": message})
+    generation = span.generation( model=model,input=generation_input) 
+    response_text = ""
+    usage = None
     if model in OPENAI_MODELS or model.startswith("gpt"):
         messages = []
         if system:
             messages.append({"content":system,"role":"system"})
         messages.append({"content":message,"role":"user"})
-        # if json:
-        #     kwargs["response_format"] ={ type: "json_object" }
+        if json:
+            kwargs["response_format"] = ResponseFormat(type="json_object")
         kwargs["temperature"]=0.8
+        kwargs["stream_options"]=ChatCompletionStreamOptionsParam(include_usage=True)
         response = client.chat.completions.create(model=model,messages=messages, **kwargs)
         for res in response:
-            yield LLMStreamResponse(res.id,
+            if len(res.choices) and  res.choices[0].delta.content:
+                response_text += res.choices[0].delta.content
+                yield LLMStreamResponse(res.id,
                                     True if res.choices[0].finish_reason else False,
                                     False,res.choices[0].delta.content,
                                     res.choices[0].finish_reason,None)
+            if res.usage:
+                usage = ModelUsage(unit="TOKENS", input=res.usage.prompt_tokens,output=res.usage.completion_tokens,total=res.usage.total_tokens)
+           
     elif model in ERNIE_MODELS:
         if system:
             kwargs.update({"system":system}) 
@@ -59,17 +78,26 @@ def invoke_llm(app:Flask,model:str,message:str,system:str=None,json:bool=False,*
             kwargs["response_format"]="json_object"
         response = get_ernie_response(app,model, message,**kwargs)
         for res in response:
+            response_text += res.result
+            if res.usage:
+                usage = ModelUsage(unit="TOKENS", input=res.usage.prompt_tokens,output=res.usage.completion_tokens,total=res.usage.total_tokens)
             yield LLMStreamResponse(res.id,res.is_end,res.is_truncated,res.result,res.finish_reason,res.usage.__dict__)
     elif model.lower() in GLM_MODELS:
         response = invoke_glm(app,model.lower(),message,system,**kwargs)
         for res in response:
+            response_text += res.result
+            if res.usage:
+                usage = ModelUsage(unit="TOKENS", input=res.usage.prompt_tokens,output=res.usage.completion_tokens,total=res.usage.total_tokens)
             yield LLMStreamResponse(res.id,
                                     True if res.choices[0].finish_reason else False,
                                     False,res.choices[0].delta.content,
-                                    res.choices[0].finish_reason,None)    
+                                    res.choices[0].finish_reason,None)   
     else:
         raise Exception("model not found")
-
+    app.logger.info(f"invoke_llm response: {response_text} ")
+    app.logger.info(f"invoke_llm usage: "+usage.__str__())
+    generation.end(input=generation_input, output=response_text,usage=usage)        
+    span.end(output=response_text) 
 
 
 def get_current_models(app:Flask)->list[str]:

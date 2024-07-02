@@ -352,8 +352,8 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     log_script.script_role = ROLE_STUDENT 
                     db.session.add(log_script)
                     span = trace.span(name="user_input",input=input)
-                    generation = span.generation( model=script_info.script_model,input=[{"role": "user", "content": prompt}])
                     resp = invoke_llm(app,
+                                      span,
                         model=script_info.script_model,
                         json=True,
                         stream=True,
@@ -367,9 +367,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         current_content = i.result
                         if isinstance(current_content ,str):
                             response_text += current_content
-                    app.logger.info('response_text:{}'.format(response_text))
                     jsonObj = extract_json(app,response_text)
-                    generation.end(output=response_text)
                     check_success = jsonObj.get("result","")=="ok"
                     if check_success:
                         app.logger.info('check success')
@@ -499,12 +497,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     system = get_lesson_system(script_info.lesson_id)
                     system_prompt = None if system == None or system == "" else get_fmt_prompt(app,user_id,system)
                     prompt = get_fmt_prompt(app,user_id,script_info.script_prompt,profile_array_str=script_info.script_profile)
-                    generation_input = []
-                    if system_prompt:
-                        generation_input.append({"role": "system", "content": system_prompt})
-                    generation_input.append({"role": "user", "content": prompt})
-                    generation = span.generation( model=script_info.script_model,input=generation_input)
-                    resp = invoke_llm(app,
+                    resp = invoke_llm(app,span,
                         model=script_info.script_model,
                         stream=True,
                         system=system_prompt,
@@ -516,8 +509,6 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         if isinstance(current_content ,str):
                             response_text += current_content
                             yield make_script_dto("text", current_content,script_info.script_id)
-                    generation.end(output=response_text)
-                    span.end(output=response_text)
 
                     trace_args ["output"] = trace_args["output"]+"\r\n"+prompt
                     trace.update(**trace_args)

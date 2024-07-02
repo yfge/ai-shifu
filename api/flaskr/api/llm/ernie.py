@@ -81,7 +81,6 @@ def get_ernie_response(app,model,msg,**args)->Generator[ErnieStreamResponse,None
         res = res.decode('utf-8')
         app.logger.info('ernie response data: {}'.format(res))
         if res.startswith('data:'):
-            # 提取 'data:' 后面的内容
             json_data = res[5:].strip()
             # 尝试解析 JSON 数据
             if(json_data.replace(' ','') == '[DONE]'):
