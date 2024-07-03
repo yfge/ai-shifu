@@ -85,7 +85,7 @@ def invoke_llm(app:Flask,span:StatefulSpanClient,model:str,message:str,system:st
     elif model.lower() in GLM_MODELS:
         response = invoke_glm(app,model.lower(),message,system,**kwargs)
         for res in response:
-            response_text += res.result
+            response_text += res.choices[0].delta.content
             if res.usage:
                 usage = ModelUsage(unit="TOKENS", input=res.usage.prompt_tokens,output=res.usage.completion_tokens,total=res.usage.total_tokens)
             yield LLMStreamResponse(res.id,
