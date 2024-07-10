@@ -81,6 +81,7 @@ def init_buy_record(app: Flask,user_id:str,course_id:str,price:decimal.Decimal):
 
 def success_buy_record(app: Flask,record_id:str):
     with app.app_context():
+        # todo: 事务处理 & 并发锁
         app.logger.info('success buy record:"{}"'.format(record_id))
         buy_record = AICourseBuyRecord.query.filter(AICourseBuyRecord.record_id==record_id).first()
         if buy_record:
@@ -88,6 +89,9 @@ def success_buy_record(app: Flask,record_id:str):
             lessons = AILesson.query.filter(AILesson.course_id==buy_record.course_id,AILesson.status==1,AILesson.lesson_type != LESSON_TYPE_TRIAL).all()
             for lesson in lessons:
                 app.logger.info('init lesson attend for user:{} lesson:{}'.format(buy_record.user_id,lesson.lesson_id))
+                attend = AICourseLessonAttend.query.filter(AICourseLessonAttend.user_id==buy_record.user_id,AICourseLessonAttend.lesson_id==lesson.lesson_id).first()
+                if attend:
+                    continue
                 attend = AICourseLessonAttend()
                 attend.attend_id = str(get_uuid(app))
                 attend.course_id = buy_record.course_id

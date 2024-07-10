@@ -257,6 +257,12 @@ def generation_attend(app:Flask,attend:AICourseLessonAttendDTO,script_info:AILes
     return attendScript
 
 
+def check_phone_number(app,user_id,input):
+    # 检查手机号是否合法
+    if not re.match(r'^1[3-9]\d{9}$', input):
+        return False
+    return True
+
 # 得到一个课程的System Prompt
 
 def get_lesson_system(lesson_id:str)->str:
@@ -436,7 +442,25 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     # input = None
                     input_type =  None 
                     span = trace.span(name="user_input_phone",input=input)
+                    response_text ="请输入正确的手机号" 
+                    if not check_phone_number(app,user_id,input):
+                        for i in response_text:
+                            yield make_script_dto("text",i,script_info.script_id)
+                            time.sleep(0.01)
+                        make_script_dto("text_end","",script_info.script_id)
+                        make_script_dto(UI_TYPE_PHONE,script_info.script_ui_content,script_info.script_id) 
+                        log_script = generation_attend(app,attend,script_info)
+                        log_script.script_content = response_text
+                        log_script.script_role = ROLE_TEACHER
+                        db.session.add(log_script)
+                        span.end(output=response_text)
+                        span.end()
+                        break
                     span.end()
+
+               
+
+
                     next = True
                     continue
                 elif  input_type == INPUT_TYPE_CHECKCODE:
@@ -622,7 +646,7 @@ def get_lesson_and_attend_info(app:Flask,parent_no,course_id,user_id):
     if len(lessons)==0:
         return [] 
     attend_infos = AICourseLessonAttend.query.filter(AICourseLessonAttend.lesson_id.in_([lesson.lesson_id for lesson in lessons]),AICourseLessonAttend.user_id == user_id ).all()
-    app.logger.info("attends:{}".format(",".join(a.attend_id for a in attend_infos)))
+    app.logger.info("attends:{}".format(",".join("'"+a.attend_id+"'" for a in attend_infos)))
     attend_lesson_infos = [{'attend':attend,'lesson': [lesson for lesson in lessons if lesson.lesson_id == attend.lesson_id][0]} for attend in attend_infos]
     attend_lesson_infos =  sorted(attend_lesson_infos, key=lambda x: (len(x['lesson'].lesson_no), x['lesson'].lesson_no)) 
     return attend_lesson_infos

@@ -18,3 +18,16 @@ def init_redis(app:Flask):
         app.logger.info('init redis with no pwd {} {} {}'.format(app.config['REDIS_HOST'], app.config['REDIS_PORT'], app.config['REDIS_DB']))
         redis_client = Redis(host=app.config['REDIS_HOST'], port=app.config['REDIS_PORT'], db=app.config['REDIS_DB'])
 
+
+def run_with_redis(ctx,key,timeout:int,func):
+    with ctx:
+        global redis_client
+        lock = redis_client.lock(key, timeout=timeout, blocking_timeout=timeout)
+        if lock.acquire(blocking=False):
+            try:
+                return func()
+            finally:
+                lock.release()
+        else:
+            app.logger.info('run_with_redis lock failed')
+            return None
