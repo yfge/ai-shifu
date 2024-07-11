@@ -5,16 +5,17 @@ import re
 import openai
 from typing import Generator
 from flask import Flask, typing
+
+from flaskr.service.study.const import INPUT_TYPE_CHECKCODE, INPUT_TYPE_LOGIN, INPUT_TYPE_PHONE, ROLE_VALUES
 from ...service.study.dtos import AILessonAttendDTO, StudyRecordDTO
 from ...service.user.models import User
 from ...service.common  import AppException
 from ...service.user.funs import get_sms_code_info, send_sms_code_without_check, verify_sms_code, verify_sms_code_without_phone
 from ...common import register_schema_to_swagger
-from ...service.lesson.funs import AICourseDTO, AILessonInfoDTO
 from ...service.profile.funcs import get_user_profiles, save_user_profiles
 from ...service.order.consts import ATTEND_STATUS_BRANCH, ATTEND_STATUS_TYPES, ATTEND_STATUS_UNAVAILABE, ATTEND_STATUS_VALUES
 
-
+from .dtos import AICourseDTO, StudyRecordItemDTO, StudyUIDTO
 from ...service.lesson.const import CONTENT_TYPE_IMAGE, LESSON_TYPE_BRANCH_HIDDEN, SCRIPT_TYPE_FIX, SCRIPT_TYPE_PORMPT, SCRIPT_TYPE_SYSTEM, UI_TYPE_BRANCH, UI_TYPE_BUTTON, UI_TYPE_CHECKCODE, UI_TYPE_CONTINUED, UI_TYPE_INPUT, UI_TYPE_LOGIN, UI_TYPE_PHONE, UI_TYPE_SELECTION, UI_TYPE_TO_PAY
 from ...dao import db
 

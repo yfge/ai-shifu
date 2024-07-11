@@ -8,7 +8,7 @@ import time
 from typing import Generator
 from flask import Flask
 from langchain.prompts import PromptTemplate
-from ...api import langfuse
+from ...api.langfuse import langfuse_client as langfuse
 from ...api.llm import invoke_llm
 from ...service.common.models import AppException
 from ...service.lesson.const import CONTENT_TYPE_IMAGE, LESSON_TYPE_BRANCH_HIDDEN, SCRIPT_TYPE_FIX, SCRIPT_TYPE_PORMPT, SCRIPT_TYPE_SYSTEM, UI_TYPE_BRANCH, UI_TYPE_BUTTON, UI_TYPE_CHECKCODE, UI_TYPE_CONTINUED, UI_TYPE_INPUT, UI_TYPE_LOGIN, UI_TYPE_PHONE, UI_TYPE_SELECTION, UI_TYPE_TO_PAY
