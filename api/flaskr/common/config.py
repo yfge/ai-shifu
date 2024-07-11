@@ -9,9 +9,14 @@ from typing import Any
 from flask import Flask
 from flask import Config as FlaskConfig
 
+from flaskr.service.common.models import AppException
+
+
 class Config(FlaskConfig):
     def __init__(self, parent: FlaskConfig, defaults: dict = {}):
+        global __INSTANCE__
         self.parent = parent
+        __INSTANCE__ = self
     def __getitem__(self, key: Any) -> Any:
         if key in os.environ:
             return os.environ[key]
@@ -30,3 +35,13 @@ class Config(FlaskConfig):
         return self.parent.setdefault(key,default)
     
  
+
+
+
+
+def get_config(key:str,default:Any=None)->Any:
+    global __INSTANCE__
+    if __INSTANCE__ is None:
+        raise AppException("Config is not initialized")
+    return __INSTANCE__.get(key,default)
+

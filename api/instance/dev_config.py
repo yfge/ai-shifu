@@ -32,3 +32,14 @@ REDIS_KEY_PRRFIX_USER = REDIS_KEY_PRRFIX + "user:"
 
 
 LOGGING_PATH = "/var/log/ai-asistant.log"
+
+
+
+OPENAI_BASE_URL = "https://openai-api.kattgatt.com/v1"
+OPENAI_API_KEY = "sk-proj-BaXoIqx0472L4Aoui4m7T3BlbkFJ1RsKT9K0ENLxM36GF38D"
+
+ERNIE_API_ID = "KJ4N5kaaKAnIuWuF4YfjhDwf"
+ERNIE_API_SECRET = "pnYqxxwDdhtvET2B8qNVhRHrIlqwJbKD"
+
+
+BIGMODEL_API_KEY = "0d7c11000eb9d12b5c04b3e5b6f1c40f.hoY57xpYtGnCmLxM"

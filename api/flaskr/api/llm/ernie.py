@@ -4,9 +4,8 @@ import requests
 from flask import Flask 
 import json
 
-APP_ID = "78406161"
-APP_KEY = "hjNn1BkZ29SzsC7XRxN6Te1w"
-SECRECT_KEY = "R2Sl0w5KX4uSuGJOxPyMOvwkh1pZnXrX"
+from flaskr.common.config import get_config
+
 
 class ErnieUsage :
     def __init__(self,prompt_tokens,completion_tokens,total_tokens):
@@ -37,8 +36,8 @@ def get_access_token():
     url = "https://aip.baidubce.com/oauth/2.0/token"
     params = {
         "grant_type": "client_credentials",
-        "client_id": APP_KEY,
-        "client_secret": SECRECT_KEY
+        "client_id": get_config("ERNIE_API_ID"),
+        "client_secret": get_config("ERNIE_API_SECRET")
     }
     response = requests.post(url, params=params)
     return response.json()["access_token"]

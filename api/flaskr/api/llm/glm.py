@@ -4,13 +4,11 @@ from flask import Flask
 import jwt
 import time 
 import json
+
+from flaskr.common.config import get_config
 URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
-API_KEY = "40c6f6bbdcd16b6458b1f6c3e72fea68.hkUiwx5S0GR9Jueu"
 
 
-# # MINIMAX_URL=""
-# MINIMAX_KEY="eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJHcm91cE5hbWUiOiLokZvkupHpo54iLCJVc2VyTmFtZSI6IuiRm-S6kemjniIsIkFjY291bnQiOiIiLCJTdWJqZWN0SUQiOiIxNzI5MzM5MjE0NTM5MDAyNDU0IiwiUGhvbmUiOiIxODYxMjMxMjMyNiIsIkdyb3VwSUQiOiIxNzI5MzM5MjE0NTM0ODA4MDg1IiwiUGFnZU5hbWUiOiIiLCJNYWlsIjoiIiwiQ3JlYXRlVGltZSI6IjIwMjQtMDMtMjYgMTU6Mzc6MDIiLCJpc3MiOiJtaW5pbWF4In0.NsMbB91gDqdtb8M688qn5JaFdQj3Ac2qtCboj5hQHtO7tmFnGNaHIVFM9Q3RnEO-eaSPdixWoEUcjAUO_rKEbAaW9XLD5Dnfr3eEzEgu4T2BJTHPLfxwkJMrQAoWQR2x0xKdoVG3E5ucUGafvCbmPFQeacztMeW-JzikAkA1RoJCq1SfKvfuU-BtRCDfDZ_hT6Jb3ibTrwTPAOBOTB8jUhwoWf_DcmU3_lumGarv0dqMYBOAFGGwtuogTqr_QelnmlBbPHOjozNrx4-IiKWnnK7GNdBdJRwZN2txSxAFvyb4tNAFOzfuqUIyb1rqmST5TGb7Jz0JqhUFdzB1-0NKTg"
-# MINIMAX_URL="https://api.minimax.chat/v1/text/chatcompletion_v2"
 
 
 URLS = {
@@ -63,7 +61,7 @@ class Usage:
 
 def get_token(app:Flask)->str:
     try:
-        id, secret = API_KEY.split(".")
+        id, secret = get_config("BIGMODEL_API_KEY") .split(".")
     except Exception as e:
         raise Exception("invalid apikey", e)
  
@@ -103,7 +101,7 @@ def invoke_glm(app:Flask,model,message,system=None,**args)->Generator[ChatRespon
 
     data = {**data,**args}
     
-    headers = {"Authorization": "Bearer "+API_KEY}
+    headers = {"Authorization": "Bearer "+get_config("BIGMODEL_API_KEY") }
     response = requests.post(URLS[model], json=data, headers=headers,stream=True)
     app.logger.info('request data: {}'.format(json.dumps(data)))
     for res in response.iter_lines():
