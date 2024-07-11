@@ -1,19 +1,12 @@
 from flask import Flask, Response,request 
-from flaskr.route.common import bypass_token_validation, make_common_response
+from flaskr.route.common import  make_common_response
 from flaskr.service.common.models import raise_param_error
 from flaskr.service.lesson.funs import AICourseDTO
-from flaskr.service.study.funcs import AILessonAttendDTO, get_lesson_tree_to_study, get_study_record, run_script, update_attend_lesson_info
-from marshmallow import Schema
-
-from flask_restx import Api, fields, Resource
+from flaskr.service.study import  get_lesson_tree_to_study, get_study_record, run_script 
 
 
 def register_study_handler(app:Flask,path_prefix:str)->Flask:
 
-
-    api = Api(app)
-
-    app.logger.info('register_study_handler is called, path_prefix is {}'.format(path_prefix))
     @app.route(path_prefix+'/run',methods=['POST'])
     def run_lesson_script():
         '''
@@ -142,12 +135,6 @@ def register_study_handler(app:Flask,path_prefix:str)->Flask:
         return make_common_response(get_study_record(app,user_id,lesson_id))
  
     
-
-    @app.route(path_prefix+"/test_attend",methods=['GET'])
-    @bypass_token_validation
-    def test_attend():
-        attend_id = request.args.get("attend_id")
-        return make_common_response(update_attend_lesson_info(app,attend_id))
 
 
     return app

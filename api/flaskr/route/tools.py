@@ -1,7 +1,6 @@
 from flask import Flask, Response,request 
 from flaskr.route.common import bypass_token_validation, make_common_response
-from flaskr.service.common.models import raise_param_error
-from flaskr.service.study.funcs import get_lesson_tree_to_study, get_study_record, reset_user_study_info, run_script, update_attend_lesson_info
+from flaskr.service.study import reset_user_study_info
 
 
 
