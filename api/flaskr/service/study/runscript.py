@@ -36,7 +36,6 @@ def generation_attend(app:Flask,attend:AICourseLessonAttendDTO,script_info:AILes
     attendScript.script_id = script_info.script_id
     return attendScript
 
-
 def check_phone_number(app,user_id,input):
     # 检查手机号是否合法
     if not re.match(r'^1[3-9]\d{9}$', input):
@@ -318,7 +317,6 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     response_text = ""
                     check_success = False
                     stream = False
-
                     for i in resp:
                         current_content = i.result
                         if isinstance(current_content ,str):
@@ -361,6 +359,7 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     db.session.add(log_script)
                     span = trace.span(name="user_continue",input=input)
                     span.end()
+                    db.session.commit()
                     next=True
                 elif input_type == INPUT_TYPE_SELECT:
                     profile_keys = get_profile_array(script_info.script_ui_profile)
@@ -397,8 +396,8 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         for i in response_text:
                             yield make_script_dto("text",i,script_info.script_id)
                             time.sleep(0.01)
-                        make_script_dto("text_end","",script_info.script_id)
-                        make_script_dto(UI_TYPE_PHONE,script_info.script_ui_content,script_info.script_id) 
+                        yield make_script_dto("text_end","",script_info.script_id)
+                        yield make_script_dto(UI_TYPE_PHONE,script_info.script_ui_content,script_info.script_id) 
                         log_script = generation_attend(app,attend,script_info)
                         log_script.script_content = response_text
                         log_script.script_role = ROLE_TEACHER
@@ -418,18 +417,18 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                         ret = verify_sms_code_without_phone(app,user_id,input)
                         yield make_script_dto("profile_update",{"key":"phone","value":ret.userInfo.mobile},script_info.script_id)
                         yield make_script_dto("user_login",{"phone":ret.userInfo.mobile,"user_id":ret.userInfo.user_id},script_info.script_id)
-
+                        input = None
+                        input_type = None 
+                        span = trace.span(name="user_input_phone",input=input)
+                        span.end()
+                        next = True
+                        continue
                     except AppException as e:
                         for i in e.message:
                             yield make_script_dto("text",i,script_info.script_id)
                             time.sleep(0.01)
                         break
-                    input = None
-                    input_type = None 
-                    span = trace.span(name="user_input_phone",input=input)
-                    span.end()
-                    next = True
-                    continue
+                   
                 elif  input_type == INPUT_TYPE_LOGIN:
                     yield make_script_dto(INPUT_TYPE_LOGIN,{"phone":ret.userInfo.mobile,"user_id":ret.userInfo.user_id},script_info.script_id)
                     break

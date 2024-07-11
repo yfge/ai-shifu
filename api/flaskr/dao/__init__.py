@@ -10,14 +10,13 @@ def init_db(app : Flask):
     
 def init_redis(app:Flask):
     global redis_client
-    app.logger.info('init redis {} {} {} {}'
-                    .format(app.config['REDIS_HOST'], app.config['REDIS_PORT'], app.config['REDIS_DB'], app.config['REDIS_PASSWORD']))
+    app.logger.info('init redis {} {} {}'
+                    .format(app.config['REDIS_HOST'], app.config['REDIS_PORT'], app.config['REDIS_DB']))
     if app.config['REDIS_PASSWORD'] != '' and app.config['REDIS_PASSWORD'] != None:
         redis_client = Redis(host=app.config['REDIS_HOST'], port=app.config['REDIS_PORT'], db=app.config['REDIS_DB'],password=app.config['REDIS_PASSWORD'],username=app.config.get('REDIS_USER',None))
     else:
-        app.logger.info('init redis with no pwd {} {} {}'.format(app.config['REDIS_HOST'], app.config['REDIS_PORT'], app.config['REDIS_DB']))
         redis_client = Redis(host=app.config['REDIS_HOST'], port=app.config['REDIS_PORT'], db=app.config['REDIS_DB'])
-
+    app.logger.info('init redis done')
 
 def run_with_redis(ctx,key,timeout:int,func):
     with ctx:
@@ -29,5 +28,5 @@ def run_with_redis(ctx,key,timeout:int,func):
             finally:
                 lock.release()
         else:
-            app.logger.info('run_with_redis lock failed')
+            # app.logger.info('run_with_redis lock failed')
             return None

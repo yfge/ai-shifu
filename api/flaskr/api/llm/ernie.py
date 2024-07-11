@@ -30,14 +30,16 @@ class ErnieStreamResponse:
 
 
 
+ERNIE_API_ID = get_config("ERNIE_API_ID")
+ERNIE_API_SECRET = get_config("ERNIE_API_SECRET")
 
         
 def get_access_token():
     url = "https://aip.baidubce.com/oauth/2.0/token"
     params = {
         "grant_type": "client_credentials",
-        "client_id": get_config("ERNIE_API_ID"),
-        "client_secret": get_config("ERNIE_API_SECRET")
+        "client_id": ERNIE_API_ID,
+        "client_secret": ERNIE_API_SECRET 
     }
     response = requests.post(url, params=params)
     return response.json()["access_token"]

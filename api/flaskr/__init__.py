@@ -4,15 +4,11 @@ import time
 import logging
 from flask import Flask, Response, g,request,send_from_directory,make_response
 from flask_cors import CORS
-from flask_restful import Api
 
-from flaskr.service.lesson.funs import AICourseDTO
-from . import api 
-from . import dao
 
 import pymysql
 pymysql.install_as_MySQLdb()
-from .common import *
+
 from flasgger import Swagger
 
 
@@ -33,11 +29,21 @@ def create_app(test_config=None):
     else:
         app.logger.info('test_config is not None, load the '+test_config+'_config.py')
         app.config.from_pyfile(test_config+'_config.py', silent=True)
+
+    ##  加载配置文件å
+    from .common import Config,init_log
     app.config = Config(app.config)
+    ## 初始化日志
     init_log(app)
-    api.init_langfuse(app)
+    ## 初始化数据库
+    from . import dao
+   
     dao.init_db(app)
     dao.init_redis(app)
+
+    ## 初始化其他API
+    from . import api
+    api.init_langfuse(app)
   
     # ensure the instance folder exists
     try:
@@ -46,6 +52,7 @@ def create_app(test_config=None):
         pass
     
 
+    # 初始化rute 
     from . import route
     prefix = app.config.get('PATH_PREFIX','')
     app = route.register_common_handler(app)
@@ -56,8 +63,11 @@ def create_app(test_config=None):
     app = route.register_tools_handler(app,prefix+'/tools')
     app = route.register_order_handler(app,prefix+'/order')
 
+    ## 初始化swagger
 
-    swagger = Swagger(app,config=swagger_config,merge=True)
- 
+    if app.config.get('SWAGGER_ENABLED',False):
+        from .common import swagger_config
+        swagger = Swagger(app,config=swagger_config,merge=True)
+    
 
     return app
