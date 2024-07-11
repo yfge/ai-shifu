@@ -50,9 +50,6 @@ def test_get_access_token():
 
 def get_token():
     return get_access_token()
-
-
-
 URLS = {
     "ERNIE-4.0-8K":"https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions_pro",
     "ERNIE-4.0-8K-Preview":"https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-4.0-8k-preview",
@@ -65,7 +62,6 @@ URLS = {
     "ERNIE-Speed-8K":"https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie_speed",
     "ERNIE-Speed-128K":"https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-speed-128k",
 }
-
 
 def get_ernie_response(app,model,msg,**args)->Generator[ErnieStreamResponse,None,None]:
     url = URLS[model]

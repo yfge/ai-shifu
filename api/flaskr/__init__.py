@@ -22,22 +22,18 @@ def create_app(test_config=None):
 
     # 在程序开始时调用 patch_pyppeteer()
     app = Flask(__name__, instance_relative_config=True)
-  
-
-
-    
     CORS(app, resources={r"/*": {"supports_credentials": True}})
     app.logger.info('config: {}'.format(test_config))
     app.config.from_mapping(
         SECRET_KEY='dev',
         DATABASE=os.path.join(app.instance_path, 'flaskr.sqlite'),
     )
-    app.logger.info('create_app is called')
     if test_config is None:
         app.config.from_pyfile('config.py', silent=True)
     else:
         app.logger.info('test_config is not None, load the '+test_config+'_config.py')
         app.config.from_pyfile(test_config+'_config.py', silent=True)
+    app.config = Config(app.config)
     init_log(app)
     api.init_langfuse(app)
     dao.init_db(app)
@@ -60,8 +56,7 @@ def create_app(test_config=None):
     app = route.register_tools_handler(app,prefix+'/tools')
     app = route.register_order_handler(app,prefix+'/order')
 
-    app.logger.info(swagger_config["components"]["schemas"].keys())
-    # app.logger.info(swagger_config.keys())
+
     swagger = Swagger(app,config=swagger_config,merge=True)
  
 
