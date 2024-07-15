@@ -604,3 +604,20 @@ CREATE TABLE `user_profile` (
   KEY `idx_conversion_id_user_conversion` (`conversion_id`),
   KEY `idx_conversion_uuid_user_conversion` (`conversion_uuid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+CREATE table `ai_course_lesson_attend_association`  (
+ `id` bigint NOT NULL AUTO_INCREMENT COMMENT 'Unique ID',
+  `association_id` char(36) NOT NULL DEFAULT '' COMMENT 'Attend UUID',
+  `from_attend_id` char(36) NOT NULL DEFAULT '' COMMENT 'From Attend UUID',
+  `to_attend_id` char(36) NOT NULL DEFAULT '' COMMENT 'To Attend UUID',
+  `user_id` char(36) NOT NULL DEFAULT '' COMMENT 'Attend UUID',
+  `association_status`  int NOT NULL DEFAULT '0' COMMENT 'Conversion state',
+  `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
+  `updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update time',
+  PRIMARY KEY (`id`),
+  key `ix_ass_id` (`association_id`),
+  key `ix_from_attend_id`(`from_attend_id`),
+  key `ix_to_attend_id`(`to_attend_id`),
+  key `ix_user_id`(`user_id`)
+)  ENGINE=InnoDB DEFAULT CHARSET=utf8mb4; 

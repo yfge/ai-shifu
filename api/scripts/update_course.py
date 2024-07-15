@@ -1,13 +1,17 @@
 import requests
 
 COURSE = {}
-# COURSE["tblk9OFSKLeUPunv"]=["开篇","vewlGkI2Jp"]#tblk9OFSKLeUPunv
-COURSE["tbl41CFTMha7pU1d"]=["测试开篇","vewlGkI2Jp",401]#tblk9OFSKLeUPunv
+COURSE["tblk9OFSKLeUPunv"]=["开篇","vewlGkI2Jp",401]#tblk9OFSKLeUPunv
+# COURSE["tbl41CFTMha7pU1d"]=["测试开篇","vewlGkI2Jp",401]#tblk9OFSKLeUPunv
 COURSE["tblPI00k8B14kD5m"]=["AI编程初体验","vewlGkI2Jp",402]
-COURSE["tbl7G4WqBtv6hycy"]=["借助AI读懂代码","vewlGkI2Jp",402]
-COURSE["tblFrdiqdXzebDZa"]=["判断代码的质量","vewlGkI2Jp",402]
-COURSE["tbl93C7esgLzrtNT"]=["用AI做代码调试","vewlGkI2Jp",402]
-COURSE["tbl9MytJGjsfvhvT"]=["用AI调整代码","vewlGkI2Jp",402]
+# COURSE["tbl7G4WqBtv6hycy"]=["借助AI读懂代码","vewlGkI2Jp",402]
+# COURSE["tblFrdiqdXzebDZa"]=["判断代码的质量","vewlGkI2Jp",402]
+# COURSE["tbl93C7esgLzrtNT"]=["用AI做代码调试","vewlGkI2Jp",402]
+# COURSE["tbl9MytJGjsfvhvT"]=["用AI调整代码","vewlGkI2Jp",402]
+COURSE["tblDUfFbHGnM4LQl"]=["通义灵码","vewlGkI2Jp",405]
+COURSE["tbl9gl38im3rd1HB"]=["Copilot","vewlGkI2Jp",405]
+COURSE["tbl6bRlnHZ24ogP4"]=["Windows 上配置Python","vewlGkI2Jp",405]
+COURSE["tblQhi1ZutfUhW2T"]=["Mac上配置Python","vewlGkI2Jp",405]
 
 HOST="http://127.0.0.1:5800"
 # HOST="https://test-api-sifu.agiclass.cn/"
