@@ -22,9 +22,25 @@ class UserProfileDTO:
 
 
 PROFILES_LABLES = {
-
     "nickname":{
-        "label":"昵称"
+        "label":"昵称",
+        "mapping":"name"
+    },
+    "sex":{
+        "label":"性别",
+        "mapping":"user_sex",
+        "items":["男","女"],
+        "items_mapping":[0,1]
+    },
+    "birth":{
+        "label":"生日",
+        "mapping":"user_birth",
+        "type":"date"
+    },
+    "avatar":{
+        "label":"头像",
+        "mapping":"user_avatar",
+        "type":"image"
     },
     "industry":{
         "label":"行业"
@@ -102,7 +118,19 @@ def get_user_profiles(app:Flask,user_id:str,keys:list=None)->dict:
 
 def get_user_profile_labels(app:Flask,user_id:str):
     user_profiles = UserProfile.query.filter_by(user_id=user_id).all()
+    user_info = User.query.filter(User.user_id==user_id).first()
     result = []
+    if user_info:
+        for key in PROFILES_LABLES:
+            print(key)
+            if PROFILES_LABLES[key].get("mapping"):
+                result.append({
+                    "key": key,
+                    "label": PROFILES_LABLES[key]["label"],
+                    "type": "text",
+                    "value": getattr(user_info, PROFILES_LABLES[key]["mapping"]),
+                    "items": PROFILES_LABLES[key].get("items")
+                })
 
     for user_profile in user_profiles:
         if user_profile.profile_key in PROFILES_LABLES:
@@ -112,6 +140,7 @@ def get_user_profile_labels(app:Flask,user_id:str):
                 "type": "select" if "items" in PROFILES_LABLES[user_profile.profile_key]  else "text",
                 "value": user_profile.profile_value,
                 "items":PROFILES_LABLES[user_profile.profile_key]["items"] if "items" in PROFILES_LABLES[user_profile.profile_key] else None
-            })  
+            }) 
+     
                 
     return result

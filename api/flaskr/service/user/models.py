@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, TIMESTAMP, Text, Index, text
+from sqlalchemy import Column, String, Integer, TIMESTAMP, Text, Index, text,Date
 from sqlalchemy.dialects.mysql import BIGINT
 from sqlalchemy.sql import func
 from sqlalchemy.ext.declarative import declarative_base
@@ -19,6 +19,9 @@ class User(db.Model):
     updated = Column(TIMESTAMP, nullable=False, default=func.now(), onupdate=func.now(), comment='Update time')
     default_model = Column(String(255), nullable=False, default='gpt-3.5-turbo-0613', comment='Default model')
     user_state= Column(Integer, nullable=True, default= 0, comment='User_state')
+    user_sex = Column(Integer, nullable=True, default=0, comment='user sex')   
+    user_birth =Column(Date, comment='user birth')
+    user_avatar = Column(String(255), nullable=True, default='', comment='user avatar')
 
     def __init__(self, user_id, username="", name="", password_hash="", email="", mobile="",default_model="gpt-3.5-turbo-0613",user_state=0):
         self.user_id = user_id

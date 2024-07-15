@@ -68,6 +68,5 @@ def create_app(test_config=None):
     if app.config.get('SWAGGER_ENABLED',False):
         from .common import swagger_config
         swagger = Swagger(app,config=swagger_config,merge=True)
-    
 
     return app
