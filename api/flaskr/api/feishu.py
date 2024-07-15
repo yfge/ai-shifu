@@ -147,11 +147,8 @@ def remove_text_element(app:Flask,doc_id:str,block_id:str):
 ## 2. 列出表格的所有视图
 ## 3. 获取表格的所有数据
 
-
 ## 一篇多维表格可以理解成是一个 app，他的唯一标识就是 app_token。
-
 ## app 是由一个个 table 组成，我们称 table 为数据表，他的标识就是 table_id。
-
 ## table 由 record(记录) 和 field(字段) 组成, 同时可以拥有多个 view (视图)。
 
 
@@ -187,7 +184,6 @@ def list_records(app:Flask,app_token:str,table_id:str,view_id:str=None,page_toke
     token = get_tenat_token(app)
     # https://open.feishu.cn/open-apis/bitable/v1/apps/:app_token/tables/:table_id/records/search
     url = 'https://open.feishu.cn/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records/search'.format(app_token=app_token,table_id=table_id)
-
     query={}
     if page_token:
         query['page_token']=page_token
