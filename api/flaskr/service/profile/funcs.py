@@ -29,8 +29,12 @@ PROFILES_LABLES = {
     "sex":{
         "label":"性别",
         "mapping":"user_sex",
-        "items":["男","女"],
-        "items_mapping":[0,1]
+        "items":["不告诉","男","女"],
+        "items_mapping":{
+            "不告诉":0,
+            "男":1,
+            "女":2
+        }
     },
     "birth":{
         "label":"生日",
@@ -119,28 +123,35 @@ def get_user_profiles(app:Flask,user_id:str,keys:list=None)->dict:
 def get_user_profile_labels(app:Flask,user_id:str):
     user_profiles = UserProfile.query.filter_by(user_id=user_id).all()
     user_info = User.query.filter(User.user_id==user_id).first()
-    result = []
+    result = {}
     if user_info:
         for key in PROFILES_LABLES:
             print(key)
             if PROFILES_LABLES[key].get("mapping"):
-                result.append({
-                    "key": key,
+                result[key] ={
+                    # "key": key,
                     "label": PROFILES_LABLES[key]["label"],
-                    "type": "text",
+                    "type":  PROFILES_LABLES[key].get("type", "select" if "items" in PROFILES_LABLES[key]  else "text"),
                     "value": getattr(user_info, PROFILES_LABLES[key]["mapping"]),
                     "items": PROFILES_LABLES[key].get("items")
-                })
+                }
+                if PROFILES_LABLES[key].get("items_mapping"):
+                    result[key]["value"] = PROFILES_LABLES[key]["items"][getattr(user_info, PROFILES_LABLES[key]["mapping"])]
 
     for user_profile in user_profiles:
         if user_profile.profile_key in PROFILES_LABLES:
-            result.append({ 
-                "key": user_profile.profile_key,
-                "label": PROFILES_LABLES[user_profile.profile_key]["label"],
-                "type": "select" if "items" in PROFILES_LABLES[user_profile.profile_key]  else "text",
-                "value": user_profile.profile_value,
-                "items":PROFILES_LABLES[user_profile.profile_key]["items"] if "items" in PROFILES_LABLES[user_profile.profile_key] else None
-            }) 
+            if result.get(user_profile.profile_key) is None:
+                result[user_profile.profile_value]={ 
+                    # "key": user_profile.profile_key,
+                    "label": PROFILES_LABLES[user_profile.profile_key]["label"],
+                    "type":  PROFILES_LABLES[key].get("type", "select" if "items" in PROFILES_LABLES[user_profile.profile_key]  else "text"),
+                    "value": user_profile.profile_value,
+                    "items":PROFILES_LABLES[user_profile.profile_key]["items"] if "items" in PROFILES_LABLES[user_profile.profile_key] else None
+                }
+                if PROFILES_LABLES[user_profile.profile_key].get("items_mapping"):
+                    result[key]["value"] = PROFILES_LABLES[key]["items"][ user_profile.profile_value]
+            else:
+                result[user_profile.profile_key]["value"] = user_profile.profile_value
      
                 
     return result
