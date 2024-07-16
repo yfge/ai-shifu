@@ -3,6 +3,11 @@ import { Button, Space, Table } from "antd";
 import { useEffect } from "react";
 import { useState, useRef } from "react";
 
+import { TableProps } from "antd";
+
+
+
+
 const ContactListTable = ({
   loading,
   dataSource,
@@ -22,13 +27,18 @@ const ContactListTable = ({
     //   key:"number",
     // },
     {
-      title: "头像",
-      dataIndex: "avatar",
-      key: "avatar",
-      render: (value, record) => (
-        <Avatar src={value}>{record.name.slice(0, 1)}</Avatar>
-      ),
+      title: "userId",
+      dataIndex: "user_id",
+      key: "user_id",
     },
+    // {
+    //   title: "头像",
+    //   dataIndex: "avatar",
+    //   key: "avatar",
+    //   render: (value, record) => (
+    //     <Avatar src={value}>{record.nickname.slice(0, 1)}</Avatar>
+    //   ),
+    // },
     {
       title: "姓名",
       dataIndex: "name",
@@ -39,32 +49,37 @@ const ContactListTable = ({
     },
 
     {
-      title: "联系电话",
+      title: "电话",
       dataIndex: "mobile",
       key: "mobile",
     },
 
+   
     {
-      title: "邮箱地址",
-      dataIndex: "email",
-      key: "email",
-    },
-
+      title: "性别",
+      dataIndex: "user_sex",
+      key: "user_sex",
+    }, 
+    {
+      title: "生日",
+      dataIndex: "birth",
+      key: "birth",
+    }, 
     {
       title: "操作",
       dataIndex: "action",
       key: "action",
       render: (_, record) => (
         <Space size="mini">
-          {/* <Button
+         <Button
             type="link"
             onClick={() => {
               onClickDetail(record);
             }}
           >
             详情
-          </Button> */}
-          <Button
+          </Button>  
+          {/* <Button
             type="link"
             onClick={() => {
               onClickEdit(record);
@@ -79,7 +94,7 @@ const ContactListTable = ({
             }}
           >
             删除
-          </Button>
+          </Button> */}
         </Space>
       ),
     },
@@ -102,8 +117,15 @@ const ContactListTable = ({
     setTableOffsetTop(tableRef.current.offsetTop + 60);
     console.log(tableOffsetTop);
   }, [tableOffsetTop]);
+
+
+  const [top, setTop] = useState('topLeft');
+  const [bottom, setBottom] = useState('bottomRight');
+
+
   return (
     <Table
+      // pagination={{ position: [top, bottom] }}
       ref={tableRef}
       scroll={{ y: `calc(100vh - ${tableOffsetTop}px)` }}
       showSorterTooltip={false}

@@ -20,13 +20,13 @@ const SearchForm = ({ onSearch, onReset }) => {
         form={form}
       >
         <Space>
-          <Form.Item label="姓名" name="name">
+          <Form.Item label="UID" name="user_id">
             <Input allowClear placeholder="请输入"></Input>
           </Form.Item>
           <Form.Item label="联系电话" name="mobile">
             <Input allowClear placeholder="请输入"></Input>
           </Form.Item>
-          <Form.Item label="邮箱地址" name="email">
+          <Form.Item label="昵称" name="nickname">
             <Input allowClear placeholder="请输入"></Input>
           </Form.Item>
           <Form.Item>

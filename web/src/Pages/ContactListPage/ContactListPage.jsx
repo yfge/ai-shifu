@@ -5,13 +5,24 @@ import { useEffect, useState } from "react";
 import EditContactModal from "./Modal/EditContactModal";
 import ContactDetailModal from "./Modal/ContactDetailModel";
 
-import { GetAllContacts, deleteContact } from "../../Api/contact";
+
+import { Pagination } from "antd";
+
+// import { GetAllContacts, deleteContact } from "../../Api/contact";
+import {getUserList} from "../../Api/admin"
 
 import { UploadEvent } from "../../Api/UploadEvent";
 import { DeleteColumnOutlined, DeleteOutlined } from "@ant-design/icons";
+import { TRUE } from "sass";
+import { set } from "store";
 
 const ContactsComponant = () => {
   UploadEvent("ContactsComponant", { page: "contact" });
+
+
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [total, setTotal] = useState(0);
   /**
    * @description 查询参数
    */
@@ -25,6 +36,7 @@ const ContactsComponant = () => {
    */
   const onSearch = (searchParams) => {
     Object.assign(params, searchParams);
+    setCurrentPage(1);
     queryAllContacts();
   };
 
@@ -38,9 +50,12 @@ const ContactsComponant = () => {
    * @description 联系人数据
    */
   const queryAllContacts = () => {
-    GetAllContacts(params.name, params.mobile, params.email)
+    getUserList(pageSize,currentPage,params)
       .then((res) => {
-        setContactInfoList(res.data);
+        setContactInfoList(res.data.items);
+        setPageSize(res.data.page_size);
+        setCurrentPage(res.data.page);
+        setTotal(res.data.total);
         setLoading(false);
       })
       .catch(() => {
@@ -119,9 +134,9 @@ const ContactsComponant = () => {
       title: "确认删除？",
       content: <p>删除后不可恢复，请谨慎操作！！！</p>,
       onOk: () => {
-        deleteContact([row.contact_id]).then((res) => {
-          queryAllContacts();
-        });
+        // deleteContact([row.contact_id]).then((res) => {
+        //   queryAllContacts();
+        // });
       },
     });
   };
@@ -154,10 +169,10 @@ const ContactsComponant = () => {
       title: "确认删除？",
       content: <p>删除后不可恢复，请谨慎操作！！！</p>,
       onOk: () => {
-        deleteContact(contactIds).then((res) => {
-          queryAllContacts();
-          setContactIds([]);
-        });
+        // deleteContact(contactIds).then((res) => {
+          // queryAllContacts();
+          // setContactIds([]);
+        // });
       },
     });
   };
@@ -167,20 +182,18 @@ const ContactsComponant = () => {
     setContactIds(selectedRowKeys);
   };
 
+  const onPaginationChange = (page, pageSize) => {
+    setCurrentPage(page);
+    setPageSize(pageSize);
+  }
+
   useEffect(() => {
     setLoading(true);
     queryAllContacts();
-  }, []);
+  }, [pageSize,currentPage]);
   return (
     <Space direction="vertical" size="large" style={{ display: "flex" }}>
       <SearchForm onSearch={onSearch} onReset={onReset}></SearchForm>
-      {contactIds.length > 0 && (
-        <Space>
-          <Button type="primary" danger onClick={onClickDelete}>
-            批量删除
-          </Button>
-        </Space>
-      )}
       <ContactListTable
         dataSource={contactInfoList}
         onClickEdit={onClickTableRowEdit}
@@ -189,6 +202,7 @@ const ContactsComponant = () => {
         loading={loading}
         onTableSelectChange={onTableSelectChange}
       ></ContactListTable>
+      <Pagination pageSize={pageSize} onChange={onPaginationChange} current={currentPage} total={total} ></Pagination>
       <EditContactModal
         open={editContactModalProps.open}
         state={editContactModalProps.state}

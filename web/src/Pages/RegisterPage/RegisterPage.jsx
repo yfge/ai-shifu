@@ -102,10 +102,10 @@ const RegisterPage = () => {
               src={require("../../Assets/logo-03.png")}
               alt=""
             />
-            <div className="system-name">AI 私教</div>
+            <div className="system-name">枕头后台管理系统</div>
           </div>
 
-          <div className="slogan">Start here ~ AI 私教! 🚀</div>
+          <div className="slogan">Start here ~ 枕头后台管理系统! 🚀</div>
         </div>
         <Form
           name="normal_register"

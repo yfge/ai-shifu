@@ -33,7 +33,7 @@ const MainLayout = () => {
             marginRight: 42,
           }}
         >
-         AI 私教 
+         枕头后台管理系统
         </div>
         <Divider
           type="vertical"

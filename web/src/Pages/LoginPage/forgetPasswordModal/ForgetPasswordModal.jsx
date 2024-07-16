@@ -14,7 +14,7 @@ const Title = ()=>(
             className='logo'
             src={require('../../../Assets/logo-03.png')} alt="" />
         <div className="title">
-            AI 私教
+        枕头后台管理系统
         </div>
     </div>
 )

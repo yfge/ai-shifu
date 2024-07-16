@@ -3,6 +3,7 @@ import ChatPage from "../Pages/ChatPage/ChatPage";
 import SchedeleComponent from "../Pages/SchedulePage/SchedulePage";
 import LoginPage from "../Pages/LoginPage/LoginPage";
 import RegisterPage from "../Pages/RegisterPage/RegisterPage";
+import ContactsComponant from "../Pages/ContactListPage/ContactListPage";
 import { Navigate } from "react-router-dom";
 import {
   ReadOutlined,
@@ -21,6 +22,18 @@ const authRoutes = [
     path: "/chat",
     element: <ChatPage></ChatPage>,
     title: "学习",
+    icon: <ReadOutlined></ReadOutlined>,
+  },
+  {
+    path: "/course",
+    element: <ChatPage></ChatPage>,
+    title: "课程",
+    icon: <ReadOutlined></ReadOutlined>,
+  },
+  {
+    path: "/user",
+    element: <ContactsComponant></ContactsComponant>,
+    title: "用户",
     icon: <ReadOutlined></ReadOutlined>,
   },
 // <<<<<<< HEAD
