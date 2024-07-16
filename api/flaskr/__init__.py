@@ -62,6 +62,7 @@ def create_app(test_config=None):
     app = route.register_dict_handler(app,prefix+'/dict')
     app = route.register_tools_handler(app,prefix+'/tools')
     app = route.register_order_handler(app,prefix+'/order')
+    app = route.register_admin_handler(app,prefix+'/admin')
 
     ## 初始化swagger
 

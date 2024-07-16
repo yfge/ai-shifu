@@ -6,7 +6,7 @@ from ...dao import db
 
 
 class User(db.Model):
-    __tablename__ = 'user_info'
+    __tablename__ = 'admin_info'
 
     id = Column(BIGINT, primary_key=True, comment='Unique ID', autoincrement=True)
     user_id = Column(String(36), nullable=False, default='', comment='User UUID')
@@ -32,27 +32,3 @@ class User(db.Model):
         self.mobile = mobile
         self.default_model = default_model
         self.user_state = user_state
-
-
-
-class UserConversion(db.Model):
-    __tablename__ = 'user_conversion'
-
-    id = Column(BIGINT, primary_key=True, autoincrement=True, comment='Unique ID')
-    user_id = Column(String(36), nullable=False, default='', comment='User UUID')
-    conversion_id = Column(String(36), nullable=False, default='', comment='Conversion UUID')
-    conversion_source = Column(String(36), nullable=False, default=0, comment='Conversion type')
-    conversion_status = Column(Integer, nullable=False, default=0, comment='Conversion state')
-    conversion_uuid = Column(String(36), nullable=False, default='', comment='Conversion UUID')
-    conversion_third_platform = Column(String(255), nullable=False, default='', comment='Conversion third platform')
-    created = Column(TIMESTAMP, nullable=False, default=func.now(), comment='Creation time')
-    updated = Column(TIMESTAMP, nullable=False, default=func.now(), onupdate=func.now(), comment='Update time')
-
-    def __init__(self, user_id, conversion_id, conversion_source, conversion_status, conversion_uuid='', conversion_third_platform=''):
-        self.user_id = user_id
-        self.conversion_id = conversion_id
-        self.conversion_source = conversion_source
-        self.conversion_status = conversion_status
-        self.conversion_uuid = conversion_uuid
-        self.conversion_third_platform = conversion_third_platform
- 
