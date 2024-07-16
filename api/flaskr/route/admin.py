@@ -265,7 +265,11 @@ def register_admin_handler(app:Flask,path_prefix:str)->Flask:
                                     type: object
                                     description: 用户列表
         """
-        return make_common_response(get_user_list(app))
+        page_size = request.get_json().get('page_size',20)
+        page_index = request.get_json().get('page_index',1)
+        query = request.get_json().get('query',{})
+
+        return make_common_response(get_user_list(app,page_index,page_size,query))
     return app
 
 

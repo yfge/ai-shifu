@@ -42,6 +42,8 @@ def register_common_handler(app:Flask)->Flask:
 def fmt(o):
     if isinstance(o, datetime.datetime):
         return o.isoformat()
+    elif isinstance(o, datetime.date):
+        return o.isoformat()
     else:
         return o.__json__()
     

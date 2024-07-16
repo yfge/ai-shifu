@@ -329,8 +329,38 @@ class UserItemDTO:
             "sex":self.sex,
             "birth":self.birth
         }
-def get_user_list(app:Flask,page:int=1,page_size:int=20,user_name:str=None,user_mobile:str=None):
+
+
+class PageNationDTO:
+    def __init__(self,page:int,page_size:int,total:int,data) -> None:
+        self.page = page
+        self.page_size = page_size
+        self.total = total
+        self.page_count = total//page_size + 1
+        self.data = data
+    def __json__(self):
+        return {
+            "page": self.page,
+            "page_size": self.page_size,
+            "total": self.total,
+            "page_count":self.page_count,
+            "items":self.data
+        }
+def get_user_list(app:Flask,page:int=1,page_size:int=20,query=None):
     with app.app_context():
-        users = CUser.query.all()
-        return [UserItemDTO(user.user_id,user.mobile,user.username,user.user_sex,user.user_birth) for user in users]
+        app.logger.info("query:"+str(query)+" page:"+str(page)+" page_size:"+str(page_size))
+        db_query = CUser.query
+        if query:
+            if query.get("mobile"):
+                db_query = db_query.filter(CUser.mobile.like("%"+query.get("mobile")+"%"))
+            if query.get("nickname"):
+                db_query = db_query.filter(CUser.username.like("%"+query.get("nickname")+"%"))
+            if query.get("user_id"):
+                db_query = db_query.filter(CUser.user_id == query.get("user_id"))
+        count = db_query.count()
+        if count == 0:
+            return {}
+        users = db_query.order_by(CUser.created.desc()).offset((page-1)*page_size).limit(page_size)
+        items =  [UserItemDTO(user.user_id,user.mobile,user.username,user.user_sex,user.user_birth) for user in users]
+        return PageNationDTO(page,page_size,count,items)
     
