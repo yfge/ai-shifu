@@ -62,6 +62,7 @@ URLS = {
     "ERNIE-3.5-128K":"https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-3.5-128k",
     "ERNIE-Speed-8K":"https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie_speed",
     "ERNIE-Speed-128K":"https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-speed-128k",
+    "ERNIE-4.0-8K-Preview-0518":"https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions_adv_pro"
 }
 
 def get_ernie_response(app,model,msg,**args)->Generator[ErnieStreamResponse,None,None]:
