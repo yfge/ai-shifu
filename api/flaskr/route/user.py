@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify, make_response
 from flaskr.service.common.models import raise_param_error
 from flaskr.service.profile.funcs import get_user_profile_labels, get_user_profiles
 from ..service.user import *
+from ..service.admin import validate_user as validate_admin
 from functools import wraps
 from .common import make_common_response,bypass_token_validation,by_pass_login_func
 
@@ -86,6 +87,8 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
     def before_request():
 
         app.logger.info('request.endpoint:'+str(request.endpoint))
+        app.logger.info('request.path:'+str(request.path))
+        app.logger.info('request.url:'+str(request.access_route))
         if request.endpoint in ['login', 'register','require_reset_code','reset_password','invoke','update_lesson'] or request.endpoint in by_pass_login_func:
             # 在登录和注册处理函数中绕过登录态验证
             return
@@ -101,7 +104,10 @@ def register_user_handler(app:Flask,path_prefix:str)->Flask:
         token = str(token)
         if not token and request.endpoint in by_pass_login_func:
             return
-        user = validate_user(app,token)
+        if 'admin' in request.path:
+            user = validate_admin(app,token)
+        else:
+            user = validate_user(app,token)
         request.user = user
     
 

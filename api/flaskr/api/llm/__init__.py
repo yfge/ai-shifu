@@ -73,7 +73,6 @@ def invoke_llm(app:Flask,span:StatefulSpanClient,model:str,message:str,system:st
     elif model in ERNIE_MODELS:
         if system:
             kwargs.update({"system":system}) 
-        app.logger.info(f"invoke_llm {kwargs}") 
         if json:
             kwargs["response_format"]="json_object"
         response = get_ernie_response(app,model, message,**kwargs)

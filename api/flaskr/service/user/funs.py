@@ -5,10 +5,12 @@ import string
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
-from flaskr.api.aliyun import send_sms_code_ali
-from flaskr.common.swagger import register_schema_to_swagger
-from flaskr.service.common.models import CHECK_CODE_ERROR, CHECK_CODE_EXPIRED, SMS_CHECK_ERROR, SMS_SEND_EXPIRED
-from flaskr.service.user.const import USE_STATE_VALUES, USER_STATE_REGISTERED, USER_STATE_UNTEGISTERED
+
+from ...service.common.dtos import UserInfo, UserToken
+from ...api.aliyun import send_sms_code_ali
+from ...common.swagger import register_schema_to_swagger
+from ...service.common.models import CHECK_CODE_ERROR, CHECK_CODE_EXPIRED, SMS_CHECK_ERROR, SMS_SEND_EXPIRED
+from ...service.common.dtos import USE_STATE_VALUES, USER_STATE_REGISTERED, USER_STATE_UNTEGISTERED
 from ...dao import db,redis_client as redis
 from ...api.sendcloud import send_email
 import uuid
@@ -31,50 +33,6 @@ auth = oss2.Auth(ALI_API_ID, ALI_API_SECRET)
 bucket = oss2.Bucket(auth, endpoint, 'pillow-avtar')
 
 FIX_CHECK_CODE = "0615"
-@register_schema_to_swagger
-class UserInfo:
-    user_id: str
-    username: str
-    name: str
-    email: str
-    mobile: str
-    model: str
-    user_state: str
-    def __init__(self, user_id, username, name, email, mobile,model,user_state):
-        self.user_id = user_id
-        self.username = username
-        self.name = name
-        self.email = email
-        self.mobile = mobile
-        self.model = model
-        self.user_state = USE_STATE_VALUES[user_state]
-    def __json__(self):
-        return {
-            "user_id": self.user_id,
-            "username": self.username,
-            "name": self.name,
-            "email": self.email,
-            "mobile": self.mobile,
-            "state": self.user_state,
-        }
-    def __html__(self):
-        return self.__json__()
-
-
-@register_schema_to_swagger
-class UserToken:
-    userInfo: UserInfo
-    token: str
-    def __init__(self,userInfo:UserInfo, token):
-        self.userInfo = userInfo
-        self.token = token
-    def __json__(self):
-        return {
-            "userInfo": self.userInfo,
-            "token": self.token,
-        }
-
-
 
 def create_new_user(app:Flask, username: str, name: str, raw_password: str, email: str, mobile: str)->UserToken:
     with app.app_context():

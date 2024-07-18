@@ -18,18 +18,18 @@ import NewChatPage from "../Pages/NewChatPage/NewChatPage.jsx";
  * @type {*}
  * */
 const authRoutes = [
-  {
-    path: "/chat",
-    element: <ChatPage></ChatPage>,
-    title: "学习",
-    icon: <ReadOutlined></ReadOutlined>,
-  },
-  {
-    path: "/course",
-    element: <ChatPage></ChatPage>,
-    title: "课程",
-    icon: <ReadOutlined></ReadOutlined>,
-  },
+  // {
+  //   path: "/chat",
+  //   element: <ChatPage></ChatPage>,
+  //   title: "学习",
+  //   icon: <ReadOutlined></ReadOutlined>,
+  // },
+  // {
+  //   path: "/course",
+  //   element: <ChatPage></ChatPage>,
+  //   title: "课程",
+  //   icon: <ReadOutlined></ReadOutlined>,
+  // },
   {
     path: "/user",
     element: <ContactsComponant></ContactsComponant>,

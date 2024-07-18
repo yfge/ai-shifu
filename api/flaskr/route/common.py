@@ -19,7 +19,6 @@ def bypass_token_validation(func):
     by_pass_login_func.append(func.__name__)
     @wraps(func)
     def wrapper(*args, **kwargs):
-        # print('bypass_token_validation')
         return func(*args, **kwargs) 
     return wrapper
 
@@ -64,6 +63,5 @@ class CommonResponse(Generic[T]):
         self.message = 'success'
         self.data = None
 def make_common_response(data):
-
     response = json.dumps({'code':0,'message': 'success','data': data},default=fmt,ensure_ascii=False)
     return response

@@ -6,15 +6,16 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Date
 
-from flaskr.api.aliyun import send_sms_code_ali
-from flaskr.common.swagger import register_schema_to_swagger
-from flaskr.service.common.models import CHECK_CODE_ERROR, CHECK_CODE_EXPIRED, SMS_CHECK_ERROR, SMS_SEND_EXPIRED
-from flaskr.service.admin.const import USE_STATE_VALUES, USER_STATE_REGISTERED, USER_STATE_UNTEGISTERED
-from flaskr.service.user.models import User as CUser
+from ...service.common.dtos import UserInfo, UserToken
+from ...api.aliyun import send_sms_code_ali
+from ...common.swagger import register_schema_to_swagger
+from ...service.common.models import CHECK_CODE_ERROR, CHECK_CODE_EXPIRED, SMS_CHECK_ERROR, SMS_SEND_EXPIRED
+from ...service.common.dtos import USE_STATE_VALUES, USER_STATE_REGISTERED, USER_STATE_UNTEGISTERED
+from ...service.user.models import User as CUser
 from ...dao import db,redis_client as redis
 from ...api.sendcloud import send_email
 import uuid
-from .models import User 
+from .models import AdminUser as User    
 import hashlib
 from ..common import USER_NOT_FOUND,USER_PASSWORD_ERROR,USER_ALREADY_EXISTS,USER_TOKEN_EXPIRED,USER_NOT_LOGIN,OLD_PASSWORD_ERROR,RESET_PWD_CODE_EXPIRED,RESET_PWD_CODE_ERROR
 import jwt
@@ -33,48 +34,6 @@ auth = oss2.Auth(ALI_API_ID, ALI_API_SECRET)
 bucket = oss2.Bucket(auth, endpoint, 'pillow-avtar')
 
 FIX_CHECK_CODE = "0615"
-@register_schema_to_swagger
-class UserInfo:
-    user_id: str
-    username: str
-    name: str
-    email: str
-    mobile: str
-    model: str
-    user_state: str
-    def __init__(self, user_id, username, name, email, mobile,model,user_state):
-        self.user_id = user_id
-        self.username = username
-        self.name = name
-        self.email = email
-        self.mobile = mobile
-        self.model = model
-        self.user_state = USE_STATE_VALUES[user_state]
-    def __json__(self):
-        return {
-            "user_id": self.user_id,
-            "username": self.username,
-            "name": self.name,
-            "email": self.email,
-            "mobile": self.mobile,
-            "state": self.user_state,
-        }
-    def __html__(self):
-        return self.__json__()
-
-
-@register_schema_to_swagger
-class UserToken:
-    userInfo: UserInfo
-    token: str
-    def __init__(self,userInfo:UserInfo, token):
-        self.userInfo = userInfo
-        self.token = token
-    def __json__(self):
-        return {
-            "userInfo": self.userInfo,
-            "token": self.token,
-        }
 
 
 
@@ -89,7 +48,9 @@ def create_new_user(app:Flask, username: str, name: str, raw_password: str, emai
         db.session.add(new_user)
         db.session.commit()
         token = generate_token(app,user_id=user_id)
-        return UserToken(UserInfo(user_id=user_id, username=username, name=name, email=email, mobile=mobile,model=new_user.default_model,user_state= new_user.user_state),token=token)
+        return UserToken(
+            UserInfo(user_id=user_id, username=username, name=name, email=email, mobile=mobile,model=new_user.default_model,user_state=new_user.user_state),
+            token=token)
 
 
 
@@ -117,12 +78,17 @@ def validate_user(app:Flask, token: str) -> UserInfo:
             raise USER_NOT_LOGIN
         try:
             user_id = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])['user_id']
+            app.logger.info("user_id:"+user_id)
+            redis_key = app.config["REDIS_KEY_PRRFIX_USER"] + user_id
+            app.logger.info("redis_key:"+redis_key)
+
             redis_token = redis.get(app.config["REDIS_KEY_PRRFIX_USER"] + user_id);
+
             if(redis_token == None):
                 raise USER_TOKEN_EXPIRED 
             set_token = str(redis.get(app.config["REDIS_KEY_PRRFIX_USER"] + user_id),encoding="utf-8")
             if set_token == token:
-                user = User.query.filter_by(user_id=user_id).first()
+                user = User.query.filter(User.user_id==user_id).first()
                 if user:
                     return UserInfo(user_id=user.user_id, username=user.username, name=user.name, email=user.email, mobile=user.mobile,model=user.default_model, user_state=user.user_state)
                 else:

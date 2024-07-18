@@ -8,9 +8,9 @@ import store from "store";
 import { useEffect } from "react";
 import { useState } from "react";
 import { Modal } from "antd";
-import { register } from "../../Api/user";
+import { register } from "../../Api/admin";
 import { UploadEvent } from "../../Api/UploadEvent";
-import { login } from "../../Api/user";
+import { login } from "../../Api/admin";
 
 const RegisterPage = () => {
   const navigate = useNavigate();

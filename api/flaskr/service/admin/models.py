@@ -5,7 +5,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from ...dao import db
 
 
-class User(db.Model):
+class AdminUser(db.Model):
     __tablename__ = 'admin_info'
 
     id = Column(BIGINT, primary_key=True, comment='Unique ID', autoincrement=True)
