@@ -88,7 +88,8 @@ DB_SAVE_MAP = {
     '按钮组配置': 'script_other_conf',
     '后续交互':'script_ui_type',
     '按钮标题': 'script_ui_content',
-    '跳转配置': 'script_other_conf'
+    '跳转配置': 'script_other_conf',
+    'temperature':'script_temprature'
 
 }
 
@@ -227,6 +228,7 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,view_id:str,title:str='
                 scripDb['script_content_type']=CONTENT_TYPE_TEXT
                 scripDb['script_model']='ERNIE-Speed-8K'
                 scripDb['status']=1
+                scripDb['script_temprature']=0.8
                 for field  in record['fields']:
                     val_obj = record['fields'][field]
                     db_field = DB_SAVE_MAP.get(field.strip())
@@ -239,13 +241,14 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,view_id:str,title:str='
                         val = val_obj.get('text')
                     else:
                         app.logger.info('val_obj:'+str(val_obj))
+                        val = str(val_obj)
                     if db_field :
                         if field in DB_SAVE_DICT_MAP:
                             orig_val = val
                             val = DB_SAVE_DICT_MAP[field.strip()].get(orig_val.strip())
                             if val is None:
                                 app.logger.info('val is None:'+field+",value:"+orig_val)
-                        if val is not None:   
+                        if val is not None and val != '':   
                             scripDb[db_field] = val
                     else:
                         if unconf_fields.count(field)==0:
@@ -258,6 +261,7 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,view_id:str,title:str='
                 else:
                     for key in scripDb:
                         setattr(scrip,key,scripDb[key])
+                print('script_temprature:'+str(scrip.script_temprature)) 
             if resp['data']['has_more']:
                 page_token = resp['data']['page_token']
             else:

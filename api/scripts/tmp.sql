@@ -621,3 +621,26 @@ CREATE table `ai_course_lesson_attend_association`  (
   key `ix_to_attend_id`(`to_attend_id`),
   key `ix_user_id`(`user_id`)
 )  ENGINE=InnoDB DEFAULT CHARSET=utf8mb4; 
+
+
+
+CREATE TABLE `admin_info` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'Unique ID',
+  `user_id` char(36) NOT NULL DEFAULT '' COMMENT 'User UUID',
+  `username` varchar(255) NOT NULL DEFAULT '' COMMENT 'Login username',
+  `name` varchar(255) NOT NULL DEFAULT '' COMMENT 'User real name',
+  `password_hash` varchar(255) NOT NULL DEFAULT '' COMMENT 'Hashed password',
+  `email` varchar(255) NOT NULL DEFAULT '' COMMENT 'Email',
+  `mobile` varchar(20) NOT NULL DEFAULT '' COMMENT 'Mobile',
+  `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
+  `updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update time',
+  `default_model` varchar(50) NOT NULL DEFAULT 'gpt-4-0613' COMMENT 'gpt model ',
+  `user_state` int(11) NOT NULL DEFAULT '0' COMMENT 'user state',
+  `user_sex` int(11) NOT NULL DEFAULT '0' COMMENT '0-default ,1-male,2-female',
+  `user_birth` date NOT NULL DEFAULT '1984-01-01' COMMENT 'birth',
+  `user_avatar` varchar(255) NOT NULL DEFAULT '' COMMENT 'user avatar',
+  PRIMARY KEY (`id`),
+  KEY `idx_username_user_info` (`username`),
+  KEY `idx_email_user_info` (`email`),
+  KEY `idx_mobile_user_info` (`mobile`)
+) ENGINE=InnoDB   DEFAULT CHARSET=utf8mb4

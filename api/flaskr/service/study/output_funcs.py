@@ -52,7 +52,7 @@ def generate_prompt_output(app:Flask,user_id:str,attend:AICourseLessonAttend,scr
         model=script_info.script_model,
         stream=True,
         system=system_prompt,
-        temperature=0.1,
+        temperature=script_info.script_temprature,
         message=prompt)
     response_text = ""
     for chunk in resp:

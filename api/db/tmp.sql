@@ -583,3 +583,5 @@ CREATE TABLE `user_profile` (
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
 -- Dump completed on 2024-06-07 11:19:59
+
+CREATE TABLE `user

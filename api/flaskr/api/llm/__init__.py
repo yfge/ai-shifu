@@ -1,3 +1,4 @@
+import decimal
 from .ernie import *
 from .glm import *
 import openai
@@ -57,7 +58,7 @@ def invoke_llm(app:Flask,span:StatefulSpanClient,model:str,message:str,system:st
         messages.append({"content":message,"role":"user"})
         if json:
             kwargs["response_format"] = ResponseFormat(type="json_object")
-        kwargs["temperature"]=0.8
+        kwargs["temperature"]=float(kwargs.get("temperature",0.8))
         kwargs["stream_options"]=ChatCompletionStreamOptionsParam(include_usage=True)
         response = client.chat.completions.create(model=model,messages=messages, **kwargs)
         for res in response:
@@ -75,6 +76,8 @@ def invoke_llm(app:Flask,span:StatefulSpanClient,model:str,message:str,system:st
             kwargs.update({"system":system}) 
         if json:
             kwargs["response_format"]="json_object"
+        if kwargs.get("temperature",None) is  not None:
+            kwargs["temperature"]=str(kwargs["temperature"])
         response = get_ernie_response(app,model, message,**kwargs)
         for res in response:
             response_text += res.result
@@ -82,7 +85,10 @@ def invoke_llm(app:Flask,span:StatefulSpanClient,model:str,message:str,system:st
                 usage = ModelUsage(unit="TOKENS", input=res.usage.prompt_tokens,output=res.usage.completion_tokens,total=res.usage.total_tokens)
             yield LLMStreamResponse(res.id,res.is_end,res.is_truncated,res.result,res.finish_reason,res.usage.__dict__)
     elif model.lower() in GLM_MODELS:
+        if kwargs.get("temperature",None) is  not None:
+            kwargs["temperature"]=str(kwargs["temperature"])
         response = invoke_glm(app,model.lower(),message,system,**kwargs)
+        kwargs["temperature"]=str(kwargs["temperature"])
         for res in response:
             response_text += res.choices[0].delta.content
             if res.usage:
@@ -95,7 +101,7 @@ def invoke_llm(app:Flask,span:StatefulSpanClient,model:str,message:str,system:st
         raise Exception("model not found")
     app.logger.info(f"invoke_llm response: {response_text} ")
     app.logger.info(f"invoke_llm usage: "+usage.__str__())
-    generation.end(input=generation_input, output=response_text,usage=usage)        
+    generation.end(input=generation_input, output=response_text,usage=usage,metadata=kwargs)        
     span.end(output=response_text) 
 
 

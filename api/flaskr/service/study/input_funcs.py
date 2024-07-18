@@ -39,7 +39,7 @@ def handle_input_text(app:Flask,user_id:str,attend:AICourseLessonAttend,script_i
         model=script_info.script_model,
         json=True,
         stream=True,
-        temperature=0.1,
+        temperature=script_info.script_temprature,
         message=prompt)
     response_text = ""
     check_success = False

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, TIMESTAMP, Text, Numeric, text, ForeignKey
+from sqlalchemy import Column, String, Integer, TIMESTAMP, Text, Numeric, text, ForeignKey,DECIMAL
 from sqlalchemy.dialects.mysql import BIGINT
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
@@ -53,6 +53,7 @@ class AILessonScript(db.Model):
     script_content_type = Column(Integer, nullable=False, default=0, comment='Script content type')
     script_prompt = Column(Text, nullable=False, comment='Script prompt')
     script_model = Column(String(36), nullable=False, default='', comment='Script model')
+    script_temprature = Column(DECIMAL(10,2), nullable=False,default='0.8', comment='Script Temprature')
     script_profile = Column(Text, nullable=False, comment='Script profile')
     script_media_url = Column(Text, nullable=False, comment='Script media URL')
     script_ui_type = Column(Integer, nullable=False, default=0, comment='Script UI type')
