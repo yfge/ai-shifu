@@ -8,6 +8,7 @@ import time
 from typing import Generator
 from flask import Flask
 from langchain.prompts import PromptTemplate
+from sqlalchemy import func
 from ...api.langfuse import langfuse_client as langfuse
 from ...api.llm import invoke_llm
 from ...service.common.models import AppException
