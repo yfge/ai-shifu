@@ -18,7 +18,7 @@ from ...service.order.consts import ATTEND_STATUS_BRANCH, ATTEND_STATUS_COMPLETE
 from ...service.order.funs import AICourseLessonAttendDTO, init_buy_record, init_trial_lesson
 from ...service.order.models import AICourseBuyRecord, AICourseLessonAttend
 from ...service.profile.funcs import get_user_profiles, save_user_profiles
-from ...service.study.const import INPUT_TYPE_CHECKCODE, INPUT_TYPE_CONTINUE, INPUT_TYPE_LOGIN, INPUT_TYPE_PHONE, INPUT_TYPE_SELECT, INPUT_TYPE_START, INPUT_TYPE_TEXT, ROLE_STUDENT, ROLE_TEACHER
+from ...service.study.const import INPUT_TYPE_BRANCH, INPUT_TYPE_CHECKCODE, INPUT_TYPE_CONTINUE, INPUT_TYPE_LOGIN, INPUT_TYPE_PHONE, INPUT_TYPE_SELECT, INPUT_TYPE_START, INPUT_TYPE_TEXT, ROLE_STUDENT, ROLE_TEACHER
 from ...service.study.dtos import AILessonAttendDTO, ScriptDTO
 from ...service.study.models import AICourseAttendAsssotion, AICourseLessonAttendScript
 from ...service.user.funs import send_sms_code_without_check, verify_sms_code_without_phone
@@ -120,7 +120,8 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
                     elif  script_info.script_ui_type == UI_TYPE_BUTTON:
                         btn = [{
                             "label":script_info.script_ui_content,
-                            "value":script_info.script_ui_content
+                            "value":script_info.script_ui_content,
+                            "type":INPUT_TYPE_CONTINUE
                         }]
                         yield make_script_dto("buttons",{"title":"接下来","buttons":btn},script_info.script_id)
                     elif script_info.script_ui_type == UI_TYPE_BRANCH:
@@ -152,11 +153,16 @@ def run_script(app: Flask, user_id: str, course_id: str, lesson_id: str=None,inp
 
                         btn = [{
                             "label":script_info.script_ui_content,
-                            "value":script_info.script_ui_content
+                            "value":script_info.script_ui_content,
+                            "type":INPUT_TYPE_BRANCH
                         }]
                         yield make_script_dto("buttons",{"title":"接下来","buttons":btn},script_info.script_id)
                     elif script_info.script_ui_type == UI_TYPE_SELECTION:
-                        yield make_script_dto("buttons",{"title":script_info.script_ui_content,"buttons":json.loads(script_info.script_other_conf)["btns"]},script_info.script_id)
+                        btns = json.loads(script_info.script_other_conf)["btns"]
+                        for btn in btns:
+                            btn["type"] = INPUT_TYPE_SELECT
+                        
+                        yield make_script_dto("buttons",{"title":script_info.script_ui_content,"buttons":btns},script_info.script_id)
                     elif  script_info.script_ui_type == UI_TYPE_PHONE:
                         yield make_script_dto(INPUT_TYPE_PHONE,script_info.script_ui_content,script_info.script_id)
                     elif script_info.script_ui_type == UI_TYPE_CHECKCODE:

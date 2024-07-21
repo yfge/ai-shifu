@@ -87,8 +87,38 @@ def handle_input_continue(app:Flask,user_id:str,attend:AICourseLessonAttend,scri
     db.session.add(log_script)
     span = trace.span(name="user_continue",input=input)
     span.end()
+       # 分支课程
+    if script_info.script_ui_type == UI_TYPE_BRANCH:
+        app.logger.info("branch")
+        branch_info = json.loads(script_info.script_other_conf)
+        branch_key = branch_info.get("var_name","")
+        profile = get_user_profiles(app,user_id,[branch_key])
+        branch_value = profile.get(branch_key,"")
+        jump_rule = branch_info.get("jump_rule",[])
+        if attend.status != ATTEND_STATUS_BRANCH:
+            for rule in jump_rule:
+                if branch_value == rule.get("value",""):
+                    attend_info = AICourseLessonAttend.query.filter(AICourseLessonAttend.attend_id == attend.attend_id).first()
+                    next_lesson = AILesson.query.filter(AILesson.lesson_feishu_id == rule.get("lark_table_id",""), AILesson.status == 1, func.length(AILesson.lesson_no)>2).first()
+                    if next_lesson:
+                        next_attend = AICourseLessonAttend.query.filter(AICourseLessonAttend.user_id==user_id, AICourseLessonAttend.course_id==course_id,AICourseLessonAttend.lesson_id==next_lesson.lesson_id).first()
+                        if next_attend:
+                            assoation = AICourseAttendAsssotion.query.filter(
+                                AICourseAttendAsssotion.from_attend_id == attend_info.attend_id, 
+                                AICourseAttendAsssotion.to_attend_id == next_attend.attend_id).first()
+                            if not assoation:
+                                assoation =AICourseAttendAsssotion()
+                                assoation.from_attend_id = attend_info.attend_id
+                                assoation.to_attend_id = next_attend.attend_id 
+                                assoation.user_id = user_id
+                                db.session.add(assoation)
+                            next_attend.status = ATTEND_STATUS_IN_PROGRESS
+                            next_attend.script_index =0
+                            attend_info.status = ATTEND_STATUS_BRANCH
+                            attend_info = next_attend
+                            app.logger.info("branch jump")
+
     db.session.commit()
-    # yield make_script_dto("text","",script_info.script_id)
 
 def handle_input_select(app:Flask,user_id:str,attend:AICourseLessonAttend,script_info:AILessonScript,input:str,trace:Trace,trace_args):
     profile_keys = get_profile_array(script_info.script_ui_profile)

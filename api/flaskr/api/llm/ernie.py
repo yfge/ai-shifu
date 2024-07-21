@@ -14,7 +14,7 @@ class ErnieUsage :
         self.total_tokens=total_tokens
 
 class ErnieStreamResponse:
-    def __init__(self,id,object,created,sentence_id,is_end,is_truncated,result,need_clear_history,finish_reason=None,usage=None):
+    def __init__(self,id,object,created,sentence_id,is_end,is_truncated,result,need_clear_history,finish_reason=None,usage=None,content_type=None,**args):
         self.id = id
         self.object = object
         self.created = created
@@ -25,6 +25,7 @@ class ErnieStreamResponse:
         self.need_clear_history = need_clear_history
         self.finish_reason = finish_reason
         self.usage = ErnieUsage(**usage) if usage else None
+        self.content_type = content_type
 
 
 

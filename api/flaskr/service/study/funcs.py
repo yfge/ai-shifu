@@ -6,7 +6,7 @@ import openai
 from typing import Generator
 from flask import Flask, typing
 
-from flaskr.service.study.const import INPUT_TYPE_CHECKCODE, INPUT_TYPE_LOGIN, INPUT_TYPE_PHONE, ROLE_VALUES
+from flaskr.service.study.const import INPUT_TYPE_BRANCH, INPUT_TYPE_CHECKCODE, INPUT_TYPE_CONTINUE, INPUT_TYPE_LOGIN, INPUT_TYPE_PHONE, INPUT_TYPE_SELECT, ROLE_VALUES
 from ...service.study.dtos import AILessonAttendDTO, StudyRecordDTO
 from ...service.user.models import User
 from ...service.common  import AppException
@@ -102,13 +102,20 @@ def get_study_record(app:Flask,user_id:str,lesson_id:str)->StudyRecordDTO:
         elif last_script.script_ui_type == UI_TYPE_BUTTON:
             btn = [{
                         "label":last_script.script_ui_content,
-                        "value":last_script.script_ui_content
+                        "value":last_script.script_ui_content,
+                        "type":INPUT_TYPE_CONTINUE
                     }]
             ret.ui = StudyUIDTO("buttons",{"title":"接下来","buttons":btn},last_script.lesson_id)
         elif last_script.script_ui_type == UI_TYPE_CONTINUED:
-            ret.ui = StudyUIDTO("buttons",{"title":"继续","buttons":[{"label":"继续","value":"继续"}]},last_script.lesson_id)
+            ret.ui = StudyUIDTO("buttons",{"title":"继续","buttons":[{"label":"继续","value":"继续","type":INPUT_TYPE_CONTINUE}]},last_script.lesson_id)
+        elif last_script.script_ui_type == UI_TYPE_BRANCH:
+            ret.ui = StudyUIDTO("buttons",{"title":"继续","buttons":[{"label":"继续","value":"继续","type":INPUT_TYPE_BRANCH}]},last_script.lesson_id)
         elif last_script.script_ui_type == UI_TYPE_SELECTION:
-            ret.ui = StudyUIDTO("buttons",{"title":last_script.script_ui_content,"buttons":json.loads(last_script.script_other_conf)["btns"]},last_script.lesson_id)
+            btns = json.loads(last_script.script_other_conf)["btns"]
+            # 每一个增加Type
+            for btn in btns:
+                btn["type"] = INPUT_TYPE_SELECT
+            ret.ui = StudyUIDTO("buttons",{"title":last_script.script_ui_content,"buttons":btns},last_script.lesson_id)
         elif last_script.script_ui_type == UI_TYPE_PHONE:
             ret.ui = StudyUIDTO(INPUT_TYPE_PHONE,last_script.script_ui_content,last_script.lesson_id)
         elif last_script.script_ui_type == UI_TYPE_CHECKCODE:

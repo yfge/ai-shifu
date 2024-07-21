@@ -145,7 +145,7 @@ def get_script(app:Flask,attend_id:str,next:bool) :
     attend_info = AICourseLessonAttend.query.filter(AICourseLessonAttend.attend_id ==attend_id).first()
     attend_infos = []
     app.logger.info("get next script,current:{},next:{}".format(attend_info.script_index,next))
-    if attend_info.status == ATTEND_STATUS_NOT_STARTED:
+    if attend_info.status == ATTEND_STATUS_NOT_STARTED or attend_info.script_index == 0:
         attend_info.status = ATTEND_STATUS_IN_PROGRESS
         attend_info.script_index = 1
            # 检查是否是第一节课
@@ -163,15 +163,18 @@ def get_script(app:Flask,attend_id:str,next:bool) :
                 attend_infos.append(AILessonAttendDTO(parent_lesson.lesson_no,parent_lesson.lesson_name,parent_lesson.lesson_id,ATTEND_STATUS_VALUES[ATTEND_STATUS_IN_PROGRESS]))
     elif attend_info.status == ATTEND_STATUS_BRANCH:
         # 分支课程
+        app.logger.info('branch')
         current = attend_info
         assoation = AICourseAttendAsssotion.query.filter(AICourseAttendAsssotion.from_attend_id==current.attend_id).first()
         if assoation:
+            app.logger.info('found assoation')
             current = AICourseLessonAttend.query.filter(AICourseLessonAttend.attend_id==assoation.to_attend_id).first()
         while current.status == ATTEND_STATUS_BRANCH:
             # 分支课程
             assoation = AICourseAttendAsssotion.query.filter(AICourseAttendAsssotion.from_attend_id==current.attend_id).first()
             if assoation:
                 current = AICourseLessonAttend.query.filter(AICourseLessonAttend.attend_id==assoation.to_attend_id).first()
+        app.logger.info('to get branch script')
         script_info,attend_infos = get_script(app,current.attend_id,next)
         if script_info:
             return script_info,[]

@@ -226,9 +226,9 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,view_id:str,title:str='
                 scripDb['script_ui_content']='继续'
                 scripDb['script_type']=SCRIPT_TYPE_FIX
                 scripDb['script_content_type']=CONTENT_TYPE_TEXT
-                scripDb['script_model']='ERNIE-Speed-8K'
+                scripDb['script_model']="ERNIE-4.0-8K-Preview-0518"
                 scripDb['status']=1
-                scripDb['script_temprature']=0.8
+                scripDb['script_temprature']=0.4
                 for field  in record['fields']:
                     val_obj = record['fields'][field]
                     db_field = DB_SAVE_MAP.get(field.strip())
@@ -261,7 +261,9 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,view_id:str,title:str='
                 else:
                     for key in scripDb:
                         setattr(scrip,key,scripDb[key])
-                print('script_temprature:'+str(scrip.script_temprature)) 
+                print('script_temprature:'+str(scripDb['script_temprature']))
+
+                
             if resp['data']['has_more']:
                 page_token = resp['data']['page_token']
             else:
@@ -270,8 +272,6 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,view_id:str,title:str='
         db.session.commit()
         return
 
-def get_lesson_scripts(app:Flask,lesson_id:str):
-    pass
 # 运行课程脚本
 # 1. 从数据库中获取脚本
 # 2. 从数据库中获取脚本的内容
@@ -295,7 +295,6 @@ def get_lessons(app:Flask,feshu_doc_id)->list[AILessonInfoDTO]:
             lessonInfo = AILessonInfoDTO(lesson.lesson_no,lesson.lesson_name,lesson.lesson_id,lesson.lesson_feishu_id,lesson.lesson_type)
             lessonInfos.append(lessonInfo)
         return lessonInfos
-     
 
 def delete_lesson(app:Flask,table_id:str):
     with app.app_context():

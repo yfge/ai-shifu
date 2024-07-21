@@ -98,7 +98,21 @@ def invoke_llm(app:Flask,span:StatefulSpanClient,model:str,message:str,system:st
                                     False,res.choices[0].delta.content,
                                     res.choices[0].finish_reason,None)   
     else:
-        raise Exception("model not found")
+        app.logger.error(f"model {model} not found,use ERNIE-4.0-8K-Preview-0518")
+        if system:
+            kwargs.update({"system":system}) 
+        if json:
+            kwargs["response_format"]="json_object"
+        if kwargs.get("temperature",None) is  not None:
+            kwargs["temperature"]=str(kwargs["temperature"])
+        response = get_ernie_response(app,"ERNIE-4.0-8K-Preview-0518", message,**kwargs)
+        for res in response:
+            response_text += res.result
+            if res.usage:
+                usage = ModelUsage(unit="TOKENS", input=res.usage.prompt_tokens,output=res.usage.completion_tokens,total=res.usage.total_tokens)
+            yield LLMStreamResponse(res.id,res.is_end,res.is_truncated,res.result,res.finish_reason,res.usage.__dict__)
+
+         
     app.logger.info(f"invoke_llm response: {response_text} ")
     app.logger.info(f"invoke_llm usage: "+usage.__str__())
     generation.end(input=generation_input, output=response_text,usage=usage,metadata=kwargs)        

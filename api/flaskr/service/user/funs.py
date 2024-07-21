@@ -257,6 +257,9 @@ def verify_sms_code_without_phone(app:Flask,user_id:str,checkcode)->UserToken:
             phone = user.mobile
         else:
             phone = str(phone,encoding="utf-8")
+            user = User.query.filter(User.mobile == phone).first()
+            if user:
+                user_id = user.user_id
         return verify_sms_code(app,user_id,phone,checkcode,False)
 # 验证短信验证码
 def verify_sms_code(app:Flask,user_id,phone:str,chekcode:str,updateToken=True)->UserToken:
