@@ -8,6 +8,7 @@ import json
 import time
 from trace import Trace
 from flask import Flask
+from sqlalchemy import func
 
 from flaskr.api.llm import invoke_llm
 from flaskr.service.common.models import AppException
@@ -101,7 +102,7 @@ def handle_input_continue(app:Flask,user_id:str,attend:AICourseLessonAttend,scri
                     attend_info = AICourseLessonAttend.query.filter(AICourseLessonAttend.attend_id == attend.attend_id).first()
                     next_lesson = AILesson.query.filter(AILesson.lesson_feishu_id == rule.get("lark_table_id",""), AILesson.status == 1, func.length(AILesson.lesson_no)>2).first()
                     if next_lesson:
-                        next_attend = AICourseLessonAttend.query.filter(AICourseLessonAttend.user_id==user_id, AICourseLessonAttend.course_id==course_id,AICourseLessonAttend.lesson_id==next_lesson.lesson_id).first()
+                        next_attend = AICourseLessonAttend.query.filter(AICourseLessonAttend.user_id==user_id, AICourseLessonAttend.course_id==next_lesson.course_id,AICourseLessonAttend.lesson_id==next_lesson.lesson_id).first()
                         if next_attend:
                             assoation = AICourseAttendAsssotion.query.filter(
                                 AICourseAttendAsssotion.from_attend_id == attend_info.attend_id, 
