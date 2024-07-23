@@ -254,7 +254,7 @@ def update_lesson_info(app:Flask,doc_id:str,table_id:str,view_id:str,title:str='
                         if unconf_fields.count(field)==0:
                             unconf_fields.append(field)
                     continue
-                scrip = AILessonScript.query.filter(AILessonScript.script_feishu_id == record_id).first()
+                scrip = AILessonScript.query.filter(AILessonScript.script_feishu_id == record_id,AILessonScript.lesson_id == lesson.lesson_id).first()
                 if scrip is None:
                     scripDb['script_id']= str(generate_id(app))
                     db.session.add(AILessonScript(**scripDb))
