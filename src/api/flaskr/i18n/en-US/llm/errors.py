@@ -1,5 +1,5 @@
-NO_DEFAULT_LLM_CONFIGURED = "No default LLM configured"
-SPECIFIC_LLM_NOT_CONFIGURED = (
-    "Model {} not configured, please check configuration items:{}"
+NO_DEFAULT_LLM = "No default LLM is configured"
+SPECIFIED_LLM_NOT_CONFIGURED = (
+    "Model {} is not configured. Check .env file variable: {}"
 )
-NO_LLM_CONFIGURED = "No LLM configured"
+NO_LLM_CONFIGURED = "No LLMs are configured"
