@@ -574,3 +574,33 @@ def get_follow_up_info(app: Flask, script_info: AILessonScript) -> FollowUpInfo:
         model_args,
         ai_course.ask_mode,
     )
+
+
+class ModelSetting:
+
+    model_name: str
+    model_args: dict
+
+    def __init__(self, model_name: str, model_args: dict):
+        self.model_name = model_name
+        self.model_args = model_args
+
+
+def get_model_setting(app: Flask, script_info: AILessonScript) -> ModelSetting:
+    if script_info.script_model and script_info.script_model.strip():
+        return ModelSetting(
+            script_info.script_model, {"temperature": script_info.script_temprature}
+        )
+    ai_lesson = AILesson.query.filter(
+        AILesson.lesson_id == script_info.lesson_id
+    ).first()
+    if ai_lesson and ai_lesson.model and ai_lesson.model.strip():
+        return ModelSetting(
+            ai_lesson.model, {"temperature": ai_lesson.script_temprature}
+        )
+    ai_course = AICourse.query.filter(AICourse.course_id == ai_lesson.course_id).first()
+    if ai_course and ai_course.model and ai_course.model.strip():
+        return ModelSetting(
+            ai_course.model, {"temperature": ai_course.script_temprature}
+        )
+    return ModelSetting(app.config.get("DEFAULT_LLM_MODEL"), {})

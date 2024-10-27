@@ -8,30 +8,63 @@ from langfuse.model import ModelUsage
 
 from openai.types.chat import ChatCompletionStreamOptionsParam
 from openai.types.shared_params import ResponseFormatJSONObject
+from flask import current_app
 
 from flaskr.common.config import get_config
 
+# from flaskr.common.models import Mo
+
+
+openai_enabled = False
+
+
 if get_config("OPENAI_API_KEY"):
+    openai_enabled = True
     openai_client = openai.Client(
-        api_key=get_config("OPENAI_API_KEY"), base_url=get_config("OPENAI_BASE_URL")
+        api_key=get_config("OPENAI_API_KEY"),
+        base_url=get_config("OPENAI_BASE_URL", "https://api.openai.com/v1"),
     )
 else:
+    current_app.logger.warning("OPENAI_API_KEY not configured")
     openai_client = None
 
+deepseek_enabled = False
 if get_config("DEEP_SEEK_API_KEY"):
+    deepseek_enabled = True
     deepseek_client = openai.Client(
         api_key=get_config("DEEP_SEEK_API_KEY"),
         base_url=get_config("DEEP_SEEK_API_URL", "https://api.deepseek.com"),
     )
 else:
+    current_app.logger.warning("DEEP_SEEK_API_KEY not configured")
     deepseek_client = None
 
+qwen_enabled = False
 if get_config("QWEN_API_KEY"):
+    qwen_enabled = True
     qwen_client = openai.Client(
         api_key=get_config("QWEN_API_KEY"), base_url=get_config("QWEN_API_URL")
     )
 else:
+    current_app.logger.warning("QWEN_API_KEY not configured")
     qwen_client = None
+
+ernie_enabled = False
+if get_config("ERNIE_API_ID") and get_config("ERNIE_API_SECRET"):
+    ernie_enabled = True
+else:
+    current_app.logger.warning("ERNIE_API_ID and ERNIE_API_SECRET not configured")
+
+glm_enabled = False
+if get_config("BIGMODEL_API_KEY"):
+    glm_enabled = True
+else:
+    current_app.logger.warning("BIGMODEL_API_KEY not configured")
+
+if openai_enabled or deepseek_enabled or qwen_enabled or ernie_enabled or glm_enabled:
+    pass
+else:
+    current_app.logger.warning("No LLM Configured")
 
 try:
     if openai_client:
@@ -41,8 +74,7 @@ try:
     else:
         OPENAI_MODELS = []
 except Exception as e:
-    print(e)
-    # app.logger.error(f"get openai models error: {e}")
+    current_app.logger.warning(f"get openai models error: {e}")
     OPENAI_MODELS = []
 ERNIE_MODELS = get_erine_models(Flask(__name__))
 GLM_MODELS = get_zhipu_models(Flask(__name__))
