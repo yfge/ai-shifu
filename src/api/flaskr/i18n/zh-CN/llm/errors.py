@@ -1,0 +1,3 @@
+NO_DEFAULT_LLM_CONFIGURED = "没有默认的LLM配置"
+SPECIFIC_LLM_NOT_CONFIGURED = "模型 {} 没有配置,请检查配置项:{}"
+NO_LLM_CONFIGURED = "没有配置LLM"
