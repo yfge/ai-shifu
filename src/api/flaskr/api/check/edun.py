@@ -5,13 +5,14 @@ from urllib.parse import urlencode
 from gmssl import sm3, func
 import requests
 from flaskr.common.config import get_config
+from flask import Flask
 
 URL = "http://as.dun.163.com/v5/text/check"
 
 
-EDUN_SECRET_ID = get_config("EDUN_SECRET_ID")
-EDUN_SECRET_KEY = get_config("EDUN_SECRET_KEY")
-EDUN_BUSINESS_ID = get_config("EDUN_BUSINESS_ID")
+EDUN_SECRET_ID = get_config("EDUN_SECRET_ID", "")
+EDUN_SECRET_KEY = get_config("EDUN_SECRET_KEY", "")
+EDUN_BUSINESS_ID = get_config("EDUN_BUSINESS_ID", "")
 VERSION = "v5.3"
 
 
@@ -51,7 +52,12 @@ def gen_signature(params=None):
         return hashlib.md5(buff.encode("utf8")).hexdigest()
 
 
-def check_text(data_id: str, content: str):
+def check_text(app: Flask, data_id: str, content: str):
+    if EDUN_SECRET_ID == "" or EDUN_SECRET_KEY == "" or EDUN_BUSINESS_ID == "":
+        app.logger.warning(
+            "EDUN_SECRET_ID or EDUN_SECRET_KEY or EDUN_BUSINESS_ID is None"
+        )
+        return {}
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
     params = {}
     params["secretId"] = EDUN_SECRET_ID

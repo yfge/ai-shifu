@@ -29,6 +29,7 @@ def handle_input_text(
     trace_args,
 ):
     model_setting = get_model_setting(app, script_info)
+    app.logger.info(f"model_setting: {model_setting.__json__()}")
     prompt = get_fmt_prompt(
         app, user_id, script_info.script_check_prompt, input, script_info.script_profile
     )
@@ -55,7 +56,6 @@ def handle_input_text(
         model=model_setting.model_name,
         json=True,
         stream=True,
-        # temperature=script_info.script_temprature,
         message=prompt,
         **model_setting.model_args,
     )

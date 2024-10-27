@@ -90,3 +90,10 @@ def raise_error(error_name):
         _(error_name),
         ERROR_CODE.get(error_name, ERROR_CODE["COMMON.UNKNOWN_ERROR"]),
     )
+
+
+def raise_error_with_args(error_name, **kwargs):
+    raise AppException(
+        _(error_name).format(**kwargs),
+        ERROR_CODE.get(error_name, ERROR_CODE["COMMON.UNKNOWN_ERROR"]),
+    )

@@ -11,8 +11,7 @@ from openai.types.shared_params import ResponseFormatJSONObject
 from flask import current_app
 
 from flaskr.common.config import get_config
-
-# from flaskr.common.models import Mo
+from flaskr.service.common.models import raise_error_with_args, raise_error
 
 
 openai_enabled = False
@@ -165,10 +164,28 @@ def invoke_llm(
     ):
         if model in OPENAI_MODELS or model.startswith("gpt"):
             client = openai_client
+            if not client:
+                raise_error_with_args(
+                    "LLM.SPECIFIED_LLM_NOT_CONFIGURED",
+                    model=model,
+                    config_var="OPENAI_API_KEY,OPENAI_BASE_URL",
+                )
         elif model in QWEN_MODELS:
             client = qwen_client
+            if not client:
+                raise_error_with_args(
+                    "LLM.SPECIFIED_LLM_NOT_CONFIGURED",
+                    model=model,
+                    config_var="QWEN_API_KEY,QWEN_API_URL",
+                )
         elif model in DEEP_SEEK_MODELS:
             client = deepseek_client
+            if not client:
+                raise_error_with_args(
+                    "LLM.SPECIFIED_LLM_NOT_CONFIGURED",
+                    model=model,
+                    config_var="DEEP_SEEK_API_KEY,DEEP_SEEK_API_URL",
+                )
         if not client:
             app.logger.error(f"model {model} not found,use ERNIE-4.0-8K-Preview-0518")
             client = openai_client
@@ -253,7 +270,10 @@ def invoke_llm(
                 None,
             )
     else:
-        app.logger.error(f"model {model} not found,use ERNIE-4.0-8K-Preview-0518")
+        default_model = app.config.get("DEFAULT_LLM_MODEL")
+        if not default_model:
+            raise_error("LLM.NO_DEFAULT_LLM")
+        app.logger.error(f"model {model} not found,use {default_model}")
         if system:
             kwargs.update({"system": system})
         if json:
