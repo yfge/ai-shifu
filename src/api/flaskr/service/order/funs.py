@@ -483,10 +483,10 @@ def success_buy_record(app: Flask, record_id: str):
                 attend.course_id = buy_record.course_id
                 attend.lesson_id = lesson.lesson_id
                 attend.user_id = buy_record.user_id
-                if lesson.lesson_no in ["01", "0101"]:
-                    attend.status = ATTEND_STATUS_NOT_STARTED
-                else:
-                    attend.status = ATTEND_STATUS_LOCKED
+                # if lesson.lesson_no in ["01", "0101"]:
+                #     attend.status = ATTEND_STATUS_NOT_STARTED
+                # else:
+                attend.status = ATTEND_STATUS_LOCKED
                 db.session.add(attend)
             db.session.commit()
             send_order_feishu(app, buy_record.record_id)
