@@ -244,22 +244,14 @@ export const LoginModal = ({
             onChange={(e) => setAggrement(e.target.checked)}
           >
             {t('user.msgHaveRead')}
-            <span
+            <a
               className={styles.link}
+              href="x"
+              target="_blank"
+              rel="noreferrer"
             >
-              <a href="/useraggrement" target="_blank" rel="noreferrer">
-                {t('user.msgAggrement')}
-              </a>
-              {t('user.msgAnd')}
-              <a
-                className={styles.link}
-                href="/privacypolicy"
-                target="_blank"
-                rel="noreferrer"
-              >
-                {t('user.msgPrivacyPolicy')}
-              </a>
-            </span>
+              {t('user.msgAggrement')}
+            </a>
           </Checkbox>
         </div>
         <div className={styles.feedback}>
