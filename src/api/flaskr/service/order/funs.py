@@ -29,6 +29,7 @@ from .models import AICourseLessonAttend
 from ...util.uuid import generate_id as get_uuid
 from ..lesson.const import LESSON_TYPE_TRIAL
 from .pingxx_order import create_pingxx_order
+from ..lesson.models import AICourseAttend
 
 
 @register_schema_to_swagger
@@ -645,3 +646,25 @@ def fix_attend_info(app: Flask, user_id: str, course_id: str):
             db.session.add(attend)
         db.session.commit()
         return fix_lessons
+
+
+def fix_attend_info_by_course_id(app: Flask, course_id: str):
+    with app.app_context():
+        lessons = AILesson.query.filter(
+            AILesson.course_id == course_id,
+            AILesson.status == 1,
+        ).all()
+
+        user_infos = AICourseAttend.query.filter(
+            AICourseAttend.course_id == course_id,
+        ).all()
+
+        for user_info in user_infos:
+            for lesson in lessons:
+                attend = AICourseLessonAttend.query.filter(
+                    AICourseLessonAttend.user_id == user_info.user_id,
+                    AICourseLessonAttend.lesson_id == lesson.lesson_id,
+                    AICourseLessonAttend.status == ATTEND_STATUS_LOCKED,
+                ).first()
+                if attend:
+                    continue

@@ -99,4 +99,9 @@ def enable_plugins(app: Flask):
                 continue
             print(f"- {plugin}")
 
+    @plugin.command(name="fix")
+    def fix():
+        """Fix all plugins."""
+        pass
+
     return plugin

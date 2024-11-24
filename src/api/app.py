@@ -85,3 +85,6 @@ else:
     from flaskr.util.plugin import enable_plugins
 
     enable_plugins(app)
+    from flaskr.util.course import enable_courses_commands
+
+    enable_courses_commands(app)
