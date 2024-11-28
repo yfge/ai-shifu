@@ -121,7 +121,7 @@ def get_lesson_and_attend_info(app: Flask, parent_no, course_id, user_id):
         AICourseLessonAttend.status != ATTEND_STATUS_RESET,
     ).all()
 
-    if len(attend_infos) == 0:
+    if len(attend_infos) < len(lessons):
         lessons = [lesson for lesson in lessons if lesson.status == 1]
         lesson_type = lessons[0].lesson_type
         add_attend = False
