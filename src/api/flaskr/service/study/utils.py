@@ -122,8 +122,8 @@ def get_lesson_and_attend_info(app: Flask, parent_no, course_id, user_id):
     ).all()
 
     if len(attend_infos) < len(lessons):
-        lessons = [lesson for lesson in lessons if lesson.status == 1]
-        lesson_type = lessons[0].lesson_type
+        online_lessons = [lesson for lesson in lessons if lesson.status == 1]
+        lesson_type = online_lessons[0].lesson_type
         add_attend = False
         if lesson_type == LESSON_TYPE_TRIAL:
             add_attend = True
@@ -134,14 +134,19 @@ def get_lesson_and_attend_info(app: Flask, parent_no, course_id, user_id):
             else:
                 raise_error("COURSE.COURSE_NOT_PURCHASED")
         if add_attend:
-            for lesson in lessons:
-                attend = AICourseLessonAttend()
-                attend.attend_id = generate_id(app)
-                attend.lesson_id = lesson.lesson_id
-                attend.course_id = course_id
-                attend.user_id = user_id
-                attend.status = ATTEND_STATUS_LOCKED
-                attend.lesson_no = lesson.lesson_no
+            for lesson in online_lessons:
+                if (
+                    len([a for a in attend_infos if a.lesson_id == lesson.lesson_id])
+                    == 0
+                ):
+                    app.logger.info("add attend for lesson:{}".format(lesson.lesson_no))
+                    attend = AICourseLessonAttend()
+                    attend.attend_id = generate_id(app)
+                    attend.lesson_id = lesson.lesson_id
+                    attend.course_id = course_id
+                    attend.user_id = user_id
+                    attend.status = ATTEND_STATUS_LOCKED
+                    attend.lesson_no = lesson.lesson_no
                 db.session.add(attend)
                 attend_infos.append(attend)
             db.session.flush()
@@ -150,9 +155,7 @@ def get_lesson_and_attend_info(app: Flask, parent_no, course_id, user_id):
         {
             "attend": attend,
             "lesson": [
-                lesson
-                for lesson in lessons
-                if lesson.lesson_id == attend.lesson_id and lesson.status == 1
+                lesson for lesson in lessons if lesson.lesson_id == attend.lesson_id
             ][0],
         }
         for attend in attend_infos
