@@ -42,6 +42,7 @@ from .utils import (
 from .input_funcs import BreakException
 from .output_funcs import handle_output
 from .plugin import handle_input, handle_ui
+from .utils import get_lesson_and_attend_info
 
 
 def run_script_inner(
@@ -144,7 +145,14 @@ def run_script_inner(
 
                     if not attend_info:
                         app.logger.info("found no attend_info reinit")
-                        lessons = init_trial_lesson(app, user_id, course_id)
+                        attends = get_lesson_and_attend_info(
+                            app, parent_no, course_id, user_id
+                        )
+                        for attend_update in attends:
+                            if len(attend_update.lesson_no) > 2:
+                                yield make_script_dto(
+                                    "lesson_update", attend_update.__json__(), ""
+                                )
                         attend_info = AICourseLessonAttend.query.filter(
                             AICourseLessonAttend.user_id == user_id,
                             AICourseLessonAttend.course_id == course_id,
@@ -159,10 +167,9 @@ def run_script_inner(
                         ).first()
                         if not attend_info:
                             raise_error("COURSE.COURSE_NOT_PURCHASED")
-                        attend_id = attend_info.attend_id
-                    else:
-                        attend_id = attend_info.attend_id
-                    attends = update_attend_lesson_info(app, attend_id)
+                    attends = get_lesson_and_attend_info(
+                        app, parent_no, course_id, user_id
+                    )
                     for attend_update in attends:
                         if len(attend_update.lesson_no) > 2:
                             yield make_script_dto(
