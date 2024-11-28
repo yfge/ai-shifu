@@ -150,7 +150,9 @@ def get_lesson_and_attend_info(app: Flask, parent_no, course_id, user_id):
         {
             "attend": attend,
             "lesson": [
-                lesson for lesson in lessons if lesson.lesson_id == attend.lesson_id
+                lesson
+                for lesson in lessons
+                if lesson.lesson_id == attend.lesson_id and lesson.status == 1
             ][0],
         }
         for attend in attend_infos
