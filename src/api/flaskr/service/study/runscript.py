@@ -134,7 +134,6 @@ def run_script_inner(
                 ).first()
 
                 if not attend_info:
-                    app.logger.info("found no attend_info reinit")
                     lessons.sort(key=lambda x: x.lesson_no)
                     lesson_id = lessons[-1].lesson_id
                     attend_info = AICourseLessonAttend.query.filter(
@@ -144,7 +143,6 @@ def run_script_inner(
                     ).first()
 
                     if not attend_info:
-                        app.logger.info("found no attend_info reinit")
                         attends = get_lesson_and_attend_info(
                             app, parent_no, course_id, user_id
                         )

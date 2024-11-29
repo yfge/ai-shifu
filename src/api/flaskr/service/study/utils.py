@@ -147,8 +147,8 @@ def get_lesson_and_attend_info(app: Flask, parent_no, course_id, user_id):
                     attend.user_id = user_id
                     attend.status = ATTEND_STATUS_LOCKED
                     attend.lesson_no = lesson.lesson_no
-                db.session.add(attend)
-                attend_infos.append(attend)
+                    db.session.add(attend)
+                    attend_infos.append(attend)
             db.session.flush()
 
     attend_lesson_infos = [
