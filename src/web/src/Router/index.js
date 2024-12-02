@@ -10,7 +10,7 @@ import { Navigate } from "react-router-dom";
 const routes = [
   {
     path: "/",
-    element: <Navigate to='/newchat'></Navigate>,
+    element: <Navigate to='/course'></Navigate>,
   },
   {
     path: '/useraggrement',
@@ -21,7 +21,7 @@ const routes = [
     element: <PrivacyPolicyPage />
   },
   {
-    path: '/newchat',
+    path: '/course',
     element: <NewChatPage />
   },
   {

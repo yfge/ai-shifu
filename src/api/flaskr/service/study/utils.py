@@ -106,6 +106,7 @@ def get_lesson_and_attend_info(app: Flask, parent_no, course_id, user_id):
         AILesson.lesson_no.like(parent_no + "%"),
         AILesson.course_id == course_id,
         AILesson.lesson_type != LESSON_TYPE_BRANCH_HIDDEN,
+        AILesson.status == 1,
     ).all()
     if len(lessons) == 0:
 
