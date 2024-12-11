@@ -53,7 +53,14 @@ class AICourseLessonAttend(db.Model):
     attend_id = Column(String(36), nullable=False, default="", comment="Attend UUID")
     lesson_id = Column(String(36), nullable=False, default="", comment="Lesson UUID")
     course_id = Column(String(36), nullable=False, default="", comment="Course UUID")
+    lesson_no = Column(String(36), nullable=False, default="", comment="Lesson no")
     user_id = Column(String(36), nullable=False, default="", comment="User UUID")
+    lesson_updated = Column(
+        Integer, nullable=False, default=0, comment="Lesson is  updated"
+    )
+    lesson_unique_id = Column(
+        String(36), nullable=False, default="", comment="Lesson unique ID", index=True
+    )
     status = Column(
         Integer,
         nullable=False,
@@ -65,6 +72,9 @@ class AICourseLessonAttend(db.Model):
         nullable=False,
         default=0,
         comment="Status of the attend: 0-not started, 1-in progress, 2-completed",
+    )
+    script_unique_id = Column(
+        String(36), nullable=False, default="", comment="Script unique ID"
     )
     created = Column(
         TIMESTAMP, nullable=False, default=func.now(), comment="Creation time"

@@ -12,18 +12,23 @@ from ...service.lesson.const import (
     UI_TYPE_LOGIN,
     UI_TYPE_PHONE,
     UI_TYPE_TO_PAY,
+    LESSON_TYPE_TRIAL,
 )
 from ...service.lesson.models import AICourse, AILesson
 from ...service.order.consts import (
     ATTEND_STATUS_BRANCH,
+    ATTEND_STATUS_COMPLETED,
     ATTEND_STATUS_IN_PROGRESS,
     ATTEND_STATUS_NOT_STARTED,
+    ATTEND_STATUS_RESET,
+    ATTEND_STATUS_LOCKED,
     get_attend_status_values,
     BUY_STATUS_SUCCESS,
 )
 from ...service.order.funs import (
     AICourseLessonAttendDTO,
     init_trial_lesson,
+    init_trial_lesson_inner,
     query_raw_buy_record,
 )
 from ...service.order.models import AICourseLessonAttend
@@ -79,12 +84,10 @@ def run_script_inner(
                 course_id = course_info.course_id
                 lessons = init_trial_lesson(app, user_id, course_id)
                 attend = get_current_lesson(app, lessons)
-                app.logger.info("{}".format(attend))
                 lesson_id = attend.lesson_id
             else:
                 lesson_info = AILesson.query.filter(
                     AILesson.lesson_id == lesson_id,
-                    AILesson.status == 1,
                 ).first()
                 if not lesson_info:
                     raise_error("LESSON.LESSON_NOT_FOUND_IN_COURSE")
@@ -102,64 +105,82 @@ def run_script_inner(
                 ).first()
                 if not course_info:
                     raise_error("LESSON.COURSE_NOT_FOUND")
+                # return the teacher avator
                 yield make_script_dto(
                     "teacher_avator", course_info.course_teacher_avator, ""
                 )
-                parent_no = lesson_info.lesson_no
-                if len(parent_no) >= 2:
-                    parent_no = parent_no[:-2]
-                lessons = AILesson.query.filter(
-                    AILesson.lesson_no.like(parent_no + "__"),
-                    AILesson.status == 1,
-                    AILesson.course_id == course_id,
-                ).all()
-                app.logger.info(
-                    "study lesson no :{}".format(
-                        ",".join([lesson.lesson_no for lesson in lessons])
-                    )
-                )
-                lesson_ids = [lesson.lesson_id for lesson in lessons]
+
                 attend_info = AICourseLessonAttend.query.filter(
                     AICourseLessonAttend.user_id == user_id,
                     AICourseLessonAttend.course_id == course_id,
-                    AICourseLessonAttend.lesson_id.in_(lesson_ids),
-                    AICourseLessonAttend.status.in_(
-                        [
-                            ATTEND_STATUS_NOT_STARTED,
-                            ATTEND_STATUS_IN_PROGRESS,
-                            ATTEND_STATUS_BRANCH,
-                        ]
-                    ),
+                    AICourseLessonAttend.lesson_id == lesson_id,
+                    AICourseLessonAttend.status != ATTEND_STATUS_RESET,
                 ).first()
-
                 if not attend_info:
-                    app.logger.info("found no attend_info")
-                    lessons.sort(key=lambda x: x.lesson_no)
-                    lesson_id = lessons[-1].lesson_id
-                    attend_info = AICourseLessonAttend.query.filter(
+                    if lesson_info.lesson_type == LESSON_TYPE_TRIAL:
+                        app.logger.info(
+                            "init trial lesson for user:{} course:{}".format(
+                                user_id, course_id
+                            )
+                        )
+                        new_attend_infos = init_trial_lesson_inner(
+                            app, user_id, course_id
+                        )
+                        new_attend_maps = {i.lesson_id: i for i in new_attend_infos}
+                        attend_info = new_attend_maps.get(lesson_id, None)
+                        if not attend_info:
+                            raise_error("LESSON.LESSON_NOT_FOUND_IN_COURSE")
+                    else:
+                        raise_error("COURSE.COURSE_NOT_PURCHASED")
+
+                if (
+                    attend_info.status == ATTEND_STATUS_COMPLETED
+                    or attend_info.status == ATTEND_STATUS_LOCKED
+                ):
+
+                    parent_no = lesson_info.lesson_no
+                    if len(parent_no) >= 2:
+                        parent_no = parent_no[:-2]
+                    lessons = AILesson.query.filter(
+                        AILesson.lesson_no.like(parent_no + "__"),
+                        AILesson.course_id == course_id,
+                        AILesson.status == 1,
+                    ).all()
+                    app.logger.info(
+                        "study lesson no :{}".format(
+                            ",".join([lesson.lesson_no for lesson in lessons])
+                        )
+                    )
+                    lesson_ids = [lesson.lesson_id for lesson in lessons]
+                    attend_infos = AICourseLessonAttend.query.filter(
                         AICourseLessonAttend.user_id == user_id,
                         AICourseLessonAttend.course_id == course_id,
-                        AICourseLessonAttend.lesson_id == lesson_id,
-                    ).first()
-
-                    attends = update_attend_lesson_info(app, attend_info.attend_id)
-                    for attend_update in attends:
-                        if len(attend_update.lesson_no) > 2:
-                            yield make_script_dto(
-                                "lesson_update", attend_update.__json__(), ""
-                            )
-                        else:
-                            yield make_script_dto(
-                                "chapter_update", attend_update.__json__(), ""
-                            )
-                            if (
-                                attend_update.status
-                                == attend_status_values[ATTEND_STATUS_NOT_STARTED]
-                            ):
-                                yield make_script_dto(
-                                    "next_chapter", attend_update.__json__(), ""
-                                )
-                lesson_id = attend_info.lesson_id
+                        AICourseLessonAttend.lesson_id.in_(lesson_ids),
+                        AICourseLessonAttend.status.in_(
+                            [
+                                ATTEND_STATUS_NOT_STARTED,
+                                ATTEND_STATUS_IN_PROGRESS,
+                                ATTEND_STATUS_BRANCH,
+                            ]
+                        ),
+                    ).all()
+                    attend_maps = {i.lesson_id: i for i in attend_infos}
+                    lessons = sorted(lessons, key=lambda x: x.lesson_no)
+                    for lesson in lessons:
+                        lesson_attend_info = attend_maps.get(lesson.lesson_id, None)
+                        if (
+                            len(lesson.lesson_no) > 2
+                            and lesson_attend_info
+                            and lesson_attend_info.status
+                            in [
+                                ATTEND_STATUS_NOT_STARTED,
+                                ATTEND_STATUS_IN_PROGRESS,
+                                ATTEND_STATUS_BRANCH,
+                            ]
+                        ):
+                            lesson_id = lesson_attend_info.lesson_id
+                            attend_info = lesson_attend_info
+                            break
                 attend = AICourseLessonAttendDTO(
                     attend_info.attend_id,
                     attend_info.lesson_id,
@@ -174,13 +195,13 @@ def run_script_inner(
             trace_args["user_id"] = user_id
             trace_args["session_id"] = attend.attend_id
             trace_args["input"] = input
-            trace_args["name"] = "ai-python"
+            trace_args["name"] = course_info.course_name
             trace = langfuse.trace(**trace_args)
 
             trace_args["output"] = ""
             next = 0
             is_first_add = False
-            # 如果有用户输入,就得到当前这一条,否则得到下一条
+            # get the script info and the attend updates
             script_info, attend_updates, is_first_add = get_script(
                 app, attend_id=attend.attend_id, next=next
             )
@@ -412,10 +433,12 @@ def run_script(
                 "description": str(e),
                 "traceback": traceback.format_exc(),
             }
-            app.logger.error(error_info)
+
             if isinstance(e, AppException):
+                app.logger.info(error_info)
                 yield make_script_dto("text", str(e), None)
             else:
+                app.logger.error(error_info)
                 yield make_script_dto("text", _("COMMON.UNKNOWN_ERROR"), None)
             yield make_script_dto("text_end", "", None)
         finally:

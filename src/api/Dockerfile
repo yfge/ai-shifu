@@ -1,4 +1,4 @@
-FROM aishifu/ai-shifu-api:latest
+FROM python:3.11 as base
 
 # ensure /etc/apt/sources.list exists and change APT source to aliyun mirror
 RUN if [ -f /etc/apt/sources.list ]; then \
@@ -12,6 +12,8 @@ RUN if [ -f /etc/apt/sources.list ]; then \
     echo "No sources.list found!"; \
     fi
 
+
+
 # set working directory
 WORKDIR /app
 
@@ -23,15 +25,23 @@ WORKDIR /app
 # install dependencies
 COPY requirements.txt .
 RUN pip install -r requirements.txt
-RUN pip install gunicorn
 
-# copy current directory content to container's /app
+
+
+
+
+
+FROM python:3.11-slim
+COPY --from=base /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+
+# 复制可执行文件
+COPY --from=base /usr/local/bin/flask /usr/local/bin/flask
+COPY --from=base /usr/local/bin/gunicorn /usr/local/bin/gunicorn
+
 COPY app.py app.py
 COPY flaskr flaskr
 COPY migrations migrations
-
-
 # declare service running on port 5800
 EXPOSE 5800
 # start flask service
-CMD gunicorn -w 4 -b 0.0.0.0:5800 "app:app" --timeout 300 --log-level info --access-logfile /var/log/app.log --capture-output
+CMD gunicorn  -k gevent -w 4 -b 0.0.0.0:5800 "app:app" --timeout 300 --log-level info --access-logfile /var/log/app.log --capture-output
