@@ -23,7 +23,7 @@ export const LogoWithText = ({ direction, size = 64, color = 'blue' }) => {
       style={{
         display: 'flex',
         flexFlow: flexFlow,
-        alignItems: 'center',
+        alignItems: 'left',
         ...commonStyles,
       }}
     >
