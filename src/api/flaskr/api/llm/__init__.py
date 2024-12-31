@@ -34,6 +34,7 @@ if get_config("DEEPSEEK_API_KEY"):
         api_key=get_config("DEEPSEEK_API_KEY"),
         base_url=get_config("DEEPSEEK_API_URL", "https://api.deepseek.com"),
     )
+    DEEP_SEEK_MODELS = [i.id for i in deepseek_client.models.list().data]
 else:
     current_app.logger.warning("DEEPSEEK_API_KEY not configured")
     deepseek_client = None
@@ -44,6 +45,7 @@ if get_config("QWEN_API_KEY"):
     qwen_client = openai.Client(
         api_key=get_config("QWEN_API_KEY"), base_url=get_config("QWEN_API_URL")
     )
+    QWEN_MODELS = [i.id for i in qwen_client.models.list().data]
 else:
     current_app.logger.warning("QWEN_API_KEY not configured")
     qwen_client = None
@@ -77,44 +79,6 @@ except Exception as e:
     OPENAI_MODELS = []
 ERNIE_MODELS = get_erine_models(Flask(__name__))
 GLM_MODELS = get_zhipu_models(Flask(__name__))
-DEEP_SEEK_MODELS = ["deepseek-chat"]
-QWEN_MODELS = [
-    "qwen-long",
-    "qwen-max",
-    "qwen-max-0428",
-    "qwen-max-0403",
-    "qwen-max-0107",
-    "qwen-max-longcontext",
-    "qwen-plus",
-    "qwen-plus-0806",
-    "qwen-plus-0723",
-    "qwen-plus-0624",
-    "qwen-plus-0206",
-    "qwen-turbo",
-    "qwen-turbo-0624",
-    "qwen-turbo-0206",
-    "qwen2-57b-a14b-instruct",
-    "qwen2-72b-instruct",
-    "qwen2-7b-instruct",
-    "qwen2-1.5b-instruct",
-    "qwen2-0.5b-instruct",
-    "qwen1.5-110b-chat",
-    "qwen1.5-72b-chat",
-    "qwen1.5-32b-chat",
-    "qwen1.5-14b-chat",
-    "qwen1.5-7b-chat",
-    "qwen1.5-1.8b-chat",
-    "qwen1.5-0.5b-chat",
-    "qwen1.5-7b-chat",
-    "qwen-72b-chat",
-    "qwen-14b-chat",
-    "qwen-7b-chat",
-    "qwen-1.8b-longcontext-chat",
-    "qwen-1.8b-chat",
-    "qwen2-math-72b-instruct",
-    "qwen2-math-7b-instruct",
-    "qwen2-math-1.5b-instruct",
-]
 
 
 class LLMStreamaUsage:
