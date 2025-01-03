@@ -58,6 +58,11 @@ def generate_discount_code(
 
     app.logger.info("discount_id:" + str(discount_id))
     app.logger.info("generate_discount_code:" + str(args))
+    app.logger.info("discount_start:" + str(discount_start))
+    app.logger.info("discount_end:" + str(discount_end))
+    app.logger.info("discount_count:" + str(discount_count))
+    app.logger.info("discount_code:" + str(discount_code))
+    app.logger.info("discount_apply_type:" + str(discount_apply_type))
     with app.app_context():
         discount_start_time = datetime.strptime(discount_start, "%Y-%m-%d %H:%M:%S")
         discount_end_time = datetime.strptime(discount_end, "%Y-%m-%d %H:%M:%S")
@@ -82,19 +87,29 @@ def generate_discount_code(
         discount.discount_channel = discount_channel
         discount.discount_filter = "{" + '"course_id":"' + discount_filter + '"' + "}"
         if discount_id is None or discount_id == "":
-            if discount_code <= 0:
+            if discount_count <= 0:
                 raise_error("DISCOUNT.DISCOUNT_COUNT_NOT_ZERO")
             db.session.add(discount)
         else:
             db.session.merge(discount)
-        if (
-            discount_id is None or discount_id == ""
-        ) and discount_apply_type == DISCOUNT_APPLY_TYPE_SPECIFIC:
+        if (discount_id is None or discount_id == "") and str(
+            discount_apply_type
+        ) == str(DISCOUNT_APPLY_TYPE_SPECIFIC):
+            app.logger.info("generate {} discount code".format(discount_count))
             for i in range(discount_count):
                 record = DiscountRecord()
                 record.record_id = generate_id(app)
                 record.discount_id = discount.discount_id
-                record.discount_code = generate_discount_strcode(app)
+                discount_code = generate_discount_strcode(app)
+                while (
+                    DiscountRecord.query.filter(
+                        DiscountRecord.discount_code == discount_code
+                    ).first()
+                    is not None
+                ):
+                    discount_code = generate_discount_strcode(app)
+                app.logger.info("discount_code: {}".format(discount_code))
+                record.discount_code = discount_code
                 record.discount_type = discount.discount_type
                 record.discount_value = discount.discount_value
                 record.status = DISCOUNT_STATUS_ACTIVE
