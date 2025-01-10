@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { EyeIcon, EyeOffIcon } from 'lucide-react';
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 import Image from "next/image";
 
 const LoginPage = () => {
@@ -28,23 +28,23 @@ const LoginPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
             <div className="w-full max-w-md space-y-6">
                 <div className="flex flex-col items-center space-y-2">
                     <h2 className="text-purple-600 text-2xl flex items-center font-semibold">
                         <Image
                             className="dark:invert"
                             src="/logo.svg"
-                            alt="Next.js logo"
-                            width={180}
-                            height={38}
+                            alt="AI-Shifu"
+                            width={140}
+                            height={30}
                             priority
                         />
                     </h2>
                 </div>
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-xl text-center">登录制课中心</CardTitle>
+                        <CardTitle className="text-xl text-center text-stone-900  font-extrabold">登录制课中心</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit} className="space-y-6">
@@ -85,7 +85,7 @@ const LoginPage = () => {
                                         onClick={() => setShowPassword(!showPassword)}
                                     >
                                         {showPassword ? (
-                                            <EyeOffIcon className="h-4 w-4 text-gray-500" />
+                                            <EyeSlashIcon className="h-4 w-4 text-gray-500" />
                                         ) : (
                                             <EyeIcon className="h-4 w-4 text-gray-500" />
                                         )}
@@ -98,18 +98,18 @@ const LoginPage = () => {
                             </Button>
 
                             <div className="text-center  text-stone-900 text-base">
-                                想要体验创作？ <a className='underline cursor-pointer' href="http://">申请入驻</a>
+                                想要体验创作？ <a className='underline cursor-pointer hover:text-purple-500' href="http://">申请入驻</a>
                             </div>
                         </form>
                     </CardContent>
                 </Card>
                 <div className="text-xs text-stone-500 text-center">
                     点击登录即代表您已同意
-                    <a className="px-1 text-xs text-stone-900 underline cursor-pointer">
+                    <a className="px-1 text-xs text-stone-900 underline cursor-pointer hover:text-purple-500">
                         用户协议
                     </a>
                     和
-                    <a className="px-1 text-xs text-stone-900 underline cursor-pointer ">
+                    <a className="px-1 text-xs text-stone-900 underline cursor-pointer hover:text-purple-500">
                         服务协议
                     </a>
                 </div>
