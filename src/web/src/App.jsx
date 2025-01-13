@@ -13,7 +13,7 @@ import { useEnvStore } from 'stores/envStore.js';
 import { useUserStore } from 'stores/useUserStore.js';
 
 const initializeEnvData = async () => {
-  const { updateAppId, updateCourseId, updateAlwaysShowLessonTree, updateUmamiWebsiteId, updateUmamiScriptSrc, updateEruda, updateBaseURL } = useEnvStore.getState();
+  const { updateAppId, updateCourseId, updateAlwaysShowLessonTree, updateUmamiWebsiteId, updateUmamiScriptSrc, updateEruda, updateBaseURL, updateLogoHorizontal, updateLogoVertical } = useEnvStore.getState();
   const fetchEnvData = async () => {
     try {
       const res = await fetch('/config/env', { method: 'POST', referrer: "no-referrer" });
@@ -26,6 +26,8 @@ const initializeEnvData = async () => {
         await updateUmamiScriptSrc(data?.REACT_APP_UMAMI_SCRIPT_SRC || "");
         await updateEruda(data?.REACT_APP_ERUDA || "false");
         await updateBaseURL(data?.REACT_APP_BASEURL || "");
+        await updateLogoHorizontal(data?.REACT_APP_LOGO_HORIZONTAL || "");
+        await updateLogoVertical(data?.REACT_APP_LOGO_VERTICAL || "");
 
       }
     } catch (error) {
@@ -122,12 +124,20 @@ const App = () => {
     const fetchCourseInfo = async () => {
       if (!envDataInitialized) return;
       if (courseId) {
-        const resp = await getCourseInfo(courseId);
-        setShowVip(resp.data.course_price > 0);
+        try {
+          const resp = await getCourseInfo(courseId);
+          if (resp.data) {
+            setShowVip(resp.data.course_price > 0);
+          } else {
+            window.location.href = '/404';
+          }
+        } catch (error) {
+          window.location.href = '/404';
+        }
       }
     };
     fetchCourseInfo();
-  }, [courseId, envDataInitialized, setShowVip,updateCourseId]);
+  }, [courseId, envDataInitialized, setShowVip]);
 
   useEffect(() => {
     if (!envDataInitialized) return;
