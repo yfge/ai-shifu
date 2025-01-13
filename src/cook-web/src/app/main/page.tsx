@@ -1,194 +1,123 @@
-import React from 'react';
+"use client"
+
+import React, { useState } from 'react';
+import { PlusIcon, ArrowDownTrayIcon, BoltIcon, StarIcon as StarOutlineIcon, RectangleStackIcon as RectangleStackOutlineIcon } from '@heroicons/react/24/outline';
+import { TrophyIcon, AcademicCapIcon, UserIcon, MusicalNoteIcon, RectangleStackIcon, StarIcon } from '@heroicons/react/24/solid';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import {
-    Sheet,
-    SheetContent,
-    SheetTrigger,
-} from "@/components/ui/sheet";
-import {
-    Bars3Icon,
-    Cog6ToothIcon,
-    BookOpenIcon,
-    BoltIcon,
-    LightBulbIcon,
-    ChatBubbleLeftRightIcon,
-    ChevronUpIcon,
-    ArrowRightOnRectangleIcon,
-    HeartIcon,
-    MegaphoneIcon,
-    DocumentIcon,
-    CheckBadgeIcon,
-    MapIcon,
-    PencilSquareIcon,
-    ShieldCheckIcon
-} from '@heroicons/react/24/outline';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import Image from "next/image";
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
+import { Card, CardContent } from "@/components/ui/card";
 
-const MainInterface = () => {
-    const menuItems = [
-        { icon: <DocumentIcon className="w-4 h-4" />, label: "剧本", href: "#" },
-        { icon: <BookOpenIcon className="w-4 h-4" />, label: "知识库", href: "#" },
-        { icon: <BoltIcon className="w-4 h-4" />, label: "模版", href: "#" },
-        { icon: <LightBulbIcon className="w-4 h-4" />, label: "灵感", href: "#" },
-        { icon: <CheckBadgeIcon className="w-4 h-4" />, label: "晨性实践", href: "#" },
+const ScriptCard = ({ icon: Icon, title, isFavorite }) => (
+    <Card className="w-full md:w-[calc(50%-1rem)] lg:w-[calc(33.33%-1rem)] rounded-xl bg-background hover:scale-105 transition-all duration-200 ease-in-out">
+        <CardContent className="p-4">
+            <div className='flex flex-row items-center'>
+                <div className="p-2 h-10 w-10 rounded-lg bg-purple-50 mr-4 mb-3">
+                    <Icon className="w-6 h-6 text-purple-600" />
+                </div>
+                <h3 className="font-medium text-gray-900 leading-5">{title}</h3>
+            </div>
+            <div className=" ">
+                <p className="mt-1 text-sm text-gray-500">
+                    剧本简述可能更长剧本简述可能更长，剧本简述可能更长剧本简述可能更长，剧本简述可能更长剧本简述可能更长。
+                </p>
+                <p className="mt-1 text-sm text-gray-500">
+                    剧本简述可能更长剧本简述可能更长，剧本简述可能更长剧本简述可能更长，剧本简述可能更长剧本简述可能更长。
+                </p>
+            </div>
+        </CardContent>
+    </Card>
+);
+
+const ScriptManagementPage = () => {
+    const [activeTab, setActiveTab] = useState("all");
+
+    const scripts = [
+        { id: 1, icon: TrophyIcon, title: '剧本标题可能会比较长，存在折行的情况', isFavorite: true },
+        { id: 2, icon: AcademicCapIcon, title: '剧本标题可能会比较长，存在折行的情况', isFavorite: false },
+        { id: 3, icon: UserIcon, title: '剧本标题可能会比较长，存在折行的情况', isFavorite: true },
+        { id: 4, icon: MusicalNoteIcon, title: '剧本标题可能会比较长，存在折行的情况', isFavorite: false },
     ];
 
-    const userMenuItems = [
-        {
-            icon: <PencilSquareIcon className="w-4 h-4" />, label: "个人信息", href: "#"
-        },
-        { icon: <ShieldCheckIcon className="w-4 h-4" />, label: "安全设置", href: "#" },
-        { icon: <MegaphoneIcon className="w-4 h-4" />, label: "最近更新", href: "#" },
-        { icon: <MapIcon className="w-4 h-4" />, label: "路线图", href: "#" },
-        { icon: <ChatBubbleLeftRightIcon className="w-4 h-4" />, label: "问题反馈", href: "#" },
-        { icon: <HeartIcon className="w-4 h-4" />, label: "关注我们", href: "#" },
-    ];
-
-    const UserProfileCard = () => (
-        <Popover>
-            <PopoverTrigger asChild>
-                <div className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer transition-all duration-200 group">
-                    <Avatar>
-                        <AvatarImage src="https://github.com/shadcn.png" />
-                        <AvatarFallback>CN</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                        <div className="font-medium">Kenrick</div>
-                        <div className="text-sm text-gray-500">kenrick.zhou@gmail.com</div>
-                    </div>
-                    <ChevronUpIcon className="w-4 h-4 text-gray-500 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                </div>
-            </PopoverTrigger>
-            <PopoverContent side='right' align='end' className="w-64 p-2 border rounded-lg bg-background shadow-md animate-in slide-in-from-bottom-2 duration-200" sideOffset={5}>
-                <div className="flex items-center space-x-2 p-2">
-                    <Avatar>
-                        <AvatarImage src="https://github.com/shadcn.png" />
-                        <AvatarFallback>CN</AvatarFallback>
-                    </Avatar>
-                    <div>
-                        <div className="font-medium">Kenrick</div>
-                        <div className="text-sm text-gray-500">kenrick.zhou@gmail.com</div>
-                    </div>
-                </div>
-                <hr />
-                <div className="space-y-1">
-                    {userMenuItems.map((item, index) => (
-                        <a
-                            key={index}
-                            href={item.href}
-                            className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100"
-                        >
-                            {item.icon}
-                            <span>{item.label}</span>
-                        </a>
-                    ))}
-                </div>
-                <hr />
-                <a
-                    href={'/logout'}
-                    className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100"
-                >
-                    <ArrowRightOnRectangleIcon className="w-4 h-4" />
-                    <span>退出登录</span>
-                </a>
-            </PopoverContent>
-        </Popover>
-    );
-
-    const SidebarContent = () => (
-        <div className="flex flex-col h-full relative shadow-md rounded-2xl bg-background">
-            <h1 className="text-xl font-bold p-4">
-                <Image
-                    className="dark:invert"
-                    src="/icons/logo.svg"
-                    alt="AI-Shifu"
-                    width={140}
-                    height={32}
-                    priority
-                />
-            </h1>
-            <div className="p-2 flex-1">
-                <nav className="space-y-1">
-                    {menuItems.map((item, index) => (
-                        <a
-                            key={index}
-                            href={item.href}
-                            className="flex items-center space-x-2 px-2 py-2 rounded-lg hover:bg-gray-100"
-                        >
-                            {item.icon}
-                            <span>{item.label}</span>
-                        </a>
-                    ))}
-                </nav>
-            </div>
-
-            <div className='p-2 relative'>
-                <UserProfileCard />
-            </div>
-        </div>
-    );
+    const filteredScripts = activeTab === "favorites"
+        ? scripts.filter(script => script.isFavorite)
+        : scripts;
 
     return (
-        <div className="h-screen flex bg-stone-50">
-            {/* Desktop Sidebar */}
-            <div className="hidden md:flex w-64 border-r flex-col p-2">
-                <SidebarContent />
-            </div>
-
-            {/* Mobile Header */}
-            <div className="md:hidden w-full border-b p-4">
-                <div className="flex items-center justify-between">
-                    <Sheet>
-                        <SheetTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                                <Bars3Icon className="h-6 w-6" />
-                            </Button>
-                        </SheetTrigger>
-                        <SheetContent side="left" className="w-64 p-0">
-                            <SidebarContent />
-                        </SheetContent>
-                    </Sheet>
-                    <h1 className="text-xl font-bold">首页</h1>
-                    <div className="w-6" /> {/* Spacer for centering */}
+        <div className="h-full bg-gray-50 p-0">
+            <div className="max-w-7xl mx-auto">
+                <div className="flex justify-between items-center mb-5">
+                    <h1 className="text-2xl font-semibold text-gray-900">剧本</h1>
                 </div>
-            </div>
-
-            {/* Main Content */}
-            <div className="flex-1 p-6">
-                <div className="max-w-4xl mx-auto">
-                    {/* Participation Section */}
-                    <div className="mb-8">
-                        <h2 className="text-lg font-semibold mb-4">参与社区</h2>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {/* Note: Using specific icons for social media */}
-                            <a href="#" className="flex items-center space-x-2 p-4 rounded-lg border hover:bg-gray-50">
-                                <ChatBubbleLeftRightIcon className="w-5 h-5" />
-                                <span>Github</span>
-                            </a>
-                            <a href="#" className="flex items-center space-x-2 p-4 rounded-lg border hover:bg-gray-50">
-                                <ChatBubbleLeftRightIcon className="w-5 h-5" />
-                                <span>Discord</span>
-                            </a>
-                            <a href="#" className="flex items-center space-x-2 p-4 rounded-lg border hover:bg-gray-50">
-                                <ChatBubbleLeftRightIcon className="w-5 h-5" />
-                                <span>Weibo</span>
-                            </a>
-                            <a href="#" className="flex items-center space-x-2 p-4 rounded-lg border hover:bg-gray-50">
-                                <ChatBubbleLeftRightIcon className="w-5 h-5" />
-                                <span>X</span>
-                            </a>
+                <div className="flex space-x-3 mb-5">
+                    <Button size='sm' variant="default" className="bg-purple-600 hover:bg-purple-700">
+                        <BoltIcon className="w-5 h-5 mr-1" />
+                        从模版创建
+                    </Button>
+                    <Button size='sm' variant="outline">
+                        <PlusIcon className="w-5 h-5 mr-1" />
+                        新建空白剧本
+                    </Button>
+                    <Button size='sm' variant="outline">
+                        导入
+                    </Button>
+                </div>
+                <Tabs defaultValue="all" className="mb-6" onValueChange={setActiveTab}>
+                    <TabsList className='bg-stone-50 px-0'>
+                        <TabsTrigger value="all">
+                            {
+                                activeTab == 'all' && (
+                                    <RectangleStackIcon className="w-5 h-5 mr-1 text-primary" />
+                                )
+                            }
+                            {
+                                activeTab != 'all' && (
+                                    <RectangleStackOutlineIcon className="w-5 h-5 mr-1" />
+                                )
+                            }
+                            全部
+                        </TabsTrigger>
+                        <TabsTrigger value="favorites">
+                            {
+                                activeTab == 'favorites' && (
+                                    <StarIcon className="w-5 h-5 mr-1 text-primary" />
+                                )
+                            }
+                            {
+                                activeTab != 'favorites' && (
+                                    <StarOutlineIcon className="w-5 h-5 mr-1" />
+                                )
+                            }
+                            收藏
+                        </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="all">
+                        <div className="flex flex-wrap gap-4">
+                            {filteredScripts.map((script) => (
+                                <ScriptCard
+                                    key={script.id}
+                                    icon={script.icon}
+                                    title={script.title}
+                                    isFavorite={script.isFavorite}
+                                />
+                            ))}
                         </div>
-                    </div>
-                </div>
+                    </TabsContent>
+                    <TabsContent value="favorites">
+                        <div className="flex flex-wrap gap-4">
+                            {filteredScripts.map((script) => (
+                                <ScriptCard
+                                    key={script.id}
+                                    icon={script.icon}
+                                    title={script.title}
+                                    isFavorite={script.isFavorite}
+                                />
+                            ))}
+                        </div>
+                    </TabsContent>
+                </Tabs>
             </div>
         </div>
     );
 };
 
-export default MainInterface;
+export default ScriptManagementPage;
