@@ -7,7 +7,6 @@ import {
 } from "@/components/ui/sheet";
 import {
   Bars3Icon,
-  Cog6ToothIcon,
   BookOpenIcon,
   BoltIcon,
   LightBulbIcon,

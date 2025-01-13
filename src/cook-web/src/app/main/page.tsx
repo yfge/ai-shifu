@@ -1,13 +1,14 @@
 "use client"
 
 import React, { useState } from 'react';
-import { PlusIcon, ArrowDownTrayIcon, BoltIcon, StarIcon as StarOutlineIcon, RectangleStackIcon as RectangleStackOutlineIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, BoltIcon, StarIcon as StarOutlineIcon, RectangleStackIcon as RectangleStackOutlineIcon } from '@heroicons/react/24/outline';
 import { TrophyIcon, AcademicCapIcon, UserIcon, MusicalNoteIcon, RectangleStackIcon, StarIcon } from '@heroicons/react/24/solid';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
-const ScriptCard = ({ icon: Icon, title, isFavorite }) => (
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ScriptCard = ({ icon: Icon, title }: any) => (
     <Card className="w-full md:w-[calc(50%-1rem)] lg:w-[calc(33.33%-1rem)] rounded-xl bg-background hover:scale-105 transition-all duration-200 ease-in-out">
         <CardContent className="p-4">
             <div className='flex flex-row items-center'>
