@@ -65,3 +65,64 @@ class AICourseAttendAsssotion(db.Model):
         onupdate=func.now(),
         comment="Update time",
     )
+
+
+class AICourseStudyProgress(db.Model):
+    __tablename__ = "ai_course_study_progress"
+    id = Column(BIGINT, primary_key=True, autoincrement=True, comment="Unique ID")
+    progress_id = Column(
+        String(36), nullable=False, default="", comment="Progress UUID"
+    )
+    user_id = Column(String(36), nullable=False, default="", comment="User UUID")
+    course_id = Column(String(36), nullable=False, default="", comment="Course UUID")
+    lesson_id = Column(String(36), nullable=False, default="", comment="Lesson UUID")
+    max_lesson_no = Column(Integer, nullable=False, default=0, comment="Max Lesson No")
+    max_lesson_script_index = Column(
+        Integer, nullable=False, default=0, comment="Max Lesson Script Index"
+    )
+    is_paid = Column(Integer, nullable=False, default=0, comment="Is Paid")
+    is_completed = Column(Integer, nullable=False, default=0, comment="Is Completed")
+    progress_status = Column(
+        Integer, nullable=False, default=0, comment="Progress Status"
+    )
+    created = Column(
+        TIMESTAMP, nullable=False, default=func.now(), comment="Creation time"
+    )
+    updated = Column(
+        TIMESTAMP,
+        nullable=False,
+        default=func.now(),
+        onupdate=func.now(),
+        comment="Update time",
+    )
+
+
+class AILessonStudyProgress(db.Model):
+    __tablename__ = "ai_lesson_study_progress"
+    id = Column(BIGINT, primary_key=True, autoincrement=True, comment="Unique ID")
+    progress_id = Column(
+        String(36), nullable=False, default="", comment="Progress UUID"
+    )
+    user_id = Column(String(36), nullable=False, default="", comment="User UUID")
+    lesson_id = Column(String(36), nullable=False, default="", comment="Lesson UUID")
+    lesson_no = Column(Integer, nullable=False, default=0, comment="Lesson No")
+    lesson_script_index = Column(
+        Integer, nullable=False, default=0, comment="Lesson Script Index"
+    )
+    begin_time = Column(TIMESTAMP, nullable=True, comment="Begin Time")
+    end_time = Column(TIMESTAMP, nullable=True, comment="End Time")
+    progress_status = Column(
+        Integer, nullable=False, default=0, comment="Progress Status"
+    )
+    is_completed = Column(Integer, nullable=False, default=0, comment="Is Completed")
+    completed_time = Column(TIMESTAMP, nullable=True, comment="Completed Time")
+    created = Column(
+        TIMESTAMP, nullable=False, default=func.now(), comment="Creation time"
+    )
+    updated = Column(
+        TIMESTAMP,
+        nullable=False,
+        default=func.now(),
+        onupdate=func.now(),
+        comment="Update time",
+    )
