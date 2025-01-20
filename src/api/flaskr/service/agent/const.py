@@ -1,0 +1,17 @@
+AGENT_TYPE = {
+    "LLM_AGENT": "LLM_AGENT",
+    "RAG_AGENT": "RAG_AGENT",
+    "DIFY_AGENT": "DIFY_AGENT",
+    "CUSTOM_AGENT": "CUSTOM_AGENT",
+}
+
+
+LLM_TYPE_OPENAI = "openai"
+LLM_TYPE_ERNIE = "ernie"
+LLM_TYPE_GLM = "glm"
+
+LLM_TYPE_QWEN = "qwen"
+LLM_TYPE_DEEPSEEK = "deepseek"
+LLM_TYPE_MINIMAX = "minimax"
+LLM_TYPE_DIFY = "dify"
+LLM_TYPE_SAME_TO_OPENAI = "same_to_openai"
