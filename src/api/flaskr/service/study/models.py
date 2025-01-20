@@ -75,16 +75,15 @@ class AICourseStudyProgress(db.Model):
     )
     user_id = Column(String(36), nullable=False, default="", comment="User UUID")
     course_id = Column(String(36), nullable=False, default="", comment="Course UUID")
-    lesson_id = Column(String(36), nullable=False, default="", comment="Lesson UUID")
-    max_lesson_no = Column(Integer, nullable=False, default=0, comment="Max Lesson No")
-    max_lesson_script_index = Column(
-        Integer, nullable=False, default=0, comment="Max Lesson Script Index"
+    chapter_count = Column(Integer, nullable=False, default=0, comment="Chapter Count")
+    chapter_completed_count = Column(
+        Integer, nullable=False, default=0, comment="Chapter Completed Count"
+    )
+    chapter_reset_count = Column(
+        Integer, nullable=False, default=0, comment="Chapter Reset Count"
     )
     is_paid = Column(Integer, nullable=False, default=0, comment="Is Paid")
     is_completed = Column(Integer, nullable=False, default=0, comment="Is Completed")
-    progress_status = Column(
-        Integer, nullable=False, default=0, comment="Progress Status"
-    )
     created = Column(
         TIMESTAMP, nullable=False, default=func.now(), comment="Creation time"
     )
@@ -105,15 +104,11 @@ class AILessonStudyProgress(db.Model):
     )
     user_id = Column(String(36), nullable=False, default="", comment="User UUID")
     lesson_id = Column(String(36), nullable=False, default="", comment="Lesson UUID")
-    lesson_no = Column(Integer, nullable=False, default=0, comment="Lesson No")
-    lesson_script_index = Column(
-        Integer, nullable=False, default=0, comment="Lesson Script Index"
-    )
     begin_time = Column(TIMESTAMP, nullable=True, comment="Begin Time")
     end_time = Column(TIMESTAMP, nullable=True, comment="End Time")
-    progress_status = Column(
-        Integer, nullable=False, default=0, comment="Progress Status"
-    )
+    script_index = Column(Integer, nullable=False, default=0, comment="Script Index")
+    script_count = Column(Integer, nullable=False, default=0, comment="Script Count")
+    reset_count = Column(Integer, nullable=False, default=0, comment="Reset Count")
     is_completed = Column(Integer, nullable=False, default=0, comment="Is Completed")
     completed_time = Column(TIMESTAMP, nullable=True, comment="Completed Time")
     created = Column(
