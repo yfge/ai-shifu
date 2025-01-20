@@ -2,7 +2,7 @@ import json
 from flaskr.service.study.utils import get_follow_up_info
 from flaskr.util.uuid import generate_id
 from flask import Flask
-
+from flaskr.service.study.progress import init_study_progress
 from sqlalchemy import text
 from flaskr.dao import run_with_redis
 
@@ -65,7 +65,6 @@ def get_lesson_tree_to_study_inner(
     app: Flask, user_id: str, course_id: str = None
 ) -> AICourseDTO:
     with app.app_context():
-
         app.logger.info("user_id:" + user_id)
         attend_status_values = get_attend_status_values()
         if course_id:
@@ -107,11 +106,10 @@ def get_lesson_tree_to_study_inner(
 
         app.logger.info("attend_infos:{}".format(len(attend_infos)))
         # init the attend info for the trial lessons
-
         is_first_chatpter = False
         is_first_lesson = False
-
         if len(attend_infos) == 0:
+            init_study_progress(app, user_id, course_id)
             app.logger.info(
                 "init the attend info for the trial lessons,user_id:{} course_id:{}".format(
                     user_id, course_id
