@@ -60,6 +60,8 @@ from ...service.order.models import (
 from ...service.common.models import raise_error
 from .models import AICourseLessonAttendScript, AICourseAttendAsssotion
 
+from .progress import reset_study_progress
+
 
 def get_lesson_tree_to_study_inner(
     app: Flask, user_id: str, course_id: str = None
@@ -627,5 +629,6 @@ def reset_user_study_info_by_lesson(app: Flask, user_id: str, lesson_id: str):
             if lesson.lesson_no == lesson_no + "01":
                 attend_info.status = ATTEND_STATUS_NOT_STARTED
             db.session.add(attend_info)
+        reset_study_progress(app, user_id, course_id, lessons)
         db.session.commit()
         return True

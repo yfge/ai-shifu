@@ -193,7 +193,7 @@ def change_user_passwd(app: Flask, user: UserInfo, oldpwd, newpwd) -> UserInfo:
 
 
 def get_user_info(app: Flask, user_id: str) -> UserInfo:
-    User = get_model(app)
+    User = CommonUser
     with app.app_context():
         user = User.query.filter_by(user_id=user_id).first()
         if user:
