@@ -159,6 +159,7 @@ def update_user_info(
                 user_state=dbuser.user_state,
                 wx_openid=get_user_openid(user),
                 language=get_user_language(user),
+                avatar=user.avatar,
             )
         else:
             raise_error("USER.USER_NOT_FOUND")
@@ -207,6 +208,7 @@ def get_user_info(app: Flask, user_id: str) -> UserInfo:
                 user_state=user.user_state,
                 wx_openid=get_user_openid(user),
                 language=get_user_language(user),
+                avatar=user.user_avatar,
             )
         else:
             raise_error("USER.USER_NOT_FOUND")
