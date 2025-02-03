@@ -8,6 +8,7 @@ from datetime import datetime
 from ...service.order.models import AICourseBuyRecord, AICourseLessonAttend
 from ...service.order.consts import BUY_STATUS_SUCCESS
 from ...service.order.consts import ATTEND_STATUS_COMPLETED, ATTEND_STATUS_RESET
+from ...service.lesson.const import SCRIPT_TYPE_SYSTEM
 
 
 class LessonInfo:
@@ -76,6 +77,7 @@ def get_course_info(course_id: str):
         .filter(
             AILessonScript.lesson_id.in_(lesson_ids),
             AILessonScript.status == 1,
+            AILessonScript.script_type != SCRIPT_TYPE_SYSTEM,
         )
         .all()
     )
@@ -161,36 +163,40 @@ def init_study_progress(app: Flask, user_id: str, course_id: str):
 
 
 def init_study_progress_after_paid(app: Flask, user_id: str, course_id: str):
-    with app.app_context():
+    progress = AICourseStudyProgress.query.filter_by(
+        user_id=user_id, course_id=course_id
+    ).first()
+    if progress:
+        progress.is_paid = 1
+    else:
+        init_study_progress(app, user_id, course_id)
         progress = AICourseStudyProgress.query.filter_by(
             user_id=user_id, course_id=course_id
         ).first()
-        if progress:
-            progress.is_paid = 1
-
-        lessons = get_course_info(course_id)
-        for lesson in lessons:
-            for lesson in [ls for ls in lessons if ls.lesson_type != LESSON_TYPE_TRIAL]:
-                lesson_progress = AILessonStudyProgress(
+        progress.is_paid = 1
+    lessons = get_course_info(course_id)
+    for lesson in lessons:
+        for lesson in [ls for ls in lessons if ls.lesson_type != LESSON_TYPE_TRIAL]:
+            lesson_progress = AILessonStudyProgress(
+                progress_id=progress.progress_id,
+                lesson_id=lesson.lesson_id,
+                sublesson_count=len(lesson.sublessons),
+                sublesson_completed_count=0,
+                script_index=0,
+                script_count=lesson.script_count,
+            )
+            db.session.add(lesson_progress)
+            for sublesson in lesson.sublessons:
+                sublesson_progress = AILessonStudyProgress(
                     progress_id=progress.progress_id,
-                    lesson_id=lesson.lesson_id,
-                    sublesson_count=len(lesson.sublessons),
+                    lesson_id=sublesson.lesson_id,
+                    sublesson_count=len(sublesson.sublessons),
                     sublesson_completed_count=0,
                     script_index=0,
-                    script_count=lesson.script_count,
+                    script_count=sublesson.script_count,
                 )
-                db.session.add(lesson_progress)
-                for sublesson in lesson.sublessons:
-                    sublesson_progress = AILessonStudyProgress(
-                        progress_id=progress.progress_id,
-                        lesson_id=sublesson.lesson_id,
-                        sublesson_count=len(sublesson.sublessons),
-                        sublesson_completed_count=0,
-                        script_index=0,
-                        script_count=sublesson.script_count,
-                    )
-                    db.session.add(sublesson_progress)
-        db.session.flush()
+                db.session.add(sublesson_progress)
+    db.session.flush()
 
 
 class LessonProgress:
@@ -435,6 +441,62 @@ def get_study_progress_by_user_id(app: Flask, user_id: str) -> list[StudyProgres
         return ret
 
 
+def update_chaper_progress(
+    app: Flask,
+    user_id: str,
+    course_id: str,
+    parent_lesson_id: str,
+    completed_sub_lesson_id: str,
+    sub_lesson_ids: list[str],
+):
+    progress = AICourseStudyProgress.query.filter_by(
+        user_id=user_id, course_id=course_id
+    ).first()
+    if not progress:
+        return
+    if progress.is_completed == 1:
+        return
+    if completed_sub_lesson_id not in sub_lesson_ids:
+        return
+
+    lesson_progress = AILessonStudyProgress.query.filter(
+        AILessonStudyProgress.progress_id == progress.progress_id,
+        AILessonStudyProgress.lesson_id.in_(sub_lesson_ids + [parent_lesson_id]),
+    ).all()
+    if len(lesson_progress) == 0:
+        return
+    completed_lesson_progress = [
+        i for i in lesson_progress if i.lesson_id == completed_sub_lesson_id
+    ]
+    if len(completed_lesson_progress) == 0:
+        return
+    if completed_lesson_progress[0].is_completed == 1:
+        return
+    completed_lesson_progress[0].is_completed = 1
+    completed_lesson_progress[0].completed_time = datetime.now()
+    parent_lesson_progress = [
+        i for i in lesson_progress if i.lesson_id == parent_lesson_id
+    ]
+    if len(parent_lesson_progress) == 0:
+        return
+    if parent_lesson_progress[0].is_completed == 1:
+        return
+    parent_lesson_progress[0].sublesson_completed_count = len(
+        [i for i in lesson_progress if i.is_completed == 1]
+    )
+    if (
+        parent_lesson_progress[0].sublesson_completed_count
+        == parent_lesson_progress[0].sublesson_count
+    ):
+        parent_lesson_progress[0].is_completed = 1
+        parent_lesson_progress[0].completed_time = datetime.now()
+        progress.chapter_completed_count += 1
+        db.session.merge(progress)
+    db.session.merge(completed_lesson_progress[0])
+    db.session.merge(parent_lesson_progress[0])
+    db.session.flush()
+
+
 def update_study_progress(
     app: Flask,
     user_id: str,
@@ -448,13 +510,11 @@ def update_study_progress(
         user_id=user_id, course_id=course_id
     ).first()
     if not progress:
-        app.logger.error("now progress not found:{}".format(course_id))
         return
     lesson_progress = AILessonStudyProgress.query.filter_by(
         progress_id=progress.progress_id, lesson_id=lesson_id
     ).first()
     if not lesson_progress:
-        app.logger.error("lesson_progress not found:{}".format(lesson_id))
         lesson_progress = AILessonStudyProgress(
             progress_id=progress.progress_id,
             lesson_id=lesson_id,
@@ -467,6 +527,8 @@ def update_study_progress(
             is_completed=is_completed,
         )
     if lesson_progress.is_completed == 1:
+        # if the lesson is completed, do not update
+
         return
     if is_chapter:
         progress.chapter_completed_count += 1
@@ -480,6 +542,8 @@ def update_study_progress(
     lesson_progress.is_completed = is_completed
     if is_completed:
         lesson_progress.completed_time = datetime.now()
+        # if is_chapter == False:
+
     db.session.merge(lesson_progress)
     db.session.flush()
 
@@ -487,12 +551,10 @@ def update_study_progress(
 def reset_study_progress(
     app: Flask, user_id: str, course_id: str, lessons: list[AILesson]
 ):
-    app.logger.info("reset_study_progress:{}".format(course_id))
     progress = AICourseStudyProgress.query.filter_by(
         user_id=user_id, course_id=course_id
     ).first()
     if not progress:
-        app.logger.error("now progress not found:{}".format(course_id))
         return
     progress.chapter_reset_count += 1
     db.session.merge(progress)
@@ -507,12 +569,6 @@ def reset_study_progress(
 
 
 def generate_study_progress(app: Flask, user_id: str, course_id: str):
-    """生成用户的学习进度，并从attend表中恢复历史学习记录
-    Args:
-        app: Flask应用实例
-        user_id: 用户ID
-        course_id: 课程ID
-    """
     with app.app_context():
         # 删除已存在的进度
         progress = AICourseStudyProgress.query.filter_by(
@@ -610,7 +666,11 @@ def generate_study_progress(app: Flask, user_id: str, course_id: str):
                     if is_completed
                     else None
                 ),
-                begin_time=min([attend.created for attend in lesson_attends]),
+                begin_time=(
+                    min([attend.created for attend in lesson_attends])
+                    if is_completed
+                    else None
+                ),
             )
             db.session.add(lesson_progress)
 
@@ -618,6 +678,8 @@ def generate_study_progress(app: Flask, user_id: str, course_id: str):
             # 为子课程创建进度
             for sublesson in lesson.sublessons:
                 sublesson_attends = attend_map.get(sublesson.lesson_id, [])
+                if len(sublesson_attends) == 0:
+                    continue
                 script_index = max(
                     [attend.script_index for attend in sublesson_attends], default=0
                 )

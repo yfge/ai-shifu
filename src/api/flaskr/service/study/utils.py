@@ -35,6 +35,7 @@ from ...service.order.consts import BUY_STATUS_SUCCESS
 from ...service.study.progress import update_study_progress
 from flaskr.service.user.models import User
 from flaskr.framework import extensible
+from ...service.study.progress import update_chaper_progress
 
 
 def get_current_lesson(
@@ -118,7 +119,6 @@ def get_lesson_and_attend_info(app: Flask, parent_no, course_id, user_id):
         AILesson.status == 1,
     ).all()
     if len(lessons) == 0:
-
         return []
     app.logger.info(
         "lessons:{}".format(
@@ -280,7 +280,12 @@ def get_script(app: Flask, attend_id: str, next: int = 0):
             AILesson.lesson_id == attend_info.lesson_id
         ).first()
         update_study_progress(
-            app, attend_info.user_id, attend_info.course_id, lesson.lesson_id, 1, 0
+            app,
+            attend_info.user_id,
+            attend_info.course_id,
+            lesson.lesson_id,
+            attend_info.script_index,
+            0,
         )
         attend_infos.append(
             AILessonAttendDTO(
@@ -294,7 +299,7 @@ def get_script(app: Flask, attend_id: str, next: int = 0):
         )
         app.logger.info(lesson.lesson_no)
         app.logger.info(lesson.lesson_no[-2:])
-        if len(lesson.lesson_no) >= 2 and lesson.lesson_no[-2:] == "01":
+        if len(lesson.lesson_no) > 2 and lesson.lesson_no[-2:] == "01":
             # 第一节课
             parent_lesson = AILesson.query.filter(
                 AILesson.lesson_no == lesson.lesson_no[:-2],
@@ -371,8 +376,6 @@ def get_script(app: Flask, attend_id: str, next: int = 0):
         AILessonScript.script_type != SCRIPT_TYPE_SYSTEM,
     ).first()
     if not script_info:
-        app.logger.info("no script found")
-        app.logger.info(attend_info.lesson_id)
         if attend_info.status == ATTEND_STATUS_IN_PROGRESS:
             attend_info.status = ATTEND_STATUS_COMPLETED
             lesson = AILesson.query.filter(
@@ -448,19 +451,21 @@ def update_lesson_status(app: Flask, attend_id: str):
             lesson.lesson_type,
         )
     )
-    update_study_progress(
-        app,
-        attend_info.user_id,
-        attend_info.course_id,
-        lesson.lesson_id,
-        attend_info.script_index,
-        1,
-    )
     if len(parent_no) > 2:
         parent_no = parent_no[:2]
-    app.logger.info("parent_no:" + parent_no)
     attend_lesson_infos = get_lesson_and_attend_info(
         app, parent_no, lesson.course_id, attend_info.user_id
+    )
+    sub_lesson_ids = [nl["lesson"].lesson_id for nl in attend_lesson_infos]
+    parent_lesson_id = attend_lesson_infos[0]["lesson"].lesson_id
+    completed_sub_lesson_id = attend_info.lesson_id
+    update_chaper_progress(
+        app,
+        attend_info.user_id,
+        lesson.course_id,
+        parent_lesson_id,
+        completed_sub_lesson_id,
+        sub_lesson_ids,
     )
     if attend_lesson_infos[-1]["attend"].attend_id == attend_id:
         attend_status_values = get_attend_status_values()
@@ -559,7 +564,6 @@ def update_lesson_status(app: Flask, attend_id: str):
                     )
         else:
             app.logger.info("no next lesson")
-    app.logger.info("current res lenth:{}".format(len(res)))
     for i in range(len(attend_lesson_infos)):
         if (
             i > 0
