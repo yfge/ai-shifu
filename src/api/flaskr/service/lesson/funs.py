@@ -330,20 +330,29 @@ def update_lesson_info(
         unconf_fields = []
 
         lessonNo = str(index).zfill(2)
+
+        print("lessonNo:" + lessonNo + " course_id:" + course_id)
+        parent_lesson = AILesson.query.filter(
+            AILesson.course_id == course_id,
+            # AILesson.lesson_no == str(index).zfill(2),
+            AILesson.course_id == course_id,
+            AILesson.lesson_feishu_id == table_id,
+            func.char_length(AILesson.lesson_no) == 2,
+        ).first()
+        parent_lesson_no = parent_lesson.lesson_no
         db.session.execute(
             text(
                 "update ai_lesson set status=0 where course_id=:course_id and lesson_no like :lesson_no"
             ),
-            {"course_id": course_id, "lesson_no": lessonNo + "%"},
+            {"course_id": course_id, "lesson_no": parent_lesson_no + "__"},
         )
-        print("lessonNo:" + lessonNo + " course_id:" + course_id)
-        parent_lesson = AILesson.query.filter(
-            AILesson.course_id == course_id,
-            AILesson.lesson_no == str(index).zfill(2),
-            AILesson.course_id == course_id,
-            #    ,AILesson.lesson_feishu_id==table_id,
-            func.char_length(AILesson.lesson_no) == 2,
-        ).first()
+        if parent_lesson_no != lessonNo:
+            db.session.execute(
+                text(
+                    "update ai_lesson set status=0 where course_id=:course_id and lesson_no like :lesson_no"
+                ),
+                {"course_id": course_id, "lesson_no": lessonNo + "__"},
+            )
         if parent_lesson is None:
             parent_lesson = AILesson()
             parent_lesson.lesson_id = str(generate_id(app))
@@ -425,7 +434,8 @@ def update_lesson_info(
                     lesson = AILesson.query.filter(
                         AILesson.course_id == course_id,
                         AILesson.lesson_feishu_id == table_id,
-                        AILesson.lesson_name == title,
+                        # AILesson.lesson_name == title,
+                        AILesson.lesson_no == parent_lesson_no + str(subIndex).zfill(2),
                     ).first()
                     if lesson is None:
                         lesson = AILesson()
