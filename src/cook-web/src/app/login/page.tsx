@@ -3,9 +3,30 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import Button from '@/components/button';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 import Image from "next/image";
+import api from '@/api'
+import { setToken } from '@/local/local';
+import { useRouter } from 'next/navigation'
+
+
+interface UserInfo {
+    email: string;
+    language: string;
+    mobile: string;
+    name: string;
+    user_avatar: string;
+    user_id: string;
+    user_state: string;
+    username: string;
+}
+
+interface Response {
+    token: string;
+    userInfo: UserInfo;
+}
+
 
 const LoginPage = () => {
     const [showPassword, setShowPassword] = React.useState(false);
@@ -13,23 +34,93 @@ const LoginPage = () => {
         username: '',
         password: ''
     });
+    const [errors, setErrors] = React.useState({
+        username: '',
+        password: ''
+    });
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        console.log('Login attempt:', formData);
+    const router = useRouter();
+    const validateUsername = (username: string) => {
+        if (!username.trim()) {
+            return '用户名不能为空';
+        }
+        return '';
     };
 
-    const handleChange = (e) => {
+    const validatePassword = (password: string) => {
+        if (password.length < 8) {
+            return '密码长度至少8位';
+        }
+        if (!/[A-Za-z]/.test(password)) {
+            return '密码必须包含字母';
+        }
+        if (!/[0-9]/.test(password)) {
+            return '密码必须包含数字';
+        }
+        if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+            return '密码必须包含特殊字符';
+        }
+        return '';
+    };
+
+    const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+        e.preventDefault();
+        const usernameError = validateUsername(formData.username);
+        const passwordError = validatePassword(formData.password);
+
+        setErrors({
+            username: usernameError,
+            password: passwordError
+        });
+
+        if (!usernameError && !passwordError) {
+            await onLogin();
+        }
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
             [name]: value
         }));
+
+        // Real-time validation
+        if (name === 'username') {
+            setErrors(prev => ({
+                ...prev,
+                username: validateUsername(value)
+            }));
+        } else if (name === 'password') {
+            setErrors(prev => ({
+                ...prev,
+                password: validatePassword(value)
+            }));
+        }
     };
+    const onLogin = async () => {
+        // 登录逻辑
+        const result: Response = await api.login({
+            username: formData.username,
+            password: formData.password
+        });
+        const token = result.token;
+        setToken(token);
+
+        router.push('/main');
+        // await api.register({
+        //     "email": "hongyin@163.com",
+        //     "mobile": "18669040658",
+        //     "name": "hongyin",
+        //     "password": "123123",
+        //     "username": "hongyin"
+        // })
+
+    }
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
-            <div className="w-full max-w-md space-y-6">
+            <div className="w-full max-w-md space-y-2">
                 <div className="flex flex-col items-center space-y-2">
                     <h2 className="text-purple-600 text-2xl flex items-center font-semibold">
                         <Image
@@ -47,19 +138,25 @@ const LoginPage = () => {
                         <CardTitle className="text-xl text-center text-stone-900  font-extrabold">登录制课中心</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="space-y-2">
+                        <form className="space-y-6">
+                            <div className="space-y-1">
                                 <Label htmlFor="username">账号</Label>
-                                <Input
-                                    id="username"
-                                    name="username"
-                                    placeholder="请输入邮箱/手机号"
-                                    value={formData.username}
-                                    onChange={handleChange}
-                                />
+                                <div className="space-y-1">
+                                    <Input
+                                        id="username"
+                                        name="username"
+                                        placeholder="请输入邮箱/手机号"
+                                        value={formData.username}
+                                        onChange={handleChange}
+                                        className={errors.username ? "border-red-500" : ""}
+                                    />
+                                    {errors.username && (
+                                        <p className="text-red-500 text-sm">{errors.username}</p>
+                                    )}
+                                </div>
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="space-y-1">
                                 <div className="flex justify-between items-center">
                                     <Label htmlFor="password">密码</Label>
                                     <Button
@@ -70,13 +167,19 @@ const LoginPage = () => {
                                     </Button>
                                 </div>
                                 <div className="relative">
-                                    <Input
-                                        id="password"
-                                        name="password"
-                                        type={showPassword ? "text" : "password"}
-                                        value={formData.password}
-                                        onChange={handleChange}
-                                    />
+                                    <div className="space-y-1">
+                                        <Input
+                                            id="password"
+                                            name="password"
+                                            type={showPassword ? "text" : "password"}
+                                            value={formData.password}
+                                            onChange={handleChange}
+                                            className={errors.password ? "border-red-500" : ""}
+                                        />
+                                        {errors.password && (
+                                            <p className="text-red-500 text-sm">{errors.password}</p>
+                                        )}
+                                    </div>
                                     <Button
                                         type="button"
                                         variant="ghost"
@@ -93,7 +196,11 @@ const LoginPage = () => {
                                 </div>
                             </div>
 
-                            <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700">
+                            <Button
+                                onClick={handleSubmit}
+                                className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={!!errors.username || !!errors.password || !formData.username || !formData.password}
+                            >
                                 登录
                             </Button>
 
