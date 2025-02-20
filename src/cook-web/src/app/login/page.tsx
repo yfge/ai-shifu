@@ -109,11 +109,11 @@ const LoginPage = () => {
 
         router.push('/main');
         // await api.register({
-        //     "email": "hongyin@163.com",
-        //     "mobile": "18669040658",
-        //     "name": "hongyin",
-        //     "password": "123123",
-        //     "username": "hongyin"
+        //     "email": "hongyin@gmail.com",
+        //     "mobile": "15622814590",
+        //     "name": "hongyin163",
+        //     "password": "hongyin123@",
+        //     "username": "hongyin163"
         // })
 
     }
