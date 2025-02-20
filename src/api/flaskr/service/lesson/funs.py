@@ -18,6 +18,7 @@ from flaskr.api.doc.feishu import list_records
 from flaskr.util.uuid import generate_id
 from sqlalchemy import func, text
 import json
+from flaskr.framework.plugin.plugin_manager import extensible
 
 
 @register_schema_to_swagger
@@ -31,6 +32,7 @@ class AICourseDTO:
         course_feishu_id,
         status,
         course_teacher_avatar,
+        course_keywords,
     ):
         self.course_id = course_id
         self.course_name = course_name
@@ -39,6 +41,7 @@ class AICourseDTO:
         self.course_feishu_id = course_feishu_id
         self.status = status
         self.course_teacher_avatar = course_teacher_avatar
+        self.course_keywords = course_keywords
 
     def __json__(self):
         return {
@@ -49,6 +52,7 @@ class AICourseDTO:
             "course_feishu_id": self.course_feishu_id,
             "status": self.status,
             "course_teacher_avatar": self.course_teacher_avatar,
+            "course_keywords": self.course_keywords,
         }
 
 
@@ -694,9 +698,9 @@ def update_course_info(
         return True
 
 
+@extensible
 def get_course_info(app: Flask, course_id: str) -> AICourseDTO:
     with app.app_context():
-
         if course_id is None or course_id == "":
             course = AICourse.query.filter(AICourse.status == 1).first()
             if course is None:
@@ -714,4 +718,5 @@ def get_course_info(app: Flask, course_id: str) -> AICourseDTO:
             course.course_feishu_id,
             course.course_status,
             course.course_teacher_avator,
+            course.course_keywords,
         )
