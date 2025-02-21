@@ -11,42 +11,63 @@ import { userInfoStore } from 'Service/storeUtil.js';
 import { getCourseInfo } from './Api/course.js';
 import { useEnvStore } from 'stores/envStore.js';
 import { useUserStore } from 'stores/useUserStore.js';
+import { useShallow } from 'zustand/react/shallow';
+import { selectDefaultLanguage } from 'constants/userConstants.js';
+import { useCourseStore } from 'stores/useCourseStore.js';
 
 const initializeEnvData = async () => {
-  const { updateAppId, updateCourseId, updateAlwaysShowLessonTree, updateUmamiWebsiteId, updateUmamiScriptSrc, updateEruda, updateBaseURL, updateLogoHorizontal, updateLogoVertical } = useEnvStore.getState();
+  const {
+    updateAppId,
+    updateCourseId,
+    updateAlwaysShowLessonTree,
+    updateUmamiWebsiteId,
+    updateUmamiScriptSrc,
+    updateEruda,
+    updateBaseURL,
+    updateLogoHorizontal,
+    updateLogoVertical,
+    updateEnableWxcode,
+    updateSiteUrl,
+  } = useEnvStore.getState();
   const fetchEnvData = async () => {
     try {
-      const res = await fetch('/config/env', { method: 'POST', referrer: "no-referrer" });
+      const res = await fetch('/config/env', {
+        method: 'POST',
+        referrer: 'no-referrer',
+      });
       if (res.ok) {
         const data = await res.json();
-        await updateCourseId(data?.REACT_APP_COURSE_ID || "");
-        await updateAppId(data?.REACT_APP_APP_ID || "");
-        await updateAlwaysShowLessonTree(data?.REACT_APP_ALWAYS_SHOW_LESSON_TREE || "false");
-        await updateUmamiWebsiteId(data?.REACT_APP_UMAMI_WEBSITE_ID || "");
-        await updateUmamiScriptSrc(data?.REACT_APP_UMAMI_SCRIPT_SRC || "");
-        await updateEruda(data?.REACT_APP_ERUDA || "false");
-        await updateBaseURL(data?.REACT_APP_BASEURL || "");
-        await updateLogoHorizontal(data?.REACT_APP_LOGO_HORIZONTAL || "");
-        await updateLogoVertical(data?.REACT_APP_LOGO_VERTICAL || "");
-
+        await updateCourseId(data?.REACT_APP_COURSE_ID || '');
+        await updateAppId(data?.REACT_APP_APP_ID || '');
+        await updateAlwaysShowLessonTree(
+          data?.REACT_APP_ALWAYS_SHOW_LESSON_TREE || 'false'
+        );
+        await updateUmamiWebsiteId(data?.REACT_APP_UMAMI_WEBSITE_ID || '');
+        await updateUmamiScriptSrc(data?.REACT_APP_UMAMI_SCRIPT_SRC || '');
+        await updateEruda(data?.REACT_APP_ERUDA || 'false');
+        await updateBaseURL(data?.REACT_APP_BASEURL || '');
+        await updateLogoHorizontal(data?.REACT_APP_LOGO_HORIZONTAL || '');
+        await updateLogoVertical(data?.REACT_APP_LOGO_VERTICAL || '');
+        await updateEnableWxcode(data?.REACT_APP_ENABLE_WXCODE);
+        await updateSiteUrl(data?.REACT_APP_SITE_URL);
       }
     } catch (error) {
     } finally {
-      const { umamiWebsiteId, umamiScriptSrc } = useEnvStore.getState();
+      let { umamiWebsiteId, umamiScriptSrc } = useEnvStore.getState();
       if (getBoolEnv('eruda')) {
-        import('eruda').then(eruda => eruda.default.init());
+        import('eruda').then((eruda) => eruda.default.init());
       }
       const loadUmamiScript = () => {
         if (umamiScriptSrc && umamiWebsiteId) {
-          const script = document.createElement("script");
+          const script = document.createElement('script');
           script.defer = true;
           script.src = umamiScriptSrc;
-          script.setAttribute("data-website-id", umamiWebsiteId);
+          script.setAttribute('data-website-id', umamiWebsiteId);
           document.head.appendChild(script);
         }
       };
       if (document.readyState === 'loading') {
-        document.addEventListener("DOMContentLoaded", loadUmamiScript);
+        document.addEventListener('DOMContentLoaded', loadUmamiScript);
       } else {
         loadUmamiScript();
       }
@@ -55,6 +76,7 @@ const initializeEnvData = async () => {
   await fetchEnvData();
 };
 const RouterView = () => useRoutes(routes);
+
 const App = () => {
   const [envDataInitialized, setEnvDataInitialized] = useState(false);
 
@@ -62,16 +84,34 @@ const App = () => {
     const initialize = async () => {
       await initializeEnvData();
       setEnvDataInitialized(true);
-    }
+    };
     initialize();
   }, []);
 
-  const { updateChannel, channel, wechatCode, updateWechatCode, setShowVip, updateLanguage } =
-    useSystemStore();
-  const browserLanguage = navigator.language || navigator.languages[0];
+  const {
+    updateChannel,
+    channel,
+    wechatCode,
+    updateWechatCode,
+    setShowVip,
+    updateLanguage,
+  } = useSystemStore();
+
+  const browserLanguage = selectDefaultLanguage(
+    navigator.language || navigator.languages[0]
+  );
+
   const [language] = useState(browserLanguage);
+
   const courseId = useEnvStore((state) => state.courseId);
   const updateCourseId = useEnvStore((state) => state.updateCourseId);
+  const enableWxcode = useEnvStore((state) => state.enableWxcode);
+
+  const { updateCourseName } = useCourseStore(
+    useShallow((state) => ({
+      updateCourseName: state.updateCourseName,
+    }))
+  );
 
   useEffect(() => {
     if (!envDataInitialized) return;
@@ -92,12 +132,14 @@ const App = () => {
   }
 
   useEffect(() => {
+    console.log('envDataInitialized...', envDataInitialized);
     if (!envDataInitialized) return;
-    if (inWechat()) {
+    if (enableWxcode && inWechat()) {
       const { appId } = useEnvStore.getState();
       setLoading(true);
       const currCode = params.code;
       if (!currCode) {
+        console.log('wechat login');
         wechatLogin({
           appId,
         });
@@ -108,7 +150,13 @@ const App = () => {
       }
     }
     setLoading(false);
-  }, [params.code, updateWechatCode, wechatCode, envDataInitialized]);
+  }, [
+    params.code,
+    updateWechatCode,
+    wechatCode,
+    envDataInitialized,
+    enableWxcode,
+  ]);
 
   useEffect(() => {
     const fetchCourseInfo = async () => {
@@ -118,7 +166,7 @@ const App = () => {
       }
     };
     fetchCourseInfo();
-  }, [envDataInitialized, updateCourseId, courseId,params.courseId]);
+  }, [envDataInitialized, updateCourseId, courseId, params.courseId]);
 
   useEffect(() => {
     const fetchCourseInfo = async () => {
@@ -128,6 +176,26 @@ const App = () => {
           const resp = await getCourseInfo(courseId);
           if (resp.data) {
             setShowVip(resp.data.course_price > 0);
+            updateCourseName(resp.data.course_name);
+            document.title = resp.data.course_name + ' - AI 师傅'
+            const metaDescription = document.querySelector('meta[name="description"]');
+            if (metaDescription) {
+              metaDescription.setAttribute('content', resp.data.course_desc);
+            } else {
+              const newMetaDescription = document.createElement('meta');
+              newMetaDescription.setAttribute('name', 'description');
+              newMetaDescription.setAttribute('content', resp.data.course_desc);
+              document.head.appendChild(newMetaDescription);
+            }
+            const metaKeywords = document.querySelector('meta[name="keywords"]');
+            if (metaKeywords) {
+              metaKeywords.setAttribute('content', resp.data.course_keywords);
+            } else {
+              const newMetaKeywords = document.createElement('meta');
+              newMetaKeywords.setAttribute('name', 'keywords');
+              newMetaKeywords.setAttribute('content', resp.data.course_keywords);
+              document.head.appendChild(newMetaKeywords);
+            }
           } else {
             window.location.href = '/404';
           }
@@ -137,26 +205,20 @@ const App = () => {
       }
     };
     fetchCourseInfo();
-  }, [courseId, envDataInitialized, setShowVip]);
-
-  useEffect(() => {
-    if (!envDataInitialized) return;
-    window.ztDebug = {};
-    return () => {
-      delete window.ztDebug;
-    };
-  }, [envDataInitialized]);
+  }, [courseId, envDataInitialized, setShowVip, updateCourseName]);
 
   useEffect(() => {
     if (!envDataInitialized) return;
     i18n.changeLanguage(language);
     updateLanguage(language);
-  }, [language, envDataInitialized,updateLanguage]);
+  }, [language, envDataInitialized, updateLanguage]);
 
   useEffect(() => {
     if (!envDataInitialized) return;
     const checkLogin = async () => {
+      setLoading(true);
       await useUserStore.getState().checkLogin();
+      setLoading(false);
     };
     checkLogin();
   }, [envDataInitialized]);
