@@ -1,47 +1,169 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { PlusIcon, BoltIcon, StarIcon as StarOutlineIcon, RectangleStackIcon as RectangleStackOutlineIcon } from '@heroicons/react/24/outline';
-import { TrophyIcon, AcademicCapIcon, UserIcon, MusicalNoteIcon, RectangleStackIcon, StarIcon } from '@heroicons/react/24/solid';
+import { TrophyIcon, RectangleStackIcon, StarIcon } from '@heroicons/react/24/solid';
+import api from "@/api";
+import { Scenario } from '@/types/scenario';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useToast } from "@/hooks/use-toast";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ScriptCard = ({ icon: Icon, title }: any) => (
+interface ScriptCardProps {
+    icon: React.ComponentType<{ className?: string }>;
+    title: string;
+    description: string;
+    isFavorite: boolean;
+}
+
+const ScriptCard = ({ icon: Icon, title, description, isFavorite }: ScriptCardProps) => (
     <Card className="w-full md:w-[calc(50%-1rem)] lg:w-[calc(33.33%-1rem)] rounded-xl bg-background hover:scale-105 transition-all duration-200 ease-in-out">
         <CardContent className="p-4">
-            <div className='flex flex-row items-center'>
-                <div className="p-2 h-10 w-10 rounded-lg bg-purple-50 mr-4 mb-3">
-                    <Icon className="w-6 h-6 text-purple-600" />
+            <div className='flex flex-row items-center justify-between'>
+                <div className='flex flex-row items-center'>
+                    <div className="p-2 h-10 w-10 rounded-lg bg-purple-50 mr-4 mb-3">
+                        <Icon className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <h3 className="font-medium text-gray-900 leading-5">{title}</h3>
                 </div>
-                <h3 className="font-medium text-gray-900 leading-5">{title}</h3>
+                {isFavorite && (
+                    <StarIcon className="w-5 h-5 text-yellow-400" />
+                )}
             </div>
-            <div className=" ">
-                <p className="mt-1 text-sm text-gray-500">
-                    剧本简述可能更长剧本简述可能更长，剧本简述可能更长剧本简述可能更长，剧本简述可能更长剧本简述可能更长。
-                </p>
-                <p className="mt-1 text-sm text-gray-500">
-                    剧本简述可能更长剧本简述可能更长，剧本简述可能更长剧本简述可能更长，剧本简述可能更长剧本简述可能更长。
+            <div>
+                <p className="mt-1 text-sm text-gray-500 line-clamp-3">
+                    {description}
                 </p>
             </div>
         </CardContent>
     </Card>
 );
 
+const formSchema = z.object({
+    scenario_name: z.string().min(1, "请输入剧本名称"),
+    scenario_description: z.string().min(1, "请输入剧本描述"),
+    scenario_image: z.string().default(""),
+});
+
 const ScriptManagementPage = () => {
+    const { toast } = useToast();
+    const form = useForm<z.infer<typeof formSchema>>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            scenario_name: "",
+            scenario_description: "",
+            scenario_image: "",
+        },
+    });
     const [activeTab, setActiveTab] = useState("all");
+    const [scenarios, setScenarios] = useState<Scenario[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+    const [showCreateScenarioModal, setShowCreateScenarioModal] = useState(false);
+    const pageSize = 10;
+    const currentPage = useRef(1);
+    const containerRef = useRef(null);
 
-    const scripts = [
-        { id: 1, icon: TrophyIcon, title: '剧本标题可能会比较长，存在折行的情况', isFavorite: true },
-        { id: 2, icon: AcademicCapIcon, title: '剧本标题可能会比较长，存在折行的情况', isFavorite: false },
-        { id: 3, icon: UserIcon, title: '剧本标题可能会比较长，存在折行的情况', isFavorite: true },
-        { id: 4, icon: MusicalNoteIcon, title: '剧本标题可能会比较长，存在折行的情况', isFavorite: false },
-    ];
+    const fetchScenarios = async () => {
+        if (loading || !hasMore) return;
 
-    const filteredScripts = activeTab === "favorites"
-        ? scripts.filter(script => script.isFavorite)
-        : scripts;
+        setLoading(true);
+        try {
+
+            const { items } = await api.getScenarioList({
+                page_index: currentPage.current,
+                page_size: pageSize,
+                is_favorite: activeTab === "favorites",
+            });
+
+            if (items.length < pageSize) {
+                setHasMore(false);
+            }
+
+            setScenarios(prev => [...prev, ...items]);
+            currentPage.current += 1;
+        } catch (error) {
+            console.error("Failed to fetch scenarios:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+    const onCreateScenario = async (values: z.infer<typeof formSchema>) => {
+        try {
+            await api.createScenario(values);
+            toast({
+                title: "创建成功",
+                description: "新剧本已创建",
+            });
+            form.reset();
+            // 重新获取列表
+            setScenarios([]);
+            setHasMore(true);
+            currentPage.current = 1;
+            fetchScenarios();
+            setShowCreateScenarioModal(false);
+        } catch (error) {
+            toast({
+                title: "创建失败",
+                description: error instanceof Error ? error.message : "未知错误",
+                variant: "destructive",
+            });
+        }
+    }
+
+    const handleCreateScenarioModal = () => {
+        form.reset();
+        form.clearErrors();
+        setShowCreateScenarioModal(true)
+    }
+
+    useEffect(() => {
+        // Reset when tab changes
+        setScenarios([]);
+        setHasMore(true);
+        currentPage.current = 1;
+        fetchScenarios();
+    }, [activeTab]);
+
+    // Infinite scroll
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && !loading && hasMore) {
+                    fetchScenarios();
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        observer.observe(container);
+        return () => observer.disconnect();
+    }, [loading, hasMore]);
+
 
     return (
         <div className="h-full bg-gray-50 p-0">
@@ -54,10 +176,52 @@ const ScriptManagementPage = () => {
                         <BoltIcon className="w-5 h-5 mr-1" />
                         从模版创建
                     </Button>
-                    <Button size='sm' variant="outline">
+                    <Button size='sm' variant="outline" onClick={handleCreateScenarioModal}>
                         <PlusIcon className="w-5 h-5 mr-1" />
                         新建空白剧本
                     </Button>
+                    <Dialog open={showCreateScenarioModal} onOpenChange={setShowCreateScenarioModal}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>新建空白剧本</DialogTitle>
+                            </DialogHeader>
+                            <Form {...form}>
+                                <form onSubmit={form.handleSubmit(onCreateScenario)} className="space-y-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="scenario_name"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>剧本名称</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="请输入剧本名称" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="scenario_description"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>剧本描述</FormLabel>
+                                                <FormControl>
+                                                    <Textarea placeholder="请输入剧本描述" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <div className="flex justify-end">
+                                        <Button type="submit" disabled={form.formState.isSubmitting}>
+                                            {form.formState.isSubmitting ? "创建中..." : "创建"}
+                                        </Button>
+                                    </div>
+                                </form>
+                            </Form>
+                        </DialogContent>
+                    </Dialog>
                     <Button size='sm' variant="outline">
                         导入
                     </Button>
@@ -93,28 +257,46 @@ const ScriptManagementPage = () => {
                     </TabsList>
                     <TabsContent value="all">
                         <div className="flex flex-wrap gap-4">
-                            {filteredScripts.map((script) => (
+                            {scenarios.map((scenario) => (
                                 <ScriptCard
-                                    key={script.id}
-                                    icon={script.icon}
-                                    title={script.title}
-                                    isFavorite={script.isFavorite}
+                                    key={scenario.id}
+                                    icon={TrophyIcon}
+                                    title={scenario.scenario_name}
+                                    description={scenario.scenario_description}
+                                    isFavorite={scenario.is_favorite}
                                 />
                             ))}
                         </div>
                     </TabsContent>
                     <TabsContent value="favorites">
                         <div className="flex flex-wrap gap-4">
-                            {filteredScripts.map((script) => (
+                            {scenarios.map((scenario) => (
                                 <ScriptCard
-                                    key={script.id}
-                                    icon={script.icon}
-                                    title={script.title}
-                                    isFavorite={script.isFavorite}
+                                    key={scenario.id}
+                                    icon={TrophyIcon}
+                                    title={scenario.scenario_name}
+                                    description={scenario.scenario_description}
+                                    isFavorite={scenario.is_favorite}
                                 />
                             ))}
                         </div>
                     </TabsContent>
+                    <div
+                        ref={containerRef}
+                        className="w-full h-10 flex items-center justify-center"
+                    >
+                        {loading && (
+                            <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-purple-600" />
+                        )}
+                        {!hasMore && scenarios.length > 0 && (
+                            <p className="text-gray-500 text-sm">没有更多剧本了</p>
+                        )}
+                        {
+                            !loading && scenarios.length == 0 && (
+                                <p className="text-gray-500 text-sm">暂无剧本</p>
+                            )
+                        }
+                    </div>
                 </Tabs>
             </div>
         </div>

@@ -14,6 +14,8 @@
 const api = {
     login: 'POST /user/login', //token
     register: 'POST /user/register',
+    getScenarioList: 'GET /scenario/scenarios',
+    createScenario: "POST /scenario/create-scenario"
 };
 
 export default api;
