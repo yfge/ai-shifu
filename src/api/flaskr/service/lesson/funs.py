@@ -339,11 +339,13 @@ def update_lesson_info(
         print("lessonNo:" + lessonNo + " course_id:" + course_id)
         parent_lesson = AILesson.query.filter(
             AILesson.course_id == course_id,
-            AILesson.lesson_no == str(index).zfill(2),
-            AILesson.course_id == course_id,
-            #    ,AILesson.lesson_feishu_id==table_id,
+            AILesson.lesson_feishu_id == table_id,
             func.char_length(AILesson.lesson_no) == 2,
         ).first()
+
+        pre_parent_lesson_no = None
+        current_parent_lesson_no = str(index).zfill(2)
+
         if parent_lesson is None:
             parent_lesson = AILesson()
             parent_lesson.lesson_id = str(generate_id(app))
@@ -354,6 +356,7 @@ def update_lesson_info(
             parent_lesson.lesson_no = lessonNo
             parent_lesson.lesson_feishu_id = table_id
             parent_lesson.lesson_type = lesson_type
+            pre_parent_lesson_no = current_parent_lesson_no
             if int(index) > 1:
                 parent_lesson.pre_lesson_no = str(int(index) - 1).zfill(2)
             else:
@@ -425,7 +428,8 @@ def update_lesson_info(
                     lesson = AILesson.query.filter(
                         AILesson.course_id == course_id,
                         AILesson.lesson_feishu_id == table_id,
-                        AILesson.lesson_name == title,
+                        AILesson.lesson_no
+                        == pre_parent_lesson_no + str(subIndex).zfill(2),
                     ).first()
                     if lesson is None:
                         lesson = AILesson()
