@@ -1,5 +1,5 @@
 export interface Scenario {
-    id: number;
+    scenario_id: string;
     scenario_name: string;
     scenario_description: string;
     is_favorite: boolean;

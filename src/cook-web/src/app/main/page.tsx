@@ -13,7 +13,6 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from "@/components/ui/dialog";
 import {
     Form,
@@ -29,36 +28,41 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
+import { useRouter } from 'next/navigation';
 
 interface ScriptCardProps {
+    id: string;
     icon: React.ComponentType<{ className?: string }>;
     title: string;
     description: string;
     isFavorite: boolean;
 }
 
-const ScriptCard = ({ icon: Icon, title, description, isFavorite }: ScriptCardProps) => (
-    <Card className="w-full md:w-[calc(50%-1rem)] lg:w-[calc(33.33%-1rem)] rounded-xl bg-background hover:scale-105 transition-all duration-200 ease-in-out">
-        <CardContent className="p-4">
-            <div className='flex flex-row items-center justify-between'>
-                <div className='flex flex-row items-center'>
-                    <div className="p-2 h-10 w-10 rounded-lg bg-purple-50 mr-4 mb-3">
-                        <Icon className="w-6 h-6 text-purple-600" />
+const ScriptCard = ({ id, icon: Icon, title, description, isFavorite }: ScriptCardProps) => {
+    const router = useRouter()
+    return (
+        <Card className="w-full md:w-[calc(50%-1rem)] lg:w-[calc(33.33%-1rem)] rounded-xl bg-background hover:scale-105 transition-all duration-200 ease-in-out">
+            <CardContent className="p-4 cursor-pointer" onClick={() => router.push(`/scenario/${id}`)}>
+                <div className='flex flex-row items-center justify-between'>
+                    <div className='flex flex-row items-center'>
+                        <div className="p-2 h-10 w-10 rounded-lg bg-purple-50 mr-4 mb-3">
+                            <Icon className="w-6 h-6 text-purple-600" />
+                        </div>
+                        <h3 className="font-medium text-gray-900 leading-5">{title}</h3>
                     </div>
-                    <h3 className="font-medium text-gray-900 leading-5">{title}</h3>
+                    {isFavorite && (
+                        <StarIcon className="w-5 h-5 text-yellow-400" />
+                    )}
                 </div>
-                {isFavorite && (
-                    <StarIcon className="w-5 h-5 text-yellow-400" />
-                )}
-            </div>
-            <div>
-                <p className="mt-1 text-sm text-gray-500 line-clamp-3">
-                    {description}
-                </p>
-            </div>
-        </CardContent>
-    </Card>
-);
+                <div>
+                    <p className="mt-1 text-sm text-gray-500 line-clamp-3">
+                        {description}
+                    </p>
+                </div>
+            </CardContent>
+        </Card >
+    );
+}
 
 const formSchema = z.object({
     scenario_name: z.string().min(1, "请输入剧本名称"),
@@ -96,7 +100,7 @@ const ScriptManagementPage = () => {
                 page_size: pageSize,
                 is_favorite: activeTab === "favorites",
             });
-
+            console.log(items)
             if (items.length < pageSize) {
                 setHasMore(false);
             }
@@ -259,7 +263,8 @@ const ScriptManagementPage = () => {
                         <div className="flex flex-wrap gap-4">
                             {scenarios.map((scenario) => (
                                 <ScriptCard
-                                    key={scenario.id}
+                                    id={scenario.scenario_id + ""}
+                                    key={scenario.scenario_id}
                                     icon={TrophyIcon}
                                     title={scenario.scenario_name}
                                     description={scenario.scenario_description}
