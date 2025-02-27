@@ -15,7 +15,13 @@ const api = {
     login: 'POST /user/login', //token
     register: 'POST /user/register',
     getScenarioList: 'GET /scenario/scenarios',
-    createScenario: "POST /scenario/create-scenario"
+    createScenario: "POST /scenario/create-scenario",
+    getScenarioChapters: "GET /scenario/chapters",
+    createChapter: "POST /scenario/create-chapter",
+    deleteChapter: "POST /scenario/delete-chapter",
+    markFavoriteScenario: "POST /scenario/mark-favorite-scenario",
+    modifyChapter: "POST /scenario/modify-chapter",
+    getScenario: "GET /scenario/scenario",
 };
 
 export default api;

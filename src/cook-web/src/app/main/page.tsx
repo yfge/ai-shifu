@@ -107,10 +107,9 @@ const ScriptManagementPage = () => {
 
             setScenarios(prev => [...prev, ...items]);
             currentPage.current += 1;
+            setLoading(false);
         } catch (error) {
             console.error("Failed to fetch scenarios:", error);
-        } finally {
-            setLoading(false);
         }
     };
     const onCreateScenario = async (values: z.infer<typeof formSchema>) => {

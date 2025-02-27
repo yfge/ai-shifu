@@ -22,7 +22,7 @@ const Header = () => {
                     <ChevronLeft className="h-5 w-5" />
                 </Button>
 
-                <div className="flex items-center">
+                {/* <div className="flex items-center">
                     <div className="bg-blue-100 rounded-md p-1 mr-2">
                         <img
                             src="/api/placeholder/24/24"
@@ -39,7 +39,7 @@ const Header = () => {
                             </svg>
                         </span>
                     </div>
-                </div>
+                </div> */}
             </div>
 
             <div className="text-xs text-gray-500 ml-4">
