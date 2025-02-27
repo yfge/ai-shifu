@@ -276,7 +276,8 @@ const ScriptManagementPage = () => {
                         <div className="flex flex-wrap gap-4">
                             {scenarios.map((scenario) => (
                                 <ScriptCard
-                                    key={scenario.id}
+                                    id={scenario.scenario_id + ""}
+                                    key={scenario.scenario_id}
                                     icon={TrophyIcon}
                                     title={scenario.scenario_name}
                                     description={scenario.scenario_description}
