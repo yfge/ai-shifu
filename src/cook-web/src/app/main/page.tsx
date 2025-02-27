@@ -82,7 +82,7 @@ const ScriptManagementPage = () => {
     });
     const [activeTab, setActiveTab] = useState("all");
     const [scenarios, setScenarios] = useState<Scenario[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [hasMore, setHasMore] = useState(true);
     const [showCreateScenarioModal, setShowCreateScenarioModal] = useState(false);
     const pageSize = 10;
