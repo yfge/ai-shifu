@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode, useCallback, useRef } from "react";
 import { Scenario, Chapter, ScenarioContextType } from "../types/scenario";
 import api from "@/api";
 
@@ -9,7 +9,10 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
     const [chapters, setChapters] = useState<Chapter[]>([]);
     const [currentChapter, setCurrentChapter] = useState<Chapter | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
+    const saveTimeoutRef = useRef<NodeJS.Timeout>(null);
 
     const loadScenario = async (scenarioId: string) => {
         try {
@@ -29,7 +32,8 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         try {
             setIsLoading(true);
             setError(null);
-            const chaptersData = await api.getScenarioChapters({ scenarioId });
+            const chaptersData = await api.getScenarioChapters({ scenario_id: scenarioId });
+            console.log(chaptersData)
             setChapters(chaptersData);
         } catch (error) {
             console.error(error);
@@ -39,26 +43,35 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         }
     };
 
-    const saveChapter = async (chapter: Chapter) => {
-        try {
-            setIsLoading(true);
-            setError(null);
-            await api.modifyChapter(chapter);
-            setChapters(chapters.map(ch =>
-                ch.chapter_index === chapter.chapter_index ? chapter : ch
-            ));
-            if (currentChapter?.chapter_index === chapter.chapter_index) {
-                setCurrentChapter(chapter);
-            }
-        } catch (error) {
-            console.error(error);
-            setError("Failed to save chapter");
-        } finally {
-            setIsLoading(false);
+    const saveChapter = useCallback(async (chapter: Chapter) => {
+        // Clear any existing timeout
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
         }
-    };
 
-    const createChapter = async (chapterData: Omit<Chapter, "chapter_index">) => {
+        // Set a new timeout
+        saveTimeoutRef.current = setTimeout(async () => {
+            try {
+                setIsSaving(true);
+                setError(null);
+                await api.modifyChapter(chapter);
+                setChapters(chapters.map(ch =>
+                    ch.chapter_id === chapter.chapter_id ? chapter : ch
+                ));
+                if (currentChapter?.chapter_id === chapter.chapter_id) {
+                    setCurrentChapter(chapter);
+                }
+                setLastSaveTime(new Date());
+            } catch (error) {
+                console.error(error);
+                setError("Failed to save chapter");
+            } finally {
+                setIsSaving(false);
+            }
+        }, 3000); // 3 seconds delay
+    }, [chapters, currentChapter]);
+
+    const createChapter = async (chapterData: Omit<Chapter, "chapter_id">) => {
         try {
             setIsLoading(true);
             setError(null);
@@ -77,8 +90,11 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         chapters,
         currentChapter,
         isLoading,
+        isSaving,
         error,
+        lastSaveTime,
         actions: {
+            setChapters,
             loadScenario,
             loadChapters,
             setCurrentChapter,

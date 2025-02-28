@@ -29,6 +29,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
+import Loading from '@/components/loading';
 
 interface ScriptCardProps {
     id: string;
@@ -82,7 +83,7 @@ const ScriptManagementPage = () => {
     });
     const [activeTab, setActiveTab] = useState("all");
     const [scenarios, setScenarios] = useState<Scenario[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const [showCreateScenarioModal, setShowCreateScenarioModal] = useState(false);
     const pageSize = 10;
@@ -291,13 +292,13 @@ const ScriptManagementPage = () => {
                         className="w-full h-10 flex items-center justify-center"
                     >
                         {loading && (
-                            <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-purple-600" />
+                            <Loading />
                         )}
                         {!hasMore && scenarios.length > 0 && (
                             <p className="text-gray-500 text-sm">没有更多剧本了</p>
                         )}
                         {
-                            !loading && scenarios.length == 0 && (
+                            !loading && !hasMore && scenarios.length == 0 && (
                                 <p className="text-gray-500 text-sm">暂无剧本</p>
                             )
                         }

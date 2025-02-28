@@ -26,8 +26,9 @@ export interface Scenario {
 
 export interface Chapter {
     chapter_description: string;
-    chapter_index: number;
+    chapter_index?: number;
     chapter_name: string;
+    chapter_id: string;
     scenario_id: string;
 }
 
@@ -36,7 +37,9 @@ export interface ScenarioState {
     chapters: Chapter[];
     currentChapter: Chapter | null;
     isLoading: boolean;
+    isSaving: boolean;
     error: string | null;
+    lastSaveTime: Date | null;
 }
 
 export interface ScenarioActions {
@@ -44,7 +47,8 @@ export interface ScenarioActions {
     loadChapters: (scenarioId: string) => Promise<void>;
     setCurrentChapter: (chapter: Chapter) => void;
     saveChapter: (chapter: Chapter) => Promise<void>;
-    createChapter: (chapter: Omit<Chapter, 'chapter_index'>) => Promise<void>;
+    createChapter: (chapter: Omit<Chapter, 'chapter_id'>) => Promise<void>;
+    setChapters: (chapters: Chapter[]) => void;
 }
 
 export interface ScenarioContextType extends ScenarioState {

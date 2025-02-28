@@ -11,10 +11,13 @@ import {
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { useRouter } from 'next/navigation';
+import { useScenario } from '@/store';
+import Loading from '../loading';
 
 
 const Header = () => {
     const router = useRouter();
+    const { isSaving, lastSaveTime } = useScenario();
     return (
         <div className="flex items-center w-full h-12 px-2 bg-white border-b border-gray-200">
             <div className="flex items-center space-x-4">
@@ -42,8 +45,20 @@ const Header = () => {
                 </div> */}
             </div>
 
-            <div className="text-xs text-gray-500 ml-4">
-                已自动保存 07-23 18:56:04
+            <div className="flex flex-row items-center text-xs text-gray-500 ml-4">
+                {
+                    isSaving && (
+                        <Loading className='h-4 w-4 mr-1' />
+                    )
+                }
+                {
+                    (!isSaving && lastSaveTime) && (
+                        <span>
+                            已自动保存 {lastSaveTime?.toLocaleString()}
+                        </span>
+                    )
+                }
+
             </div>
 
             <div className="flex flex-1 ml-auto justify-center items-center space-x-1">
