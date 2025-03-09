@@ -21,7 +21,7 @@ const api = {
     deleteChapter: "POST /scenario/delete-chapter",
     markFavoriteScenario: "POST /scenario/mark-favorite-scenario",
     modifyChapter: "POST /scenario/modify-chapter",
-    getScenario: "GET /scenario/scenario",
+    getScenarioOutlineTree: "GET /scenario/outline-tree"
 };
 
 export default api;

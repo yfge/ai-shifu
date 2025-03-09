@@ -4,22 +4,22 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Scroll, GripVertical } from 'lucide-react';
-import { Chapter } from '@/types/scenario';
 import { DndProvider, useDrag, useDrop, } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import { Outline } from '@/types/scenario';
 
 interface ChapterNavProps {
-    chapters: Chapter[];
-    currentChapter: Chapter | null;
-    onChapterClick: (chapter: Chapter) => void;
-    onChange?: (chapters: Chapter[]) => void;
+    chapters: Outline[];
+    currentChapter: Outline | null;
+    onChapterClick: (chapter: Outline) => void;
+    onChange?: (chapters: Outline[]) => void;
 }
 
 interface DraggableChapterProps {
-    chapter: Chapter;
+    chapter: Outline;
     index: number;
-    currentChapter: Chapter | null;
-    onChapterClick: (chapter: Chapter) => void;
+    currentChapter: Outline | null;
+    onChapterClick: (chapter: Outline) => void;
     moveChapter: (dragIndex: number, hoverIndex: number, isDragEnd?: boolean) => void;
 }
 
@@ -53,12 +53,12 @@ const DraggableChapter = ({ chapter, index, currentChapter, onChapterClick, move
             drag(dropTarget);
         }} style={{ opacity: isDragging ? 0.5 : 1 }}>
             <Button
-                variant={currentChapter?.chapter_id === chapter.chapter_id ? "secondary" : "ghost"}
+                variant={currentChapter?.outline_id === chapter.outline_id ? "secondary" : "ghost"}
                 className="w-full justify-start text-left font-normal group"
                 onClick={() => onChapterClick(chapter)}
             >
                 <GripVertical size={16} className="mr-2 text-gray-400 group-hover:text-gray-600" />
-                {chapter.chapter_name}
+                {chapter.outline_name}
             </Button>
         </div>
     );
@@ -86,8 +86,8 @@ const ChapterNav = ({ chapters, currentChapter, onChapterClick, onChange }: Chap
 
     return (
         <DndProvider backend={HTML5Backend}>
-            <Card className="fixed left-4 top-1/2 w-56 max-h-96 overflow-y-auto z-10 shadow-lg translate-y-[-50%]">
-                <CardContent className="p-4">
+            <div className=" w-60 ">
+                <div className="p-4">
                     <div className="flex items-center mb-4">
                         <Scroll size={18} className="mr-2" />
                         <h3 className="font-semibold">剧本章节</h3>
@@ -95,7 +95,7 @@ const ChapterNav = ({ chapters, currentChapter, onChapterClick, onChange }: Chap
                     <Separator className="mb-4" />
                     <ul className="space-y-2">
                         {chapterList.map((chapter, index) => (
-                            <li key={chapter.chapter_id}>
+                            <li key={chapter.outline_id}>
                                 <DraggableChapter
                                     chapter={chapter}
                                     index={index}
@@ -106,8 +106,8 @@ const ChapterNav = ({ chapters, currentChapter, onChapterClick, onChange }: Chap
                             </li>
                         ))}
                     </ul>
-                </CardContent>
-            </Card>
+                </div>
+            </div>
         </DndProvider>
     );
 };

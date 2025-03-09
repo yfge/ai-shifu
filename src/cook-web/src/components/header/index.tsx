@@ -60,8 +60,10 @@ const Header = () => {
                 }
 
             </div>
+            <div className='flex-1'>
 
-            <div className="flex flex-1 ml-auto justify-center items-center space-x-1">
+            </div>
+            {/* <div className="flex flex-1 ml-auto justify-center items-center space-x-1">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="h-8 text-xs font-normal">
@@ -110,7 +112,7 @@ const Header = () => {
                 </Sheet>
 
 
-            </div>
+            </div> */}
             <div >
                 <Button variant="ghost" size="sm" className="h-8 px-2 text-xs font-normal">
                     [x] 克隆

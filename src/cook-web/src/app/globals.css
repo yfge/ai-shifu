@@ -72,8 +72,6 @@ body {
   }
 }
 
-
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -81,4 +79,24 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.dnd-sortable-tree_simple_tree-item {
+  border: none !important;
+  padding: 0px 4px 0px 0px !important;
+  input.title {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+}
+.dnd-sortable-tree_simple_wrapper {
+  transition: none !important;
+}
+.dnd-sortable-tree_simple_wrapper:hover {
+  background-color: #f3f4f6;
+}
+
+.dnd-sortable-tree_simple_handle {
+  display: none !important;
 }
