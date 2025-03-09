@@ -72,4 +72,3 @@ export interface ScenarioActions {
 export interface ScenarioContextType extends ScenarioState {
     actions: ScenarioActions;
 }
-
