@@ -101,7 +101,10 @@ const MinimalTreeItemComponent = React.forwardRef<
                 {
                     props.item.depth > 0 && (
                         <div className='flex items-center space-x-1'>
-                            <Plus className='cursor-pointer h-5 w-5 text-gray-500' />
+                            <Plus className='cursor-pointer h-5 w-5 text-gray-500' onClick={(e) => {
+                                e.stopPropagation();
+                                onAddNodeClick?.(props.item);
+                            }} />
                             <Trash className='cursor-pointer h-4 w-4 text-gray-500' onClick={removeNode} />
                         </div>
                     )
