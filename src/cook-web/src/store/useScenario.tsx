@@ -16,7 +16,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
     const saveTimeoutRef = useRef<NodeJS.Timeout>(null);
     const [focusId, setFocusId] = useState('');
     const [focusValue, setFocusValue] = useState('');
-    const [cataData, setCataData] = useState<{ [x: string]: any }>({})
+    const [cataData, setCataData] = useState<{ [x: string]: Outline }>({})
 
     const loadScenario = async (scenarioId: string) => {
         // try {
@@ -43,6 +43,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
                 parend_id: parentId,
                 name: item.name,
                 depth: depth, // 添加 depth 属性
+                status: 'edit',
             };
 
             if (item.children) {
@@ -82,11 +83,22 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         }
         return find(chapters);
     }
-    const removeOutline = (outline: Outline) => {
-        console.log(outline)
+    const removeOutline = async (outline: Outline) => {
         const parent = findNode(outline.parent_id || "");
         if (parent) {
             parent.children = parent.children?.filter((child: any) => child.id !== outline.id);
+        }
+        if (cataData[outline.id].status == 'edit') {
+            if (outline.depth == 0) {
+                await api.deleteChapter({
+                    chapter_id: outline.id
+                })
+            } else if (outline.depth == 1) {
+                await api.deleteUnit({
+                    unit_id: outline.id
+                })
+
+            }
         }
         setChapters([...chapters])
     }
@@ -126,7 +138,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             name: name,
             children: [],
             no: '',
-            depth: parent.depth + 1,
+            depth: (parent?.depth || 0) + 1,
         });
 
         updateOuline(id, {
@@ -135,7 +147,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             name: name,
             children: [],
             no: '',
-            depth: parent.depth + 1,
+            depth: (parent?.depth || 0) + 1,
         })
 
         setChapters([...chapters]);
@@ -172,7 +184,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
 
     const createChapter = async (chapterData: Outline) => {
         try {
-            setIsLoading(true);
+            updateOutlineStatus(chapterData.id, 'saving');
             setError(null);
             const newChapter = await api.createChapter({
                 parent_id: chapterData.parent_id,
@@ -190,6 +202,8 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             //     children: []
             // }]);
 
+            updateOutlineStatus(chapterData.id, 'edit');
+
         } catch (error) {
             console.error(error);
             setError("Failed to create chapter");
@@ -197,12 +211,59 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             setIsLoading(false);
         }
     };
+
+    const createUnit = async (data: Outline) => {
+        try {
+            updateOutlineStatus(data.id, 'saving');
+            setError(null);
+            const newChapter = await api.createUnit({
+                parent_id: data.parent_id,
+                "chapter_id": data.id,
+                "unit_description": data.name,
+                "unit_name": data.name,
+                "scenario_id": currentScenario?.scenario_id
+            });
+
+            // setChapters([...chapters, {
+            //     id: newChapter.chapter_id,
+            //     name: newChapter.chapter_name,
+            //     no: newChapter.chapter_type,
+            //     children: []
+            // }]);
+            updateOutlineStatus(data.id, 'edit');
+
+        } catch (error) {
+            console.error(error);
+            setError("Failed to create chapter");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    const updateOutlineStatus = (id: string, status: "new" | "edit" | "saving") => {
+        setCataData({
+            ...cataData,
+            [id]: {
+                ...cataData[id],
+                status
+            }
+        })
+    }
     const updateOuline = async (id: string, value: Outline) => {
-        setCataData({ ...cataData, [id]: value })
+        setCataData({
+            ...cataData,
+            [id]: {
+                ...cataData[id],
+                ...value
+            }
+        })
     }
 
     const addChapter = async (chapter: Outline) => {
         setChapters([...chapters, chapter]);
+        updateOuline(chapter.id, {
+            ...chapter,
+            status: 'new'
+        })
         setFocusId(chapter.id);
     }
     const value: ScenarioContextType = {
@@ -228,7 +289,8 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             setFocusValue,
             updateOuline,
             addSubOutline,
-            removeOutline
+            removeOutline,
+            createUnit
         },
     };
     // const init = async () => {

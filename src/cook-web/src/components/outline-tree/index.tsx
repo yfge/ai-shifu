@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { Plus, Trash } from 'lucide-react';
 import { InlineInput } from '../inline-input';
 import { useScenario } from '@/store/useScenario';
+import Loading from '../loading';
 interface ICataTreeProps {
     currentNode?: Outline;
     items: TreeItems<Outline>;
@@ -26,6 +27,7 @@ export const CataTree = React.memo((props: ICataTreeProps) => {
 
     return (
         <SortableTree
+            disableSorting={true}
             items={items}
             indentationWidth={20}
             onItemsChanged={onItemsChanged}
@@ -56,7 +58,7 @@ const MinimalTreeItemComponent = React.forwardRef<
     TreeItemComponentProps<Outline> & TreeItemProps
 >((props, ref) => {
     const { focusId, actions, cataData } = useScenario();
-    const onNodeChange = (value: string) => {
+    const onNodeChange = async (value: string) => {
         actions.updateOuline(props.item.id, {
             id: props.item.id,
             name: value,
@@ -64,23 +66,35 @@ const MinimalTreeItemComponent = React.forwardRef<
             no: '',
             depth: props.item.depth,
         })
+        if (props.item.depth == 0) {
+            await actions.createChapter({
+                parent_id: cataData[props.item.id!]?.parent_id,
+                id: props.item.id,
+                name: value,
+                children: [],
+                no: '',
+            })
+        } else if (props.item.depth == 1) {
+            await actions.createUnit({
+                parent_id: cataData[props.item.id!]?.parent_id,
+                id: props.item.id,
+                name: value,
+                children: [],
+                no: '',
+            })
+        }
 
-        actions.createChapter({
-            parent_id: cataData[props.item.id!]?.parent_id,
+        actions.updateOuline(props.item.id, {
             id: props.item.id,
-            name: value,
-            children: [],
-            no: '',
-            depth: props.item.depth,
+            status: 'edit'
         })
         actions.setFocusId("");
     }
     const onAddNodeClick = (node: Outline) => {
         actions.addSubOutline(node, "");
     }
-    const removeNode = () => {
-        console.log(props.item)
-        actions.removeOutline(props.item);
+    const removeNode = async () => {
+        await actions.removeOutline(props.item);
     }
     return (
         <SimpleTreeItemWrapper {...props} ref={ref}>
@@ -99,23 +113,41 @@ const MinimalTreeItemComponent = React.forwardRef<
                     />
                 </span>
                 {
-                    props.item.depth > 0 && (
+                    (props.item?.depth || 0 > 0) && (
                         <div className='flex items-center space-x-1'>
-                            <Plus className='cursor-pointer h-5 w-5 text-gray-500' onClick={(e) => {
-                                e.stopPropagation();
-                                onAddNodeClick?.(props.item);
-                            }} />
+                            {
+                                cataData[props.item.id!]?.status == 'saving' && (
+                                    <Loading className='h-4 w-4' />
+                                )
+                            }
+                            {
+                                cataData[props.item.id!]?.status !== 'saving' && (
+                                    <Plus className='cursor-pointer h-5 w-5 text-gray-500' onClick={(e) => {
+                                        e.stopPropagation();
+                                        onAddNodeClick?.(props.item);
+                                    }} />
+                                )
+                            }
                             <Trash className='cursor-pointer h-4 w-4 text-gray-500' onClick={removeNode} />
                         </div>
                     )
                 }
                 {
-                    props.item.depth <= 0 && (
-                        <div onClick={(e) => {
-                            e.stopPropagation();
-                            onAddNodeClick?.(props.item);
-                        }}>
-                            <Plus className='cursor-pointer h-5 w-5 text-gray-500' />
+                    ((props.item?.depth || 0) <= 0) && (
+                        <div>
+                            {
+                                cataData[props.item.id!]?.status == 'saving' && (
+                                    <Loading className='h-4 w-4' />
+                                )
+                            }
+                            {
+                                cataData[props.item.id!]?.status !== 'saving' && (
+                                    <Plus className='cursor-pointer h-5 w-5 text-gray-500' onClick={(e) => {
+                                        e.stopPropagation();
+                                        onAddNodeClick?.(props.item);
+                                    }} />
+                                )
+                            }
                         </div>
                     )
                 }

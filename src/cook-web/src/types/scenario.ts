@@ -35,10 +35,11 @@ export interface Scenario {
 export interface Outline {
     parent_id?: string;
     id: string;
-    no: string;
-    name: string;
-    children: Outline[];
-    depth: number;
+    no?: string;
+    name?: string;
+    children?: Outline[];
+    depth?: number;
+    status?: 'new' | 'edit' | 'saving';
 }
 
 export interface ScenarioState {
@@ -67,6 +68,7 @@ export interface ScenarioActions {
     updateOuline: (id: string, chapter: Outline) => Promise<void>;
     addSubOutline: (parent: Outline, name: string) => Promise<void>;
     removeOutline: (item: Outline) => Promise<void>;
+    createUnit: (chapter: Outline) => Promise<void>;
 }
 
 export interface ScenarioContextType extends ScenarioState {

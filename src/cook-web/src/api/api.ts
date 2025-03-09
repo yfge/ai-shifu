@@ -18,7 +18,9 @@ const api = {
     createScenario: "POST /scenario/create-scenario",
     getScenarioChapters: "GET /scenario/chapters",
     createChapter: "POST /scenario/create-chapter",
+    createUnit: "POST /scenario/create-unit",
     deleteChapter: "POST /scenario/delete-chapter",
+    deleteUnit: "POST /scenario/delete-unit",
     markFavoriteScenario: "POST /scenario/mark-favorite-scenario",
     modifyChapter: "POST /scenario/modify-chapter",
     getScenarioOutlineTree: "GET /scenario/outline-tree"
