@@ -56,6 +56,7 @@ const ScriptEditor = ({ id }: { id: string }) => {
 
     // 添加新章节
     const handleAddChapter = async (afterChapter: Outline, index: number) => {
+        console.log(afterChapter, index)
         // const newChapterIndex = afterChapter.outline_id + 1;
         // await actions.createChapter({
         //     chapter_index: index,

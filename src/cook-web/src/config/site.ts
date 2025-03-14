@@ -1,1 +1,1 @@
-export const SITE_HOST = 'https://env2.dev.pillowai.cn';
+export const SITE_HOST = 'http://localhost:5800/';

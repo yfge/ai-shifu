@@ -36,7 +36,6 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
 
     const recursiveCataData = (cataTree: Outline[]): any => {
         const result: any = {};
-
         const processItem = (item: any, parentId = "", depth = 0) => {
             result[item.id] = {
                 ...cataData[item.id],
@@ -56,7 +55,6 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         cataTree.forEach((child: any) => {
             processItem(child, "", 0); // 初始深度为 0
         });
-        console.log(result);
         return result;
     }
     const buildOutlineTree = (items: Outline[]) => {
@@ -111,16 +109,14 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
                 scenario_id: scenarioId
             });
             const chaptersData = await api.getScenarioOutlineTree({ scenario_id: scenarioId });
-            console.log(chaptersData)
 
             const list = chaptersData.map((chapter) => {
                 return {
-                    id: chapter.outline_id,
-                    name: chapter.outline_name,
-                    children: chapter.outline_children,
+                    id: chapter.id,
+                    name: chapter.name,
+                    children: chapter.children,
                 }
             })
-            console.log(list)
             buildOutlineTree(list);
             setChapters(list);
         } catch (error) {
@@ -218,7 +214,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             setError(null);
             const newChapter = await api.createUnit({
                 parent_id: data.parent_id,
-                "chapter_id": data.id,
+                "chapter_id": data.parent_id,
                 "unit_description": data.name,
                 "unit_name": data.name,
                 "scenario_id": currentScenario?.scenario_id
@@ -230,7 +226,14 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             //     no: newChapter.chapter_type,
             //     children: []
             // }]);
-            updateOutlineStatus(data.id, 'edit');
+            setChapters([...chapters, {
+                parent_id: data.parent_id,
+                id: newChapter.id,
+                name: newChapter.name,
+                no: newChapter.no,
+                children: []
+            }]);
+            updateOutlineStatus(newChapter.id, 'edit');
 
         } catch (error) {
             console.error(error);
@@ -259,6 +262,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
 
     const addChapter = async (chapter: Outline) => {
+        console.log(chapter)
         setChapters([...chapters, chapter]);
         updateOuline(chapter.id, {
             ...chapter,
