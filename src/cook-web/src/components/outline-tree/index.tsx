@@ -58,14 +58,9 @@ const MinimalTreeItemComponent = React.forwardRef<
     TreeItemComponentProps<Outline> & TreeItemProps
 >((props, ref) => {
     const { focusId, actions, cataData } = useScenario();
+
     const onNodeChange = async (value: string) => {
-        actions.updateOuline(props.item.id, {
-            id: props.item.id,
-            name: value,
-            children: [],
-            no: '',
-            depth: props.item.depth,
-        })
+
         if (props.item.depth == 0) {
             await actions.createChapter({
                 parent_id: cataData[props.item.id!]?.parent_id,
@@ -82,16 +77,26 @@ const MinimalTreeItemComponent = React.forwardRef<
                 children: [],
                 no: '',
             })
+        } else {
+            await actions.createSiblingUnit({
+                parent_id: cataData[props.item.id!]?.parent_id,
+                id: props.item.id,
+                name: value,
+                children: [],
+                no: '',
+            })
         }
 
-        actions.updateOuline(props.item.id, {
-            id: props.item.id,
-            status: 'edit'
-        })
+
         actions.setFocusId("");
     }
     const onAddNodeClick = (node: Outline) => {
-        actions.addSubOutline(node, "");
+        console.log(node)
+        if (node.depth && node.depth >= 1) {
+            actions.addSiblingOutline(node, "");
+        } else {
+            actions.addSubOutline(node, "");
+        }
     }
     const removeNode = async () => {
         await actions.removeOutline(props.item);
@@ -134,7 +139,7 @@ const MinimalTreeItemComponent = React.forwardRef<
                 }
                 {
                     ((props.item?.depth || 0) <= 0) && (
-                        <div>
+                        <div className='flex items-center space-x-1'>
                             {
                                 cataData[props.item.id!]?.status == 'saving' && (
                                     <Loading className='h-4 w-4' />
@@ -148,6 +153,8 @@ const MinimalTreeItemComponent = React.forwardRef<
                                     }} />
                                 )
                             }
+                            <Trash className='cursor-pointer h-4 w-4 text-gray-500' onClick={removeNode} />
+
                         </div>
                     )
                 }

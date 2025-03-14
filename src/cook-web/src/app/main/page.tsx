@@ -263,11 +263,11 @@ const ScriptManagementPage = () => {
                         <div className="flex flex-wrap gap-4">
                             {scenarios.map((scenario) => (
                                 <ScriptCard
-                                    id={scenario.scenario_id + ""}
-                                    key={scenario.scenario_id}
+                                    id={scenario.id + ""}
+                                    key={scenario.id}
                                     icon={TrophyIcon}
-                                    title={scenario.scenario_name}
-                                    description={scenario.scenario_description}
+                                    title={scenario.name}
+                                    description={scenario.description}
                                     isFavorite={scenario.is_favorite}
                                 />
                             ))}
@@ -277,11 +277,11 @@ const ScriptManagementPage = () => {
                         <div className="flex flex-wrap gap-4">
                             {scenarios.map((scenario) => (
                                 <ScriptCard
-                                    id={scenario.scenario_id + ""}
-                                    key={scenario.scenario_id}
+                                    id={scenario.id + ""}
+                                    key={scenario.id}
                                     icon={TrophyIcon}
-                                    title={scenario.scenario_name}
-                                    description={scenario.scenario_description}
+                                    title={scenario.name}
+                                    description={scenario.description}
                                     isFavorite={scenario.is_favorite}
                                 />
                             ))}

@@ -77,7 +77,7 @@ const ScriptEditor = ({ id }: { id: string }) => {
     const onAddChapter = () => {
         actions.addChapter({
             parent_id: "",
-            id: uuidv4(),
+            id: 'new_chapter',
             name: ``,
             children: [],
             no: "",

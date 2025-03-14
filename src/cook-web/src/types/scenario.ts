@@ -16,11 +16,11 @@
 
 
 export interface Scenario {
-    scenario_id: string;
-    scenario_name?: string;
-    scenario_description?: string;
-    scenario_image?: string;
-    scenario_state?: number;
+    id: string;
+    name?: string;
+    description?: string;
+    image?: string;
+    state?: number;
     is_favorite?: boolean;
 }
 
@@ -34,6 +34,7 @@ export interface Scenario {
 
 export interface Outline {
     parent_id?: string;
+    parentId?: string;
     id: string;
     no?: string;
     name?: string;
@@ -67,8 +68,11 @@ export interface ScenarioActions {
     setFocusValue: (value: string) => void;
     updateOuline: (id: string, chapter: Outline) => Promise<void>;
     addSubOutline: (parent: Outline, name: string) => Promise<void>;
+    addSiblingOutline: (item: Outline, name: string) => Promise<void>;
     removeOutline: (item: Outline) => Promise<void>;
+    replaceOutline: (id: string, outline: Outline) => Promise<void>;
     createUnit: (chapter: Outline) => Promise<void>;
+    createSiblingUnit: (chapter: Outline) => Promise<void>;
 }
 
 export interface ScenarioContextType extends ScenarioState {
