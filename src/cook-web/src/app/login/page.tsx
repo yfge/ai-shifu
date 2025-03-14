@@ -104,6 +104,7 @@ const LoginPage = () => {
             username: formData.username,
             password: formData.password
         });
+        console.log(result);
         const token = result.token;
         setToken(token);
 
