@@ -23,7 +23,9 @@ const api = {
     deleteUnit: "POST /scenario/delete-unit",
     markFavoriteScenario: "POST /scenario/mark-favorite-scenario",
     modifyChapter: "POST /scenario/modify-chapter",
-    getScenarioOutlineTree: "GET /scenario/outline-tree"
+    getScenarioOutlineTree: "GET /scenario/outline-tree",
+    getBlocks: "GET /scenario/blocks",
+    saveBlocks: "POST /scenario/save-blocks",
 };
 
 export default api;

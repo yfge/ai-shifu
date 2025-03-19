@@ -43,6 +43,19 @@ export interface Outline {
     status?: 'new' | 'edit' | 'saving';
 }
 
+export interface Block {
+    properties: {
+        block_content: any; // 根据你的需求，可以替换为更具体的类型
+        block_desc: string;
+        block_id: string;
+        block_index: number;
+        block_name: string;
+        block_no: string;
+        block_type: number;
+        block_ui: any; // 根据你的需求，可以替换为更具体的类型
+    }
+    type: string;
+}
 export interface ScenarioState {
     currentScenario: Scenario | null;
     chapters: Outline[];
@@ -54,6 +67,11 @@ export interface ScenarioState {
     focusId: string | null;
     focusValue: string | null;
     cataData: { [x: string]: Outline };
+    blocks: Block[];
+    blockUIProperties: { [x: string]: any };
+    blockUITypes: { [x: string]: string };
+    blockContentProperties: { [x: string]: any };
+    blockContentTypes: { [x: string]: string };
 }
 
 export interface ScenarioActions {
@@ -73,6 +91,11 @@ export interface ScenarioActions {
     replaceOutline: (id: string, outline: Outline) => Promise<void>;
     createUnit: (chapter: Outline) => Promise<void>;
     createSiblingUnit: (chapter: Outline) => Promise<void>;
+    loadBlocks: (outlineId: string) => void;
+    setBlockContentPropertiesById: (id: string, properties: any) => void;
+    setBlockContentTypesById: (id: string, type: string) => void;
+    setBlockUIPropertiesById: (id: string, properties: any) => void;
+    setBlockUITypesById: (id: string, type: string) => void;
 }
 
 export interface ScenarioContextType extends ScenarioState {

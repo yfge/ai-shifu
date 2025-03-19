@@ -294,7 +294,7 @@ export function SortableTree<
             />
           );
         })}
-        {createPortal(
+        {typeof document !== 'undefined' && createPortal(
           <DragOverlay
             dropAnimation={
               dropAnimation === undefined

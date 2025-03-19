@@ -125,19 +125,19 @@ export const YoutubeDirectiveDescriptor: DirectiveDescriptor<YoutubeDirectiveNod
 }
 
 export const ALL_PLUGINS = [
-    toolbarPlugin({ toolbarContents: () => <KitchenSinkToolbar /> }),
+    // toolbarPlugin({ toolbarContents: () => <KitchenSinkToolbar /> }),
     listsPlugin(),
     quotePlugin(),
-    // headingsPlugin({ allowedHeadingLevels: [1, 2, 3] }),
-    linkPlugin(),
-    linkDialogPlugin(),
+    headingsPlugin({ allowedHeadingLevels: [1, 2, 3] }),
+    // linkPlugin(),
+    // linkDialogPlugin(),
     // imagePlugin({
     //     imageAutocompleteSuggestions: ['https://via.placeholder.com/150', 'https://via.placeholder.com/150'],
     //     imageUploadHandler: async () => Promise.resolve('https://picsum.photos/200/300')
     // }),
     // tablePlugin(),
-    thematicBreakPlugin(),
-    frontmatterPlugin(),
+    // thematicBreakPlugin(),
+    // frontmatterPlugin(),
     // codeBlockPlugin({ defaultCodeBlockLanguage: '' }),
     // sandpackPlugin({ sandpackConfig: virtuosoSampleSandpackConfig }),
     // codeMirrorPlugin({ codeBlockLanguages: { js: 'JavaScript', css: 'CSS', txt: 'Plain Text', tsx: 'TypeScript', '': 'Unspecified' } }),

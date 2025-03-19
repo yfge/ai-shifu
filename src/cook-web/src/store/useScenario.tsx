@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useRef } from "react";
-import { Scenario, ScenarioContextType, Outline } from "../types/scenario";
+import { Scenario, ScenarioContextType, Outline, Block } from "../types/scenario";
 import api from "@/api";
 import { v4 as uuidv4 } from 'uuid';
 
@@ -17,6 +17,11 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
     const [focusId, setFocusId] = useState('');
     const [focusValue, setFocusValue] = useState('');
     const [cataData, setCataData] = useState<{ [x: string]: Outline }>({})
+    const [blocks, setBlocks] = useState<Block[]>([]);
+    const [blockContentProperties, setBlockContentProperties] = useState<{ [x: string]: any }>({});
+    const [blockContentTypes, setBlockContentTypes] = useState<{ [x: string]: string }>({});
+    const [blockUIProperties, setBlockUIProperties] = useState<{ [x: string]: any }>({});
+    const [blockUITypes, setBlockUITypes] = useState<{ [x: string]: string }>({});
 
     const loadScenario = async (scenarioId: string) => {
         // try {
@@ -134,6 +139,58 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             setIsLoading(false);
         }
     };
+    const initBlockContentTypes = async (list: Block[]) => {
+        const types = list.reduce((prev: any, cur: Block) => {
+            prev[cur.properties.block_id] = cur.properties.block_content.type;
+            return prev;
+        }, {});
+        setBlockContentTypes(types);
+    }
+
+    const initBlockContentProperties = async (list: Block[]) => {
+        const properties = list.reduce((prev: any, cur: Block) => {
+            return {
+                ...prev,
+                [cur.properties.block_id]: cur.properties.block_content.properties
+            }
+        }, {});
+        setBlockContentProperties(properties);
+    }
+    const initBlockUITypes = async (list: Block[]) => {
+        const types = list.reduce((prev: any, cur: Block) => {
+            prev[cur.properties.block_id] = cur.properties.block_ui.type;
+            return prev;
+        }, {});
+        setBlockUITypes(types);
+    }
+
+    const initBlockUIProperties = async (list: Block[]) => {
+        const properties = list.reduce((prev: any, cur: Block) => {
+            return {
+                ...prev,
+                [cur.properties.block_id]: cur.properties.block_ui.properties
+            }
+        }, {});
+        setBlockUIProperties(properties);
+    }
+    const loadBlocks = async (outlineId: string) => {
+        try {
+            // setIsLoading(true);
+            setError(null);
+            const blocksData = await api.getBlocks({ outline_id: '5071e9aa8d1246b5870c7970b679b7d4' });
+            const list = blocksData.filter(p => p.type == 'block') as Block[];
+            setBlocks(list);
+            initBlockContentTypes(list);
+            initBlockContentProperties(list);
+            const blockUIList = list.filter(p => p.properties.block_ui);
+            initBlockUITypes(blockUIList);
+            initBlockUIProperties(blockUIList);
+
+        } catch (error) {
+            console.error(error);
+            setError("Failed to load blocks");
+        }
+    }
     const addSubOutline = async (parent: Outline, name = '') => {
         const id = 'new_chapter'
         parent.children?.push({
@@ -335,7 +392,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         node.parent_id = outline.parent_id;
         node.children = outline.children;
         setChapters([...chapters])
-        console.log(chapters)
+        // console.log(chapters)
         delete cataData[id]
         setCataData({
             ...cataData,
@@ -345,7 +402,38 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             }
         })
     }
-    console.log(cataData)
+    const setBlockContentPropertiesById = (id: string, properties: any) => {
+        setBlockContentProperties({
+            ...blockContentProperties,
+            [id]: {
+                ...blockContentProperties[id],
+                ...properties
+            }
+        })
+    }
+    const setBlockContentTypesById = (id: string, type: string) => {
+        setBlockContentTypes({
+            ...blockContentTypes,
+            [id]: type
+        })
+    }
+    const setBlockUIPropertiesById = (id: string, properties: any) => {
+        setBlockUIProperties({
+            ...blockUIProperties,
+            [id]: {
+                ...blockUIProperties[id],
+                ...properties
+            }
+        })
+    }
+    const setBlockUITypesById = (id: string, type: string) => {
+        setBlockUITypes({
+            ...blockUITypes,
+            [id]: type
+        })
+    }
+    console.log(blockContentProperties)
+    // console.log(blockUIProperties)
     const value: ScenarioContextType = {
         currentScenario,
         chapters,
@@ -357,6 +445,11 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         focusId,
         focusValue,
         cataData,
+        blocks,
+        blockContentProperties,
+        blockContentTypes,
+        blockUIProperties,
+        blockUITypes,
         actions: {
             setFocusId,
             addChapter,
@@ -373,7 +466,12 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             removeOutline,
             replaceOutline,
             createSiblingUnit,
-            createUnit
+            createUnit,
+            loadBlocks,
+            setBlockContentPropertiesById,
+            setBlockContentTypesById,
+            setBlockUIPropertiesById,
+            setBlockUITypesById,
         },
     };
     // const init = async () => {

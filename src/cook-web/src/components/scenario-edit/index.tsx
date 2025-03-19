@@ -1,7 +1,7 @@
 "use client"
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Scroll } from 'lucide-react';
+import { Check, Plus, Scroll, Trash } from 'lucide-react';
 import { useScenario } from '@/store';
 import { Input } from '../ui/input';
 import OutlineTree from '@/components/outline-tree'
@@ -10,6 +10,10 @@ import Header from '../header';
 import { Outline } from '@/types/scenario';
 import { Separator } from '../ui/separator';
 import { v4 as uuidv4 } from 'uuid';
+import RenderBlockContent, { ContentTypes } from '../render-block';
+import RenderBlockUI, { UITypes } from '../render-ui';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 // 简化版Markdown编辑器组件
 const MarkdownEditor = ({ content, onChange }: { content: string, onChange: (value: string) => void }) => {
     return (
@@ -31,7 +35,15 @@ const MarkdownEditor = ({ content, onChange }: { content: string, onChange: (val
 
 
 const ScriptEditor = ({ id }: { id: string }) => {
-    const { chapters, currentChapter, actions, lastSaveTime } = useScenario();
+    const {
+        blocks,
+        chapters, currentChapter,
+        actions, lastSaveTime,
+        blockUITypes,
+        blockUIProperties,
+        blockContentTypes,
+        blockContentProperties
+    } = useScenario();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const chapterRefs = useRef<{ [key: string]: HTMLDivElement }>({});
 
@@ -94,6 +106,17 @@ const ScriptEditor = ({ id }: { id: string }) => {
         // });
     }
 
+    const onUITypeChange = (id: string, type: string) => {
+        const opt = UITypes.find(p => p.type === type);
+        actions.setBlockUITypesById(id, type)
+        actions.setBlockUIPropertiesById(id, opt?.properties || {})
+    }
+    const onContentTypeChange = (id: string, type: string) => {
+        const opt = ContentTypes.find(p => p.type === type);
+        actions.setBlockContentTypesById(id, type)
+        actions.setBlockContentPropertiesById(id, opt?.properties || {})
+    }
+
     useEffect(() => {
 
         actions.loadChapters(id);
@@ -137,38 +160,80 @@ const ScriptEditor = ({ id }: { id: string }) => {
 
                 </div>
 
-                <div className="flex-1 flex flex-col gap-8 px-4 ml-0 ">
-                    {chapters.map((chapter, index) => (
-                        <div key={chapter.id} onClick={() => actions.setCurrentChapter(chapter)}>
-                            <div
-                                ref={el => {
-                                    if (el) {
-                                        chapterRefs.current[chapter.id] = el;
-                                    }
-                                }}
-                                id={`chapter-${chapter.id}`}
-                                className={`p-6 bg-white rounded-lg shadow-sm ${currentChapter?.id === chapter.id ? 'ring-2 ring-primary' : ''}`}
-                            >
-                                <h2 className="text-xl font-semibold mb-4">
-                                    <Input defaultValue={chapter.name} onChange={handleNameChange} />
-                                </h2>
-                                <MarkdownEditor
-                                    content={chapter.name}
-                                    onChange={handleContentChange}
+                <div className="flex-1 flex flex-col gap-8 p-4 ml-0 overflow-auto bg-white text-sm ">
+                    {blocks.map((block) => (
+                        <div key={block.properties.block_id} className="flex flex-col gap-2 ">
+                            <div className='bg-[#F5F5F4] rounded-md p-2'>
+                                <div className='flex flex-row items-center py-1 justify-between'>
+                                    <Select
+                                        value={blockContentTypes[block.properties.block_id]}
+                                        onValueChange={onContentTypeChange.bind(null, block.properties.block_id)}
+                                    >
+                                        <SelectTrigger className="h-8 w-[120px]">
+                                            <SelectValue placeholder="请选择" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectGroup>
+                                                {
+                                                    ContentTypes.map((item) => {
+                                                        return (
+                                                            <SelectItem key={item.type} value={item.type}>{item.name}</SelectItem>
+                                                        )
+                                                    })
+                                                }
+                                            </SelectGroup>
+                                        </SelectContent>
+                                    </Select>
+                                    <div className='flex flex-row'>
+                                        <div className='flex flex-row items-center w-6'>
+                                            <Trash className='h-5 w-5' />
+                                        </div>
+                                        <Button variant='ghost' >
+                                            <Check />完成
+                                        </Button>
+                                    </div>
+                                </div>
+                                <RenderBlockContent
+                                    id={block.properties.block_id}
+                                    type={blockContentTypes[block.properties.block_id]}
+                                    properties={blockContentProperties[block.properties.block_id]}
                                 />
                             </div>
-
-                            <div className="flex justify-center my-4">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="flex items-center gap-1"
-                                    onClick={() => handleAddChapter(chapter, index)}
-                                >
-                                    <Plus size={16} />
-                                    在此处插入新章节
-                                </Button>
+                            <div className='bg-[#F5F5F4] rounded-md p-2 space-y-1'>
+                                <div className=' flex flex-row items-center space-x-1'>
+                                    <span>
+                                        用户操作：
+                                    </span>
+                                    <Select value={blockUITypes[block.properties.block_id]} onValueChange={onUITypeChange.bind(null, block.properties.block_id)}>
+                                        <SelectTrigger className=" h-8 w-[120px]">
+                                            <SelectValue placeholder="请选择" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectGroup>
+                                                {
+                                                    UITypes.map((item) => {
+                                                        return (
+                                                            <SelectItem key={item.type} value={item.type}>{item.name}</SelectItem>
+                                                        )
+                                                    })
+                                                }
+                                            </SelectGroup>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div>
+                                    {
+                                        blockUIProperties[block.properties.block_id] && (
+                                            <RenderBlockUI
+                                                id={block.properties.block_id}
+                                                type={blockUITypes[block.properties.block_id]}
+                                                properties={blockUIProperties[block.properties.block_id]}
+                                            />
+                                        )
+                                    }
+                                </div>
                             </div>
+
                         </div>
                     ))}
                 </div>

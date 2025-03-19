@@ -101,12 +101,18 @@ const MinimalTreeItemComponent = React.forwardRef<
     const removeNode = async () => {
         await actions.removeOutline(props.item);
     }
+    const onSelect = () => {
+        actions.loadBlocks(props.item.id || "");
+    }
     return (
         <SimpleTreeItemWrapper {...props} ref={ref}>
-            <div className={cn(
-                'flex items-center flex-1 px-0 py-1 justify-between w-full',
-                (props.item?.children?.length || 0) > 0 ? 'pl-0' : 'pl-4'
-            )}>
+            <div
+                className={cn(
+                    'flex items-center flex-1 px-0 py-1 justify-between w-full',
+                    (props.item?.children?.length || 0) > 0 ? 'pl-0' : 'pl-4'
+                )}
+                onClick={onSelect}
+            >
                 <span className='w-40 whitespace-nowrap overflow-hidden text-ellipsis' >
                     <InlineInput
                         isEdit={focusId === props.item.id}
