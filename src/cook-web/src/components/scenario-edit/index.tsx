@@ -111,11 +111,6 @@ const ScriptEditor = ({ id }: { id: string }) => {
         actions.setBlockUITypesById(id, type)
         actions.setBlockUIPropertiesById(id, opt?.properties || {})
     }
-    const onContentTypeChange = (id: string, type: string) => {
-        const opt = ContentTypes.find(p => p.type === type);
-        actions.setBlockContentTypesById(id, type)
-        actions.setBlockContentPropertiesById(id, opt?.properties || {})
-    }
 
     useEffect(() => {
 
@@ -164,7 +159,7 @@ const ScriptEditor = ({ id }: { id: string }) => {
                     {blocks.map((block) => (
                         <div key={block.properties.block_id} className="flex flex-col gap-2 ">
                             <div className='bg-[#F5F5F4] rounded-md p-2'>
-                                <div className='flex flex-row items-center py-1 justify-between'>
+                                {/* <div className='flex flex-row items-center py-1 justify-between'>
                                     <Select
                                         value={blockContentTypes[block.properties.block_id]}
                                         onValueChange={onContentTypeChange.bind(null, block.properties.block_id)}
@@ -185,14 +180,14 @@ const ScriptEditor = ({ id }: { id: string }) => {
                                         </SelectContent>
                                     </Select>
                                     <div className='flex flex-row'>
-                                        <div className='flex flex-row items-center w-6'>
-                                            <Trash className='h-5 w-5' />
+                                        <div className='flex flex-row items-center w-6 '>
+                                            <Trash className='h-5 w-5 cursor-pointer' />
                                         </div>
-                                        <Button variant='ghost' >
+                                        <Button variant='ghost' className=' cursor-pointer' >
                                             <Check />完成
                                         </Button>
                                     </div>
-                                </div>
+                                </div> */}
                                 <RenderBlockContent
                                     id={block.properties.block_id}
                                     type={blockContentTypes[block.properties.block_id]}

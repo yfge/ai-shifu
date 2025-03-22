@@ -1,5 +1,6 @@
 import Button from './button'
 import Option from './option'
+import SingleInput from './input'
 import Goto from './goto'
 import { useScenario } from '@/store';
 
@@ -8,6 +9,8 @@ const BlockMap = {
     button: Button,
     option: Option,
     goto: Goto,
+    phone: SingleInput,
+    code: SingleInput,
 }
 
 export const RenderBlockContent = ({ id, type, properties }) => {
@@ -115,5 +118,23 @@ export const UITypes = [
             "input_key": "请输入你当前的工作背景",
             "input_placeholder": "请输入你当前的工作背景"
         }
-    }
+    },
+    {
+        type: 'phone',
+        name: '手机号',
+        properties: {
+            "input_name": "",
+            "input_key": "",
+            "input_placeholder": "输入手机号"
+        }
+    },
+    {
+        type: 'code',
+        name: '手机验证码',
+        properties: {
+            "input_name": "请输入4位数字验证码",
+            "input_key": "请输入4位数字验证码",
+            "input_placeholder": "请输入4位数字验证码"
+        }
+    },
 ]
