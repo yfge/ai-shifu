@@ -111,10 +111,7 @@ const ScriptEditor = ({ id }: { id: string }) => {
         actions.setBlockUITypesById(id, type)
         actions.setBlockUIPropertiesById(id, opt?.properties || {})
     }
-    const
-
-
-    = (id: string, type: string) => {
+    const onContentTypeChange = (id: string, type: string) => {
         const opt = ContentTypes.find(p => p.type === type);
         actions.setBlockContentTypesById(id, type)
         actions.setBlockContentPropertiesById(id, opt?.properties || {})
