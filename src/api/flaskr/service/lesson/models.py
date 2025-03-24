@@ -147,6 +147,9 @@ class AILesson(db.Model):
         comment="Update time",
     )
     status = Column(Integer, nullable=False, default=0, comment="Status of the lesson")
+    parent_id = Column(
+        String(36), nullable=False, default="", comment="Parent lesson UUID", index=True
+    )
 
     def is_final(self):
         return len(self.lesson_no) > 2
@@ -211,6 +214,13 @@ class AILessonScript(db.Model):
         Integer, nullable=False, default=3, comment="Ask with history Count"
     )
     ask_mode = Column(Integer, nullable=False, default=0, comment="Ask mode")
+    script_ui_profile_id = Column(
+        String(36),
+        nullable=False,
+        default="",
+        comment="Script UI profile id",
+        index=True,
+    )
     created_user_id = Column(
         String(36), nullable=True, default="", comment="created user ID"
     )
