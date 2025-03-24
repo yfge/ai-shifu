@@ -195,7 +195,7 @@ const ScriptEditor = ({ id }: { id: string }) => {
                                 />
                             </div>
                             <div className='bg-[#F5F5F4] rounded-md p-2 space-y-1'>
-                                <div className=' flex flex-row items-center space-x-1'>
+                                <div className=' flex flex-row items-center space-x-1 py-1'>
                                     <span>
                                         用户操作：
                                     </span>
