@@ -21,9 +21,9 @@ export const CataTree = React.memo((props: ICataTreeProps) => {
         onChange?.(data);
     }
 
-    const onAddNodeClick = (node: Outline) => {
-        props.onAddNodeClick?.(node);
-    }
+    // const onAddNodeClick = (node: Outline) => {
+    //     props.onAddNodeClick?.(node);
+    // }
 
     return (
         <SortableTree
@@ -35,7 +35,6 @@ export const CataTree = React.memo((props: ICataTreeProps) => {
                 return (
                     <MinimalTreeItemComponent
                         {...props}
-                        onAddNodeClick={onAddNodeClick}
                     />
                 )
             }}
@@ -91,7 +90,7 @@ const MinimalTreeItemComponent = React.forwardRef<
         actions.setFocusId("");
     }
     const onAddNodeClick = (node: Outline) => {
-        console.log(node)
+        // console.log(node)
         if (node.depth && node.depth >= 1) {
             actions.addSiblingOutline(node, "");
         } else {

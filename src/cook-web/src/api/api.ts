@@ -26,6 +26,7 @@ const api = {
     getScenarioOutlineTree: "GET /scenario/outline-tree",
     getBlocks: "GET /scenario/blocks",
     saveBlocks: "POST /scenario/save-blocks",
+    getProfile: "GET /user/get_profile",
 };
 
 export default api;
