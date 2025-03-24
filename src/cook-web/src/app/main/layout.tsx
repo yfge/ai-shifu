@@ -32,7 +32,7 @@ import {
 
 import Social from '@/components/social';
 import UserProfile from '@/components/user-profile'
- 
+
 
 const MainInterface = ({
   children,
