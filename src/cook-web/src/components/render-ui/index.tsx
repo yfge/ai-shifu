@@ -1,8 +1,10 @@
 import Button from './button'
 import Option from './option'
+
 import SingleInput from './input'
 import Goto from './goto'
 import TextInput from './textinput'
+
 import { useScenario } from '@/store';
 
 
@@ -139,4 +141,5 @@ export const UITypes = [
             "input_placeholder": "请输入4位数字验证码"
         }
     },
+
 ]

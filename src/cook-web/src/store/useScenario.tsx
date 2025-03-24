@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useRef } from "react";
 import { Scenario, ScenarioContextType, Outline, Block } from "../types/scenario";
 import api from "@/api";
+import { v4 as uuidv4 } from 'uuid';
 
 const ScenarioContext = createContext<ScenarioContextType | undefined>(undefined);
 

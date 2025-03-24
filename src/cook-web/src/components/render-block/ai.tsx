@@ -1,3 +1,4 @@
+
 import { ALL_PLUGINS } from '@/components/md-editor'
 // import { MDXEditor } from '@mdxeditor/editor';
 import MDXEditor from '@/components/md-editor/ForwardRefEditor';
@@ -24,6 +25,7 @@ interface AIBlock {
 }
 
 export default function AI(props: AIBlock) {
+
     const { isEdit } = props;
     if (isEdit) {
         return (
@@ -36,10 +38,20 @@ export default function AI(props: AIBlock) {
                     }}
                     plugins={ALL_PLUGINS}
                 />
+
+                {/* <MarkdownEditor initValue={props.properties.prompt} onChange={(value) => {
+                        props.onChange({ ...props.properties, prompt: value })
+                    }}>
+
+                    </MarkdownEditor> */}
+                {/* <Textarea value={props.properties.prompt} >
+
+                    </Textarea> */}
             </div >
         )
     }
     return (
+
         <Markdown remarkPlugins={[remarkGfm]}>
             {props.properties.prompt}
         </Markdown>

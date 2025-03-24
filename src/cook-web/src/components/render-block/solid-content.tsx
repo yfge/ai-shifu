@@ -1,5 +1,6 @@
 // import { MDXEditor } from '@mdxeditor/editor';
 import MDXEditor from '@/components/md-editor/ForwardRefEditor';
+
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm'
 
@@ -13,12 +14,14 @@ interface SolideContnetProps {
 }
 
 interface SolideContnet {
+
     isEdit: boolean;
     properties: SolideContnetProps;
     onChange: (properties: SolideContnetProps) => void;
 }
 
 export default function SolidContent(props: SolideContnet) {
+
     const { isEdit } = props;
     if (isEdit) {
         return (
@@ -31,11 +34,17 @@ export default function SolidContent(props: SolideContnet) {
                     }}
                     plugins={ALL_PLUGINS}
                 />
+
+                {/* <Textarea value={props.properties.content} >
+
+                    </Textarea> */}
+
             </div>
 
         )
     }
     return (
+
         <Markdown remarkPlugins={[remarkGfm]}>
             {props.properties.content}
         </Markdown>

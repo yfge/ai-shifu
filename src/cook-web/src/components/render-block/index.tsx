@@ -2,10 +2,13 @@
 import { useScenario } from '@/store';
 import AI from './ai'
 import SolidContent from './solid-content'
+
+
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Trash, Check } from 'lucide-react';
 import Button from '../button';
 import { useState } from 'react';
+
 
 
 const BlockMap = {
@@ -15,12 +18,15 @@ const BlockMap = {
 }
 
 export const RenderBlockContent = ({ id, type, properties }) => {
+
     const [isEdit, setIsEdit] = useState(false)
     const { actions, blockContentTypes } = useScenario();
+r
     const onPropertiesChange = (properties) => {
         console.log(id, properties)
         actions.setBlockContentPropertiesById(id, properties)
     }
+
     const onContentTypeChange = (id: string, type: string) => {
         const opt = ContentTypes.find(p => p.type === type);
         actions.setBlockContentTypesById(id, type)

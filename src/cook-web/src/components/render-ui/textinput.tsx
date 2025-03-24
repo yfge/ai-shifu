@@ -26,6 +26,7 @@ interface ButtonProps {
 export default function TextInput(props: ButtonProps) {
     const { properties } = props
 
+
     const onValueChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         console.log('onChange', properties);
         props.onChange({ ...properties, prompt: { ...properties.prompt, properties: { ...properties.prompt.properties, prompt: e.target.value } } })

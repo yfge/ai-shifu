@@ -111,6 +111,14 @@ const ScriptEditor = ({ id }: { id: string }) => {
         actions.setBlockUITypesById(id, type)
         actions.setBlockUIPropertiesById(id, opt?.properties || {})
     }
+    const 
+    
+    
+    = (id: string, type: string) => {
+        const opt = ContentTypes.find(p => p.type === type);
+        actions.setBlockContentTypesById(id, type)
+        actions.setBlockContentPropertiesById(id, opt?.properties || {})
+    }
 
     useEffect(() => {
 
@@ -162,7 +170,8 @@ const ScriptEditor = ({ id }: { id: string }) => {
                                 {/* <div className='flex flex-row items-center py-1 justify-between'>
                                     <Select
                                         value={blockContentTypes[block.properties.block_id]}
-                                        onValueChange={onContentTypeChange.bind(null, block.properties.block_id)}
+                                        onValueChange={
+                                        .bind(null, block.properties.block_id)}
                                     >
                                         <SelectTrigger className="h-8 w-[120px]">
                                             <SelectValue placeholder="请选择" />
@@ -195,6 +204,7 @@ const ScriptEditor = ({ id }: { id: string }) => {
                                 />
                             </div>
                             <div className='bg-[#F5F5F4] rounded-md p-2 space-y-1'>
+
                                 <div className=' flex flex-row items-center space-x-1 py-1'>
                                     <span>
                                         用户操作：

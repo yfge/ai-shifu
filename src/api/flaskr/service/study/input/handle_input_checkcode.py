@@ -31,7 +31,8 @@ def handle_input_checkcode(
         log_script.script_content = input
         log_script.script_role = ROLE_STUDENT  # type: ignore
         db.session.add(log_script)
-        ret = verify_sms_code_without_phone(app, user_id, input)
+        course_id = attend.course_id
+        ret = verify_sms_code_without_phone(app, user_id, input, course_id)
         yield make_script_dto(
             "profile_update",
             {"key": "phone", "value": ret.userInfo.mobile},
@@ -51,11 +52,18 @@ def handle_input_checkcode(
         span.end()
     except AppException as e:
         for i in e.message:
-            yield make_script_dto("text", i, script_info.script_id)
+            yield make_script_dto(
+                "text", i, script_info.script_id, script_info.lesson_id
+            )
             time.sleep(0.01)
-        yield make_script_dto("text_end", "", script_info.script_id)
         yield make_script_dto(
-            INPUT_TYPE_CHECKCODE, script_info.script_ui_content, script_info.script_id
+            "text_end", "", script_info.script_id, script_info.lesson_id
+        )
+        yield make_script_dto(
+            INPUT_TYPE_CHECKCODE,
+            script_info.script_ui_content,
+            script_info.script_id,
+            script_info.lesson_id,
         )
         log_script = generation_attend(app, attend, script_info)
         log_script.script_content = e.message

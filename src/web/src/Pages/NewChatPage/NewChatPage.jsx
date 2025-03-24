@@ -102,10 +102,15 @@ const NewChatPage = (props) => {
     }
   }, [i18n.language]);
 
+  useEffect(()=>{
+    if(selectedLessonId){
+      updateLessonId(selectedLessonId);
+    }
+  },[selectedLessonId,updateLessonId]);
+
   const fetchData = useCallback(async () => {
     if (tree) {
       const data = await getCurrElement();
-      console.log('getCurrElement', data);
       if (data && data.lesson) {
         updateLessonId(data.lesson.id);
         if (data.catalog) {
@@ -116,15 +121,11 @@ const NewChatPage = (props) => {
   }, [updateLessonId, getCurrElement, tree, updateChapterId]);
 
   const loadData = useCallback(async () => {
-    console.log(
-      `before loadTree, chapterId:${chapterId}, lessonId: ${lessonId}`
-    );
     await loadTree(chapterId, lessonId);
   }, [chapterId, lessonId, loadTree]);
 
   const initAndCheckLogin = useCallback(async () => {
     if (inWechat() && wechatCode) {
-      console.log(`updateWxcode: ${wechatCode}`);
       await updateWxcode({ wxcode: wechatCode });
     }
     setInitialized(true);
@@ -166,7 +167,7 @@ const NewChatPage = (props) => {
   );
 
   const onGoChapter = async (id) => {
-    await reloadTree();
+
     updateChapterId(id);
   };
 
@@ -272,10 +273,9 @@ const NewChatPage = (props) => {
   // listen global event
   useEffect(() => {
     const resetChapterEventHandler = async (e) => {
-      console.log('resetChapterEventHandler', e);
-      setLoadedChapterId(null);
-      await reloadTree();
-      setLoadedChapterId(e.detail.chapter_id);
+      await reloadTree(e.detail.chapter_id);
+      onGoChapter(e.detail.chapter_id);
+
     };
     const eventHandler = () => {
       setLoginModalOpen(true);
@@ -283,7 +283,6 @@ const NewChatPage = (props) => {
 
     const payEventHandler = (e) => {
       const { type = '', payload = {} } = e.detail;
-      console.log('payEventHandler', type, payload);
       setPayModalState({ type, payload });
       setPayModalOpen(true);
       setLoginOkHandlerData({ type: 'pay', payload: {} });
@@ -322,20 +321,8 @@ const NewChatPage = (props) => {
     };
   });
 
-  useEffect(() => {
-    return useCourseStore.subscribe(
-      (state) => state.resetedChapterId,
-      (curr) => {
-        if (!curr || curr === chapterId) {
-          return;
-        }
-        onGoChapter(curr);
-      }
-    );
-  });
 
   useEffect(() => {
-    console.log('loadData hasCheckLogin', hasCheckLogin);
     if (hasCheckLogin && loadedChapterId !== chapterId) {
       loadData();
       setLoadedChapterId(chapterId);

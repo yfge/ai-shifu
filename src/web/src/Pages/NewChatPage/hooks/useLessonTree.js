@@ -30,7 +30,6 @@ export const useLessonTree = () => {
   }, [selectedLessonId, tree])
 
   const initialSelectedChapter = useCallback((tree) => {
-    console.log('initialSelectedChapter');
     let catalog = tree.catalogs.find(v => v.status_value === LESSON_STATUS_VALUE.LEARNING);
     if (catalog) {
       const lesson = catalog.lessons.find(v => v.status_value === LESSON_STATUS_VALUE.LEARNING || v.status_value === LESSON_STATUS_VALUE.PREPARE_LEARNING);
@@ -88,7 +87,6 @@ export const useLessonTree = () => {
       bannerInfo: treeData.banner_info,
     };
 
-    console.log('load tree inner', newTree);
     return newTree;
   }, [updateCourseId]);
 
@@ -118,10 +116,13 @@ export const useLessonTree = () => {
   }, []);
 
   // 用于重新加载课程树，但保持临时状态
-  const reloadTree = useCallback(async (chapterId = 0, lessonId = 0) => {
+  const reloadTree = useCallback(async (chapterId = undefined, lessonId = undefined) => {
     const newTree = await loadTreeInner();
-    console.log('reload Tree', newTree)
-    initialSelectedChapter(newTree);
+    if (chapterId === undefined) {
+      initialSelectedChapter(newTree);
+    } else {
+      setSelectedState(newTree, chapterId, lessonId);
+    }
     // 设置 collapse 状态
     await newTree.catalogs.forEach(c => {
       const oldCatalog = tree.catalogs.find(oc => oc.id === c.id);
@@ -143,7 +144,6 @@ export const useLessonTree = () => {
     }
 
     const selected = setSelectedState(newTree, chapterId, lessonId);
-    console.log('loadTree', selected);
     if (!selected) {
       initialSelectedChapter(newTree);
     }
@@ -153,13 +153,11 @@ export const useLessonTree = () => {
   }, [initialSelectedChapter, loadTreeInner, setSelectedState, tree]);
 
   const updateSelectedLesson = async (lessonId, forceExpand = false) => {
-    console.log('lesson tree updateSelectedLesson', lessonId);
     setSelectedLessonId(lessonId);
     setTree(old => {
       if (!old) {
         return;
       }
-
       const nextState = produce(old, draft => {
         draft.catalogs.forEach(c => {
           c.lessons.forEach(ls => {
@@ -192,6 +190,7 @@ export const useLessonTree = () => {
   };
 
   const toggleCollapse = ({ id }) => {
+
     const nextState = produce(tree, draft => {
       draft.catalogs.forEach(c => {
         if (c.id === id) {
@@ -208,6 +207,7 @@ export const useLessonTree = () => {
       if (!old) {
         return;
       }
+
       const nextState = produce(old, draft => {
         draft.catalogs.forEach(c => {
           const idx = c.lessons.findIndex(ch => ch.id === id);

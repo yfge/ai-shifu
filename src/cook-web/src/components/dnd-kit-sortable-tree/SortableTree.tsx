@@ -307,6 +307,7 @@ export function SortableTree<
             ) : null}
           </DragOverlay>,
           document?.body
+
         )} */}
       </SortableContext>
     </DndContext>

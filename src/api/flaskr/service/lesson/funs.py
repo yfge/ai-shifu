@@ -10,6 +10,8 @@ from .const import (
     SCRIPT_TYPE_FIX,
     SCRIPT_TYPES,
     UI_TYPE_CONTINUED,
+    UI_TYPE_INPUT,
+    UI_TYPE_SELECTION,
     UI_TYPES,
 )
 from flask import Flask
@@ -19,6 +21,7 @@ from flaskr.util.uuid import generate_id
 from sqlalchemy import func, text
 import json
 from flaskr.framework.plugin.plugin_manager import extensible
+from flaskr.service.profile.profile_manage import add_profile_item_quick_internal
 
 
 @register_schema_to_swagger
@@ -336,7 +339,6 @@ def update_lesson_info(
             ),
             {"course_id": course_id, "lesson_no": lessonNo + "%"},
         )
-        print("lessonNo:" + lessonNo + " course_id:" + course_id)
         parent_lesson = AILesson.query.filter(
             AILesson.course_id == course_id,
             AILesson.lesson_no == str(index).zfill(2),
@@ -354,6 +356,7 @@ def update_lesson_info(
             parent_lesson.lesson_no = lessonNo
             parent_lesson.lesson_feishu_id = table_id
             parent_lesson.lesson_type = lesson_type
+            parent_lesson.parent_id = ""
             if int(index) > 1:
                 parent_lesson.pre_lesson_no = str(int(index) - 1).zfill(2)
             else:
@@ -367,6 +370,7 @@ def update_lesson_info(
             parent_lesson.status = 1
             parent_lesson.lesson_feishu_id = table_id
             parent_lesson.lesson_type = lesson_type
+            parent_lesson.parent_id = ""
             if int(index) > 1:
                 parent_lesson.pre_lesson_no = str(int(index) - 1).zfill(2)
             else:
@@ -437,6 +441,8 @@ def update_lesson_info(
                         lesson.lesson_feishu_id = table_id
                         lesson.lesson_no = lessonNo + str(subIndex).zfill(2)
                         lesson.lesson_type = lesson_type
+                        lesson.parent_id = parent_lesson.lesson_id
+                        lesson.lesson_index = subIndex
                         if subIndex > 1:
                             lesson.pre_lesson_no = lessonNo + str(subIndex - 1).zfill(2)
                         else:
@@ -448,7 +454,9 @@ def update_lesson_info(
                         lesson.status = 1
                         lesson.lesson_feishu_id = table_id
                         lesson.lesson_type = lesson_type
+                        lesson.parent_id = parent_lesson.lesson_id
                         lesson.lesson_no = lessonNo + str(subIndex).zfill(2)
+                        lesson.lesson_index = subIndex
                         if subIndex > 1:
                             lesson.pre_lesson_no = lessonNo + str(subIndex - 1).zfill(2)
                         else:
@@ -488,6 +496,7 @@ def update_lesson_info(
                 scripDb["ask_prompt"] = ""
                 scripDb["ask_with_history"] = 5
                 scripDb["ask_model"] = ""
+                scripDb["script_ui_profile_id"] = ""
                 for field in record["fields"]:
                     val_obj = record["fields"][field]
                     db_field = DB_SAVE_MAP.get(field.strip())
@@ -522,6 +531,12 @@ def update_lesson_info(
                     AILessonScript.script_feishu_id == record_id,
                     AILessonScript.lesson_id == lesson.lesson_id,
                 ).first()
+                if scripDb["script_ui_type"] == UI_TYPE_INPUT:
+                    add_profile_item_quick_internal(app, course_id, "input", "system")
+                if scripDb["script_ui_type"] == UI_TYPE_SELECTION:
+                    data = scripDb["script_ui_content"]
+                    app.logger.info("data:" + str(data))
+
                 if scrip is None:
                     scripDb["script_id"] = str(generate_id(app))
                     db.session.add(AILessonScript(**scripDb))
