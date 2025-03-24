@@ -21,7 +21,6 @@ export const RenderBlockContent = ({ id, type, properties }) => {
 
     const [isEdit, setIsEdit] = useState(false)
     const { actions, blockContentTypes } = useScenario();
-r
     const onPropertiesChange = (properties) => {
         console.log(id, properties)
         actions.setBlockContentPropertiesById(id, properties)
