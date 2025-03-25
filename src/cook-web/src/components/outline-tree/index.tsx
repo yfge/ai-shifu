@@ -55,10 +55,10 @@ const MinimalTreeItemComponent = React.forwardRef<
     const { focusId, actions, cataData } = useScenario();
 
     const onNodeChange = async (value: string) => {
-
+        console.log('onNodeChange', value, props.item)
         if (props.item.depth == 0) {
             await actions.createChapter({
-                parent_id: cataData[props.item.id!]?.parent_id,
+                parent_id: props.item.parentId,
                 id: props.item.id,
                 name: value,
                 children: [],
@@ -66,23 +66,13 @@ const MinimalTreeItemComponent = React.forwardRef<
             })
         } else if (props.item.depth == 1) {
             await actions.createUnit({
-                parent_id: cataData[props.item.id!]?.parent_id,
-                id: props.item.id,
-                name: value,
-                children: [],
-                no: '',
-            })
-        } else {
-            await actions.createSiblingUnit({
-                parent_id: cataData[props.item.id!]?.parent_id,
+                parent_id: props.item.parentId,// cataData[props.item.id!]?.parent_id,
                 id: props.item.id,
                 name: value,
                 children: [],
                 no: '',
             })
         }
-
-
         actions.setFocusId("");
     }
     const onAddNodeClick = (node: Outline) => {
