@@ -110,4 +110,3 @@ export const FolderTreeItemWrapper = forwardRef<
     TreeItemComponentProps<T> & React.RefAttributes<HTMLDivElement>
   >
 ) => React.ReactElement;
-
