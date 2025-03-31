@@ -7,8 +7,6 @@ import SolidContent from './solid-content'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Trash, Check } from 'lucide-react';
 import Button from '../button';
-import { useState } from 'react';
-
 
 
 const BlockMap = {
@@ -18,9 +16,7 @@ const BlockMap = {
 }
 
 export const RenderBlockContent = ({ id, type, properties }) => {
-
-    const [isEdit, setIsEdit] = useState(false)
-    const { actions, blockContentTypes } = useScenario();
+    const { actions, blockContentTypes, blockContentState } = useScenario();
     const onPropertiesChange = (properties) => {
         console.log(id, properties)
         actions.setBlockContentPropertiesById(id, properties)
@@ -31,13 +27,20 @@ export const RenderBlockContent = ({ id, type, properties }) => {
         actions.setBlockContentTypesById(id, type)
         actions.setBlockContentPropertiesById(id, opt?.properties || {})
     }
-
+    const setIsEdit = (isEdit: boolean) => {
+        actions.setBlockContentStateById(id, isEdit ? 'edit' : 'preview')
+    }
+    const onSave = async () => {
+        setIsEdit(false)
+        await actions.saveBlocks();
+    }
+    const isEdit = blockContentState[id] == 'edit';
     const Ele = BlockMap[type]
     return (
-        <div>
+        <div className=''>
             {
                 isEdit && (
-                    <div className='flex flex-row items-center py-1 justify-between'>
+                    <div className='bg-[#F5F5F4] rounded-t-md p-2 flex flex-row items-center py-1 justify-between'>
                         <Select
                             value={blockContentTypes[id]}
                             onValueChange={onContentTypeChange.bind(null, id)}
@@ -61,7 +64,7 @@ export const RenderBlockContent = ({ id, type, properties }) => {
                             <div className='flex flex-row items-center w-6 '>
                                 <Trash className='h-5 w-5 cursor-pointer' />
                             </div>
-                            <Button variant='ghost' className=' cursor-pointer' onClick={() => setIsEdit(false)} >
+                            <Button variant='ghost' className=' cursor-pointer' onClick={onSave} >
                                 <Check />完成
                             </Button>
                         </div>

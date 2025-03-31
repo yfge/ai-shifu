@@ -151,7 +151,7 @@ export class Request {
         done = true;
         controller.abort();
       };
-      const lines = [];
+      const lines: any = [];
 
       for await (const line of makeTextSteamLineIterator(reader)) {
         lines.push(line);

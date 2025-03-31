@@ -1,28 +1,21 @@
 /* eslint-disable @next/next/no-img-element */
 "use client"
 import React from 'react';
-import { ChevronLeft, MoreHorizontal, AlignJustify, Book, Settings, Terminal } from 'lucide-react';
+import { ArrowTrendingUpIcon, PlayIcon, ChevronLeftIcon, AdjustmentsVerticalIcon } from "@heroicons/react/24/outline"
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
 import { useRouter } from 'next/navigation';
-import { useScenario } from '@/store';
-import Loading from '../loading';
+// import { useScenario } from '@/store';
+// import Loading from '../loading';
 
 
 const Header = () => {
     const router = useRouter();
-    const { isSaving, lastSaveTime } = useScenario();
+    // const { isSaving, lastSaveTime } = useScenario();
     return (
         <div className="flex items-center w-full h-12 px-2 bg-white border-b border-gray-200">
             <div className="flex items-center space-x-4">
                 <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => router.back()}>
-                    <ChevronLeft className="h-5 w-5" />
+                    <ChevronLeftIcon className="h-5 w-5" />
                 </Button>
 
                 {/* <div className="flex items-center">
@@ -45,7 +38,7 @@ const Header = () => {
                 </div> */}
             </div>
 
-            <div className="flex flex-row items-center text-xs text-gray-500 ml-4">
+            {/* <div className="flex flex-row items-center text-xs text-gray-500 ml-4">
                 {
                     isSaving && (
                         <Loading className='h-4 w-4 mr-1' />
@@ -59,7 +52,7 @@ const Header = () => {
                     )
                 }
 
-            </div>
+            </div> */}
             <div className='flex-1'>
 
             </div>
@@ -113,13 +106,16 @@ const Header = () => {
 
 
             </div> */}
-            <div >
+            <div className='flex flex-row items-center'>
+                <Button variant="ghost" size="sm">
+                    <AdjustmentsVerticalIcon /> 设置
+                </Button>
                 <Button variant="ghost" size="sm" className="h-8 px-2 text-xs font-normal">
-                    [x] 克隆
+                    <PlayIcon />  预览
                 </Button>
 
                 <Button size="sm" className="h-8 ml-1 bg-purple-600 hover:bg-purple-700 text-xs font-normal">
-                    运行
+                    <ArrowTrendingUpIcon />  发布
                 </Button>
             </div>
         </div>

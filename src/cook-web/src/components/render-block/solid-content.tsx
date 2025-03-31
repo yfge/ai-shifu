@@ -1,10 +1,8 @@
 // import { MDXEditor } from '@mdxeditor/editor';
-import MDXEditor from '@/components/md-editor/ForwardRefEditor';
+import MDXEditor from '@/components/md-editor';
+import Markdown from '@/components/markdown'
 
-import Markdown from 'react-markdown';
-import remarkGfm from 'remark-gfm'
-
-import { ALL_PLUGINS } from '@/components/md-editor';
+// import { ALL_PLUGINS } from '@/components/md-editor';
 // import { Textarea } from '../ui/textarea';
 // import MarkdownEditor from '@/components/markdown-editor'
 
@@ -25,27 +23,19 @@ export default function SolidContent(props: SolideContnet) {
     const { isEdit } = props;
     if (isEdit) {
         return (
-            <div className="bg-[#F5F5F4] rounded-md">
-                <MDXEditor
-                    className="h-60 overflow-auto"
-                    markdown={props.properties.content}
-                    onChange={(value) => {
-                        props.onChange({ ...props.properties, content: value })
-                    }}
-                    plugins={ALL_PLUGINS}
-                />
-
-                {/* <Textarea value={props.properties.content} >
-
-                    </Textarea> */}
-
-            </div>
+            <MDXEditor
+                className="h-60 overflow-auto"
+                value={props.properties.content}
+                onChange={(value) => {
+                    props.onChange({ ...props.properties, content: value })
+                }}
+            />
 
         )
     }
     return (
 
-        <Markdown remarkPlugins={[remarkGfm]}>
+        <Markdown >
             {props.properties.content}
         </Markdown>
 

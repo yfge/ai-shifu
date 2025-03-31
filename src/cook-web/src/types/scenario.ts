@@ -13,7 +13,7 @@
 //   scenario_image: string;
 //   scenario_name: string;
 // }
-
+export type BlockType = 'ai' | 'systemprompt' | 'solidcontent';
 
 export interface Scenario {
     id: string;
@@ -59,11 +59,8 @@ export interface Block {
 export interface ScenarioState {
     currentScenario: Scenario | null;
     chapters: Outline[];
-    currentChapter: Outline | null;
     isLoading: boolean;
-    isSaving: boolean;
     error: string | null;
-    lastSaveTime: Date | null;
     focusId: string | null;
     focusValue: string | null;
     cataData: { [x: string]: Outline };
@@ -72,14 +69,15 @@ export interface ScenarioState {
     blockUITypes: { [x: string]: string };
     blockContentProperties: { [x: string]: any };
     blockContentTypes: { [x: string]: string };
+    blockContentState: { [x: string]: 'edit' | 'preview' };
+    currentOutline: string;
 }
 
 export interface ScenarioActions {
     addChapter: (chapter: Outline) => void;
     loadScenario: (scenarioId: string) => Promise<void>;
     loadChapters: (scenarioId: string) => Promise<void>;
-    setCurrentChapter: (chapter: Outline) => void;
-    saveChapter: (chapter: Outline) => Promise<void>;
+    // saveChapter: (chapter: Outline) => Promise<void>;
     createChapter: (chapter: Omit<Outline, 'chapter_id'>) => Promise<void>;
     setChapters: (chapters: Outline[]) => void;
     setFocusId: (id: string) => void;
@@ -92,10 +90,14 @@ export interface ScenarioActions {
     createUnit: (chapter: Outline) => Promise<void>;
     createSiblingUnit: (chapter: Outline) => Promise<void>;
     loadBlocks: (outlineId: string) => void;
+    addBlock: (index: number, type: BlockType) => void;
     setBlockContentPropertiesById: (id: string, properties: any) => void;
     setBlockContentTypesById: (id: string, type: string) => void;
     setBlockUIPropertiesById: (id: string, properties: any) => void;
     setBlockUITypesById: (id: string, type: string) => void;
+    updateChapterOrder: (chapterIds: string[]) => Promise<void>
+    setBlockContentStateById: (id: string, state: 'edit' | 'preview') => void;
+    saveBlocks: () => Promise<void>;
 }
 
 export interface ScenarioContextType extends ScenarioState {

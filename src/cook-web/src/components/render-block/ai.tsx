@@ -1,9 +1,7 @@
 
-import { ALL_PLUGINS } from '@/components/md-editor'
 // import { MDXEditor } from '@mdxeditor/editor';
-import MDXEditor from '@/components/md-editor/ForwardRefEditor';
-import Markdown from 'react-markdown';
-import remarkGfm from 'remark-gfm'
+import MDXEditor from '@/components/md-editor';
+import Markdown from '@/components/markdown'
 
 // import { Textarea } from "../ui/textarea";
 // import { Textarea } from "../ui/textarea";
@@ -29,32 +27,18 @@ export default function AI(props: AIBlock) {
     const { isEdit } = props;
     if (isEdit) {
         return (
-            <div className="bg-[#F5F5F4] rounded-md">
-                <MDXEditor
-                    className="h-60 overflow-auto"
-                    markdown={props.properties.prompt}
-                    onChange={(value) => {
-                        props.onChange({ ...props.properties, prompt: value })
-                    }}
-                    plugins={ALL_PLUGINS}
-                />
-
-                {/* <MarkdownEditor initValue={props.properties.prompt} onChange={(value) => {
-                        props.onChange({ ...props.properties, prompt: value })
-                    }}>
-
-                    </MarkdownEditor> */}
-                {/* <Textarea value={props.properties.prompt} >
-
-                    </Textarea> */}
-            </div >
+            <MDXEditor
+                className="h-60 overflow-auto markdown"
+                value={props.properties.prompt}
+                onChange={(value) => {
+                    props.onChange({ ...props.properties, prompt: value })
+                }}
+            />
         )
     }
     return (
-
-        <Markdown remarkPlugins={[remarkGfm]}>
+        <Markdown >
             {props.properties.prompt}
         </Markdown>
-
     )
 }

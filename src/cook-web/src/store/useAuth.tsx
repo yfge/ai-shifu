@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useCallback, useRef } from "react";
-import api from "@/api";
+import React, { createContext, useContext, useState, ReactNode } from "react";
 
 export type AuthContextType = {
     profile: any;

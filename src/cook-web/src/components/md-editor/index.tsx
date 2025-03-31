@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React from 'react'
 import { LeafDirective } from 'mdast-util-directive'
 import {
@@ -20,9 +21,17 @@ import {
     codeBlockPlugin,
     codeMirrorPlugin,
     sandpackPlugin,
-    KitchenSinkToolbar
+    KitchenSinkToolbar,
+    UndoRedo,
+    BoldItalicUnderlineToggles,
+    InsertTable,
+    ListsToggle,
+    BlockTypeSelect
 } from '@mdxeditor/editor';
+import '@mdxeditor/editor/style.css'
 // import dataCode from './assets/dataCode.ts?raw'
+import MDXEditor from '@/components/md-editor/ForwardRefEditor';
+import { cn } from '@/lib/utils';
 
 const defaultSnippetContent = `
 export default function App() {
@@ -125,7 +134,19 @@ export const YoutubeDirectiveDescriptor: DirectiveDescriptor<YoutubeDirectiveNod
 }
 
 export const ALL_PLUGINS = [
-    // toolbarPlugin({ toolbarContents: () => <KitchenSinkToolbar /> }),
+    toolbarPlugin({
+        toolbarClassName: "md-toolbar",
+        toolbarContents: () => {
+            return (
+                <>
+                    <UndoRedo />
+                    <BoldItalicUnderlineToggles />
+                    <ListsToggle options={['bullet', 'number']} />
+                    <BlockTypeSelect />
+                </>
+            )
+        }
+    }),
     listsPlugin(),
     quotePlugin(),
     headingsPlugin({ allowedHeadingLevels: [1, 2, 3] }),
@@ -135,7 +156,7 @@ export const ALL_PLUGINS = [
     //     imageAutocompleteSuggestions: ['https://via.placeholder.com/150', 'https://via.placeholder.com/150'],
     //     imageUploadHandler: async () => Promise.resolve('https://picsum.photos/200/300')
     // }),
-    // tablePlugin(),
+    tablePlugin(),
     // thematicBreakPlugin(),
     // frontmatterPlugin(),
     // codeBlockPlugin({ defaultCodeBlockLanguage: '' }),
@@ -145,3 +166,19 @@ export const ALL_PLUGINS = [
     // diffSourcePlugin({ viewMode: 'rich-text', diffMarkdown: 'boo' }),
     // markdownShortcutPlugin()
 ]
+
+export const MDEditor = ({ className = '', value, onChange }: { className: string, value: string, onChange: (value: string) => void }) => {
+    return (
+        <MDXEditor
+
+            className={cn("h-auto overflow-auto markdown bg-[#F5F5F4]", className)}
+            markdown={value}
+            onChange={(value) => {
+                onChange?.(value)
+            }}
+            plugins={ALL_PLUGINS}
+        />
+    )
+}
+
+export default MDEditor

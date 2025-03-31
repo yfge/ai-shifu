@@ -1,34 +1,50 @@
 "use client"
-import { ArrowRightOnRectangleIcon, ChatBubbleLeftRightIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
+import { ArrowRightOnRectangleIcon } from "@heroicons/react/24/outline";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { ChevronUpIcon, HeartIcon, MapIcon, MegaphoneIcon, ShieldCheckIcon } from "lucide-react";
+import { ChevronUpIcon, HeartIcon } from "lucide-react";
 import Social from "../social";
 import { useEffect, useState } from "react";
 import api from '@/api'
 
+interface UserInfo {
+    user_id: string;
+    username: string;
+    name: string;
+    email: string;
+    mobile: string;
+    state: string;
+    openid: string;
+    language: string;
+    avatar: string;
+}
 
 const userMenuItems: { icon: React.ReactNode, label: string, href: string, id?: string }[] = [
-    {
-        icon: <PencilSquareIcon className="w-4 h-4" />, label: "个人信息", href: "#"
-    },
-    { icon: <ShieldCheckIcon className="w-4 h-4" />, label: "安全设置", href: "#" },
-    { icon: <MegaphoneIcon className="w-4 h-4" />, label: "最近更新", href: "#" },
-    { icon: <MapIcon className="w-4 h-4" />, label: "路线图", href: "#" },
-    { icon: <ChatBubbleLeftRightIcon className="w-4 h-4" />, label: "问题反馈", href: "#" },
+    // {
+    //     icon: <PencilSquareIcon className="w-4 h-4" />, label: "个人信息", href: "#"
+    // },
+    // { icon: <ShieldCheckIcon className="w-4 h-4" />, label: "安全设置", href: "#" },
+    // { icon: <MegaphoneIcon className="w-4 h-4" />, label: "最近更新", href: "#" },
+    // { icon: <MapIcon className="w-4 h-4" />, label: "路线图", href: "#" },
+    // { icon: <ChatBubbleLeftRightIcon className="w-4 h-4" />, label: "问题反馈", href: "#" },
     { icon: <HeartIcon className="w-4 h-4" />, id: 'follow', label: "关注我们", href: "#" },
 ];
 
 
 const UserProfileCard = () => {
-    const [profile, setProfile] = useState(null);
+    const [profile, setProfile] = useState<UserInfo>();
     const init = async () => {
-        const res = await api.getProfile({});
-        setProfile(res.data);
+        const res = await api.getUserInfo({});
+        setProfile(res);
     }
     useEffect(() => {
         init();
     }, [])
+
+    if (!profile) {
+        return null;
+    }
+
     return (
         <Popover>
             <PopoverTrigger asChild>
@@ -38,8 +54,12 @@ const UserProfileCard = () => {
                         <AvatarFallback>CN</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                        <div className="font-medium">Kenrick</div>
-                        <div className="text-sm text-gray-500">kenrick.zhou@gmail.com</div>
+                        <div className="font-medium">
+                            {profile.name}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                            {profile.email}
+                        </div>
                     </div>
                     <ChevronUpIcon className="w-4 h-4 text-gray-500 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                 </div>
@@ -51,8 +71,12 @@ const UserProfileCard = () => {
                         <AvatarFallback>CN</AvatarFallback>
                     </Avatar>
                     <div>
-                        <div className="font-medium">Kenrick</div>
-                        <div className="text-sm text-gray-500">kenrick.zhou@gmail.com</div>
+                        <div className="font-medium">
+                            {profile.name}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                            {profile.email}
+                        </div>
                     </div>
                 </div>
                 <hr />

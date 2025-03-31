@@ -22,8 +22,8 @@ interface ButtonProps {
 }
 
 export default function Option(props: ButtonProps) {
-    const { properties, onChange } = props;
-    const { option_name, option_key, profile_key, buttons } = properties;
+    const { properties } = props;
+    const { option_name, buttons } = properties;
     const onValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         console.log('onChange', properties);
         props.onChange({
