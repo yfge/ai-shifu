@@ -6,6 +6,10 @@ import Goto from './goto'
 import TextInput from './textinput'
 
 import { useScenario } from '@/store';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
+import { ChevronDown } from 'lucide-react'
+import { useState } from 'react'
+import { cn } from '@/lib/utils'
 
 
 const BlockMap = {
@@ -17,11 +21,11 @@ const BlockMap = {
     textinput: TextInput,
 }
 
-export const RenderBlockContent = ({ id, type, properties }) => {
-    const { actions } = useScenario();
+export const BlockUI = ({ id, type, properties }) => {
+    const { actions, currentOutline } = useScenario();
     const onPropertiesChange = (properties) => {
-        console.log(id, properties)
         actions.setBlockUIPropertiesById(id, properties)
+        actions.autoSaveBlocks(currentOutline);
     }
     const Ele = BlockMap[type]
     if (!Ele) {
@@ -36,7 +40,78 @@ export const RenderBlockContent = ({ id, type, properties }) => {
     )
 }
 
-export default RenderBlockContent
+export const RenderBlockUI = ({ block }) => {
+    const {
+        actions,
+        blockUITypes,
+        blockUIProperties,
+        currentOutline
+    } = useScenario();
+    const [expand, setExpand] = useState(false)
+
+    const onUITypeChange = (id: string, type: string) => {
+        setExpand(true);
+        const opt = UITypes.find(p => p.type === type);
+        actions.setBlockUITypesById(id, type)
+        actions.setBlockUIPropertiesById(id, opt?.properties || {})
+        actions.autoSaveBlocks(currentOutline);
+    }
+    return (
+        <>
+            <div className='bg-[#F5F5F4] rounded-md p-2 space-y-1'>
+                <div className=' flex flex-row items-center justify-between py-1 cursor-pointer' onClick={() => setExpand(!expand)}>
+                    <div className='flex flex-row items-center space-x-1'>
+                        <span>
+                            用户操作：
+                        </span>
+                        <Select value={blockUITypes[block.properties.block_id]} onValueChange={onUITypeChange.bind(null, block.properties.block_id)}>
+                            <SelectTrigger className=" h-8 w-[120px]">
+                                <SelectValue placeholder="请选择" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    {
+                                        UITypes.map((item) => {
+                                            return (
+                                                <SelectItem key={item.type} value={item.type}>{item.name}</SelectItem>
+                                            )
+                                        })
+                                    }
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className='flex flex-row items-center space-x-1 cursor-pointer' onClick={() => setExpand(!expand)}>
+                        <ChevronDown className={cn(
+                            " h-5 w-5 transition-transform duration-200 ease-in-out",
+                            expand ? 'rotate-180' : ''
+                        )} />
+                        {
+                            expand ? "收起" : "展开"
+                        }
+                    </div>
+                </div>
+                <div className={cn(
+                    'space-y-1',
+                    expand ? 'block' : 'hidden'
+                )}>
+                    {
+                        blockUIProperties[block.properties.block_id] && (
+                            <BlockUI
+                                id={block.properties.block_id}
+                                type={blockUITypes[block.properties.block_id]}
+                                properties={blockUIProperties[block.properties.block_id]}
+                            />
+                        )
+                    }
+                </div>
+            </div>
+        </>
+    )
+}
+
+export default RenderBlockUI
 
 export const UITypes = [
     {

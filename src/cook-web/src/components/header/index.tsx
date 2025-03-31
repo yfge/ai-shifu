@@ -4,13 +4,13 @@ import React from 'react';
 import { ArrowTrendingUpIcon, PlayIcon, ChevronLeftIcon, AdjustmentsVerticalIcon } from "@heroicons/react/24/outline"
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-// import { useScenario } from '@/store';
-// import Loading from '../loading';
+import { useScenario } from '@/store';
+import Loading from '../loading';
 
 
 const Header = () => {
     const router = useRouter();
-    // const { isSaving, lastSaveTime } = useScenario();
+    const { isSaving, lastSaveTime } = useScenario();
     return (
         <div className="flex items-center w-full h-12 px-2 bg-white border-b border-gray-200">
             <div className="flex items-center space-x-4">
@@ -38,7 +38,7 @@ const Header = () => {
                 </div> */}
             </div>
 
-            {/* <div className="flex flex-row items-center text-xs text-gray-500 ml-4">
+            <div className="flex flex-row items-center text-xs text-gray-500 ml-4">
                 {
                     isSaving && (
                         <Loading className='h-4 w-4 mr-1' />
@@ -52,7 +52,7 @@ const Header = () => {
                     )
                 }
 
-            </div> */}
+            </div>
             <div className='flex-1'>
 
             </div>

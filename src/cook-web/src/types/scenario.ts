@@ -60,6 +60,8 @@ export interface ScenarioState {
     currentScenario: Scenario | null;
     chapters: Outline[];
     isLoading: boolean;
+    isSaving: boolean;
+    lastSaveTime: Date | null;
     error: string | null;
     focusId: string | null;
     focusValue: string | null;
@@ -98,6 +100,7 @@ export interface ScenarioActions {
     updateChapterOrder: (chapterIds: string[]) => Promise<void>
     setBlockContentStateById: (id: string, state: 'edit' | 'preview') => void;
     saveBlocks: () => Promise<void>;
+    autoSaveBlocks: (outlineId: string) => Promise<void>;
 }
 
 export interface ScenarioContextType extends ScenarioState {

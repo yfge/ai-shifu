@@ -2,16 +2,15 @@
 "use client"
 import React, { useState, useEffect, MouseEventHandler } from 'react';
 import { Button } from '@/components/ui/button';
-import { ChevronsRight, Play, Plus, Variable } from 'lucide-react';
+import { ChevronsRight, Play, Plus, Variable, } from 'lucide-react';
 import { useScenario } from '@/store';
 import OutlineTree from '@/components/outline-tree'
 import '@mdxeditor/editor/style.css'
 import Header from '../header';
-import { BlockType, Outline } from '@/types/scenario';
+import { BlockType } from '@/types/scenario';
 import { Separator } from '../ui/separator';
 import RenderBlockContent from '../render-block';
-import RenderBlockUI, { UITypes } from '../render-ui';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import RenderBlockUI from '../render-ui';
 import AIDebugDialog from '@/components/ai-debug';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import AddBlock from '@/components/add-block';
@@ -21,8 +20,6 @@ const ScriptEditor = ({ id }: { id: string }) => {
         blocks,
         chapters,
         actions,
-        blockUITypes,
-        blockUIProperties,
         blockContentTypes,
         blockContentProperties,
     } = useScenario();
@@ -51,7 +48,7 @@ const ScriptEditor = ({ id }: { id: string }) => {
             depth: 0,
         });
     }
-    const onAddSubChapter = (parentChapter: Outline) => {
+    const onAddSubChapter = () => {
         // actions.createChapter({
         //     outline_id: uuidv4(),
         //     outline_name: `新章节`,
@@ -61,11 +58,6 @@ const ScriptEditor = ({ id }: { id: string }) => {
         // });
     }
 
-    const onUITypeChange = (id: string, type: string) => {
-        const opt = UITypes.find(p => p.type === type);
-        actions.setBlockUITypesById(id, type)
-        actions.setBlockUIPropertiesById(id, opt?.properties || {})
-    }
     // const onContentTypeChange = (id: string, type: string) => {
     //     const opt = ContentTypes.find(p => p.type === type);
     //     actions.setBlockContentTypesById(id, type)
@@ -88,11 +80,11 @@ const ScriptEditor = ({ id }: { id: string }) => {
         setMenuPosition({ blockId: id, visible: true, x, y });
     }
 
-    const onHideMenu: MouseEventHandler<HTMLDivElement> = (e) => {
+    const onHideMenu: MouseEventHandler<HTMLDivElement> = () => {
         // setMenuPosition({ visible: false });
     }
 
-    const onShowDebugMenu = (id, e) => {
+    const onShowDebugMenu = () => {
 
     }
 
@@ -170,41 +162,7 @@ const ScriptEditor = ({ id }: { id: string }) => {
                                     properties={blockContentProperties[block.properties.block_id]}
                                 />
                             </div>
-                            <div className='bg-[#F5F5F4] rounded-md p-2 space-y-1'>
-
-                                <div className=' flex flex-row items-center space-x-1 py-1'>
-                                    <span>
-                                        用户操作：
-                                    </span>
-                                    <Select value={blockUITypes[block.properties.block_id]} onValueChange={onUITypeChange.bind(null, block.properties.block_id)}>
-                                        <SelectTrigger className=" h-8 w-[120px]">
-                                            <SelectValue placeholder="请选择" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectGroup>
-                                                {
-                                                    UITypes.map((item) => {
-                                                        return (
-                                                            <SelectItem key={item.type} value={item.type}>{item.name}</SelectItem>
-                                                        )
-                                                    })
-                                                }
-                                            </SelectGroup>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div>
-                                    {
-                                        blockUIProperties[block.properties.block_id] && (
-                                            <RenderBlockUI
-                                                id={block.properties.block_id}
-                                                type={blockUITypes[block.properties.block_id]}
-                                                properties={blockUIProperties[block.properties.block_id]}
-                                            />
-                                        )
-                                    }
-                                </div>
-                            </div>
+                            <RenderBlockUI block={block} />
                             <div>
                                 <AddBlock onAdd={onAddBlock.bind(null, index + 1)} />
                             </div>

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode, useRef, useCallback } from "react";
 import { Scenario, ScenarioContextType, Outline, Block } from "../types/scenario";
 import api from "@/api";
 import { ContentTypes } from "@/components/render-block";
@@ -9,6 +9,9 @@ const ScenarioContext = createContext<ScenarioContextType | undefined>(undefined
 export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [currentScenario, setCurrentScenario] = useState<Scenario | null>(null);
     const [chapters, setChapters] = useState<Outline[]>([]);
+    const [isSaving, setIsSaving] = useState(false);
+    const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
+    const saveTimeoutRef = useRef<NodeJS.Timeout>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [focusId, setFocusId] = useState('');
@@ -184,7 +187,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         const list = blocks.map((block: Block, index) => {
             return {
                 "properties": {
-                    block_id: uuidv4(),
+                    block_id: undefined,
                     "block_no": "",
                     "block_name": "",
                     "block_desc": "",
@@ -319,6 +322,39 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
 
         setFocusId(id);
     }
+    const autoSaveBlocks = useCallback(async (outlineId: string) => {
+        console.log('autoSaveBlocks')
+        // Clear any existing timeout
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
+
+        // Set a new timeout
+        saveTimeoutRef.current = setTimeout(async () => {
+            try {
+                setIsSaving(true);
+                setError(null);
+                const list = buildBlockList(blocks);
+                try {
+                    // setIsLoading(true);
+                    setError(null);
+                    // const id = '5071e9aa8d1246b5870c7970b679b7d4';
+                    await api.saveBlocks({ outline_id: outlineId, blocks: list });
+                    // setBlocks(list);
+                } catch (error) {
+                    console.error(error);
+                    setError("Failed to save blocks");
+                }
+                setLastSaveTime(new Date());
+            } catch (error) {
+                console.error(error);
+                setError("Failed to save chapter");
+            } finally {
+                setIsSaving(false);
+            }
+        }, 3000); // 3 seconds delay
+    }, [blockContentProperties, blockUIProperties, blocks]);
+
     const addSiblingOutline = async (item: Outline, name = '') => {
         const id = 'new_chapter'
         const parent = findNode(item.parentId || "");
@@ -567,7 +603,9 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         currentScenario,
         chapters,
         isLoading,
+        isSaving,
         error,
+        lastSaveTime,
         focusId,
         focusValue,
         cataData,
@@ -578,6 +616,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         blockUITypes,
         blockContentState,
         currentOutline,
+
         actions: {
             setFocusId,
             addChapter,
@@ -602,7 +641,8 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             setBlockUITypesById,
             updateChapterOrder,
             setBlockContentStateById,
-            saveBlocks
+            saveBlocks,
+            autoSaveBlocks
         },
     };
     // const init = async () => {
