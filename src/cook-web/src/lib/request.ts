@@ -114,7 +114,7 @@ export class Request {
       if (Object.prototype.hasOwnProperty.call(res, 'code')) {
         if (res.code == 0) {
           return res.data;
-        } if (res.code == 1001) {
+        } if (res.code == 1001 || res.code == 1005) {
           window.location.href = '/login';
         } else {
           throw new ErrorWithCode(res.message, res.code);

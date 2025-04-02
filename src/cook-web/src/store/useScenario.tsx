@@ -252,22 +252,41 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
     const addBlock = async (index: number, blockType: string = 'ai') => {
         const item = ContentTypes.find(p => p.type == blockType);
         const buttonUI = UITypes[0];
-        const block = {
-            "properties": {
-                block_id: uuidv4(),
-                "block_no": "",
-                "block_name": "",
-                "block_desc": "",
-                "block_type": 101,
-                "block_index": index,
+        // const block = {
+        //     "properties": {
+        //         block_id: uuidv4(),
+        //         "block_no": "",
+        //         "block_name": "",
+        //         "block_desc": "",
+        //         "block_type": 101,
+        //         "block_index": index,
+        //         "block_content": {
+        //             type: blockType,
+        //             properties: item?.properties
+        //         },
+        //         "block_ui": buttonUI
+        //     },
+        //     "type": "block"
+        // }
+        const block = await api.addBlock({
+            "block": {
                 "block_content": {
                     type: blockType,
                     properties: item?.properties
                 },
+                "block_desc": "",
+                "block_id": "",
+                "block_index": index,
+                "block_name": "",
+                "block_no": "",
+                "block_type": 0,
                 "block_ui": buttonUI
             },
-            "type": "block"
-        }
+            "block_index": index,
+            "outline_id": currentOutline
+        })
+        console.log('====')
+        console.log(block)
         console.log(index)
         blocks.splice(index, 0, block);
         console.log(blocks)
