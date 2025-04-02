@@ -112,6 +112,7 @@ export class Request {
       const res = await response.json();
       // 判断是否有code属性，使用Object API
       if (Object.prototype.hasOwnProperty.call(res, 'code')) {
+        console.log(res);
         if (res.code == 0) {
           return res.data;
         } if (res.code == 1001 || res.code == 1005) {
