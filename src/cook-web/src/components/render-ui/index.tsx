@@ -22,10 +22,17 @@ const BlockMap = {
 }
 
 export const BlockUI = ({ id, type, properties }) => {
-    const { actions, currentOutline } = useScenario();
-    const onPropertiesChange = (properties) => {
-        actions.setBlockUIPropertiesById(id, properties)
-        actions.autoSaveBlocks(currentOutline);
+    const { actions, currentOutline, blocks, blockContentTypes, blockUITypes, blockUIProperties, blockContentProperties } = useScenario();
+    const onPropertiesChange = async (properties) => {
+        await actions.setBlockUIPropertiesById(id, properties)
+        const p = {
+            ...blockUIProperties,
+            [id]: {
+                ...blockUIProperties[id],
+                ...properties
+            }
+        }
+        actions.autoSaveBlocks(currentOutline, blocks, blockContentTypes, blockContentProperties, blockUITypes, p)
     }
     const Ele = BlockMap[type]
     if (!Ele) {
@@ -45,7 +52,6 @@ export const RenderBlockUI = ({ block }) => {
         actions,
         blockUITypes,
         blockUIProperties,
-        currentOutline
     } = useScenario();
     const [expand, setExpand] = useState(false)
 
@@ -54,7 +60,6 @@ export const RenderBlockUI = ({ block }) => {
         const opt = UITypes.find(p => p.type === type);
         actions.setBlockUITypesById(id, type)
         actions.setBlockUIPropertiesById(id, opt?.properties || {})
-        actions.autoSaveBlocks(currentOutline);
     }
     return (
         <>

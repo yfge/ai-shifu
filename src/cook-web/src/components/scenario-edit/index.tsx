@@ -22,6 +22,8 @@ const ScriptEditor = ({ id }: { id: string }) => {
         actions,
         blockContentTypes,
         blockContentProperties,
+        blockUIProperties,
+        currentOutline
     } = useScenario();
     const [menuPosition, setMenuPosition] = useState<{
         blockId?: string;
@@ -105,6 +107,10 @@ const ScriptEditor = ({ id }: { id: string }) => {
     useEffect(() => {
         actions.loadChapters(id);
     }, [id]);
+
+    // useEffect(() => {
+    //     actions.autoSaveBlocks(currentOutline)
+    // }, [blockContentProperties, blockUIProperties, currentOutline])
 
     return (
         <div className="flex flex-col h-screen bg-gray-50 overflow-hidden ">

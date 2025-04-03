@@ -1,10 +1,42 @@
 import React, { createContext, useContext, useState, ReactNode, useRef, useCallback } from "react";
 import { Scenario, ScenarioContextType, Outline, Block } from "../types/scenario";
 import api from "@/api";
-import { ContentTypes } from "@/components/render-block";
+import { ContentTypes, UItypes } from "@/components/render-block";
 import { v4 as uuidv4 } from 'uuid';
 import { UITypes } from "@/components/render-ui";
+import { debounce } from "lodash";
 const ScenarioContext = createContext<ScenarioContextType | undefined>(undefined);
+
+const buildBlockList2 = (blocks: Block[], blockContentTypes: Record<string, any>, blockContentProperties: Record<string, any>, blockUITypes: Record<string, any>, blockUIProperties: Record<string, any>) => {
+    // build block list base on block content type,block content properties,block ui type,block ui properties
+    const list = blocks.map((block: Block, index) => {
+        return {
+            "properties": {
+                block_id: block.properties.block_id,
+                "block_no": "",
+                "block_name": "",
+                "block_desc": "",
+                "block_type": 101,
+                "block_index": index,
+                "block_content": {
+                    type: blockContentTypes[block.properties.block_id],
+                    properties: blockContentProperties[block.properties.block_id]
+                },
+                "block_ui": {
+                    type: blockUITypes[block.properties.block_id],
+                    properties: blockUIProperties[block.properties.block_id]
+                }
+            },
+            "type": "block"
+        }
+    })
+    return list;
+}
+
+// const saveBlockToServer = debounce(async (outline: string, blocks: Block[], blockContentTypes: Record<string, any>, blockContentProperties: Record<string, any>, blockUITypes: Record<string, any>, blockUIProperties: Record<string, any>) => {
+//     const blockList = buildBlockList(blocks, blockContentTypes, blockContentProperties, blockUITypes, blockUIProperties);
+//     await api.saveBlocks({ outline_id: outline, blocks: blockList });
+// }, 3000);
 
 export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [currentScenario, setCurrentScenario] = useState<Scenario | null>(null);
@@ -136,6 +168,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             if (list.length > 0) {
                 if (list[0].children && list[0].children.length > 0) {
                     setCurrentOutline(list[0].children[0].id);
+                    loadBlocks(list[0].children[0].id);
                 }
             }
             setChapters(list);
@@ -187,7 +220,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         const list = blocks.map((block: Block, index) => {
             return {
                 "properties": {
-                    block_id: undefined,
+                    block_id: block.properties.block_id,
                     "block_no": "",
                     "block_name": "",
                     "block_desc": "",
@@ -275,7 +308,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
                     properties: item?.properties
                 },
                 "block_desc": "",
-                "block_id": "",
+                // "block_id": "",
                 "block_index": index,
                 "block_name": "",
                 "block_no": "",
@@ -285,9 +318,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             "block_index": index,
             "outline_id": currentOutline
         })
-        console.log('====')
-        console.log(block)
-        console.log(index)
+
         blocks.splice(index, 0, block);
         console.log(blocks)
         const list = [...blocks];
@@ -341,38 +372,35 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
 
         setFocusId(id);
     }
-    const autoSaveBlocks = useCallback(async (outlineId: string) => {
-        console.log('autoSaveBlocks')
-        // Clear any existing timeout
-        if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
-        }
+    // const autoSaveBlocks2 = async (outlineId: string, blocks: Block[], blockContentTypes: Record<string, any>, blockContentProperties: Record<string, any>, blockUITypes: Record<string, any>, blockUIProperties: Record<string, any>) => {
+    //     try {
+    //         setIsSaving(true);
+    //         setError(null);
+    //         setIsSaving(true);
+    //         setError(null);
 
-        // Set a new timeout
-        saveTimeoutRef.current = setTimeout(async () => {
-            try {
-                setIsSaving(true);
-                setError(null);
-                const list = buildBlockList(blocks);
-                try {
-                    // setIsLoading(true);
-                    setError(null);
-                    // const id = '5071e9aa8d1246b5870c7970b679b7d4';
-                    await api.saveBlocks({ outline_id: outlineId, blocks: list });
-                    // setBlocks(list);
-                } catch (error) {
-                    console.error(error);
-                    setError("Failed to save blocks");
-                }
-                setLastSaveTime(new Date());
-            } catch (error) {
-                console.error(error);
-                setError("Failed to save chapter");
-            } finally {
-                setIsSaving(false);
-            }
-        }, 3000); // 3 seconds delay
-    }, [blockContentProperties, blockUIProperties, blocks]);
+    //         await saveBlockToServer(outlineId, blocks, blockContentTypes, blockContentProperties, blockUITypes, blockUIProperties);
+    //         setIsSaving(false);
+    //         setLastSaveTime(new Date());
+    //     } catch (error) {
+    //         console.error(error);
+    //         setError("Failed to save chapter");
+    //     } finally {
+    //         setIsSaving(false);
+    //     }
+    // }
+    const autoSaveBlocks = useCallback(debounce(async (outline: string, blocks: Block[], blockContentTypes: Record<string, any>, blockContentProperties: Record<string, any>, blockUITypes: Record<string, any>, blockUIProperties: Record<string, any>) => {
+
+        setIsSaving(true);
+        setError(null);
+        setIsSaving(true);
+        setError(null);
+        const blockList = buildBlockList2(blocks, blockContentTypes, blockContentProperties, blockUITypes, blockUIProperties);
+        await api.saveBlocks({ outline_id: outline, blocks: blockList });
+        setIsSaving(false);
+        setLastSaveTime(new Date());
+    }, 3000), []) as (outline: string, blocks: Block[], blockContentTypes: Record<string, any>, blockContentProperties: Record<string, any>, blockUITypes: Record<string, any>, blockUIProperties: Record<string, any>) => Promise<void>
+
 
     const addSiblingOutline = async (item: Outline, name = '') => {
         const id = 'new_chapter'

@@ -100,7 +100,7 @@ export interface ScenarioActions {
     updateChapterOrder: (chapterIds: string[]) => Promise<void>
     setBlockContentStateById: (id: string, state: 'edit' | 'preview') => void;
     saveBlocks: () => Promise<void>;
-    autoSaveBlocks: (outlineId: string) => Promise<void>;
+    autoSaveBlocks: (outline: string, blocks: Block[], blockContentTypes: Record<string, any>, blockContentProperties: Record<string, any>, blockUITypes: Record<string, any>, blockUIProperties: Record<string, any>) => Promise<void>;
 }
 
 export interface ScenarioContextType extends ScenarioState {

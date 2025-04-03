@@ -16,11 +16,18 @@ const BlockMap = {
 }
 
 export const RenderBlockContent = ({ id, type, properties }) => {
-    const { actions, blockContentTypes, blockContentState, currentOutline } = useScenario();
-    const onPropertiesChange = (properties) => {
+    const { actions, blocks, blockContentTypes, blockContentState, currentOutline, blockUITypes, blockContentProperties, blockUIProperties } = useScenario();
+    const onPropertiesChange = async (properties) => {
         console.log(id, properties)
-        actions.setBlockContentPropertiesById(id, properties)
-        actions.autoSaveBlocks(currentOutline);
+        await actions.setBlockContentPropertiesById(id, properties)
+        const p = {
+            ...blockContentProperties,
+            [id]: {
+                ...blockContentProperties[id],
+                ...properties
+            }
+        }
+        actions.autoSaveBlocks(currentOutline, blocks, blockContentTypes, p, blockUITypes, blockUIProperties)
     }
 
     const onContentTypeChange = (id: string, type: string) => {
