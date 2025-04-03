@@ -19,6 +19,13 @@ interface SolideContnet {
 }
 
 export default function SolidContent(props: SolideContnet) {
+    if (props.properties.prompt) {
+        props.properties.content = props.properties.prompt;
+        delete props.properties.prompt;
+        delete props.properties.model;
+        delete props.properties.temprature;
+        delete props.properties.other_conf;
+    }
 
     const { isEdit } = props;
     if (isEdit) {

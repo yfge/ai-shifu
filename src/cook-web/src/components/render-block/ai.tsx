@@ -24,6 +24,11 @@ interface AIBlock {
 
 export default function AI(props: AIBlock) {
 
+    if (props.properties.content) {
+        props.properties.prompt = props.properties.content;
+        delete props.properties.content;
+    }
+
     const { isEdit } = props;
     if (isEdit) {
         return (
