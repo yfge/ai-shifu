@@ -42,13 +42,13 @@ export default function TextEditor(props: SolideContnetProps) {
     if (textareaRef.current) {
       const position = textareaRef.current.selectionStart;
       setCursorPosition(position);
-      
+
       // 计算光标在文本区域中的位置
       const text = textareaRef.current.value.substring(0, position);
       const lines = text.split('\n');
       const currentLine = lines[lines.length - 1];
       const lineNumber = lines.length;
-      
+
       // 创建一个临时的 span 元素来计算文本宽度
       const span = document.createElement('span');
       span.style.visibility = 'hidden';
@@ -57,17 +57,17 @@ export default function TextEditor(props: SolideContnetProps) {
       span.style.font = window.getComputedStyle(textareaRef.current).font;
       span.textContent = currentLine;
       document.body.appendChild(span);
-      
+
       const rect = textareaRef.current.getBoundingClientRect();
       const lineHeight = parseInt(window.getComputedStyle(textareaRef.current).lineHeight);
       const paddingTop = parseInt(window.getComputedStyle(textareaRef.current).paddingTop);
       const paddingLeft = parseInt(window.getComputedStyle(textareaRef.current).paddingLeft);
-      
+
       setSuggestionPosition({
         top: rect.top + paddingTop + (lineNumber * lineHeight),
         left: rect.left + paddingLeft + span.offsetWidth
       });
-      
+
       document.body.removeChild(span);
     }
   };
@@ -78,7 +78,7 @@ export default function TextEditor(props: SolideContnetProps) {
     const newContent = textBeforeCursor + variable.name + '}' + textAfterCursor;
     setContent(newContent);
     setShowSuggestions(false);
-    
+
     // 更新光标位置到变量名之后
     setTimeout(() => {
       if (textareaRef.current) {
@@ -93,11 +93,11 @@ export default function TextEditor(props: SolideContnetProps) {
     const value = e.target.value;
     setContent(value);
     updateCursorPosition();
-    
+
     // 检查是否输入了 {
     const textBeforeCursor = value.substring(0, cursorPosition);
     const lastChar = textBeforeCursor[textBeforeCursor.length - 1];
-    
+
     if (lastChar === '{') {
       setShowSuggestions(true);
       setSuggestions(mockVariables);
@@ -161,7 +161,7 @@ export default function TextEditor(props: SolideContnetProps) {
             className="w-full h-64 p-4 border rounded font-mono"
           />
           {showSuggestions && (
-            <div 
+            <div
               className="fixed z-10 bg-white border rounded shadow-lg w-64"
               style={{
                 top: `${suggestionPosition.top}px`,
@@ -206,7 +206,7 @@ export default function TextEditor(props: SolideContnetProps) {
                   </span>
                 );
               }
-              
+
               const match = /language-(\w+)/.exec(className || '');
               return match ? (
                 <SyntaxHighlighter
