@@ -29,21 +29,14 @@ export default function AI(props: AIBlock) {
         delete props.properties.content;
     }
 
-    const { isEdit } = props;
-    if (isEdit) {
-        return (
-            <MDXEditor
-                className="h-60 overflow-auto markdown"
-                value={props.properties.prompt}
-                onChange={(value) => {
-                    props.onChange({ ...props.properties, prompt: value })
-                }}
-            />
-        )
-    }
     return (
-        <TextEditor>
-            {props.properties.prompt}
-        </TextEditor>
+        <TextEditor
+            content={props.properties.prompt}
+            profiles={props.properties.profiles}
+            isEdit={props.isEdit}
+            onChange={(value) => {
+                props.onChange({ ...props.properties, prompt: value })
+            }}
+        />
     )
 }

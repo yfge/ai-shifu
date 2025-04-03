@@ -10,9 +10,11 @@ interface Variable {
   text: string;
 }
 
-interface SolideContnetProps {
+interface TextEditorProps {
     content: string;
     profiles: string[];
+    onChange: (content: string) => void;
+    isEdit: boolean;
 }
 
 const mockVariables: Variable[] = [
@@ -28,12 +30,11 @@ const processContent = (content: string) => {
   return content.replace(variableRegex, '`$1`');
 };
 
-export default function TextEditor(props: SolideContnetProps) {
-  const [content, setContent] = useState('');
+export default function TextEditor(props: TextEditorProps) {
+    console.log(props)
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<Variable[]>([]);
   const [cursorPosition, setCursorPosition] = useState(0);
-  const [isEditing, setIsEditing] = useState(false);
   const [suggestionPosition, setSuggestionPosition] = useState({ top: 0, left: 0 });
   const [selectedIndex, setSelectedIndex] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -73,10 +74,13 @@ export default function TextEditor(props: SolideContnetProps) {
   };
 
   const insertVariable = (variable: Variable) => {
-    const textBeforeCursor = content.substring(0, cursorPosition);
-    const textAfterCursor = content.substring(cursorPosition);
+
+
+    console.log(variable.name)
+    const textBeforeCursor = props.content.substring(0, cursorPosition);
+    const textAfterCursor = props.content.substring(cursorPosition);
     const newContent = textBeforeCursor + variable.name + '}' + textAfterCursor;
-    setContent(newContent);
+    props.onChange(newContent);
     setShowSuggestions(false);
 
     // 更新光标位置到变量名之后
@@ -91,7 +95,7 @@ export default function TextEditor(props: SolideContnetProps) {
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
-    setContent(value);
+    props.onChange(value);
     updateCursorPosition();
 
     // 检查是否输入了 {
@@ -105,6 +109,7 @@ export default function TextEditor(props: SolideContnetProps) {
     } else {
       setShowSuggestions(false);
     }
+    
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -134,25 +139,26 @@ export default function TextEditor(props: SolideContnetProps) {
   };
 
   const handleClick = () => {
-    setIsEditing(true);
+    props.isEdit = true;
     updateCursorPosition();
   };
 
   const handleBlur = () => {
     // 延迟关闭下拉菜单，以便能够点击选择
     setTimeout(() => {
-      setIsEditing(false);
+      props.isEdit = false;
       setShowSuggestions(false);
     }, 200);
   };
 
   const renderContent = () => {
-    if (isEditing) {
+    console.log(props.isEdit)
+    if (props.isEdit) {
       return (
         <div className="relative">
           <textarea
             ref={textareaRef}
-            value={content}
+            value={props.content}
             onChange={handleInput}
             onKeyDown={handleKeyDown}
             onBlur={handleBlur}
@@ -225,7 +231,7 @@ export default function TextEditor(props: SolideContnetProps) {
             }
           }}
         >
-          {processContent(content)}
+          {processContent(props.content)}
         </ReactMarkdown>
       </div>
     );

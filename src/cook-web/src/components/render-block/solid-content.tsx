@@ -1,7 +1,7 @@
 // import { MDXEditor } from '@mdxeditor/editor';
 import MDXEditor from '@/components/md-editor';
 import Markdown from '@/components/markdown'
-
+import TextEditor from '@/components/text-editor';
 // import { ALL_PLUGINS } from '@/components/md-editor';
 // import { Textarea } from '../ui/textarea';
 // import MarkdownEditor from '@/components/markdown-editor'
@@ -27,24 +27,15 @@ export default function SolidContent(props: SolideContnet) {
         delete props.properties.other_conf;
     }
 
-    const { isEdit } = props;
-    if (isEdit) {
-        return (
-            <MDXEditor
-                className="h-60 overflow-auto"
-                value={props.properties.content}
-                onChange={(value) => {
-                    props.onChange({ ...props.properties, content: value })
-                }}
-            />
-
-        )
-    }
     return (
-
-        <Markdown >
-            {props.properties.content}
-        </Markdown>
+        <TextEditor
+            content={props.properties.content}
+            profiles={props.properties.profiles}
+            onChange={(value) => {
+                props.onChange({ ...props.properties, content: value })
+            }}
+        />
 
     )
+  
 }
