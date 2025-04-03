@@ -2,7 +2,7 @@
 // import { MDXEditor } from '@mdxeditor/editor';
 import MDXEditor from '@/components/md-editor';
 import Markdown from '@/components/markdown'
-
+import TextEditor from '@/components/text-editor';
 // import { Textarea } from "../ui/textarea";
 // import { Textarea } from "../ui/textarea";
 // import MarkdownEditor from '@/components/markdown-editor'
@@ -42,8 +42,8 @@ export default function AI(props: AIBlock) {
         )
     }
     return (
-        <Markdown >
+        <TextEditor>
             {props.properties.prompt}
-        </Markdown>
+        </TextEditor>
     )
 }
