@@ -109,7 +109,7 @@ export default function TextEditor(props: TextEditorProps) {
     } else {
       setShowSuggestions(false);
     }
-    
+
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

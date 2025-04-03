@@ -37,5 +37,5 @@ export default function SolidContent(props: SolideContnet) {
         />
 
     )
-  
+
 }
