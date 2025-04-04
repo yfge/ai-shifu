@@ -56,6 +56,19 @@ export interface Block {
     }
     type: string;
 }
+
+export interface ColorSetting {
+    color: string;
+    text_color: string;
+}
+
+export interface ProfileItem {
+    profile_key: string;
+    color_setting: ColorSetting;
+    profile_type: string;
+}
+
+
 export interface ScenarioState {
     currentScenario: Scenario | null;
     chapters: Outline[];
@@ -73,6 +86,7 @@ export interface ScenarioState {
     blockContentTypes: { [x: string]: string };
     blockContentState: { [x: string]: 'edit' | 'preview' };
     currentOutline: string;
+    profileItemDefinations: ProfileItem[];
 }
 
 export interface ScenarioActions {

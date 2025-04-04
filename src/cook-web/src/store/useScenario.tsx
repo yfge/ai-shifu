@@ -56,6 +56,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
     const [blockUITypes, setBlockUITypes] = useState<{ [x: string]: string }>({});
     const [blockContentState, setBlockContentState] = useState<{ [x: string]: 'edit' | 'preview' }>({});
     const [currentOutline, setCurrentOutline] = useState('');
+    const [profileItemDefinations, setProfileItemDefinations] = useState<string[]>([]);
     const loadScenario = async (scenarioId: string) => {
         console.log(scenarioId)
         // try {
@@ -173,6 +174,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             }
             setChapters(list);
             buildOutlineTree(list);
+            loadProfileItemDefinations(scenarioId);
         } catch (error) {
             console.error(error);
             setError("Failed to load chapters");
@@ -612,6 +614,13 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         })
     }
 
+    const loadProfileItemDefinations = async (scenarioId: string) => {
+        const list = await api.getProfileItemDefinations({
+            parent_id: scenarioId,
+            type: "all"
+        })
+        setProfileItemDefinations(list);
+    }
     const setBlockContentPropertiesById = (id: string, properties: any) => {
         setBlockContentProperties({
             ...blockContentProperties,
@@ -677,7 +686,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         blockUITypes,
         blockContentState,
         currentOutline,
-
+        profileItemDefinations,
         actions: {
             setFocusId,
             addChapter,

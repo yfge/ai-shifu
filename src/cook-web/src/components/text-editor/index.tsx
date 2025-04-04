@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useScenario } from '@/store';
+import React, { useState, useRef, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -7,6 +8,7 @@ interface Variable {
   name: string;
   description: string;
   color: string;
+  text_color: string;
   text: string;
 }
 
@@ -17,11 +19,6 @@ interface TextEditorProps {
   isEdit: boolean;
 }
 
-const mockVariables: Variable[] = [
-  { name: 'user.name', description: '用户姓名', color: 'bg-red-100 text-red-800', text: 'red' },
-  { name: 'user.age', description: '用户年龄', color: 'bg-blue-100 text-blue-800', text: 'blue' },
-  { name: 'date', description: '当前日期', color: 'bg-green-100 text-green-800', text: 'green' },
-];
 
 // 将文本中的变量部分转换为 Markdown 代码块
 const processContent = (content: string) => {
@@ -31,13 +28,25 @@ const processContent = (content: string) => {
 };
 
 export default function TextEditor(props: TextEditorProps) {
-
+  const { profileItemDefinations } = useScenario();
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<Variable[]>([]);
   const [cursorPosition, setCursorPosition] = useState(0);
   const [suggestionPosition, setSuggestionPosition] = useState({ top: 0, left: 0 });
   const [selectedIndex, setSelectedIndex] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const mockVariables = useMemo(() => {
+    return profileItemDefinations.map((item) => {
+      return {
+        name: item.profile_key,
+        description: item.profile_key,
+        color: item.color_setting.color,
+        text_color: item.color_setting.text_color,
+        text: item.profile_key,
+      };
+    });
+  }, [profileItemDefinations]);
+
 
   const updateCursorPosition = () => {
     if (textareaRef.current) {
@@ -182,8 +191,16 @@ export default function TextEditor(props: TextEditorProps) {
                   onClick={() => insertVariable(suggestion)}
                 >
                   <div className="flex items-center">
-                    <div className={`w-3 h-3 rounded-full mr-2 ${suggestion.color}`}></div>
-                    <div className="font-bold">{suggestion.name}</div>
+                    <div className={`w-3 h-3 rounded-full mr-2 `}
+                      style={{
+                        backgroundColor: suggestion.color
+                      }}
+                    ></div>
+                    <div className="font-bold"
+                      style={{
+                        color: suggestion.text_color
+                      }}
+                    >{suggestion.name}</div>
                   </div>
                   <div className="text-sm text-gray-500 ml-5">{suggestion.description}</div>
                 </div>
@@ -235,6 +252,7 @@ export default function TextEditor(props: TextEditorProps) {
       </div>
     );
   };
+
 
   return (
     <div className="container mx-auto p-2">
