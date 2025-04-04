@@ -32,7 +32,8 @@ const api = {
     addProfileItem: "POST /profiles/add-profile-item-quick",
     getUserInfo: "GET /user/info",
     updateChapterOrder: "POST /scenario/update-chapter-order",
-    addBlock: "POST /scenario/add-block"
+    addBlock: "POST /scenario/add-block",
+    publishScenario: "POST /scenario/publish-scenario",
 };
 
 export default api;

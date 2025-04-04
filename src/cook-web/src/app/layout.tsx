@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster"
+import { AlertProvider } from '@/components/ui/use-alert';
 
 import "./globals.css";
 import '@/assets/css/md-editor.css';
@@ -31,8 +32,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-hidden`}
       >
-        {children}
-        <Toaster />
+        <AlertProvider>
+          {children}
+          <Toaster />
+        </AlertProvider>
       </body>
     </html>
   );

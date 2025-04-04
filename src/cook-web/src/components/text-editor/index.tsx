@@ -11,10 +11,10 @@ interface Variable {
 }
 
 interface TextEditorProps {
-    content: string;
-    profiles: string[];
-    onChange: (content: string, isEdit: boolean) => void;
-    isEdit: boolean;
+  content: string;
+  profiles: string[];
+  onChange: (content: string, isEdit: boolean) => void;
+  isEdit: boolean;
 }
 
 const mockVariables: Variable[] = [
@@ -164,7 +164,7 @@ export default function TextEditor(props: TextEditorProps) {
             onBlur={handleBlur}
             onClick={handleClick}
             onKeyUp={updateCursorPosition}
-            className="w-full h-64 p-4 border rounded font-mono"
+            className="w-full h-64 p-2  rounded font-mono focus:ring-0 active:ring-0 focus:outline-none"
           />
           {showSuggestions && (
             <div
@@ -177,9 +177,8 @@ export default function TextEditor(props: TextEditorProps) {
               {suggestions.map((suggestion, index) => (
                 <div
                   key={suggestion.name}
-                  className={`p-2 hover:bg-gray-100 cursor-pointer ${
-                    index === selectedIndex ? 'bg-blue-50' : ''
-                  }`}
+                  className={`p-2 hover:bg-gray-100 cursor-pointer ${index === selectedIndex ? 'bg-blue-50' : ''
+                    }`}
                   onClick={() => insertVariable(suggestion)}
                 >
                   <div className="flex items-center">
@@ -197,12 +196,12 @@ export default function TextEditor(props: TextEditorProps) {
 
     return (
       <div
-        className="w-full h-64 p-4 border rounded cursor-pointer font-mono"
+        className="w-full h-64 p-2 rounded cursor-pointer font-mono markdown"
         onClick={handleClick}
       >
         <ReactMarkdown
           components={{
-            code({node, className, children, ...props}) {
+            code({ node, className, children, ...props }) {
               // 检查是否是变量（没有语言标记的代码块）
               if (!className) {
                 const variable = mockVariables.find(v => v.name === String(children));
@@ -238,7 +237,7 @@ export default function TextEditor(props: TextEditorProps) {
   };
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-2">
       {renderContent()}
     </div>
   );

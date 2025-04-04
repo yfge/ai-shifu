@@ -131,28 +131,14 @@ export const UITypes = [
         type: 'option',
         name: '按钮组',
         properties: {
-            "option_name": "请输入",
-            "option_key": "请输入",
+            "option_name": "",
+            "option_key": "",
             "profile_key": "Usage_level",
             "buttons": [
                 {
                     "properties": {
                         "button_name": "全部",
                         "button_key": "全部"
-                    },
-                    "type": "button"
-                },
-                {
-                    "properties": {
-                        "button_name": "选项1",
-                        "button_key": "选项1"
-                    },
-                    "type": "button"
-                },
-                {
-                    "properties": {
-                        "button_name": "选项2",
-                        "button_key": "选项2"
                     },
                     "type": "button"
                 }

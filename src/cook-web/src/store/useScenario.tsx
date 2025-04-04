@@ -603,6 +603,12 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             }
         })
     }
+
+    const publishScenario = async () => {
+        await api.publishScenario({
+            "scenario_id": currentScenario?.id
+        })
+    }
     const setBlockContentPropertiesById = (id: string, properties: any) => {
         setBlockContentProperties({
             ...blockContentProperties,
@@ -689,7 +695,8 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             updateChapterOrder,
             setBlockContentStateById,
             saveBlocks,
-            autoSaveBlocks
+            autoSaveBlocks,
+            publishScenario
         },
     };
     // const init = async () => {

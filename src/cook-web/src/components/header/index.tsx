@@ -1,16 +1,52 @@
 /* eslint-disable @next/next/no-img-element */
 "use client"
-import React from 'react';
+import React, { useState } from 'react';
 import { ArrowTrendingUpIcon, PlayIcon, ChevronLeftIcon, AdjustmentsVerticalIcon } from "@heroicons/react/24/outline"
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useScenario } from '@/store';
 import Loading from '../loading';
-
+import { useAlert } from '@/components/ui/use-alert';
+import api from '@/api'
 
 const Header = () => {
+    const alert = useAlert();
     const router = useRouter();
-    const { isSaving, lastSaveTime } = useScenario();
+    const [publishing, setPublishing] = useState(false)
+    const { isSaving, lastSaveTime, currentScenario } = useScenario();
+    const publish = async () => {
+        // TODO: publish
+        // actions.publishScenario();
+        alert.showAlert({
+            confirmText: '确认',
+            cancelText: '取消',
+            title: '是否确认发布',
+            description: '发布将会把当前内容更新上线，请确认后再发布！',
+            async onConfirm() {
+                setPublishing(true)
+                const reuslt = await api.publishScenario({
+                    scenario_id: currentScenario?.id || ''
+                });
+                setPublishing(false)
+                alert.showAlert({
+                    title: '发布成功',
+                    confirmText: '去查看',
+                    cancelText: '关闭',
+                    description: (
+                        <div className="flex flex-col space-y-2">
+                            <span>发布成功，请前往查看</span>
+                            <a href={reuslt} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">
+                                {reuslt}
+                            </a>
+                        </div >
+                    ),
+                    onConfirm() {
+                        window.open(reuslt, '_blank');
+                    }
+                })
+            },
+        })
+    }
     return (
         <div className="flex items-center w-full h-12 px-2 bg-white border-b border-gray-200">
             <div className="flex items-center space-x-4">
@@ -114,8 +150,20 @@ const Header = () => {
                     <PlayIcon />  预览
                 </Button>
 
-                <Button size="sm" className="h-8 ml-1 bg-purple-600 hover:bg-purple-700 text-xs font-normal">
-                    <ArrowTrendingUpIcon />  发布
+                <Button size="sm" className="h-8 ml-1 bg-purple-600 hover:bg-purple-700 text-xs font-normal"
+                    onClick={publish}
+                >
+                    {
+                        publishing && (
+                            <Loading className='h-4 w-4 mr-1' />
+                        )
+                    }
+                    {
+                        !publishing && (
+                            <ArrowTrendingUpIcon />
+                        )
+                    }
+                    发布
                 </Button>
             </div>
         </div>

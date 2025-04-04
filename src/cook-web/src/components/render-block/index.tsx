@@ -42,13 +42,16 @@ export const RenderBlockContent = ({ id, type, properties }) => {
         setIsEdit(false)
         await actions.saveBlocks();
     }
+    const onRemove = async () => {
+        // await actions.removeBlockById(id)
+    }
     const isEdit = blockContentState[id] == 'edit';
     const Ele = BlockMap[type]
     return (
-        <div className=''>
+        <div className='bg-[#F5F5F4] rounded-md'>
             {
                 isEdit && (
-                    <div className='bg-[#F5F5F4] rounded-t-md p-2 flex flex-row items-center py-1 justify-between'>
+                    <div className='rounded-t-md p-2 flex flex-row items-center py-1 justify-between'>
                         <Select
                             value={blockContentTypes[id]}
                             onValueChange={onContentTypeChange.bind(null, id)}
@@ -69,7 +72,7 @@ export const RenderBlockContent = ({ id, type, properties }) => {
                             </SelectContent>
                         </Select>
                         <div className='flex flex-row'>
-                            <div className='flex flex-row items-center w-6 '>
+                            <div className='flex flex-row items-center w-6 ' onClick={onRemove}>
                                 <Trash className='h-5 w-5 cursor-pointer' />
                             </div>
                             <Button variant='ghost' className=' cursor-pointer' onClick={onSave} >

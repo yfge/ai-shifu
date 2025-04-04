@@ -81,14 +81,13 @@
   padding-bottom: 4px;
   font-size: 24px;
   line-height: 1.2;
-  border-bottom: 1px solid #eee8d5;
+  font-weight: 600;
 }
 
 .markdown h2 {
   padding-bottom: 4px;
   font-size: 20px;
   line-height: 1.25;
-  border-bottom: 1px solid #eee8d5;
 }
 
 .markdown h3 {
