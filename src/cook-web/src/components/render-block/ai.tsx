@@ -1,4 +1,3 @@
-
 // import { MDXEditor } from '@mdxeditor/editor';
 import MDXEditor from '@/components/md-editor';
 import Markdown from '@/components/markdown'
@@ -20,10 +19,12 @@ interface AIBlock {
     isEdit: boolean;
     properties: AIBlockProps;
     onChange: (properties: AIBlockProps) => void;
+    onEditChange?: (isEdit: boolean) => void;
 }
 
 export default function AI(props: AIBlock) {
 
+    console.log(props)
     if (props.properties.content) {
         props.properties.prompt = props.properties.content;
         delete props.properties.content;
@@ -34,8 +35,11 @@ export default function AI(props: AIBlock) {
             content={props.properties.prompt}
             profiles={props.properties.profiles}
             isEdit={props.isEdit}
-            onChange={(value) => {
-                props.onChange({ ...props.properties, prompt: value })
+            onChange={(value, isEdit) => {
+                props.onChange({ ...props.properties, prompt: value });
+                if (props.onEditChange) {
+                    props.onEditChange(isEdit);
+                }
             }}
         />
     )

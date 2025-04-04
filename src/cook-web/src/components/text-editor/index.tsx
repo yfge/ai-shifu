@@ -13,7 +13,7 @@ interface Variable {
 interface TextEditorProps {
     content: string;
     profiles: string[];
-    onChange: (content: string) => void;
+    onChange: (content: string, isEdit: boolean) => void;
     isEdit: boolean;
 }
 
@@ -31,7 +31,7 @@ const processContent = (content: string) => {
 };
 
 export default function TextEditor(props: TextEditorProps) {
-    console.log(props)
+    
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<Variable[]>([]);
   const [cursorPosition, setCursorPosition] = useState(0);
@@ -80,7 +80,7 @@ export default function TextEditor(props: TextEditorProps) {
     const textBeforeCursor = props.content.substring(0, cursorPosition);
     const textAfterCursor = props.content.substring(cursorPosition);
     const newContent = textBeforeCursor + variable.name + '}' + textAfterCursor;
-    props.onChange(newContent);
+    props.onChange(newContent, props.isEdit);
     setShowSuggestions(false);
 
     // 更新光标位置到变量名之后
@@ -95,7 +95,7 @@ export default function TextEditor(props: TextEditorProps) {
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
-    props.onChange(value);
+    props.onChange(value, props.isEdit);
     updateCursorPosition();
 
     // 检查是否输入了 {
@@ -139,14 +139,14 @@ export default function TextEditor(props: TextEditorProps) {
   };
 
   const handleClick = () => {
-    props.isEdit = true;
+    props.onChange(props.content, true);
     updateCursorPosition();
   };
 
   const handleBlur = () => {
     // 延迟关闭下拉菜单，以便能够点击选择
     setTimeout(() => {
-      props.isEdit = false;
+      
       setShowSuggestions(false);
     }, 200);
   };
