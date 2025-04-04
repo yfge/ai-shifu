@@ -31,7 +31,7 @@ const processContent = (content: string) => {
 };
 
 export default function TextEditor(props: TextEditorProps) {
-    
+
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<Variable[]>([]);
   const [cursorPosition, setCursorPosition] = useState(0);
@@ -146,7 +146,7 @@ export default function TextEditor(props: TextEditorProps) {
   const handleBlur = () => {
     // 延迟关闭下拉菜单，以便能够点击选择
     setTimeout(() => {
-      
+
       setShowSuggestions(false);
     }, 200);
   };
