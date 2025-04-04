@@ -394,11 +394,19 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         setIsSaving(true);
         setError(null);
         setIsSaving(true);
-        setError(null);
-        const blockList = buildBlockList2(blocks, blockContentTypes, blockContentProperties, blockUITypes, blockUIProperties);
-        await api.saveBlocks({ outline_id: outline, blocks: blockList });
-        setIsSaving(false);
-        setLastSaveTime(new Date());
+        try {
+            setError(null);
+            const blockList = buildBlockList2(blocks, blockContentTypes, blockContentProperties, blockUITypes, blockUIProperties);
+            await api.saveBlocks({ outline_id: outline, blocks: blockList });
+            setIsSaving(false);
+            setLastSaveTime(new Date());
+        } catch (error: any) {
+            console.error(error);
+            setError(error.message);
+        } finally {
+            setIsSaving(false);
+            setLastSaveTime(new Date());
+        }
     }, 3000), []) as (outline: string, blocks: Block[], blockContentTypes: Record<string, any>, blockContentProperties: Record<string, any>, blockUITypes: Record<string, any>, blockUIProperties: Record<string, any>) => Promise<void>
 
 
@@ -604,11 +612,6 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         })
     }
 
-    const publishScenario = async () => {
-        await api.publishScenario({
-            "scenario_id": currentScenario?.id
-        })
-    }
     const setBlockContentPropertiesById = (id: string, properties: any) => {
         setBlockContentProperties({
             ...blockContentProperties,
@@ -650,6 +653,11 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             "chapter_ids": chapter_ids,
             "scenario_id": currentScenario?.id
         })
+    }
+    const removeBlock = async (id: string) => {
+        const list = blocks.filter((block) => block.properties.block_id !== id);
+        setBlocks(list);
+        autoSaveBlocks(currentOutline, list, blockContentTypes, blockContentProperties, blockUITypes, blockUIProperties);
     }
     // console.log(blockUIProperties)
     const value: ScenarioContextType = {
@@ -696,7 +704,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             setBlockContentStateById,
             saveBlocks,
             autoSaveBlocks,
-            publishScenario
+            removeBlock
         },
     };
     // const init = async () => {

@@ -8,12 +8,13 @@ import { useScenario } from '@/store';
 import Loading from '../loading';
 import { useAlert } from '@/components/ui/use-alert';
 import api from '@/api'
+import { CircleAlert, CircleCheck, X } from 'lucide-react';
 
 const Header = () => {
     const alert = useAlert();
     const router = useRouter();
     const [publishing, setPublishing] = useState(false)
-    const { isSaving, lastSaveTime, currentScenario } = useScenario();
+    const { isSaving, lastSaveTime, currentScenario, error } = useScenario();
     const publish = async () => {
         // TODO: publish
         // actions.publishScenario();
@@ -81,9 +82,16 @@ const Header = () => {
                     )
                 }
                 {
-                    (!isSaving && lastSaveTime) && (
-                        <span>
-                            已自动保存 {lastSaveTime?.toLocaleString()}
+                    !error && (!isSaving && lastSaveTime) && (
+                        <span className='flex flex-row items-center'>
+                            <CircleCheck height={18} width={18} className='mr-1  text-primary' />  已自动保存 {lastSaveTime?.toLocaleString()}
+                        </span>
+                    )
+                }
+                {
+                    error && (
+                        <span className='flex flex-row items-center text-red-500'>
+                            <CircleAlert height={18} width={18} className='mr-1' />  {error}
                         </span>
                     )
                 }

@@ -101,7 +101,7 @@ export interface ScenarioActions {
     setBlockContentStateById: (id: string, state: 'edit' | 'preview') => void;
     saveBlocks: () => Promise<void>;
     autoSaveBlocks: (outline: string, blocks: Block[], blockContentTypes: Record<string, any>, blockContentProperties: Record<string, any>, blockUITypes: Record<string, any>, blockUIProperties: Record<string, any>) => Promise<void>;
-    publishScenario: () => Promise<void>;
+    removeBlock: (id: string) => Promise<void>;
 }
 
 export interface ScenarioContextType extends ScenarioState {

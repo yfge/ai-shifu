@@ -44,6 +44,7 @@ export const RenderBlockContent = ({ id, type, properties }) => {
     }
     const onRemove = async () => {
         // await actions.removeBlockById(id)
+        actions.removeBlock(id);
     }
     const isEdit = blockContentState[id] == 'edit';
     const Ele = BlockMap[type]
