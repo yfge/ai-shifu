@@ -1,11 +1,11 @@
 "use client"
-import { ArrowRightOnRectangleIcon } from "@heroicons/react/24/outline";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { ChevronUpIcon, HeartIcon } from "lucide-react";
+import { ChevronUpIcon, HeartIcon, LogOut } from "lucide-react";
 import Social from "../social";
 import { useEffect, useState } from "react";
 import api from '@/api'
+import { setToken } from "@/local/local";
 
 interface UserInfo {
     user_id: string;
@@ -117,13 +117,16 @@ const UserProfileCard = () => {
                     })}
                 </div>
                 <hr />
-                <a
-                    href={'/logout'}
-                    className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100"
+                <div
+                    onClick={() => {
+                        setToken('')
+                        window.location.href = '/login'
+                    }}
+                    className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 cursor-pointer"
                 >
-                    <ArrowRightOnRectangleIcon className="w-4 h-4" />
+                    <LogOut className="w-4 h-4" />
                     <span>退出登录</span>
-                </a>
+                </div>
             </PopoverContent>
         </Popover>
     )

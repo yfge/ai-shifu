@@ -34,6 +34,7 @@ const api = {
     updateChapterOrder: "POST /scenario/update-chapter-order",
     addBlock: "POST /scenario/add-block",
     publishScenario: "POST /scenario/publish-scenario",
+    previewScenario: "POST /scenario/preview-scenario"
 };
 
 export default api;

@@ -9,6 +9,7 @@ import Loading from '../loading';
 import { useAlert } from '@/components/ui/use-alert';
 import api from '@/api'
 import { CircleAlert, CircleCheck, X } from 'lucide-react';
+import Preivew from '@/components/preview';
 
 const Header = () => {
     const alert = useAlert();
@@ -154,9 +155,9 @@ const Header = () => {
                 <Button variant="ghost" size="sm">
                     <AdjustmentsVerticalIcon /> 设置
                 </Button>
-                <Button variant="ghost" size="sm" className="h-8 px-2 text-xs font-normal">
-                    <PlayIcon />  预览
-                </Button>
+
+
+                <Preivew />
 
                 <Button size="sm" className="h-8 ml-1 bg-purple-600 hover:bg-purple-700 text-xs font-normal"
                     onClick={publish}
