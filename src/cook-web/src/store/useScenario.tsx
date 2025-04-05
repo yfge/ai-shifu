@@ -1,8 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode, useRef, useCallback } from "react";
-import { Scenario, ScenarioContextType, Outline, Block } from "../types/scenario";
+import React, { createContext, useContext, useState, ReactNode, useCallback } from "react";
+import { Scenario, ScenarioContextType, Outline, Block, ProfileItem } from "../types/scenario";
 import api from "@/api";
-import { ContentTypes, UItypes } from "@/components/render-block";
-import { v4 as uuidv4 } from 'uuid';
+import { ContentTypes } from "@/components/render-block";
 import { UITypes } from "@/components/render-ui";
 import { debounce } from "lodash";
 const ScenarioContext = createContext<ScenarioContextType | undefined>(undefined);
@@ -43,7 +42,6 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
     const [chapters, setChapters] = useState<Outline[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
-    const saveTimeoutRef = useRef<NodeJS.Timeout>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [focusId, setFocusId] = useState('');
@@ -56,7 +54,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
     const [blockUITypes, setBlockUITypes] = useState<{ [x: string]: string }>({});
     const [blockContentState, setBlockContentState] = useState<{ [x: string]: 'edit' | 'preview' }>({});
     const [currentOutline, setCurrentOutline] = useState('');
-    const [profileItemDefinations, setProfileItemDefinations] = useState<string[]>([]);
+    const [profileItemDefinations, setProfileItemDefinations] = useState<ProfileItem[]>([]);
     const loadScenario = async (scenarioId: string) => {
         console.log(scenarioId)
         // try {

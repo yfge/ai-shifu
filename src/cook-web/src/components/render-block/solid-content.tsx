@@ -1,6 +1,7 @@
+
 // import { MDXEditor } from '@mdxeditor/editor';
-import MDXEditor from '@/components/md-editor';
-import Markdown from '@/components/markdown'
+// import MDXEditor from '@/components/md-editor';
+// import Markdown from '@/components/markdown'
 import TextEditor from '@/components/text-editor';
 // import { ALL_PLUGINS } from '@/components/md-editor';
 // import { Textarea } from '../ui/textarea';
@@ -9,6 +10,10 @@ import TextEditor from '@/components/text-editor';
 interface SolideContnetProps {
     content: string;
     profiles: string[];
+    prompt?: string;
+    model?: string;
+    temprature?: number;
+    other_conf?: any;
 }
 
 interface SolideContnet {

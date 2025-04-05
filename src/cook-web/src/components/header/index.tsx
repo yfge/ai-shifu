@@ -1,14 +1,14 @@
 /* eslint-disable @next/next/no-img-element */
 "use client"
 import React, { useState } from 'react';
-import { ArrowTrendingUpIcon, PlayIcon, ChevronLeftIcon, AdjustmentsVerticalIcon } from "@heroicons/react/24/outline"
+import { ArrowTrendingUpIcon, ChevronLeftIcon, AdjustmentsVerticalIcon } from "@heroicons/react/24/outline"
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useScenario } from '@/store';
 import Loading from '../loading';
 import { useAlert } from '@/components/ui/use-alert';
 import api from '@/api'
-import { CircleAlert, CircleCheck, X } from 'lucide-react';
+import { CircleAlert, CircleCheck } from 'lucide-react';
 import Preivew from '@/components/preview';
 
 const Header = () => {

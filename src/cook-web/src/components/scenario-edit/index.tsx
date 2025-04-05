@@ -86,10 +86,6 @@ const ScriptEditor = ({ id }: { id: string }) => {
         // setMenuPosition({ visible: false });
     }
 
-    const onShowDebugMenu = () => {
-
-    }
-
     const onDebugBlock = (id: string) => {
         setDebugBlockInfo({ blockId: id, visible: true });
     }
@@ -199,7 +195,6 @@ const ScriptEditor = ({ id }: { id: string }) => {
                             left: menuPosition.x + 'px',
                             zIndex: 9999,
                         }}
-                        onClick={onShowDebugMenu.bind(null, menuPosition.blockId)}
                     >
 
                         <DropdownMenu>
