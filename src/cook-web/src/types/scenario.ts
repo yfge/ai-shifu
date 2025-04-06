@@ -107,9 +107,9 @@ export interface ScenarioActions {
     createSiblingUnit: (chapter: Outline) => Promise<void>;
     loadBlocks: (outlineId: string) => void;
     addBlock: (index: number, type: BlockType) => void;
-    setBlockContentPropertiesById: (id: string, properties: any) => void;
+    setBlockContentPropertiesById: (id: string, properties: any, reset?: boolean) => void;
     setBlockContentTypesById: (id: string, type: string) => void;
-    setBlockUIPropertiesById: (id: string, properties: any) => void;
+    setBlockUIPropertiesById: (id: string, properties: any, reset?: boolean) => void;
     setBlockUITypesById: (id: string, type: string) => void;
     updateChapterOrder: (chapterIds: string[]) => Promise<void>
     setBlockContentStateById: (id: string, state: 'edit' | 'preview') => void;

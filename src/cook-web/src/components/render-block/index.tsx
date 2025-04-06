@@ -33,7 +33,7 @@ export const RenderBlockContent = ({ id, type, properties }) => {
     const onContentTypeChange = (id: string, type: string) => {
         const opt = ContentTypes.find(p => p.type === type);
         actions.setBlockContentTypesById(id, type)
-        actions.setBlockContentPropertiesById(id, opt?.properties || {})
+        actions.setBlockContentPropertiesById(id, opt?.properties || {}, true)
     }
     const setIsEdit = (isEdit: boolean) => {
         actions.setBlockContentStateById(id, isEdit ? 'edit' : 'preview')
@@ -105,7 +105,7 @@ export const ContentTypes = [
         type: 'ai',
         name: 'AI块',
         properties: {
-            "prompt": "请输入",
+            "prompt": "",
             "profiles": [
                 "nickname",
                 "user_background"
@@ -119,7 +119,7 @@ export const ContentTypes = [
         type: 'systemprompt',
         name: '系统提示词',
         properties: {
-            "prompt": "请输入",
+            "prompt": "",
             "profiles": [
                 "nickname",
                 "user_background"
@@ -133,7 +133,7 @@ export const ContentTypes = [
         type: 'solidcontent',
         name: '固定内容',
         properties: {
-            "content": "请输入",
+            "content": "",
             "profiles": [
                 "nickname",
                 "user_background"

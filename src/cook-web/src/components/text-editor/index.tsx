@@ -89,7 +89,7 @@ export default function TextEditor(props: TextEditorProps) {
     console.log(variable.name)
     const textBeforeCursor = props.content.substring(0, cursorPosition);
     const textAfterCursor = props.content.substring(cursorPosition);
-    const newContent = textBeforeCursor + variable.name + '}' + textAfterCursor;
+    const newContent = textBeforeCursor + variable.name + '}}' + textAfterCursor;
     props.onChange(newContent, props.isEdit);
     setShowSuggestions(false);
 
@@ -167,6 +167,7 @@ export default function TextEditor(props: TextEditorProps) {
       return (
         <div className="relative">
           <textarea
+            placeholder='请输入'
             ref={textareaRef}
             value={props.content}
             onChange={handleInput}

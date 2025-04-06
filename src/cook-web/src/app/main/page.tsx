@@ -8,25 +8,7 @@ import { Scenario } from '@/types/scenario';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import { CreateScenarioDialog } from "@/components/create-scenario-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import Loading from '@/components/loading';
@@ -42,8 +24,10 @@ interface ScriptCardProps {
 const ScriptCard = ({ id, icon: Icon, title, description, isFavorite }: ScriptCardProps) => {
     const router = useRouter()
     return (
-        <Card className="w-full md:w-[calc(50%-1rem)] lg:w-[calc(33.33%-1rem)] rounded-xl bg-background hover:scale-105 transition-all duration-200 ease-in-out">
-            <CardContent className="p-4 cursor-pointer" onClick={() => router.push(`/scenario/${id}`)}>
+        <Card className="w-full md:w-[calc(50%-1rem)] lg:w-[calc(33.33%-1rem)] rounded-xl bg-background hover:scale-105 transition-all duration-200 ease-in-out"
+            onClick={() => router.push(`/scenario/${id}`)}
+        >
+            <CardContent className="p-4 cursor-pointer" >
                 <div className='flex flex-row items-center justify-between'>
                     <div className='flex flex-row items-center'>
                         <div className="p-2 h-10 w-10 rounded-lg bg-purple-50 mr-4 mb-3">
@@ -65,28 +49,14 @@ const ScriptCard = ({ id, icon: Icon, title, description, isFavorite }: ScriptCa
     );
 }
 
-const formSchema = z.object({
-    scenario_name: z.string().min(1, "请输入剧本名称"),
-    scenario_description: z.string().min(1, "请输入剧本描述"),
-    scenario_image: z.string().default(""),
-});
-
 const ScriptManagementPage = () => {
     const { toast } = useToast();
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            scenario_name: "",
-            scenario_description: "",
-            scenario_image: "",
-        },
-    });
     const [activeTab, setActiveTab] = useState("all");
     const [scenarios, setScenarios] = useState<Scenario[]>([]);
     const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const [showCreateScenarioModal, setShowCreateScenarioModal] = useState(false);
-    const pageSize = 10;
+    const pageSize = 30;
     const currentPage = useRef(1);
     const containerRef = useRef(null);
 
@@ -113,14 +83,13 @@ const ScriptManagementPage = () => {
             console.error("Failed to fetch scenarios:", error);
         }
     };
-    const onCreateScenario = async (values: z.infer<typeof formSchema>) => {
+    const onCreateScenario = async (values: any) => {
         try {
             await api.createScenario(values);
             toast({
                 title: "创建成功",
                 description: "新剧本已创建",
             });
-            form.reset();
             // 重新获取列表
             setScenarios([]);
             setHasMore(true);
@@ -136,18 +105,14 @@ const ScriptManagementPage = () => {
         }
     }
 
-    const handleCreateScenarioModal = () => {
-        form.reset();
-        form.clearErrors();
-        setShowCreateScenarioModal(true)
-    }
+    const handleCreateScenarioModal = () => setShowCreateScenarioModal(true);
 
     useEffect(() => {
         // Reset when tab changes
         setScenarios([]);
         setHasMore(true);
         currentPage.current = 1;
-        fetchScenarios();
+        // fetchScenarios();
     }, [activeTab]);
 
     // Infinite scroll
@@ -157,7 +122,7 @@ const ScriptManagementPage = () => {
 
         const observer = new IntersectionObserver(
             (entries) => {
-                if (entries[0].isIntersecting && !loading && hasMore) {
+                if (entries[0].isIntersecting && hasMore) {
                     fetchScenarios();
                 }
             },
@@ -166,7 +131,7 @@ const ScriptManagementPage = () => {
 
         observer.observe(container);
         return () => observer.disconnect();
-    }, [loading, hasMore]);
+    }, [hasMore]);
 
 
     return (
@@ -184,48 +149,11 @@ const ScriptManagementPage = () => {
                         <PlusIcon className="w-5 h-5 mr-1" />
                         新建空白剧本
                     </Button>
-                    <Dialog open={showCreateScenarioModal} onOpenChange={setShowCreateScenarioModal}>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>新建空白剧本</DialogTitle>
-                            </DialogHeader>
-                            <Form {...form}>
-                                <form onSubmit={form.handleSubmit(onCreateScenario)} className="space-y-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="scenario_name"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>剧本名称</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="请输入剧本名称" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="scenario_description"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>剧本描述</FormLabel>
-                                                <FormControl>
-                                                    <Textarea placeholder="请输入剧本描述" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <div className="flex justify-end">
-                                        <Button type="submit" disabled={form.formState.isSubmitting}>
-                                            {form.formState.isSubmitting ? "创建中..." : "创建"}
-                                        </Button>
-                                    </div>
-                                </form>
-                            </Form>
-                        </DialogContent>
-                    </Dialog>
+                    <CreateScenarioDialog
+                        open={showCreateScenarioModal}
+                        onOpenChange={setShowCreateScenarioModal}
+                        onSubmit={onCreateScenario}
+                    />
                     <Button size='sm' variant="outline">
                         导入
                     </Button>

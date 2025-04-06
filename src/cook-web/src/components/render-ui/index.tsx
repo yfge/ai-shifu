@@ -59,7 +59,7 @@ export const RenderBlockUI = ({ block }) => {
         setExpand(true);
         const opt = UITypes.find(p => p.type === type);
         actions.setBlockUITypesById(id, type)
-        actions.setBlockUIPropertiesById(id, opt?.properties || {})
+        actions.setBlockUIPropertiesById(id, opt?.properties || {}, true)
     }
     return (
         <>

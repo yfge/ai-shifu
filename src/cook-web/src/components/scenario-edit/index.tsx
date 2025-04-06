@@ -137,7 +137,7 @@ const ScriptEditor = ({ id }: { id: string }) => {
                             />
                         </ol>
                         {/* <Input className='h-8'></Input> */}
-                        <Button variant="outline" className='my-2 h-8' size="sm" onClick={onAddChapter}>
+                        <Button variant="outline" className='my-2 h-8 sticky bottom-0 left-4 ' size="sm" onClick={onAddChapter}>
                             <Plus />
                             新篇章
                         </Button>
@@ -153,7 +153,7 @@ const ScriptEditor = ({ id }: { id: string }) => {
                 >
 
                     {blocks.map((block, index) => (
-                        <div key={block.properties.block_id} className=" relative flex flex-col gap-2 ">
+                        <div id={block.properties.block_id} key={block.properties.block_id} className=" relative flex flex-col gap-2 ">
                             <div className=' '
                                 onMouseOver={onShowMenu.bind(null, block.properties.block_id, block?.properties?.block_content?.type)}
                                 onMouseLeave={onHideMenu}

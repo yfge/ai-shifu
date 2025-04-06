@@ -3,7 +3,7 @@ import { SortableTree, SimpleTreeItemWrapper, TreeItemComponentProps, TreeItems 
 import React from 'react';
 import { Outline } from '@/types/scenario';
 import { cn } from '@/lib/utils';
-import { Plus, Trash } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { InlineInput } from '../inline-input';
 import { useScenario } from '@/store/useScenario';
 import Loading from '../loading';
@@ -104,6 +104,9 @@ const MinimalTreeItemComponent = React.forwardRef<
         await actions.removeOutline(props.item);
     }
     const onSelect = () => {
+        if (props.item.id == 'new_chapter') {
+            return;
+        }
         actions.loadBlocks(props.item.id || "");
     }
     return (
@@ -145,7 +148,8 @@ const MinimalTreeItemComponent = React.forwardRef<
                             }}>
                                 <ChapterSetting chapterId={props.item.id} />
                             </div>
-                            <Trash className='cursor-pointer h-4 w-4 text-gray-500' onClick={removeNode} />
+
+                            <Trash2 className='cursor-pointer h-4 w-4 text-gray-500' onClick={removeNode} />
                         </div>
                     )
                 }
@@ -165,7 +169,7 @@ const MinimalTreeItemComponent = React.forwardRef<
                                     }} />
                                 )
                             }
-                            <Trash className='cursor-pointer h-4 w-4 text-gray-500' onClick={removeNode} />
+                            <Trash2 className='cursor-pointer h-4 w-4 text-gray-500' onClick={removeNode} />
                         </div>
                     )
                 }

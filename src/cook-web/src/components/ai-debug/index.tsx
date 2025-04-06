@@ -64,9 +64,9 @@ const AIModelDialog = ({ blockId, open, onOpenChange }) => {
                     <XMarkIcon className="h-4 w-4" onClick={() => onOpenChange(false)} />
                 </div>
                 <DialogHeader className="text-center">
-                    <DialogTitle className="text-xl font-bold">调试AI模版</DialogTitle>
+                    <DialogTitle className="text-xl font-bold px-2">调试AI模版</DialogTitle>
                 </DialogHeader>
-                <div className=" flex-1 space-y-4 overflow-auto px-2">
+                <div className=" flex-1 space-y-4 overflow-auto px-4">
                     {/* 剧本信息 */}
                     {/* <div className="text-sm">
                         <span className="font-medium">剧本：</span>跟AI学编程&gt;&gt; 01-了解AI编程这回事&gt;&gt;打招呼
@@ -161,7 +161,7 @@ const AIModelDialog = ({ blockId, open, onOpenChange }) => {
                                     // max="1"
                                     className="w-full"
                                 />
-                                <Button variant="outline" size="icon" className="h-8 w-8 shrink-0"
+                                <Button variant="outline" size="icon" disabled={temperature <= 0} className="h-8 w-8 shrink-0"
                                     onClick={() => {
                                         if (temperature <= 0) {
                                             setTemperature(0);
@@ -172,7 +172,7 @@ const AIModelDialog = ({ blockId, open, onOpenChange }) => {
                                 >
                                     <MinusIcon className="h-4 w-4" />
                                 </Button>
-                                <Button variant="outline" size="icon" className="h-8 w-8 shrink-0"
+                                <Button variant="outline" size="icon" disabled={temperature >= 1} className="h-8 w-8 shrink-0"
                                     onClick={() => {
                                         if (temperature >= 1) {
                                             setTemperature(1)

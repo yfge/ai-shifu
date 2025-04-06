@@ -132,22 +132,21 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             setCataData({
                 ...cataData,
             })
-
-            if (cataData[outline.id].status == 'edit') {
-                if (outline.id == 'new_chapter') {
-                    return;
-                }
-                if (outline.depth == 0) {
-                    await api.deleteChapter({
-                        chapter_id: outline.id
-                    })
-                } else if (outline.depth == 1) {
-                    await api.deleteUnit({
-                        unit_id: outline.id
-                    })
-
-                }
+            debugger;
+            if (outline.id == 'new_chapter') {
+                return;
             }
+            if (outline.depth == 0) {
+                await api.deleteChapter({
+                    chapter_id: outline.id
+                })
+            } else if (outline.depth == 1) {
+                await api.deleteUnit({
+                    unit_id: outline.id
+                })
+
+            }
+
         } else {
             const list = chapters.filter((child: any) => child.id !== outline.id);
             setChapters([...list])
@@ -366,6 +365,13 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         })
         setBlockContentStateById(block.properties.block_id, 'edit');
         setBlocks(list);
+
+        setTimeout(() => {
+            document.getElementById(block.properties.block_id)?.scrollIntoView({
+                behavior: 'smooth',
+            });
+        }, 500);
+
     }
     const addSubOutline = async (parent: Outline, name = '') => {
         if (cataData['new_chapter']) {
@@ -673,7 +679,14 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         })
         setProfileItemDefinations(list);
     }
-    const setBlockContentPropertiesById = (id: string, properties: any) => {
+    const setBlockContentPropertiesById = (id: string, properties: any, reset: boolean = false) => {
+        if (reset) {
+            setBlockContentProperties({
+                ...blockContentProperties,
+                [id]: properties
+            });
+            return;
+        }
         setBlockContentProperties({
             ...blockContentProperties,
             [id]: {
@@ -688,7 +701,14 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             [id]: type
         })
     }
-    const setBlockUIPropertiesById = (id: string, properties: any) => {
+    const setBlockUIPropertiesById = (id: string, properties: any, reset: boolean = false) => {
+        if (reset) {
+            setBlockUIProperties({
+                ...blockUIProperties,
+                [id]: properties
+            });
+            return;
+        }
         setBlockUIProperties({
             ...blockUIProperties,
             [id]: {

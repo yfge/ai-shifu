@@ -152,9 +152,9 @@ const Header = () => {
 
             </div> */}
             <div className='flex flex-row items-center'>
-                <Button variant="ghost" size="sm">
+                {/* <Button variant="ghost" size="sm">
                     <AdjustmentsVerticalIcon /> 设置
-                </Button>
+                </Button> */}
 
 
                 <Preivew />
