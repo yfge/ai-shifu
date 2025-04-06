@@ -90,7 +90,7 @@ const MinimalTreeItemComponent = React.forwardRef<
                 no: '',
             })
         }
-        actions.setFocusId("");
+        // actions.setFocusId("");
     }
     const onAddNodeClick = (node: Outline) => {
         if (node.depth && node.depth >= 1) {
@@ -99,7 +99,8 @@ const MinimalTreeItemComponent = React.forwardRef<
             actions.addSubOutline(node, "");
         }
     }
-    const removeNode = async () => {
+    const removeNode = async (e) => {
+        e.stopPropagation();
         await actions.removeOutline(props.item);
     }
     const onSelect = () => {
@@ -115,7 +116,7 @@ const MinimalTreeItemComponent = React.forwardRef<
                 )}
                 onClick={onSelect}
             >
-                <span className='w-40 whitespace-nowrap overflow-hidden text-ellipsis' >
+                <span className='flex flex-row items-center w-40 whitespace-nowrap overflow-hidden text-ellipsis' >
                     <InlineInput
                         isEdit={focusId === props.item.id}
                         value={cataData[props.item.id!]?.name || ""}

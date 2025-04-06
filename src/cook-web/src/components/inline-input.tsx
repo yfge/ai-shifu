@@ -32,12 +32,18 @@ export const InlineInput: React.FC<InlineInputProps> = ({ isEdit = false, value,
   };
 
   const handleBlur = () => {
+    if (inputValue === "") {
+      return;
+    }
     setIsEditing(false);
     debouncedOnChange(inputValue);
   };
 
   const debouncedOnChange = useCallback(
     debounce((value: string) => {
+      if (value === "") {
+        return;
+      }
       onChange(value || "未命名");
     }, 300),
     [onChange]
