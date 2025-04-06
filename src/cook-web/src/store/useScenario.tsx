@@ -464,34 +464,36 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
 
     const createChapter = async (data: Outline) => {
-        try {
-            updateOutlineStatus(data.id, 'saving');
-            setError(null);
-            const index = chapters.findIndex((child) => child.id === data.id);
 
-            if (data.id === 'new_chapter') {
-                try {
-                    const newChapter = await api.createChapter({
-                        parent_id: data.parent_id,
-                        "chapter_description": data.name,
-                        "chapter_index": index,
-                        "chapter_name": data.name,
-                        "scenario_id": currentScenario?.id
-                    });
-                    replaceOutline('new_chapter', {
-                        id: newChapter.chapter_id,
-                        name: newChapter.chapter_name,
-                        no: '',
-                        children: []
-                    })
-                } catch (error) {
-                    console.error(error);
-                    setError("Failed to create chapter");
-                    updateOutlineStatus('new_chapter', 'new');
-                    setFocusId('new_chapter');
-                }
+        updateOutlineStatus(data.id, 'saving');
+        setError(null);
+        const index = chapters.findIndex((child) => child.id === data.id);
 
-            } else {
+        if (data.id === 'new_chapter') {
+            try {
+                const newChapter = await api.createChapter({
+                    parent_id: data.parent_id,
+                    "chapter_description": data.name,
+                    "chapter_index": index,
+                    "chapter_name": data.name,
+                    "scenario_id": currentScenario?.id
+                });
+                replaceOutline('new_chapter', {
+                    id: newChapter.chapter_id,
+                    name: newChapter.chapter_name,
+                    no: '',
+                    children: []
+                })
+                setFocusId("")
+            } catch (error) {
+                console.error(error);
+                setError("Failed to create chapter");
+                updateOutlineStatus('new_chapter', 'new');
+                setFocusId('new_chapter');
+            }
+
+        } else {
+            try {
                 await api.modifyChapter({
                     "chapter_id": data.id,
                     "chapter_index": index,
@@ -504,28 +506,30 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
                     no: '',
                     children: []
                 })
+                setFocusId("")
+            } catch (error) {
+                console.error(error);
+                setError("Failed to create chapter");
+                updateOutlineStatus(data.id, 'edit');
+                setFocusId(data.id);
             }
 
-
-        } catch (error) {
-            console.error(error);
-            setError("Failed to create chapter");
-        } finally {
-            setIsLoading(false);
         }
+        setIsLoading(false);
     };
 
     const createUnit = async (data: Outline) => {
-        try {
-            console.log('createUnit')
-            updateOutlineStatus(data.id, 'saving');
-            setError(null);
 
-            const parent = findNode(data.parent_id || "");
-            // get node index in children
-            const index = parent.children.findIndex((child) => child.id === data.id);
+        console.log('createUnit')
+        updateOutlineStatus(data.id, 'saving');
+        setError(null);
 
-            if (data.id === 'new_chapter') {
+        const parent = findNode(data.parent_id || "");
+        // get node index in children
+        const index = parent.children.findIndex((child) => child.id === data.id);
+
+        if (data.id === 'new_chapter') {
+            try {
                 const newUnit = await api.createUnit({
                     parent_id: data.parent_id,
                     "unit_index": index,
@@ -541,7 +545,16 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
                     no: '',
                     children: []
                 })
-            } else {
+                setFocusId("")
+            } catch (error) {
+                console.error(error);
+                setError("Failed to create chapter");
+                updateOutlineStatus('new_chapter', 'new');
+                setFocusId('new_chapter');
+            }
+
+        } else {
+            try {
                 await api.modifyUnit({
                     "unit_id": data.id,
                     "unit_index": index,
@@ -554,14 +567,17 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
                     no: '',
                     children: []
                 })
+                setFocusId("")
+            } catch (error) {
+                console.error(error);
+                setError("Failed to create chapter");
+                updateOutlineStatus(data.id, 'edit');
+                setFocusId(data.id);
             }
 
-        } catch (error) {
-            console.error(error);
-            setError("Failed to create chapter");
-        } finally {
-            setIsLoading(false);
         }
+
+        setIsLoading(false);
     };
 
     const createSiblingUnit = async (data: Outline) => {
