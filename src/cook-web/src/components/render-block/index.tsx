@@ -115,20 +115,20 @@ export const ContentTypes = [
             "other_conf": ""
         }
     },
-    {
-        type: 'systemprompt',
-        name: '系统提示词',
-        properties: {
-            "prompt": "",
-            "profiles": [
-                "nickname",
-                "user_background"
-            ],
-            "model": "",
-            "temprature": "0.40",
-            "other_conf": ""
-        }
-    },
+    // {
+    //     type: 'systemprompt',
+    //     name: '系统提示词',
+    //     properties: {
+    //         "prompt": "",
+    //         "profiles": [
+    //             "nickname",
+    //             "user_background"
+    //         ],
+    //         "model": "",
+    //         "temprature": "0.40",
+    //         "other_conf": ""
+    //     }
+    // },
     {
         type: 'solidcontent',
         name: '固定内容',
