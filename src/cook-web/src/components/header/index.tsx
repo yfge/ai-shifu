@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client"
 import React, { useState } from 'react';
-import { ArrowTrendingUpIcon, ChevronLeftIcon, AdjustmentsVerticalIcon } from "@heroicons/react/24/outline"
+import { ArrowTrendingUpIcon, ChevronLeftIcon } from "@heroicons/react/24/outline"
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useScenario } from '@/store';
