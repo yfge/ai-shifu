@@ -48,10 +48,9 @@ export default function TextInput(props: ButtonProps) {
         props.onChange({ ...properties, prompt: { ...properties.prompt, properties: { ...properties.prompt.properties, temprature: value } } })
     }
     const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        console.log('onChange', properties);
         props.onChange({
             ...properties,
-
-            input_name: e.target.value,
             input_key: e.target.value,
         })
     }
@@ -59,6 +58,7 @@ export default function TextInput(props: ButtonProps) {
         console.log('onChange', properties);
         props.onChange({
             ...properties,
+            input_name: e.target.value,
             input_placeholder: e.target.value
         })
     }
@@ -68,13 +68,13 @@ export default function TextInput(props: ButtonProps) {
                 <label htmlFor="" className=' whitespace-nowrap w-[70px] shrink-0'>
                     输入提示：
                 </label>
-                <Input value={properties.input_placeholder} onChange={onInputPlaceholderChange} className="w-full" ></Input>
+                <Input value={properties.input_name} onChange={onInputPlaceholderChange} className="w-full" ></Input>
             </div>
             <div className='flex flex-row items-center space-x-1'>
                 <label htmlFor="" className=' whitespace-nowrap w-[70px] shrink-0'>
                     变量名：
                 </label>
-                <Input value={properties.input_name} onChange={onInputChange} className="w-full" ></Input>
+                <Input value={properties.input_key} onChange={onInputChange} className="w-full" ></Input>
             </div>
             <div className='flex flex-row items-center space-x-1'>
                 <label htmlFor="" className=' whitespace-nowrap w-[70px] shrink-0'>

@@ -69,7 +69,7 @@ const MinimalTreeItemComponent = React.forwardRef<
     HTMLDivElement,
     TreeItemComponentProps<Outline> & TreeItemProps
 >((props, ref) => {
-    const { focusId, actions, cataData, currentOutline } = useScenario();
+    const { focusId, actions, cataData, currentOutline, currentNode } = useScenario();
 
     const onNodeChange = async (value: string) => {
         console.log('onNodeChange', value, props.item)
@@ -103,15 +103,25 @@ const MinimalTreeItemComponent = React.forwardRef<
         e.stopPropagation();
         await actions.removeOutline(props.item);
     }
-    const onSelect = () => {
+    const onSelect = async () => {
         if (props.item.id == 'new_chapter') {
             return;
         }
+        if (currentNode?.id !== props.item.id) {
+            await actions.saveBlocks();
+        }
+        if (props.item.depth == 0) {
+            actions.setCurrentNode(props.item);
+            actions.setBlocks([]);
+            return;
+        }
+        actions.setCurrentNode(props.item);
         actions.loadBlocks(props.item.id || "");
     }
     return (
         <SimpleTreeItemWrapper {...props} ref={ref}>
             <div
+                id={props.item.id}
                 className={cn(
                     'flex items-center flex-1 px-0 py-1 justify-between w-full group',
                     (props.item?.children?.length || 0) > 0 ? 'pl-0' : 'pl-4',

@@ -17,6 +17,7 @@ import RenderBlockUI from '../render-ui';
 import AIDebugDialog from '@/components/ai-debug';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import AddBlock from '@/components/add-block';
+import Loading from '../loading';
 
 interface DragItem {
     id: string;
@@ -108,7 +109,9 @@ const ScriptEditor = ({ id }: { id: string }) => {
         blockContentProperties,
         blockUIProperties,
         blockUITypes,
-        currentOutline
+        currentOutline,
+        currentNode,
+        isLoading
     } = useScenario();
     const [menuPosition, setMenuPosition] = useState<{
         blockId?: string;
@@ -134,6 +137,11 @@ const ScriptEditor = ({ id }: { id: string }) => {
             no: "",
             depth: 0,
         });
+        setTimeout(() => {
+            document.getElementById('new_chapter')?.scrollIntoView({
+                behavior: 'smooth',
+            });
+        }, 500);
     }
     const onAddSubChapter = () => {
         // actions.createChapter({
@@ -181,7 +189,7 @@ const ScriptEditor = ({ id }: { id: string }) => {
     }
 
     const onAddBlock = (index: number, type: BlockType) => {
-        console.log(index, type)
+        // console.log(index, type)
         actions.addBlock(index, type)
     }
 
@@ -235,47 +243,62 @@ const ScriptEditor = ({ id }: { id: string }) => {
                         setMenuPosition({ visible: false });
                     }}
                 >
-                    <DndProvider backend={HTML5Backend}>
-                        {blocks.map((block, index) => (
-                            <DraggableBlock
-                                key={block.properties.block_id}
-                                id={block.properties.block_id}
-                                index={index}
-                                moveBlock={(dragIndex: number, hoverIndex: number) => {
-                                    const dragBlock = blocks[dragIndex];
-                                    const newBlocks = [...blocks];
-                                    newBlocks.splice(dragIndex, 1);
-                                    newBlocks.splice(hoverIndex, 0, dragBlock);
-                                    actions.setBlocks(newBlocks);
-                                    actions.autoSaveBlocks(currentOutline, newBlocks, blockContentTypes, blockContentProperties, blockUITypes, blockUIProperties)
-                                }}
-                            >
-                                <div id={block.properties.block_id} className="relative flex flex-col gap-2 ">
-                                    <div className=' '
-                                        onMouseOver={onShowMenu.bind(null, block.properties.block_id, block?.properties?.block_content?.type)}
-                                        onMouseLeave={onHideMenu}
-                                    >
-                                        <RenderBlockContent
-                                            id={block.properties.block_id}
-                                            type={blockContentTypes[block.properties.block_id]}
-                                            properties={blockContentProperties[block.properties.block_id]}
-                                        />
-                                    </div>
-                                    <RenderBlockUI block={block} />
-                                    <div>
-                                        <AddBlock onAdd={onAddBlock.bind(null, index + 1)} />
-                                    </div>
-                                </div>
-                            </DraggableBlock>
-                        ))}
-                    </DndProvider>
                     {
-                        blocks.length === 0 && (
-                            <div className='flex flex-row items-center justify-start h-6'>
-                                <AddBlock onAdd={onAddBlock.bind(null, 0)} />
+                        isLoading && (
+                            <div className="h-40 flex items-center justify-center">
+                                <Loading />
                             </div>
                         )
                     }
+                    {
+                        !isLoading && (
+                            <>
+                                <DndProvider backend={HTML5Backend}>
+                                    {blocks.map((block, index) => (
+                                        <DraggableBlock
+                                            key={block.properties.block_id}
+                                            id={block.properties.block_id}
+                                            index={index}
+                                            moveBlock={(dragIndex: number, hoverIndex: number) => {
+                                                const dragBlock = blocks[dragIndex];
+                                                const newBlocks = [...blocks];
+                                                newBlocks.splice(dragIndex, 1);
+                                                newBlocks.splice(hoverIndex, 0, dragBlock);
+                                                actions.setBlocks(newBlocks);
+                                                actions.autoSaveBlocks(currentOutline, newBlocks, blockContentTypes, blockContentProperties, blockUITypes, blockUIProperties)
+                                            }}
+                                        >
+                                            <div id={block.properties.block_id} className="relative flex flex-col gap-2 ">
+                                                <div className=' '
+                                                    onMouseOver={onShowMenu.bind(null, block.properties.block_id, block?.properties?.block_content?.type)}
+                                                    onMouseLeave={onHideMenu}
+                                                >
+                                                    <RenderBlockContent
+                                                        id={block.properties.block_id}
+                                                        type={blockContentTypes[block.properties.block_id]}
+                                                        properties={blockContentProperties[block.properties.block_id]}
+                                                    />
+                                                </div>
+                                                <RenderBlockUI block={block} />
+                                                <div>
+                                                    <AddBlock onAdd={onAddBlock.bind(null, index + 1)} />
+                                                </div>
+                                            </div>
+                                        </DraggableBlock>
+                                    ))}
+                                </DndProvider>
+                                {
+                                    ((currentNode?.depth || 0) > 0 && blocks.length === 0) && (
+                                        <div className='flex flex-row items-center justify-start h-6 pl-8'>
+                                            <AddBlock onAdd={onAddBlock.bind(null, 0)} />
+                                        </div>
+                                    )
+                                }
+                            </>
+
+                        )
+                    }
+
                 </div>
 
             </div>

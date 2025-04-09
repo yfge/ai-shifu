@@ -33,9 +33,9 @@ const ChapterSettingsDialog = ({ unitId }: { unitId: string }) => {
         const result = await api.getUnitInfo({
             unit_id: unitId
         })
-        setChapterType(result.unit_type);
-        setSystemPrompt(result.unit_system_prompt);
-        setHideChapter(result.unit_is_hidden);
+        setChapterType(result.type);
+        setSystemPrompt(result.system_prompt);
+        setHideChapter(result.is_hidden);
         setLoading(false);
     }
     useEffect(() => {

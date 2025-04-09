@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react';
-import { PlusIcon, BoltIcon, StarIcon as StarOutlineIcon, RectangleStackIcon as RectangleStackOutlineIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, StarIcon as StarOutlineIcon, RectangleStackIcon as RectangleStackOutlineIcon } from '@heroicons/react/24/outline';
 import { TrophyIcon, RectangleStackIcon, StarIcon } from '@heroicons/react/24/solid';
 import api from "@/api";
 import { Scenario } from '@/types/scenario';
@@ -141,10 +141,10 @@ const ScriptManagementPage = () => {
                     <h1 className="text-2xl font-semibold text-gray-900">剧本</h1>
                 </div>
                 <div className="flex space-x-3 mb-5">
-                    <Button size='sm' variant="default" className="bg-purple-600 hover:bg-purple-700">
+                    {/* <Button size='sm' variant="default" className="bg-purple-600 hover:bg-purple-700">
                         <BoltIcon className="w-5 h-5 mr-1" />
                         从模版创建
-                    </Button>
+                    </Button> */}
                     <Button size='sm' variant="outline" onClick={handleCreateScenarioModal}>
                         <PlusIcon className="w-5 h-5 mr-1" />
                         新建空白剧本
@@ -154,9 +154,9 @@ const ScriptManagementPage = () => {
                         onOpenChange={setShowCreateScenarioModal}
                         onSubmit={onCreateScenario}
                     />
-                    <Button size='sm' variant="outline">
+                    {/* <Button size='sm' variant="outline">
                         导入
-                    </Button>
+                    </Button> */}
                 </div>
                 <Tabs defaultValue="all" className="mb-0" onValueChange={setActiveTab}>
                     <TabsList className='bg-stone-50 px-0'>

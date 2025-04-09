@@ -75,7 +75,11 @@ export const CreateScenarioDialog = ({
                             name="scenario_name"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className=' text-gray-700'>剧本名称</FormLabel>
+                                    <FormLabel
+                                        style={{
+                                            color: "#000000"
+                                        }}
+                                    >剧本名称</FormLabel>
                                     <FormControl>
                                         <Input autoComplete='off' placeholder="请输入剧本名称" {...field} />
                                     </FormControl>
@@ -88,7 +92,11 @@ export const CreateScenarioDialog = ({
                             name="scenario_description"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className=' text-gray-700'>剧本描述</FormLabel>
+                                    <FormLabel
+                                        style={{
+                                            color: "#000000"
+                                        }}
+                                    >剧本描述</FormLabel>
                                     <FormControl>
                                         <Textarea autoComplete='off' placeholder="请输入剧本描述" {...field} />
                                     </FormControl>

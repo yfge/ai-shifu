@@ -54,6 +54,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
     const [blockUITypes, setBlockUITypes] = useState<{ [x: string]: string }>({});
     const [blockContentState, setBlockContentState] = useState<{ [x: string]: 'edit' | 'preview' }>({});
     const [currentOutline, setCurrentOutline] = useState('');
+    const [currentNode, setCurrentNode] = useState<Outline | null>(null);
     const [profileItemDefinations, setProfileItemDefinations] = useState<ProfileItem[]>([]);
     const loadScenario = async (scenarioId: string) => {
         console.log(scenarioId)
@@ -132,7 +133,6 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             setCataData({
                 ...cataData,
             })
-            debugger;
             if (outline.id == 'new_chapter') {
                 return;
             }
@@ -268,7 +268,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
 
     const loadBlocks = async (outlineId: string) => {
         try {
-            // setIsLoading(true);
+            setIsLoading(true);
             setError(null);
             setCurrentOutline(outlineId);
             // const id = '5071e9aa8d1246b5870c7970b679b7d4';
@@ -280,11 +280,12 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             const blockUIList = list.filter(p => p.properties.block_ui);
             initBlockUITypes(blockUIList);
             initBlockUIProperties(blockUIList);
-
+            setIsLoading(false);
 
         } catch (error) {
             console.error(error);
             setError("Failed to load blocks");
+            setIsLoading(false);
         }
     }
     const saveBlocks = async () => {
@@ -428,6 +429,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         try {
             setError(null);
             const blockList = buildBlockList2(blocks, blockContentTypes, blockContentProperties, blockUITypes, blockUIProperties);
+            console.log(blockList)
             await api.saveBlocks({ outline_id: outline, blocks: blockList });
             setIsSaving(false);
             setLastSaveTime(new Date());
@@ -758,6 +760,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         blockUITypes,
         blockContentState,
         currentOutline,
+        currentNode,
         profileItemDefinations,
         actions: {
             setFocusId,
@@ -786,7 +789,8 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             setBlocks,
             saveBlocks,
             autoSaveBlocks,
-            removeBlock
+            removeBlock,
+            setCurrentNode
         },
     };
     // const init = async () => {

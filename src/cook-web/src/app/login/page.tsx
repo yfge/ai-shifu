@@ -137,6 +137,7 @@ const LoginPage = () => {
                                 <Label htmlFor="username">账号</Label>
                                 <div className="space-y-1">
                                     <Input
+                                        autoComplete='off'
                                         id="username"
                                         name="username"
                                         placeholder="请输入邮箱/手机号"
