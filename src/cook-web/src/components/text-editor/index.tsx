@@ -25,7 +25,7 @@ interface TextEditorProps {
 const processContent = (content: string) => {
   // 匹配 {variable} 格式的变量
   const variableRegex = /\{([^}]+)\}/g;
-  return content.replace(variableRegex, '`$1`');
+  return content?.replace(variableRegex, '`$1`');
 };
 
 export default function TextEditor(props: TextEditorProps) {
@@ -162,7 +162,6 @@ export default function TextEditor(props: TextEditorProps) {
   };
 
   const renderContent = () => {
-    console.log(props.isEdit)
     if (props.isEdit) {
       return (
         <div className="relative">
@@ -215,7 +214,7 @@ export default function TextEditor(props: TextEditorProps) {
 
     return (
       <div
-        className="w-full h-64 p-2 rounded cursor-pointer font-mono markdown"
+        className="w-full p-2 rounded cursor-pointer font-mono markdown"
         onClick={handleClick}
       >
         <ReactMarkdown

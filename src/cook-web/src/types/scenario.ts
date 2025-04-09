@@ -113,6 +113,7 @@ export interface ScenarioActions {
     setBlockUITypesById: (id: string, type: string) => void;
     updateChapterOrder: (chapterIds: string[]) => Promise<void>
     setBlockContentStateById: (id: string, state: 'edit' | 'preview') => void;
+    setBlocks: (blocks: Block[]) => void;
     saveBlocks: () => Promise<void>;
     autoSaveBlocks: (outline: string, blocks: Block[], blockContentTypes: Record<string, any>, blockContentProperties: Record<string, any>, blockUITypes: Record<string, any>, blockUIProperties: Record<string, any>) => Promise<void>;
     removeBlock: (id: string) => Promise<void>;

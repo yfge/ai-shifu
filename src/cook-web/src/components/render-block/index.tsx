@@ -85,7 +85,9 @@ export const RenderBlockContent = ({ id, type, properties }) => {
                 )
             }
 
-            <div onDoubleClick={() => setIsEdit(true)}>
+            <div onDoubleClick={() => {
+                setIsEdit(true)
+            }}>
                 <Ele
                     isEdit={isEdit}
                     properties={properties}

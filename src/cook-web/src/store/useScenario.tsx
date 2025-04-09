@@ -783,6 +783,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             setBlockUITypesById,
             updateChapterOrder,
             setBlockContentStateById,
+            setBlocks,
             saveBlocks,
             autoSaveBlocks,
             removeBlock

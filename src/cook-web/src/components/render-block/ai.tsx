@@ -26,10 +26,10 @@ interface AIBlock {
 
 export default function AI(props: AIBlock) {
 
-    if (props.properties.content) {
-        props.properties.prompt = props.properties.content;
-        delete props.properties.content;
-    }
+    // if (props.properties.content) {
+    //     props.properties.prompt = props.properties.content;
+    //     delete props.properties.content;
+    // }
 
     return (
         <TextEditor
@@ -37,6 +37,7 @@ export default function AI(props: AIBlock) {
             profiles={props.properties.profiles}
             isEdit={props.isEdit}
             onChange={(value, isEdit) => {
+                console.log(value)
                 props.onChange({ ...props.properties, prompt: value });
                 if (props.onEditChange) {
                     props.onEditChange(isEdit);

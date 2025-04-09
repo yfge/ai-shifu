@@ -1,8 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 import React, { useState, useEffect, MouseEventHandler } from 'react';
+import { DndProvider, useDrag, useDrop } from 'react-dnd';
+import type { DropTargetMonitor } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 import { Button } from '@/components/ui/button';
-import { ChevronsRight, Play, Plus, Variable, } from 'lucide-react';
+import { ChevronsRight, Play, Plus, Variable, GripVertical } from 'lucide-react';
 import { useScenario } from '@/store';
 import OutlineTree from '@/components/outline-tree'
 import '@mdxeditor/editor/style.css'
@@ -15,6 +18,87 @@ import AIDebugDialog from '@/components/ai-debug';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import AddBlock from '@/components/add-block';
 
+interface DragItem {
+    id: string;
+    index: number;
+}
+
+interface DraggableBlockProps {
+    id: string;
+    index: number;
+    moveBlock: (dragIndex: number, hoverIndex: number) => void;
+    children: React.ReactNode;
+}
+
+const DraggableBlock = ({ id, index, moveBlock, children }: DraggableBlockProps) => {
+    const ref = React.useRef<HTMLDivElement>(null);
+
+    const [{ handlerId }, drop] = useDrop<DragItem, void, { handlerId: string | symbol | null }>({
+        accept: 'BLOCK',
+        collect(monitor) {
+            return {
+                handlerId: monitor.getHandlerId(),
+            };
+        },
+        hover(item: DragItem, monitor: DropTargetMonitor) {
+            if (!ref.current) {
+                return;
+            }
+            const dragIndex = item.index;
+            const hoverIndex = index;
+
+            if (dragIndex === hoverIndex) {
+                return;
+            }
+
+            const hoverBoundingRect = ref.current?.getBoundingClientRect();
+            const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+            const clientOffset = monitor.getClientOffset();
+            const hoverClientY = clientOffset!.y - hoverBoundingRect.top;
+
+            if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
+                return;
+            }
+            if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
+                return;
+            }
+
+            moveBlock(dragIndex, hoverIndex);
+            item.index = hoverIndex;
+        },
+    });
+
+    const [{ isDragging }, drag] = useDrag<DragItem, void, { isDragging: boolean }>({
+        type: 'BLOCK',
+        item: () => {
+            return { id, index };
+        },
+        collect: (monitor) => ({
+            isDragging: monitor.isDragging(),
+        }),
+    });
+
+    const dragRef = React.useRef<HTMLDivElement>(null);
+    drop(ref);
+    drag(dragRef);
+
+    return (
+        <div ref={ref}
+            style={{ opacity: isDragging ? 0.5 : 1 }}
+            data-handler-id={handlerId}
+            className="relative group pl-7"
+        >
+            <div
+                ref={dragRef}
+                className="absolute top-0 -left-0 w-6 h-6 border rounded cursor-move flex items-center justify-center  group-hover:opacity-100 opacity-0"
+            >
+                <GripVertical height={16} width={16} className=' text-gray-500' />
+            </div>
+            {children}
+        </div>
+    );
+};
+
 const ScriptEditor = ({ id }: { id: string }) => {
     const {
         blocks,
@@ -23,6 +107,7 @@ const ScriptEditor = ({ id }: { id: string }) => {
         blockContentTypes,
         blockContentProperties,
         blockUIProperties,
+        blockUITypes,
         currentOutline
     } = useScenario();
     const [menuPosition, setMenuPosition] = useState<{
@@ -145,31 +230,45 @@ const ScriptEditor = ({ id }: { id: string }) => {
 
                 </div>
 
-                <div className="flex-1 flex flex-col gap-8 p-8 ml-0 overflow-auto relative bg-white text-sm "
-
+                <div className="flex-1 flex flex-col gap-4 p-8 pl-1 ml-0 overflow-auto relative bg-white text-sm"
                     onScroll={() => {
                         setMenuPosition({ visible: false });
                     }}
                 >
-
-                    {blocks.map((block, index) => (
-                        <div id={block.properties.block_id} key={block.properties.block_id} className=" relative flex flex-col gap-2 ">
-                            <div className=' '
-                                onMouseOver={onShowMenu.bind(null, block.properties.block_id, block?.properties?.block_content?.type)}
-                                onMouseLeave={onHideMenu}
+                    <DndProvider backend={HTML5Backend}>
+                        {blocks.map((block, index) => (
+                            <DraggableBlock
+                                key={block.properties.block_id}
+                                id={block.properties.block_id}
+                                index={index}
+                                moveBlock={(dragIndex: number, hoverIndex: number) => {
+                                    const dragBlock = blocks[dragIndex];
+                                    const newBlocks = [...blocks];
+                                    newBlocks.splice(dragIndex, 1);
+                                    newBlocks.splice(hoverIndex, 0, dragBlock);
+                                    actions.setBlocks(newBlocks);
+                                    actions.autoSaveBlocks(currentOutline, newBlocks, blockContentTypes, blockContentProperties, blockUITypes, blockUIProperties)
+                                }}
                             >
-                                <RenderBlockContent
-                                    id={block.properties.block_id}
-                                    type={blockContentTypes[block.properties.block_id]}
-                                    properties={blockContentProperties[block.properties.block_id]}
-                                />
-                            </div>
-                            <RenderBlockUI block={block} />
-                            <div>
-                                <AddBlock onAdd={onAddBlock.bind(null, index + 1)} />
-                            </div>
-                        </div>
-                    ))}
+                                <div id={block.properties.block_id} className="relative flex flex-col gap-2 ">
+                                    <div className=' '
+                                        onMouseOver={onShowMenu.bind(null, block.properties.block_id, block?.properties?.block_content?.type)}
+                                        onMouseLeave={onHideMenu}
+                                    >
+                                        <RenderBlockContent
+                                            id={block.properties.block_id}
+                                            type={blockContentTypes[block.properties.block_id]}
+                                            properties={blockContentProperties[block.properties.block_id]}
+                                        />
+                                    </div>
+                                    <RenderBlockUI block={block} />
+                                    <div>
+                                        <AddBlock onAdd={onAddBlock.bind(null, index + 1)} />
+                                    </div>
+                                </div>
+                            </DraggableBlock>
+                        ))}
+                    </DndProvider>
                     {
                         blocks.length === 0 && (
                             <div className='flex flex-row items-center justify-start h-6'>
