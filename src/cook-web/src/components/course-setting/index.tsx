@@ -50,7 +50,7 @@ const courseSchema = z.object({
 export default function CourseCreationDialog() {
     const [open, setOpen] = useState(false);
     const [keywords, setKeywords] = useState(["AIGC"]);
-    const [courseImage, setCourseImage] = useState(null);
+    const [courseImage, setCourseImage] = useState<File | null>(null);
     const [imageError, setImageError] = useState("");
     const [copying, setCopying] = useState({
         previewUrl: false,
@@ -82,10 +82,10 @@ export default function CourseCreationDialog() {
 
     // Handle keyword addition
     const handleAddKeyword = () => {
-        const keyword = document.getElementById("keywordInput").value.trim();
+        const keyword = (document.getElementById("keywordInput") as any)?.value.trim();
         if (keyword && !keywords.includes(keyword)) {
             setKeywords([...keywords, keyword]);
-            document.getElementById("keywordInput").value = "";
+            (document.getElementById("keywordInput") as any).value = "";
         }
     };
 
@@ -272,10 +272,11 @@ export default function CourseCreationDialog() {
                                         <Input
                                             id="keywordInput"
                                             placeholder="输入关键词"
-                                            className="flex-grow"
+                                            className="flex-grow h-8"
                                         />
                                         <Button
                                             type="button"
+                                            className="h-8"
                                             onClick={handleAddKeyword}
                                             variant="outline"
                                             size="sm"
@@ -292,7 +293,7 @@ export default function CourseCreationDialog() {
                                 <div className="col-span-3">
                                     <div
                                         className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer"
-                                        onClick={() => document.getElementById("imageUpload").click()}
+                                        onClick={() => document.getElementById("imageUpload")?.click()}
                                     >
                                         <Upload className="h-8 w-8 mb-2 text-gray-400" />
                                         <p className="text-sm text-center">上传</p>
@@ -312,7 +313,7 @@ export default function CourseCreationDialog() {
                                     )}
                                     {courseImage && (
                                         <p className="text-green-500 text-xs mt-1">
-                                            已选择: {courseImage.name}
+                                            已选择: {courseImage?.name}
                                         </p>
                                     )}
                                 </div>

@@ -319,7 +319,7 @@ const ScriptEditor = ({ id }: { id: string }) => {
                         }}
                     >
 
-                        <DropdownMenu>
+                        <DropdownMenu modal={false} >
                             <DropdownMenuTrigger>
                                 <ChevronsRight className='h-4 w-4 shrink-0' />
                             </DropdownMenuTrigger>

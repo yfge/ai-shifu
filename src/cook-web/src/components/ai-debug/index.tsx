@@ -14,7 +14,7 @@ import {
     PlusIcon
 } from "@heroicons/react/24/outline";
 import { useScenario } from "@/store";
-import MDXEditor from '@/components/md-editor';
+import MDXEditor from '@/components/text-editor';
 
 
 const AIModelDialog = ({ blockId, open, onOpenChange }) => {
@@ -54,11 +54,14 @@ const AIModelDialog = ({ blockId, open, onOpenChange }) => {
             }
         }
     }
+    const onOpenChangeHandle = (open) => {
+        onOpenChange(open);
+    }
     useEffect(() => {
         init();
     }, [])
     return (
-        <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
+        <Dialog open={open} onOpenChange={onOpenChangeHandle} >
             <DialogContent className="flex flex-col sm:max-w-[600px] max-h-[90vh] overflow-y-auto text-sm">
                 <div className="absolute right-4 top-4 cursor-pointer">
                     <XMarkIcon className="h-4 w-4" onClick={() => onOpenChange(false)} />
@@ -93,11 +96,14 @@ const AIModelDialog = ({ blockId, open, onOpenChange }) => {
                                 }
                             </div>
                         </CollapsibleTrigger>
-                        <CollapsibleContent className="p-3">
+                        <CollapsibleContent className="p-0">
                             {/* 系统提示词内容 */}
                             <MDXEditor
-                                className="markdown text-sm text-gray-700" value={systemPrompt}
+                                // className="markdown text-sm text-gray-700"
+                                profiles={profiles}
+                                content={systemPrompt}
                                 onChange={setSystemPrompt}
+                                isEdit={true}
                             >
 
                             </MDXEditor>
@@ -123,10 +129,13 @@ const AIModelDialog = ({ blockId, open, onOpenChange }) => {
                                 }
                             </div>
                         </CollapsibleTrigger>
-                        <CollapsibleContent className="p-3">
+                        <CollapsibleContent className="p-0">
                             <MDXEditor
-                                className="markdown text-sm text-gray-700" value={userPrompt}
+                                // className="markdown text-sm text-gray-700"
+                                profiles={profiles}
+                                content={userPrompt}
                                 onChange={setUserPrompt}
+                                isEdit={true}
                             >
 
                             </MDXEditor>
