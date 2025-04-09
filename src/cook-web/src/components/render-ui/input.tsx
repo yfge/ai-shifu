@@ -39,7 +39,7 @@ export default function SingleInput(props: ButtonProps) {
                     className='h-8 w-40'
                     value={properties.input_placeholder}
                     onChange={(e) => onValueChange(e, 'input_placeholder')}
-                    placeholder="请输入提示文本"
+                    placeholder="请输入"
                 />
             </div>
             <div className='flex flex-row space-x-1 items-center'>
@@ -50,8 +50,9 @@ export default function SingleInput(props: ButtonProps) {
                     className='h-8 w-40'
                     value={properties.input_name}
                     onChange={(e) => onValueChange(e, 'input_name')}
-                    type="tel"
-                    placeholder={properties.input_placeholder}
+                    placeholder="请输入"
+                // type="tel"
+                // placeholder={properties.input_placeholder}
                 />
             </div>
 

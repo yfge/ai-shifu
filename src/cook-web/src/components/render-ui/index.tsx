@@ -8,7 +8,7 @@ import TextInput from './textinput'
 import { useScenario } from '@/store';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { ChevronDown } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 
 
@@ -23,6 +23,7 @@ const BlockMap = {
 
 export const BlockUI = ({ id, type, properties }) => {
     const { actions, currentOutline, blocks, blockContentTypes, blockUITypes, blockUIProperties, blockContentProperties } = useScenario();
+    const [error, setError] = useState('');
     const onPropertiesChange = async (properties) => {
         await actions.setBlockUIPropertiesById(id, properties)
         const p = {
@@ -32,18 +33,38 @@ export const BlockUI = ({ id, type, properties }) => {
                 ...properties
             }
         }
+        const ut = UITypes.find(p => p.type === type)
+        setError('');
+        const err = ut?.validate?.(properties)
+        if (err) {
+            setError(err);
+            return;
+        }
         actions.autoSaveBlocks(currentOutline, blocks, blockContentTypes, blockContentProperties, blockUITypes, p)
     }
+    useEffect(() => {
+        setError('');
+    }, [type]);
+
     const Ele = BlockMap[type]
     if (!Ele) {
         // console.log('type', type)
         return null
     }
+
     return (
-        <Ele
-            properties={properties}
-            onChange={onPropertiesChange}
-        />
+        <>
+            <Ele
+                properties={properties}
+                onChange={onPropertiesChange}
+            />
+            {
+                error && (
+                    <div className='text-red-500 text-sm px-0 pb-2'>{error}</div>
+                )
+            }
+        </>
+
     )
 }
 
@@ -111,6 +132,7 @@ export const RenderBlockUI = ({ block }) => {
                         )
                     }
                 </div>
+
             </div>
         </>
     )
@@ -125,6 +147,12 @@ export const UITypes = [
         properties: {
             "button_name": "继续",
             "button_key": "继续"
+        },
+        validate: (properties): string => {
+            if (!properties.button_name) {
+                return "按钮名称不能为空"
+            }
+            return ""
         }
     },
     {
@@ -143,6 +171,21 @@ export const UITypes = [
                     "type": "button"
                 }
             ]
+        },
+        validate: (properties): string => {
+            if (!properties.option_name) {
+                return "变量名称不能为空"
+            }
+            if (properties.buttons.length === 0) {
+                return "按钮组不能为空"
+            }
+            for (let i = 0; i < properties.buttons.length; i++) {
+                const item = properties.buttons[i];
+                if (!item.properties.button_key || item.properties.button_name == "") {
+                    return "值或标题不能为空"
+                }
+            }
+            return ""
         }
     },
     {
@@ -187,7 +230,26 @@ export const UITypes = [
             "input_name": "",
             "input_key": "",
             "input_placeholder": ""
+        },
+        validate: (properties): string => {
+            if (!properties.input_placeholder) {
+                return "提示不能为空"
+            }
+            if (!properties.input_key) {
+                return "变量名不能为空"
+            }
+            if (!properties?.prompt?.properties?.prompt) {
+                return "提示不能为空"
+            }
+            if (!properties?.prompt?.properties?.temprature) {
+                return "变量名不能为空"
+            }
+            if (!properties?.prompt?.properties?.model) {
+                return "模型不能为空"
+            }
+            return ""
         }
+
     },
     {
         type: 'phone',
@@ -195,16 +257,34 @@ export const UITypes = [
         properties: {
             "input_name": "",
             "input_key": "",
-            "input_placeholder": "输入手机号"
+            "input_placeholder": ""
+        },
+        validate: (properties): string => {
+            if (!properties.input_placeholder) {
+                return "提示不能为空"
+            }
+            if (!properties.input_key) {
+                return "名称不能为空"
+            }
+            return "";
         }
     },
     {
         type: 'code',
         name: '手机验证码',
         properties: {
-            "input_name": "请输入4位数字验证码",
-            "input_key": "请输入4位数字验证码",
-            "input_placeholder": "请输入4位数字验证码"
+            "input_name": "",
+            "input_key": "",
+            "input_placeholder": ""
+        },
+        validate: (properties): string => {
+            if (!properties.input_placeholder) {
+                return "提示不能为空"
+            }
+            if (!properties.input_key) {
+                return "名称不能为空"
+            }
+            return "";
         }
     },
 
