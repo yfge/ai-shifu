@@ -146,7 +146,7 @@ const MinimalTreeItemComponent = React.forwardRef<
                             <div onClick={(e) => {
                                 e.stopPropagation();
                             }}>
-                                <ChapterSetting chapterId={props.item.id} />
+                                <ChapterSetting unitId={props.item.id} />
                             </div>
 
                             <Trash2 className='cursor-pointer h-4 w-4 text-gray-500' onClick={removeNode} />
