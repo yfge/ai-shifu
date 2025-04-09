@@ -4,6 +4,8 @@ from ..lesson.models import AICourse
 from ...util.uuid import generate_id
 from .models import FavoriteScenario
 from ..common.dtos import PageNationDTO
+
+
 from ..common.models import raise_error, raise_error_with_args
 from ...common.config import get_config
 from ...service.resource.models import Resource
@@ -39,7 +41,7 @@ def get_raw_scenario_list(
         ]
         return PageNationDTO(page_index, page_size, total, scenario_dtos)
     except Exception as e:
-        app.logger.error(f"获取场景列表失败: {e}")
+        app.logger.error(f"get raw scenario list failed: {e}")
         return PageNationDTO(0, 0, 0, [])
 
 
@@ -77,7 +79,7 @@ def get_favorite_scenario_list(
         ]
         return PageNationDTO(page_index, page_size, total, scenario_dtos)
     except Exception as e:
-        app.logger.error(f"获取场景列表失败: {e}")
+        app.logger.error(f"get favorite scenario list failed: {e}")
         return PageNationDTO(0, 0, 0, [])
 
 
@@ -96,6 +98,7 @@ def create_scenario(
     scenario_name: str,
     scenario_description: str,
     scenario_image: str,
+    scenario_keywords: list[str] = None,
 ):
     with app.app_context():
         course_id = generate_id(app)
@@ -103,6 +106,12 @@ def create_scenario(
             raise_error("SCENARIO.SCENARIO_NAME_REQUIRED")
         if not scenario_description:
             raise_error("SCENARIO.SCENARIO_DESCRIPTION_REQUIRED")
+        if len(scenario_name) > 20:
+            raise_error("SCENARIO.SCENARIO_NAME_TOO_LONG")
+        if len(scenario_description) < 10:
+            raise_error("SCENARIO.SCENARIO_DESCRIPTION_TOO_SHORT")
+        if len(scenario_description) > 500:
+            raise_error("SCENARIO.SCENARIO_DESCRIPTION_TOO_LONG")
         existing_course = AICourse.query.filter_by(course_name=scenario_name).first()
         if existing_course:
             raise_error("SCENARIO.SCENARIO_NAME_ALREADY_EXISTS")
@@ -114,6 +123,7 @@ def create_scenario(
             created_user_id=user_id,
             updated_user_id=user_id,
             status=0,
+            course_keywords=scenario_keywords,
         )
         db.session.add(course)
         db.session.commit()
@@ -125,6 +135,21 @@ def create_scenario(
             scenario_state=0,
             is_favorite=False,
         )
+
+
+def get_scenario_info(app, scenario_id: str):
+    with app.app_context():
+        scenario = AICourse.query.filter_by(course_id=scenario_id).first()
+        if scenario:
+            return ScenarioDto(
+                scenario_id=scenario.course_id,
+                scenario_name=scenario.course_name,
+                scenario_description=scenario.course_desc,
+                scenario_image=scenario.course_teacher_avator,
+                scenario_state=scenario.status,
+                is_favorite=False,
+            )
+        raise_error("SCENARIO.SCENARIO_NOT_FOUND")
 
 
 # mark favorite scenario
@@ -173,6 +198,27 @@ def check_scenario_exist(app, scenario_id: str):
         if scenario:
             return
         raise_error("SCENARIO.SCENARIO_NOT_FOUND")
+
+
+def publish_scenario(app, user_id, scenario_id: str):
+    with app.app_context():
+        scenario = AICourse.query.filter(AICourse.course_id == scenario_id).first()
+        if scenario:
+            check_scenario_can_publish(app, scenario_id)
+            scenario.status = 1
+            scenario.updated_user_id = user_id
+            scenario.updated_at = datetime.now()
+            db.session.commit()
+            return get_config("WEB_URL", "UNCONFIGURED") + "/c/" + scenario.course_id
+        raise_error("SCENARIO.SCENARIO_NOT_FOUND")
+
+
+def preview_scenario(app, user_id, scenario_id: str, variables: dict, skip: bool):
+    with app.app_context():
+        scenario = AICourse.query.filter(AICourse.course_id == scenario_id).first()
+        if scenario:
+            check_scenario_can_publish(app, scenario_id)
+            return get_config("WEB_URL", "UNCONFIGURED") + "/c/" + scenario.course_id
 
 
 def get_content_type(filename):
