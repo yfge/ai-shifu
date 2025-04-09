@@ -10,6 +10,7 @@ import { useAlert } from '@/components/ui/use-alert';
 import api from '@/api'
 import { CircleAlert, CircleCheck } from 'lucide-react';
 import Preivew from '@/components/preview';
+import CourseSetting from '@/components/course-setting';
 
 const Header = () => {
     const alert = useAlert();
@@ -155,7 +156,7 @@ const Header = () => {
                 {/* <Button variant="ghost" size="sm">
                     <AdjustmentsVerticalIcon /> 设置
                 </Button> */}
-
+                <CourseSetting />
 
                 <Preivew />
 
