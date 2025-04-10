@@ -24,7 +24,7 @@ interface ScriptCardProps {
 const ScriptCard = ({ id, icon: Icon, title, description, isFavorite }: ScriptCardProps) => {
     const router = useRouter()
     return (
-        <Card className="w-full md:w-[calc(50%-1rem)] lg:w-[calc(33.33%-1rem)] rounded-xl bg-background hover:scale-105 transition-all duration-200 ease-in-out"
+        <Card className="w-full md:w-[calc(50%-1rem)] lg:w-[calc(33.33%-1rem)] cursor-pointer rounded-xl bg-background hover:scale-105 transition-all duration-200 ease-in-out"
             onClick={() => router.push(`/scenario/${id}`)}
         >
             <CardContent className="p-4 cursor-pointer" >
