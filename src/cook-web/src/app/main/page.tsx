@@ -90,7 +90,6 @@ const ScriptManagementPage = () => {
                 title: "创建成功",
                 description: "新剧本已创建",
             });
-            // 重新获取列表
             setScenarios([]);
             setHasMore(true);
             currentPage.current = 1;
@@ -141,10 +140,6 @@ const ScriptManagementPage = () => {
                     <h1 className="text-2xl font-semibold text-gray-900">剧本</h1>
                 </div>
                 <div className="flex space-x-3 mb-5">
-                    {/* <Button size='sm' variant="default" className="bg-purple-600 hover:bg-purple-700">
-                        <BoltIcon className="w-5 h-5 mr-1" />
-                        从模版创建
-                    </Button> */}
                     <Button size='sm' variant="outline" onClick={handleCreateScenarioModal}>
                         <PlusIcon className="w-5 h-5 mr-1" />
                         新建空白剧本
@@ -154,9 +149,6 @@ const ScriptManagementPage = () => {
                         onOpenChange={setShowCreateScenarioModal}
                         onSubmit={onCreateScenario}
                     />
-                    {/* <Button size='sm' variant="outline">
-                        导入
-                    </Button> */}
                 </div>
                 <Tabs defaultValue="all" className="mb-0" onValueChange={setActiveTab}>
                     <TabsList className='bg-stone-50 px-0'>
@@ -188,33 +180,9 @@ const ScriptManagementPage = () => {
                         </TabsTrigger>
                     </TabsList>
                     <TabsContent value="all" className=' flex-1 overflow-auto'>
-                        {/* <div className="flex flex-wrap gap-4">
-                            {scenarios.map((scenario) => (
-                                <ScriptCard
-                                    id={scenario.id + ""}
-                                    key={scenario.id}
-                                    icon={TrophyIcon}
-                                    title={scenario.name}
-                                    description={scenario.description}
-                                    isFavorite={scenario.is_favorite}
-                                />
-                            ))}
-                        </div> */}
 
                     </TabsContent>
                     <TabsContent value="favorites">
-                        {/* <div className="flex flex-wrap gap-4">
-                            {scenarios.map((scenario) => (
-                                <ScriptCard
-                                    id={scenario.id + ""}
-                                    key={scenario.id}
-                                    icon={TrophyIcon}
-                                    title={scenario.name}
-                                    description={scenario.description}
-                                    isFavorite={scenario.is_favorite}
-                                />
-                            ))}
-                        </div> */}
                     </TabsContent>
 
                 </Tabs>
