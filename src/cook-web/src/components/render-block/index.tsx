@@ -12,7 +12,6 @@ import { useState } from 'react';
 
 const BlockMap = {
     ai: AI,
-    systemprompt: AI,
     solidcontent: SolidContent,
 }
 
@@ -63,7 +62,6 @@ export const RenderBlockContent = ({ id, type, properties }) => {
         await actions.saveBlocks();
     }
     const onRemove = async () => {
-        // await actions.removeBlockById(id)
         actions.removeBlock(id);
     }
     const isEdit = blockContentState[id] == 'edit';
@@ -141,20 +139,6 @@ export const ContentTypes = [
             "other_conf": ""
         }
     },
-    // {
-    //     type: 'systemprompt',
-    //     name: '系统提示词',
-    //     properties: {
-    //         "prompt": "",
-    //         "profiles": [
-    //             "nickname",
-    //             "user_background"
-    //         ],
-    //         "model": "",
-    //         "temprature": "0.40",
-    //         "other_conf": ""
-    //     }
-    // },
     {
         type: 'solidcontent',
         name: '固定内容',

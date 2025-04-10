@@ -1,11 +1,5 @@
 
-// import { MDXEditor } from '@mdxeditor/editor';
-// import MDXEditor from '@/components/md-editor';
-// import Markdown from '@/components/markdown'
 import TextEditor from '@/components/text-editor';
-// import { Textarea } from "../ui/textarea";
-// import { Textarea } from "../ui/textarea";
-// import MarkdownEditor from '@/components/markdown-editor'
 
 
 interface AIBlockProps {
@@ -25,11 +19,6 @@ interface AIBlock {
 }
 
 export default function AI(props: AIBlock) {
-
-    // if (props.properties.content) {
-    //     props.properties.prompt = props.properties.content;
-    //     delete props.properties.content;
-    // }
 
     return (
         <TextEditor

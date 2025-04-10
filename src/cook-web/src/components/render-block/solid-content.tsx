@@ -1,11 +1,6 @@
 
-// import { MDXEditor } from '@mdxeditor/editor';
-// import MDXEditor from '@/components/md-editor';
-// import Markdown from '@/components/markdown'
 import TextEditor from '@/components/text-editor';
-// import { ALL_PLUGINS } from '@/components/md-editor';
-// import { Textarea } from '../ui/textarea';
-// import MarkdownEditor from '@/components/markdown-editor'
+
 
 interface SolideContnetProps {
     content: string;
