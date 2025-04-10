@@ -71,7 +71,7 @@ const AIModelDialog = ({ blockId, open, onOpenChange }) => {
                 </DialogHeader>
                 <div className=" flex-1 space-y-4 overflow-auto px-4">
                     {/* Script Information */}
-                   
+
 
                     {/* AI Module Content */}
                     <div className="text-sm font-medium">AI Module Content:</div>
