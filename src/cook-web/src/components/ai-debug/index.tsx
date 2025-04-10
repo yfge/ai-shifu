@@ -45,7 +45,7 @@ const AIModelDialog = ({ blockId, open, onOpenChange }) => {
             }
             // setSystemPrompt(block.properties.block_content);
         }
-        // 从当前块向上搜索，直到找到第一个systemprompt块
+        // Search from the current block upwards until the first systemprompt block is found
         const index = blocks.findIndex((item) => item.properties.block_id === blockId);
         for (let i = index - 1; i >= 0; i--) {
             if (blocks[i].properties.block_content.type === 'systemprompt') {
@@ -70,15 +70,13 @@ const AIModelDialog = ({ blockId, open, onOpenChange }) => {
                     <DialogTitle className="text-xl font-bold px-2">调试AI模版</DialogTitle>
                 </DialogHeader>
                 <div className=" flex-1 space-y-4 overflow-auto px-4">
-                    {/* 剧本信息 */}
-                    {/* <div className="text-sm">
-                        <span className="font-medium">剧本：</span>跟AI学编程&gt;&gt; 01-了解AI编程这回事&gt;&gt;打招呼
-                    </div> */}
+                    {/* Script Information */}
+                   
 
-                    {/* AI模块内容 */}
-                    <div className="text-sm font-medium">AI模块内容：</div>
+                    {/* AI Module Content */}
+                    <div className="text-sm font-medium">AI Module Content:</div>
 
-                    {/* 系统提示词 */}
+                    {/* System Prompt */}
                     <Collapsible
                         open={systemPromptOpen}
                         onOpenChange={setSystemPromptOpen}
@@ -97,9 +95,8 @@ const AIModelDialog = ({ blockId, open, onOpenChange }) => {
                             </div>
                         </CollapsibleTrigger>
                         <CollapsibleContent className="p-0">
-                            {/* 系统提示词内容 */}
+                            {/* System Prompt Content */}
                             <MDXEditor
-                                // className="markdown text-sm text-gray-700"
                                 profiles={profiles}
                                 content={systemPrompt}
                                 onChange={setSystemPrompt}
@@ -111,7 +108,7 @@ const AIModelDialog = ({ blockId, open, onOpenChange }) => {
                         </CollapsibleContent>
                     </Collapsible>
 
-                    {/* 用户提示词 */}
+                    {/* User Prompt */}
                     <Collapsible
                         open={userPromptOpen}
                         onOpenChange={setUserPromptOpen}
@@ -131,7 +128,6 @@ const AIModelDialog = ({ blockId, open, onOpenChange }) => {
                         </CollapsibleTrigger>
                         <CollapsibleContent className="p-0">
                             <MDXEditor
-                                // className="markdown text-sm text-gray-700"
                                 profiles={profiles}
                                 content={userPrompt}
                                 onChange={setUserPrompt}
@@ -142,7 +138,7 @@ const AIModelDialog = ({ blockId, open, onOpenChange }) => {
                         </CollapsibleContent>
                     </Collapsible>
 
-                    {/* 选择模型和温度设置 */}
+                    {/* Model Selection and Temperature Setting */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <div className="mb-1 text-sm">选择模型：</div>
@@ -202,7 +198,7 @@ const AIModelDialog = ({ blockId, open, onOpenChange }) => {
                         </div>
                     </div>
 
-                    {/* 出现变量和输入变量值 */}
+                    {/* Occurrence Variables and Input Variable Values */}
                     <div>
                         {
                             profiles.map((item) => {
@@ -224,7 +220,7 @@ const AIModelDialog = ({ blockId, open, onOpenChange }) => {
 
 
 
-                    {/* 列数和最大行数 */}
+                    {/* Number of Columns and Maximum Number of Rows */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <div className="mb-1 text-sm">列数（一个模型测几遍）：</div>
@@ -262,7 +258,7 @@ const AIModelDialog = ({ blockId, open, onOpenChange }) => {
                         </div>
                     </div>
 
-                    {/* 开始调试按钮 */}
+                    {/* Start Debugging Button */}
                     <div className="mt-6 flex justify-center">
                         <Button className="bg-purple-600 hover:bg-purple-700 text-white w-full py-6">
                             开始调试
@@ -274,13 +270,13 @@ const AIModelDialog = ({ blockId, open, onOpenChange }) => {
     );
 };
 
-// // 示例使用方式
+// example usage
 // const App = () => {
 //     const [dialogOpen, setDialogOpen] = useState(false);
 
 //     return (
 //         <div className="p-4">
-//             <Button onClick={() => setDialogOpen(true)}>打开AI模版调试</Button>
+//             <Button onClick={() => setDialogOpen(true)}>Open AI Template Debugging</Button>
 //             <AIModelDialog open={dialogOpen} onOpenChange={setDialogOpen} />
 //         </div>
 //     );
