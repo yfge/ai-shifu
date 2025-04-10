@@ -1,35 +1,18 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React from 'react'
-// import { LeafDirective } from 'mdast-util-directive'
 import {
-    diffSourcePlugin,
-    markdownShortcutPlugin,
-    AdmonitionDirectiveDescriptor,
-    DirectiveDescriptor,
-    directivesPlugin,
-    frontmatterPlugin,
     headingsPlugin,
-    imagePlugin,
-    linkDialogPlugin,
-    linkPlugin,
     listsPlugin,
     quotePlugin,
     tablePlugin,
-    thematicBreakPlugin,
     toolbarPlugin,
     SandpackConfig,
-    codeBlockPlugin,
-    codeMirrorPlugin,
-    sandpackPlugin,
-    KitchenSinkToolbar,
     UndoRedo,
     BoldItalicUnderlineToggles,
-    InsertTable,
     ListsToggle,
     BlockTypeSelect
 } from '@mdxeditor/editor';
 import '@mdxeditor/editor/style.css'
-// import dataCode from './assets/dataCode.ts?raw'
 import MDXEditor from '@/components/md-editor/ForwardRefEditor';
 import { cn } from '@/lib/utils';
 
@@ -79,9 +62,6 @@ export const virtuosoSampleSandpackConfig: SandpackConfig = {
                 'react-virtuoso': 'latest',
                 '@ngneat/falso': 'latest'
             },
-            // files: {
-            //     '/data.ts': dataCode
-            // }
         }
     ]
 }
@@ -94,44 +74,6 @@ export async function expressImageUploadHandler(image: File) {
     return json.url
 }
 
-// interface YoutubeDirectiveNode extends LeafDirective {
-//     name: 'youtube'
-//     attributes: { id: string }
-// }
-
-// export const YoutubeDirectiveDescriptor: DirectiveDescriptor<YoutubeDirectiveNode> = {
-//     name: 'youtube',
-//     type: 'leafDirective',
-//     testNode(node) {
-//         return node.name === 'youtube'
-//     },
-//     attributes: ['id'],
-//     hasChildren: false,
-//     Editor: ({ mdastNode, lexicalNode, parentEditor }) => {
-//         return (
-//             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-//                 <button
-//                     onClick={() => {
-//                         parentEditor.update(() => {
-//                             lexicalNode.selectNext()
-//                             lexicalNode.remove()
-//                         })
-//                     }}
-//                 >
-//                     delete
-//                 </button>
-//                 <iframe
-//                     width="560"
-//                     height="315"
-//                     src={`https://www.youtube.com/embed/${mdastNode.attributes.id}`}
-//                     title="YouTube video player"
-//                     frameBorder="0"
-//                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-//                 ></iframe>
-//             </div>
-//         )
-//     }
-// }
 
 export const ALL_PLUGINS = [
     toolbarPlugin({
@@ -150,21 +92,8 @@ export const ALL_PLUGINS = [
     listsPlugin(),
     quotePlugin(),
     headingsPlugin({ allowedHeadingLevels: [1, 2, 3] }),
-    // linkPlugin(),
-    // linkDialogPlugin(),
-    // imagePlugin({
-    //     imageAutocompleteSuggestions: ['https://via.placeholder.com/150', 'https://via.placeholder.com/150'],
-    //     imageUploadHandler: async () => Promise.resolve('https://picsum.photos/200/300')
-    // }),
     tablePlugin(),
-    // thematicBreakPlugin(),
-    // frontmatterPlugin(),
-    // codeBlockPlugin({ defaultCodeBlockLanguage: '' }),
-    // sandpackPlugin({ sandpackConfig: virtuosoSampleSandpackConfig }),
-    // codeMirrorPlugin({ codeBlockLanguages: { js: 'JavaScript', css: 'CSS', txt: 'Plain Text', tsx: 'TypeScript', '': 'Unspecified' } }),
-    // directivesPlugin({ directiveDescriptors: [YoutubeDirectiveDescriptor, AdmonitionDirectiveDescriptor] }),
-    // diffSourcePlugin({ viewMode: 'rich-text', diffMarkdown: 'boo' }),
-    // markdownShortcutPlugin()
+
 ]
 
 export const MDEditor = ({ className = '', value, onChange }: { className: string, value: string, onChange: (value: string) => void }) => {
