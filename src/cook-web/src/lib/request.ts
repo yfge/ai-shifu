@@ -30,8 +30,6 @@ function parseJson(text: string) {
 
 async function* makeTextSteamLineIterator(reader: ReadableStreamDefaultReader) {
   const utf8Decoder = new TextDecoder("utf-8");
-  // let response = await fetch(fileURL);
-  // let reader = response.body.getReader();
   let { value: chunk, done: readerDone } = await reader.read();
   chunk = chunk ? utf8Decoder.decode(chunk, { stream: true }) : "";
   const re = /\r\n|\n|\r/gm;
@@ -100,7 +98,7 @@ export class Request {
       config: mergedConfig
     };
   }
-  // 拦截请求，统一处理异常
+  // intercept request, handle exceptions uniformly
   async interceptFetch(url: string, config: RequestConfig) {
     try {
       const { url: fullUrl, config: mergedConfig } = await this.prepareConfig(url, config);
@@ -110,7 +108,7 @@ export class Request {
       }
 
       const res = await response.json();
-      // 判断是否有code属性，使用Object API
+      // check if there is a code property, use Object API
       if (Object.prototype.hasOwnProperty.call(res, 'code')) {
         console.log(res);
         if (res.code == 0) {
@@ -123,7 +121,7 @@ export class Request {
       }
       return res;
     } catch (error: any) {
-      // 可以在这里处理异常，例如上报错误，显示错误提示等
+      // handle exceptions, such as reporting errors, displaying error prompts, etc.
       console.log(url, error);
       console.error('Request failed:', error.message);
       fail(error.message)
@@ -170,7 +168,7 @@ export class Request {
       return lines;
 
     } catch (error: any) {
-      // 可以在这里处理异常，例如上报错误，显示错误提示等
+      // handle exceptions, such as reporting errors, displaying error prompts, etc.
       console.error('Request failed:', error);
       console.log(error.stack);
       throw error;
@@ -230,14 +228,14 @@ export class Request {
       }
 
     } catch (error: any) {
-      // 可以在这里处理异常，例如上报错误，显示错误提示等
+      // handle exceptions, such as reporting errors, displaying error prompts, etc.
       console.error('Request failed:', error);
       console.log(error.stack);
       throw error;
     }
   }
 
-  // 封装 get 请求
+  // wrap get request
   get(url: string, config = {}) {
     return this.interceptFetch(url, {
       method: 'GET',
@@ -245,7 +243,7 @@ export class Request {
     } as RequestConfig);
   }
 
-  // 封装 post 请求
+  // wrap post request
   post(url: string, body = {}, config = {}) {
     return this.interceptFetch(url, {
       method: 'POST',
@@ -281,24 +279,24 @@ export class Request {
       }
       return response;
     } catch (error: any) {
-      // 可以在这里处理异常，例如上报错误，显示错误提示等
+      // handle exceptions, such as reporting errors, displaying error prompts, etc.
       console.log(url, error);
       console.error('Request failed:', error.message);
       fail(error.message);
       throw error;
     }
   }
-  // 封装其他请求方法，如 put、delete 等
+  // wrap other request methods, such as put, delete, etc.
   // put(url, body = null, config = {}) {}
   // delete(url, config = {}) {}
 }
 
-// 示例用法
+// example usage
 const defaultConfig = {
   headers: {
     'Content-Type': 'application/json',
   },
-  // 可以添加其他默认配置项
+  // add other default configuration items
 };
 
 const request = new Request(defaultConfig);
