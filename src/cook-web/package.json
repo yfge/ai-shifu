@@ -31,7 +31,6 @@
     "@radix-ui/react-tabs": "^1.1.2",
     "@radix-ui/react-toast": "^1.2.6",
     "@types/lodash": "^4.17.16",
-    "@types/react-dnd": "^3.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lodash": "^4.17.21",
@@ -48,7 +47,6 @@
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "uuid": "^11.0.5",
-    "vditor": "^3.10.9",
     "zod": "^3.24.2"
   },
   "devDependencies": {

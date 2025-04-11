@@ -107,14 +107,11 @@ const ScriptManagementPage = () => {
     const handleCreateScenarioModal = () => setShowCreateScenarioModal(true);
 
     useEffect(() => {
-        // Reset when tab changes
         setScenarios([]);
         setHasMore(true);
         currentPage.current = 1;
-        // fetchScenarios();
     }, [activeTab]);
 
-    // Infinite scroll
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;

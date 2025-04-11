@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { debounce } from 'lodash';
-import { Input } from './ui/input';
+import { Input } from '../ui/input';
 import { cn } from '@/lib/utils';
 
 interface InlineInputProps {

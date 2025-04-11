@@ -17,11 +17,8 @@ const ChapterSettingsDialog = ({ unitId }: { unitId: string }) => {
     const [loading, setLoading] = useState(false);
     const onConfirm = async () => {
         await api.modifyUnit({
-            // "unit_description": "string",
             "unit_id": unitId,
-            // "unit_index": 0,
             "unit_is_hidden": hideChapter,
-            // "unit_name": "string",
             "unit_system_prompt": systemPrompt,
             "unit_type": chapterType
         })

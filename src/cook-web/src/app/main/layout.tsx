@@ -73,11 +73,9 @@ const MainInterface = ({
 
   return (
     <div className="h-screen flex bg-stone-50">
-      {/* Desktop Sidebar */}
       <div className="hidden md:flex w-64 border-r flex-col p-2">
         <SidebarContent />
       </div>
-      {/* Main Content */}
       <div className="flex-1 p-5  overflow-hidden">
         <div className="max-w-6xl mx-auto h-full overflow-hidden">
           {
@@ -85,8 +83,6 @@ const MainInterface = ({
           }
         </div>
       </div>
-
-      {/* Mobile Header */}
       <div className="md:hidden w-full border-b p-4">
         <div className="flex items-center justify-between">
           <Sheet>

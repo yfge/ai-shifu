@@ -1,8 +1,9 @@
-import React, { useState } from "react";
-import { Copy, Check, Upload, SlidersVertical } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Copy, Check, SlidersVertical, Plus } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { uploadFile } from "@/lib/file";
 import {
     Dialog,
     DialogContent,
@@ -31,41 +32,62 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 
+import api from "@/api";
+import { SITE_HOST } from "@/config/site";
+import { useScenario } from "@/store";
+
+interface Scenario {
+    scenario_description: string;
+    scenario_id: string;
+    scenario_keywords: string[];
+    scenario_model: string;
+    scenario_name: string;
+    scenario_preview_url: string;
+    scenario_price: number;
+    scenario_teacher_avatar: string;
+    scenario_url: string;
+}
+
+
 // Define the validation schema using Zod
 const courseSchema = z.object({
     previewUrl: z.string(),
-    learningUrl: z.string(),
-    courseName: z.string()
+    url: z.string(),
+    name: z.string()
         .min(1, "课程名称不能为空")
         .max(50, "课程名称不能超过50字"),
-    courseDescription: z.string()
+    description: z.string()
         .min(1, "课程简介不能为空")
         .max(300, "课程简介不能超过300字"),
-    selectedModel: z.string().min(1, "请选择模型"),
+    model: z.string().min(1, "请选择模型"),
     price: z.string()
         .min(1, "价格不能为空")
         .regex(/^\d+(\.\d{1,2})?$/, "价格必须是有效的数字格式"),
 });
 
-export default function CourseCreationDialog() {
+export default function CourseCreationDialog({ scenarioId, onSave }: { scenarioId: string, onSave: () => void }) {
     const [open, setOpen] = useState(false);
     const [keywords, setKeywords] = useState(["AIGC"]);
     const [courseImage, setCourseImage] = useState<File | null>(null);
     const [imageError, setImageError] = useState("");
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadedImageUrl, setUploadedImageUrl] = useState("");
+    const {models } = useScenario();
     const [copying, setCopying] = useState({
         previewUrl: false,
-        learningUrl: false
+        url: false
     });
 
     // Initialize the form with react-hook-form and zod resolver
     const form = useForm({
         resolver: zodResolver(courseSchema),
         defaultValues: {
-            previewUrl: "www.www.com",
-            learningUrl: "www.xxxx.com",
-            courseName: "字符串",
-            courseDescription: "字符串",
-            selectedModel: "GPT-4o-2024-5-13",
+            previewUrl: "",
+            url: "",
+            name: "",
+            description: "",
+            model: "",
             price: ""
         },
     });
@@ -95,7 +117,7 @@ export default function CourseCreationDialog() {
     };
 
     // Handle image upload
-    const handleImageUpload = (e) => {
+    const handleImageUpload = async (e) => {
         const file = e.target.files[0];
         if (file) {
             // Validate file size
@@ -114,11 +136,44 @@ export default function CourseCreationDialog() {
 
             setCourseImage(file);
             setImageError("");
+
+            // Upload the file
+            try {
+                setIsUploading(true);
+                setUploadProgress(0);
+
+                // Use the uploadFile function from file.ts
+                const response = await uploadFile(
+                    file,
+                    `${SITE_HOST}/api/scenario/upfile`,
+                    undefined,
+                    undefined,
+                    (progress) => {
+                        setUploadProgress(progress);
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`Upload failed: ${response.statusText}`);
+                }
+
+                const res = await response.json();
+                if (res.code !== 0) {
+                    throw new Error(res.message);
+                }
+                setUploadedImageUrl(res.data); // Assuming the API returns the image URL in a 'url' field
+
+            } catch (error) {
+                console.error("Upload error:", error);
+                setImageError("上传失败，请重试");
+            } finally {
+                setIsUploading(false);
+            }
         }
     };
 
     // Handle form submission
-    const onSubmit = (data) => {
+    const onSubmit = async (data) => {
         // Combine form data with keywords and image
         const fullFormData = {
             ...data,
@@ -126,11 +181,47 @@ export default function CourseCreationDialog() {
             courseImage
         };
 
+        await api.saveScenarioDetail({
+            "scenario_description": data.description,
+            "scenario_id": scenarioId,
+            "scenario_keywords": keywords,
+            "scenario_model": data.model,
+            "scenario_name": data.name,
+            "scenario_price": Number(data.price),
+            "scenario_teacher_avatar": uploadedImageUrl
+        })
+
         console.log("Form submitted:", fullFormData);
+        if (onSave) {
+            await onSave()
+        }
         // Here you would typically make an API call to save the data
         setOpen(false);
     };
+    const init = async () => {
+        const result = await api.getScenarioDetail({
+            scenario_id: scenarioId
+        }) as Scenario;
 
+        if (result) {
+            form.reset({
+                name: result.scenario_name,
+                description: result.scenario_description,
+                price: result.scenario_price + '',
+                model: result.scenario_model,
+                previewUrl: result.scenario_preview_url,
+                url: result.scenario_url,
+            })
+            setKeywords(result.scenario_keywords)
+            setUploadedImageUrl(result.scenario_teacher_avatar || "")
+        }
+    }
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+        init()
+    }, [scenarioId, open])
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -138,7 +229,7 @@ export default function CourseCreationDialog() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-md md:max-w-lg lg:max-w-xl">
                 <DialogHeader>
-                    <DialogTitle className="text-lg font-medium">创建新课程</DialogTitle>
+                    <DialogTitle className="text-lg font-medium">课程设置</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -175,7 +266,7 @@ export default function CourseCreationDialog() {
                             {/* Learning URL */}
                             <FormField
                                 control={form.control}
-                                name="learningUrl"
+                                name="url"
                                 render={({ field }) => (
                                     <FormItem className="grid grid-cols-4 items-center gap-2 space-y-0">
                                         <FormLabel className="text-right text-sm">学习地址</FormLabel>
@@ -189,9 +280,9 @@ export default function CourseCreationDialog() {
                                                 type="button"
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => handleCopy("learningUrl")}
+                                                onClick={() => handleCopy("url")}
                                             >
-                                                {copying.learningUrl ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                                                {copying.url ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                                             </Button>
                                         </div>
                                         <div className="col-span-3 col-start-2">
@@ -204,7 +295,7 @@ export default function CourseCreationDialog() {
                             {/* Course Name */}
                             <FormField
                                 control={form.control}
-                                name="courseName"
+                                name="name"
                                 render={({ field }) => (
                                     <FormItem className="grid grid-cols-4 items-start gap-4 space-y-0">
                                         <FormLabel className="text-right text-sm pt-2">课程名称</FormLabel>
@@ -224,7 +315,7 @@ export default function CourseCreationDialog() {
                             {/* Course Description */}
                             <FormField
                                 control={form.control}
-                                name="courseDescription"
+                                name="description"
                                 render={({ field }) => (
                                     <FormItem className="grid grid-cols-4 items-start gap-4">
                                         <FormLabel className="text-right text-sm pt-2">课程简介</FormLabel>
@@ -291,27 +382,64 @@ export default function CourseCreationDialog() {
                             <div className="grid grid-cols-4 items-start gap-4">
                                 <label className="text-right text-sm pt-2 font-semibold">课程头像</label>
                                 <div className="col-span-3">
-                                    <div
-                                        className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer"
-                                        onClick={() => document.getElementById("imageUpload")?.click()}
-                                    >
-                                        <Upload className="h-8 w-8 mb-2 text-gray-400" />
-                                        <p className="text-sm text-center">上传</p>
-                                        <input
-                                            id="imageUpload"
-                                            type="file"
-                                            accept="image/jpeg,image/png"
-                                            onChange={handleImageUpload}
-                                            className="hidden"
-                                        />
-                                    </div>
+                                    {uploadedImageUrl ? (
+                                        <div className="mb-2">
+                                            <div className="relative w-24 l h-24 bg-gray-100 rounded-lg overflow-hidden">
+                                                <img
+                                                    src={uploadedImageUrl}
+                                                    alt="课程头像"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => document.getElementById("imageUpload")?.click()}
+                                                    className="absolute bottom-2 right-2 bg-white p-1 rounded-full shadow-md hover:bg-gray-100"
+                                                >
+                                                    <Plus className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div
+                                            className="border-2 border-dashed rounded-lg w-24 h-24 flex flex-col items-center justify-center cursor-pointer"
+                                            onClick={() => document.getElementById("imageUpload")?.click()}
+                                        >
+                                            <Plus className="h-8 w-8 mb-2 text-gray-400" />
+                                            <p className="text-sm text-center">上传</p>
+                                        </div>
+                                    )}
+
+                                    <input
+                                        id="imageUpload"
+                                        type="file"
+                                        accept="image/jpeg,image/png"
+                                        onChange={handleImageUpload}
+                                        className="hidden"
+                                    />
+
                                     <p className="text-xs text-gray-500 mt-1">
                                         支持 JPG、PNG 格式，文件小于 2MB
                                     </p>
+
+                                    {isUploading && (
+                                        <div className="mt-2">
+                                            <div className="w-full bg-gray-200 rounded-full h-2.5">
+                                                <div
+                                                    className="bg-primary h-2.5 rounded-full"
+                                                    style={{ width: `${uploadProgress}%` }}
+                                                ></div>
+                                            </div>
+                                            <p className="text-xs text-gray-500 mt-1 text-center">
+                                                上传中 {uploadProgress}%
+                                            </p>
+                                        </div>
+                                    )}
+
                                     {imageError && (
                                         <p className="text-red-500 text-xs mt-1">{imageError}</p>
                                     )}
-                                    {courseImage && (
+
+                                    {courseImage && !isUploading && !uploadedImageUrl && (
                                         <p className="text-green-500 text-xs mt-1">
                                             已选择: {courseImage?.name}
                                         </p>
@@ -322,7 +450,7 @@ export default function CourseCreationDialog() {
                             {/* Model Selection */}
                             <FormField
                                 control={form.control}
-                                name="selectedModel"
+                                name="model"
                                 render={({ field }) => (
                                     <FormItem className="grid grid-cols-4 items-center gap-4">
                                         <FormLabel className="text-right text-sm">选择模型</FormLabel>
@@ -337,11 +465,11 @@ export default function CourseCreationDialog() {
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
-                                                    <SelectItem value="GPT-4o-2024-5-13">GPT-4o-2024-5-13</SelectItem>
-                                                    <SelectItem value="GPT-4">GPT-4</SelectItem>
-                                                    <SelectItem value="GPT-3.5-Turbo">GPT-3.5-Turbo</SelectItem>
-                                                    <SelectItem value="claude-3-opus">Claude 3 Opus</SelectItem>
-                                                    <SelectItem value="claude-3-sonnet">Claude 3 Sonnet</SelectItem>
+                                                    {
+                                                        models.map((item,i) => {
+                                                            return <SelectItem key={i} value={item}>{item}</SelectItem>
+                                                        })
+                                                    }
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />

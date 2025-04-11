@@ -6,10 +6,11 @@ import { cn } from '@/lib/utils';
 
 export default function InputNumber({ value, min, max, step, onChange, className }: { value: number, min: number, max: number, step: number, onChange: (value: number) => void, className?: string }) {
     const [number, setNumber] = useState(value);
+    
     useEffect(() => {
         onChange(number);
     }, [number])
-    console.log(value)
+
     return (
         <div className={cn("flex items-center space-x-2", className)}>
             <Input

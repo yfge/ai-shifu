@@ -88,6 +88,7 @@ export interface ScenarioState {
     currentOutline: string;
     profileItemDefinations: ProfileItem[];
     currentNode: Outline | null;
+    models: string[];
 }
 
 export interface ScenarioActions {
@@ -119,6 +120,7 @@ export interface ScenarioActions {
     autoSaveBlocks: (outline: string, blocks: Block[], blockContentTypes: Record<string, any>, blockContentProperties: Record<string, any>, blockUITypes: Record<string, any>, blockUIProperties: Record<string, any>) => Promise<void>;
     removeBlock: (id: string) => Promise<void>;
     setCurrentNode: (node: Outline) => void;
+    loadModels: () => void;
 }
 
 export interface ScenarioContextType extends ScenarioState {

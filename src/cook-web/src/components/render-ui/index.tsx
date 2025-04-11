@@ -1,10 +1,8 @@
 import Button from './button'
 import Option from './option'
-
 import SingleInput from './input'
 import Goto from './goto'
 import TextInput from './textinput'
-
 import { useScenario } from '@/store';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { ChevronDown } from 'lucide-react'
@@ -242,7 +240,7 @@ export const UITypes = [
                 return "提示不能为空"
             }
             if (!properties?.prompt?.properties?.temprature) {
-                return "变量名不能为空"
+                return "温度不能为空"
             }
             if (!properties?.prompt?.properties?.model) {
                 return "模型不能为空"

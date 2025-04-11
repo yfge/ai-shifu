@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
     XMarkIcon,
@@ -15,6 +14,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useScenario } from "@/store";
 import MDXEditor from '@/components/text-editor';
+import ModelList from '@/components/model-list';
 
 
 const AIModelDialog = ({ blockId, open, onOpenChange }) => {
@@ -142,16 +142,7 @@ const AIModelDialog = ({ blockId, open, onOpenChange }) => {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <div className="mb-1 text-sm">选择模型：</div>
-                            <Select value={model} defaultValue="GPT-4o-2024-5-13" onValueChange={setModel}>
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="选择模型" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="GPT-4o-2024-5-13">GPT-4o-2024-5-13</SelectItem>
-                                    <SelectItem value="GPT-4">GPT-4</SelectItem>
-                                    <SelectItem value="GPT-3.5">GPT-3.5</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <ModelList value={model} onChange={setModel} />
                         </div>
 
                         <div>
@@ -269,17 +260,5 @@ const AIModelDialog = ({ blockId, open, onOpenChange }) => {
         </Dialog>
     );
 };
-
-// example usage
-// const App = () => {
-//     const [dialogOpen, setDialogOpen] = useState(false);
-
-//     return (
-//         <div className="p-4">
-//             <Button onClick={() => setDialogOpen(true)}>Open AI Template Debugging</Button>
-//             <AIModelDialog open={dialogOpen} onOpenChange={setDialogOpen} />
-//         </div>
-//     );
-// };
 
 export default AIModelDialog;

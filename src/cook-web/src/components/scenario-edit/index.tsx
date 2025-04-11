@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 import React, { useState, useEffect, MouseEventHandler } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
@@ -143,21 +142,7 @@ const ScriptEditor = ({ id }: { id: string }) => {
             });
         }, 500);
     }
-    const onAddSubChapter = () => {
-        // actions.createChapter({
-        //     outline_id: uuidv4(),
-        //     outline_name: `新章节`,
-        //     outline_children: [],
-        //     outline_no: "",
-        //     parent_id: parentChapter.outline_id
-        // });
-    }
 
-    // const onContentTypeChange = (id: string, type: string) => {
-    //     const opt = ContentTypes.find(p => p.type === type);
-    //     actions.setBlockContentTypesById(id, type)
-    //     actions.setBlockContentPropertiesById(id, opt?.properties || {})
-    // }
 
     const onShowMenu = (id: string, type: string, e) => {
         if (type !== 'ai') {
@@ -189,17 +174,13 @@ const ScriptEditor = ({ id }: { id: string }) => {
     }
 
     const onAddBlock = (index: number, type: BlockType) => {
-        // console.log(index, type)
         actions.addBlock(index, type)
     }
 
     useEffect(() => {
+        actions.loadModels();
         actions.loadChapters(id);
     }, [id]);
-
-    // useEffect(() => {
-    //     actions.autoSaveBlocks(currentOutline)
-    // }, [blockContentProperties, blockUIProperties, currentOutline])
 
     return (
         <div className="flex flex-col h-screen bg-gray-50 overflow-hidden ">
@@ -214,22 +195,11 @@ const ScriptEditor = ({ id }: { id: string }) => {
                         <ol className=' text-sm'>
                             <OutlineTree
                                 items={chapters}
-                                // currentChapter={currentChapter}
-                                // onChapterClick={scrollToChapter}
-                                onAddNodeClick={onAddSubChapter}
                                 onChange={(newChapters) => {
-                                    // Update chapters with new order by saving each chapter with updated index
-                                    // newChapters.forEach((chapter, index) => {
-                                    //     actions.saveChapter({
-                                    //         ...chapter,
-                                    //         chapter_index: index
-                                    //     });
-                                    // });
                                     actions.setChapters([...newChapters]);
                                 }}
                             />
                         </ol>
-                        {/* <Input className='h-8'></Input> */}
                         <Button variant="outline" className='my-2 h-8 sticky bottom-0 left-4 ' size="sm" onClick={onAddChapter}>
                             <Plus />
                             新篇章

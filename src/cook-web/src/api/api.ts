@@ -36,6 +36,10 @@ const api = {
     previewScenario: "POST /scenario/preview-scenario",
     modifyUnit: "POST /scenario/modify-unit",
     getUnitInfo: "GET /scenario/unit-info",
+    getScenarioInfo: "GET /scenario/scenario-info",
+    getScenarioDetail: "GET /scenario/scenario-detail",
+    saveScenarioDetail: "POST /scenario/save-scenario-detail",
+    getModelList:"GET /llm/model-list"
 };
 
 export default api;

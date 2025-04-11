@@ -303,18 +303,4 @@ const defaultConfig = {
 
 const request = new Request(defaultConfig);
 request.baseUrl = SITE_HOST;
-// request.token = SHEET_CHAT_API_KEY;
 export default request;
-
-// // 发起 GET 请求示例
-// request
-//   .get('https://api.example.com/data')
-//   .then((data) => console.log('GET Response:', data))
-//   .catch((error) => console.error('GET Error:', error));
-
-// // 发起 POST 请求示例
-// const postData = { name: 'John Doe', age: 30 };
-// request
-//   .post('https://api.example.com/create', JSON.stringify(postData))
-//   .then((data) => console.log('POST Response:', data))
-//   .catch((error) => console.error('POST Error:', error));

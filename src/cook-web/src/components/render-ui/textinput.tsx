@@ -2,8 +2,9 @@
 import React from 'react'
 import { Input } from '../ui/input'
 import { Textarea } from '../ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import InputNumber from '@/components/input-number'
+import ModelList from '@/components/model-list'
+
 interface ButtonProps {
     properties: {
         "prompt": {
@@ -24,8 +25,7 @@ interface ButtonProps {
 }
 
 export default function TextInput(props: ButtonProps) {
-    const { properties } = props
-
+    const { properties } = props;
 
     const onValueChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         props.onChange({
@@ -86,16 +86,7 @@ export default function TextInput(props: ButtonProps) {
                 <label htmlFor="" className=' whitespace-nowrap w-[70px] shrink-0'>
                     指定模型：
                 </label>
-                <Select onValueChange={onModelChange}>
-                    <SelectTrigger className=" h-8 w-[120px]">
-                        <SelectValue placeholder="选择模型" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="gpt-4">GDP-4</SelectItem>
-                        <SelectItem value="gpt-4o">GDP-4o</SelectItem>
-                        <SelectItem value="deepseek">DeepSeek</SelectItem>
-                    </SelectContent>
-                </Select>
+                <ModelList value={properties.prompt.properties.model} className=" h-8 w-[120px]" onChange={onModelChange} />
             </div>
             <div className='flex flex-row items-center space-x-1 w-[275px]'>
                 <label htmlFor="" className=' whitespace-nowrap w-[70px] shrink-0'>
