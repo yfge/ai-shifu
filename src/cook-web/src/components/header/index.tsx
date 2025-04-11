@@ -119,7 +119,7 @@ const Header = () => {
             <div className='flex-1'>
 
             </div>
-            
+
             <div className='flex flex-row items-center'>
                 <CourseSetting scenarioId={currentScenario?.id || ""} onSave={onCourseSave} />
                 <Preivew />
