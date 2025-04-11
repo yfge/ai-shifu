@@ -20,13 +20,6 @@ interface UserInfo {
 }
 
 const userMenuItems: { icon: React.ReactNode, label: string, href: string, id?: string }[] = [
-    // {
-    //     icon: <PencilSquareIcon className="w-4 h-4" />, label: "个人信息", href: "#"
-    // },
-    // { icon: <ShieldCheckIcon className="w-4 h-4" />, label: "安全设置", href: "#" },
-    // { icon: <MegaphoneIcon className="w-4 h-4" />, label: "最近更新", href: "#" },
-    // { icon: <MapIcon className="w-4 h-4" />, label: "路线图", href: "#" },
-    // { icon: <ChatBubbleLeftRightIcon className="w-4 h-4" />, label: "问题反馈", href: "#" },
     { icon: <HeartIcon className="w-4 h-4" />, id: 'follow', label: "关注我们", href: "#" },
 ];
 

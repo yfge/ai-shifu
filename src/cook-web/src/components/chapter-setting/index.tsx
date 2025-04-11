@@ -65,7 +65,6 @@ const ChapterSettingsDialog = ({ unitId }: { unitId: string }) => {
                 {
                     !loading && (
                         <div className="space-y-6 py-4">
-                            {/* Chapter Type */}
                             <div className="flex items-center space-x-4">
                                 <div className="w-24 text-sm">章节类型</div>
                                 <RadioGroup
@@ -84,7 +83,6 @@ const ChapterSettingsDialog = ({ unitId }: { unitId: string }) => {
                                 </RadioGroup>
                             </div>
 
-                            {/* System Prompt */}
                             <div className="flex space-x-4">
                                 <div className="w-24 text-sm mt-2">系统提示词</div>
                                 <Textarea
@@ -95,7 +93,6 @@ const ChapterSettingsDialog = ({ unitId }: { unitId: string }) => {
                                 />
                             </div>
 
-                            {/* Hide Chapter */}
                             <div className="flex items-center space-x-4">
                                 <div className="w-24 text-sm">是否隐藏</div>
                                 <div className="flex items-center space-x-2">
@@ -110,7 +107,6 @@ const ChapterSettingsDialog = ({ unitId }: { unitId: string }) => {
                         </div>
                     )
                 }
-                {/* Action Buttons */}
                 <div className="flex justify-end space-x-2 pt-4">
                     <Button variant="outline" onClick={() => setOpen(false)}>
                         取消

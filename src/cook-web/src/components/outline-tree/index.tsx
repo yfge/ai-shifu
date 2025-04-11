@@ -90,7 +90,6 @@ const MinimalTreeItemComponent = React.forwardRef<
                 no: '',
             })
         }
-        // actions.setFocusId("");
     }
     const onAddNodeClick = (node: Outline) => {
         if (node.depth && node.depth >= 1) {

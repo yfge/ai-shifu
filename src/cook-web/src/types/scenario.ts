@@ -1,18 +1,4 @@
-// export interface Scenario {
-//     scenario_id: string;
-//     scenario_name: string;
-//     scenario_description: string;
-//     is_favorite: boolean;
-//     created_at: string;
-//     updated_at: string;
-// }
 
-
-// interface Scenario {
-//   scenario_description: string;
-//   scenario_image: string;
-//   scenario_name: string;
-// }
 export type BlockType = 'ai' | 'systemprompt' | 'solidcontent';
 
 export interface Scenario {
@@ -23,14 +9,6 @@ export interface Scenario {
     state?: number;
     is_favorite?: boolean;
 }
-
-// export interface Outline {
-//     chapter_description: string;
-//     chapter_index?: number;
-//     chapter_name: string;
-//     chapter_id: string;
-//     scenario_id: string;
-// }
 
 export interface Outline {
     parent_id?: string;
@@ -45,14 +23,14 @@ export interface Outline {
 
 export interface Block {
     properties: {
-        block_content: any; // 根据你的需求，可以替换为更具体的类型
+        block_content: any;
         block_desc: string;
         block_id: string;
         block_index: number;
         block_name: string;
         block_no: string;
         block_type: number;
-        block_ui: any; // 根据你的需求，可以替换为更具体的类型
+        block_ui: any; 
     }
     type: string;
 }

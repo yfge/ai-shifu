@@ -74,19 +74,19 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
                 ...cataData[item.id],
                 parend_id: parentId,
                 name: item.name,
-                depth: depth, // 添加 depth 属性
+                depth: depth, 
                 status: 'edit',
             };
 
             if (item.children) {
                 item.children.forEach((child: any) => {
-                    processItem(child, item.id, depth + 1); // 增加深度
+                    processItem(child, item.id, depth + 1); 
                 });
             }
         };
 
         cataTree.forEach((child: any) => {
-            processItem(child, "", 0); // 初始深度为 0
+            processItem(child, "", 0); 
         });
         return result;
     }
@@ -96,7 +96,6 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         return treeData;
     }
     const findNode = (id: string) => {
-        //递归遍历 chapters 查找id未某个值的节点
         const find = (nodes: Outline[]): any => {
             for (let i = 0; i < nodes.length; i++) {
                 if (nodes[i].id === id) {
@@ -716,7 +715,6 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
             setChapters,
             loadScenario,
             loadChapters,
-            // saveChapter,
             createChapter,
             setFocusValue,
             updateOuline,

@@ -11,10 +11,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [profile, setProifle] = useState(null);
-
-
-    // console.log(blockContentProperties)
-    // console.log(blockUIProperties)
     const value: AuthContextType = {
         profile,
         actions: {
