@@ -22,10 +22,10 @@ export const uploadFile = async (
 ): Promise<Response> => {
   // Create a new FormData instance
   const formData = new FormData();
-  
+
   // Append the file to the FormData
   formData.append('file', file);
-  
+
   // Append any additional parameters
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
@@ -37,19 +37,19 @@ export const uploadFile = async (
   if (onProgress && typeof XMLHttpRequest !== 'undefined') {
     return new Promise(async (resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      
+
       xhr.open('POST', url);
-      
+
       // Get token
       const token = await getToken();
-      
+
       // Add headers if provided
       if (headers) {
         Object.entries(headers).forEach(([key, value]) => {
           xhr.setRequestHeader(key, value);
         });
       }
-      
+
       // Add token headers
       if (token) {
         xhr.setRequestHeader("Authorization", `Bearer ${token}`);
@@ -57,14 +57,14 @@ export const uploadFile = async (
         xhr.setRequestHeader("X-API-MODE", "admin");
         xhr.setRequestHeader("X-Request-ID", uuidv4().replace(/-/g, ''));
       }
-      
+
       xhr.upload.addEventListener('progress', (event) => {
         if (event.lengthComputable) {
           const progress = Math.round((event.loaded / event.total) * 100);
           onProgress(progress);
         }
       });
-      
+
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
           const response = new Response(xhr.response, {
@@ -86,21 +86,21 @@ export const uploadFile = async (
           reject(new Error(`HTTP Error: ${xhr.status}`));
         }
       };
-      
+
       xhr.onerror = () => {
         reject(new Error('Network Error'));
       };
-      
+
       xhr.send(formData);
     });
   } else {
     // Use standard fetch API if no progress tracking is needed
     // Get token
     const token = await getToken();
-    
+
     // Prepare headers
     let mergedHeaders = headers ? { ...headers } : {};
-    
+
     // Add token headers
     if (token) {
       mergedHeaders = {
@@ -111,13 +111,13 @@ export const uploadFile = async (
         "X-Request-ID": uuidv4().replace(/-/g, '')
       };
     }
-    
+
     const requestOptions: RequestInit = {
       method: 'POST',
       body: formData,
       headers: mergedHeaders,
     };
-    
+
     return fetch(url, requestOptions);
   }
 };
@@ -139,25 +139,25 @@ export const uploadMultipleFiles = async (
   headers?: Record<string, string>
 ): Promise<Response> => {
   const formData = new FormData();
-  
+
   // Append each file to the FormData with the same field name
   files.forEach((file, index) => {
     formData.append(`${fieldName}[${index}]`, file);
   });
-  
+
   // Append any additional parameters
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       formData.append(key, value);
     });
   }
-  
+
   // Get token
   const token = await getToken();
-  
+
   // Prepare headers
   let mergedHeaders = headers ? { ...headers } : {};
-  
+
   // Add token headers
   if (token) {
     mergedHeaders = {
@@ -168,13 +168,13 @@ export const uploadMultipleFiles = async (
       "X-Request-ID": uuidv4().replace(/-/g, '')
     };
   }
-  
+
   const requestOptions: RequestInit = {
     method: 'POST',
     body: formData,
     headers: mergedHeaders,
   };
-  
+
   return fetch(url, requestOptions);
 };
 
@@ -196,6 +196,6 @@ export const uploadFileWithCustomName = async (
 ): Promise<Response> => {
   // Create a new File object with the custom name
   const renamedFile = new File([file], customName, { type: file.type });
-  
+
   return uploadFile(renamedFile, url, params, headers);
 };

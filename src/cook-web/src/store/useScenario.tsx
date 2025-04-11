@@ -55,7 +55,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         try {
             setIsLoading(true);
             setError(null);
-            const scenario = await api.getScenarioInfo({ 
+            const scenario = await api.getScenarioInfo({
                 scenario_id: scenarioId
              });
             setCurrentScenario(scenario);
@@ -285,7 +285,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
     const addBlock = async (index: number, blockType: string = 'ai') => {
         const item = ContentTypes.find(p => p.type == blockType);
         const buttonUI = UITypes[0];
- 
+
         const block = await api.addBlock({
             "block": {
                 "block_content": {
@@ -365,7 +365,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
 
         setFocusId(id);
     }
-  
+
     const autoSaveBlocks = useCallback(debounce(async (outline: string, blocks: Block[], blockContentTypes: Record<string, any>, blockContentProperties: Record<string, any>, blockUITypes: Record<string, any>, blockUIProperties: Record<string, any>) => {
 
         setIsSaving(true);
