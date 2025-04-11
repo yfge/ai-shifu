@@ -74,19 +74,19 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
                 ...cataData[item.id],
                 parend_id: parentId,
                 name: item.name,
-                depth: depth, 
+                depth: depth,
                 status: 'edit',
             };
 
             if (item.children) {
                 item.children.forEach((child: any) => {
-                    processItem(child, item.id, depth + 1); 
+                    processItem(child, item.id, depth + 1);
                 });
             }
         };
 
         cataTree.forEach((child: any) => {
-            processItem(child, "", 0); 
+            processItem(child, "", 0);
         });
         return result;
     }

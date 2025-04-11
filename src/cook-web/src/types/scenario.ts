@@ -30,7 +30,7 @@ export interface Block {
         block_name: string;
         block_no: string;
         block_type: number;
-        block_ui: any; 
+        block_ui: any;
     }
     type: string;
 }
