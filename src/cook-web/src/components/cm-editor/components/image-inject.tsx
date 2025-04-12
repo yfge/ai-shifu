@@ -1,6 +1,6 @@
 /** inject image to mc-editor */
 import Button from '@/components/button'
-import React, { useContext } from 'react'
+import React from 'react'
 
 type ImageInjectProps = {
   onSelect: (url: string) => void
