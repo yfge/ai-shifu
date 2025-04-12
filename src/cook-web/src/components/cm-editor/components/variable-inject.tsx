@@ -16,7 +16,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Variable, EnumItem, DataType } from '@/components/cm-editor/type'
 
+// TODO: 这里的变量数据确认
 const testVariables = [
   {
     id: '1',
@@ -51,24 +53,6 @@ const testVariables = [
     ]
   }
 ]
-
-type VariableType = 'system' | 'custom'
-type DataType = 'string' | 'enum'
-
-interface EnumItem {
-  value: string
-  alias: string
-}
-
-interface Variable {
-  id: string
-  name: string
-  alias: string
-  type: VariableType
-  dataType: DataType
-  defaultValue?: string // 字符串类型的默认值
-  enumItems?: EnumItem[]
-}
 
 interface VariableInjectProps {
   onSelect?: (variable: Variable) => void
@@ -160,11 +144,8 @@ const VariableInject: React.FC<VariableInjectProps> = ({
 
   const handleSaveVariable = () => {
     if (newVariable.name.trim()) {
-      // 根据数据类型处理不同的字段
       const variableToSave: Omit<Variable, 'id'> = {
         ...newVariable,
-        // 如果是枚举类型，保留enumItems，移除defaultValue
-        // 如果是字符串类型，保留defaultValue，移除enumItems
         enumItems:
           newVariable.dataType === 'enum' ? newVariable.enumItems : undefined,
         defaultValue:

@@ -1,14 +1,21 @@
-/** add video to mc-editor */
+/** inject Video to mc-editor */
+import Button from '@/components/button'
 import React, { useContext } from 'react'
 
 type VideoInjectProps = {
+  onSelect: (resourceUrl: string) => void
 }
 
-const VideoInject: React.FC<VideoInjectProps> = ({  }) => {
-  
+const VideoInject: React.FC<VideoInjectProps> = ({ onSelect }) => {
+  const handleClick  = () => {
+    // TODO：测试代码
+    const videoUrl = 'https://github.com/shadcn.mp4'
+    onSelect(videoUrl)
+  }
   return (
     <div>
-        视频上传的组件接入到这个组件
+      <div>视频上传的组件接入到这个组件</div>
+      <Button onClick={handleClick}>插入测试视频</Button>
     </div>
   )
 }

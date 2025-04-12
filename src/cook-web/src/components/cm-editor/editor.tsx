@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useRef, createContext } from 'react'
 import CodeMirror from '@uiw/react-codemirror'
-// import { markdown } from "@codemirror/lang-markdown"
 import {
   autocompletion,
   type CompletionContext,
@@ -14,25 +13,8 @@ import EditorContext from './editor-context'
 import VariableInject from './components/variable-inject'
 import ImageInject from './components/image-inject'
 import VideoInject from './components/video-inject'
-import { SelectedOption, IEditorContext } from './type'
+import { SelectedOption, IEditorContext, Variable } from './type'
 
-// 定义变量类型
-interface EnumItem {
-  value: string
-  alias: string
-}
-
-interface Variable {
-  id: string
-  name: string
-  alias: string
-  type: 'system' | 'custom'
-  dataType: 'string' | 'enum'
-  defaultValue?: string
-  enumItems?: EnumItem[]
-}
-
-// 简化的 slash 命令处理
 function createSlashCommands (
   onSelectOption: (selectedOption: SelectedOption) => void
 ) {
@@ -40,28 +22,39 @@ function createSlashCommands (
     const word = context.matchBefore(/\/(\w*)$/)
     if (!word) return null
 
+    const handleSelect = (
+      view: EditorView,
+      _: any,
+      from: number,
+      to: number,
+      selectedOption: SelectedOption
+    ) => {
+      view.dispatch({
+        changes: { from, to, insert: '' }
+      })
+      onSelectOption(selectedOption)
+    }
+
     return {
       from: word.from,
+      to: word.to,
       options: [
         {
           label: '变量',
-          apply: () => {
-            onSelectOption(SelectedOption.Variable)
-            return ''
+          apply: (view, _, from, to) => {
+            handleSelect(view, _, from, to, SelectedOption.Variable)
           }
         },
         {
           label: '图片',
-          apply: () => {
-            onSelectOption(SelectedOption.Image)
-            return
+          apply: (view, _, from, to) => {
+            handleSelect(view, _, from, to, SelectedOption.Image)
           }
         },
         {
           label: '视频',
-          apply: () => {
-            onSelectOption(SelectedOption.Video)
-            return
+          apply: (view, _, from, to) => {
+            handleSelect(view, _, from, to, SelectedOption.Video)
           }
         }
       ],
@@ -70,23 +63,37 @@ function createSlashCommands (
   }
 }
 
-type EditorProps = {}
+type EditorProps = {
+  content?: string
+  isEdit?: boolean
+  profiles?: string[]
+  onChange?: (value: string, isEdit: boolean) => void
+}
 
-const Editor: React.FC<EditorProps> = () => {
+const Editor: React.FC<EditorProps> = ({
+  content = '',
+  isEdit,
+  profiles = [],
+  onChange
+}) => {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedOption, setSelectedOption] = useState<SelectedOption>(
     SelectedOption.Empty
   )
+  // TODO: 这里需要确认 看着profiles没用
+  const [profileList, setProfileList] = useState<string[]>(profiles)
+
   const editorViewRef = useRef<EditorView | null>(null)
 
   const editorContextValue: IEditorContext = {
     selectedOption: SelectedOption.Empty,
     setSelectedOption,
     dialogOpen,
-    setDialogOpen
+    setDialogOpen,
+    profileList,
+    setProfileList
   }
 
-  // 打开对话框的函数
   const onSelectedOption = useCallback((selectedOption: SelectedOption) => {
     setDialogOpen(true)
     setSelectedOption(selectedOption)
@@ -110,7 +117,16 @@ const Editor: React.FC<EditorProps> = () => {
 
   const handleSelectVariable = useCallback(
     (variable: Variable) => {
-      const textToInsert = `{{${variable.name}}}`
+      const textToInsert = `{${variable.name}}`
+      insertText(textToInsert)
+      setDialogOpen(false)
+    },
+    [insertText]
+  )
+
+  const handleSelectResource = useCallback(
+    (resourceUrl: string) => {
+      const textToInsert = ` ${resourceUrl} `
       insertText(textToInsert)
       setDialogOpen(false)
     },
@@ -132,24 +148,49 @@ const Editor: React.FC<EditorProps> = () => {
   return (
     <>
       <EditorContext.Provider value={editorContextValue}>
-        <CodeMirror
-          extensions={[
-            //markdown(),
-            slashCommandsExtension(),
-            EditorView.updateListener.of(update => {
-              handleEditorUpdate(update.view)
-            })
-          ]}
-          className='border rounded-md'
-          placeholder='输入 / 触发命令菜单...'
-        />
-        <CustomDialog>
-          {selectedOption === SelectedOption.Variable && (
-            <VariableInject onSelect={handleSelectVariable} />
-          )}
-          {selectedOption === SelectedOption.Image && <ImageInject />}
-          {selectedOption === SelectedOption.Video && <VideoInject />}
-        </CustomDialog>
+        {isEdit ? (
+          <>
+            <CodeMirror
+              extensions={[
+                EditorView.lineWrapping,
+                slashCommandsExtension(),
+                EditorView.updateListener.of(update => {
+                  handleEditorUpdate(update.view)
+                })
+              ]}
+              basicSetup={{
+                lineNumbers: false,
+                syntaxHighlighting: false,
+                highlightActiveLine: false,
+                highlightActiveLineGutter: false,
+                foldGutter: false
+              }}
+              className='border rounded-md'
+              placeholder='输入 / 触发命令菜单...'
+              value={content}
+              theme='light'
+              height='10em'
+              onChange={(value: string) => {
+                onChange?.(value, isEdit || false)
+              }}
+            />
+            <CustomDialog>
+              {selectedOption === SelectedOption.Variable && (
+                <VariableInject onSelect={handleSelectVariable} />
+              )}
+              {selectedOption === SelectedOption.Image && (
+                <ImageInject onSelect={handleSelectResource} />
+              )}
+              {selectedOption === SelectedOption.Video && (
+                <VideoInject onSelect={handleSelectResource} />
+              )}
+            </CustomDialog>
+          </>
+        ) : (
+          <div className='w-full p-2 rounded cursor-pointer font-mono'>
+            {content}
+          </div>
+        )}
       </EditorContext.Provider>
     </>
   )
