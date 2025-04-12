@@ -18,7 +18,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Variable, EnumItem, DataType } from '@/components/cm-editor/type'
 
-// TODO: 这里的变量数据确认
+// TODO: test data
 const testVariables = [
   {
     id: '1',
@@ -186,7 +186,6 @@ const VariableInject: React.FC<VariableInjectProps> = ({
 
   return (
     <div className='space-y-4'>
-      {/* 搜索框 */}
       <div className='relative'>
         <Input
           placeholder='搜索变量...'
@@ -205,11 +204,8 @@ const VariableInject: React.FC<VariableInjectProps> = ({
           </Button>
         )}
       </div>
-
-      {/* 变量列表 */}
       <ScrollArea className='h-[300px] rounded-md border'>
         <div className='p-4 space-y-4'>
-          {/* 系统变量 */}
           {systemVariables.length > 0 && (
             <div>
               <h4 className='mb-2 text-sm font-medium text-muted-foreground'>
@@ -242,8 +238,6 @@ const VariableInject: React.FC<VariableInjectProps> = ({
               </div>
             </div>
           )}
-
-          {/* 自定义变量 */}
           {customVariables.length > 0 && (
             <div>
               <h4 className='mb-2 text-sm font-medium text-muted-foreground'>
@@ -316,7 +310,6 @@ const VariableInject: React.FC<VariableInjectProps> = ({
             </div>
           )}
 
-          {/* 没有找到变量时显示 */}
           {filteredVariables.length === 0 && (
             <div className='py-6 text-center text-muted-foreground'>
               未找到变量
@@ -325,7 +318,6 @@ const VariableInject: React.FC<VariableInjectProps> = ({
         </div>
       </ScrollArea>
 
-      {/* 添加变量按钮 */}
       <Button
         variant='outline'
         className='w-full'
@@ -335,7 +327,6 @@ const VariableInject: React.FC<VariableInjectProps> = ({
         添加新变量
       </Button>
 
-      {/* 添加/编辑变量对话框 */}
       <Dialog
         open={dialogOpen}
         onOpenChange={open => {

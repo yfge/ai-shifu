@@ -28,7 +28,7 @@ interface Variable {
   alias: string
   type: VariableType
   dataType: DataType
-  defaultValue?: string // 字符串类型的默认值
+  defaultValue?: string
   enumItems?: EnumItem[]
 }
 

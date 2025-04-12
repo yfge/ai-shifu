@@ -8,8 +8,8 @@ type ImageInjectProps = {
 
 const ImageInject: React.FC<ImageInjectProps> = ({ onSelect }) => {
   const handleClick  = () => {
-    // TODO：测试代码
-    const imageUrl = 'https://github.com/shadcn.png' // 替换为实际的图片 URL
+    // TODO：test code
+    const imageUrl = 'https://github.com/shadcn.png'
     onSelect(imageUrl)
   }
   return (

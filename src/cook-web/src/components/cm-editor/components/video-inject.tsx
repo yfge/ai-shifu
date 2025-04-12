@@ -8,7 +8,7 @@ type VideoInjectProps = {
 
 const VideoInject: React.FC<VideoInjectProps> = ({ onSelect }) => {
   const handleClick  = () => {
-    // TODO：测试代码
+    // TODO：test code
     const videoUrl = 'https://github.com/shadcn.mp4'
     onSelect(videoUrl)
   }

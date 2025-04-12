@@ -80,7 +80,7 @@ const Editor: React.FC<EditorProps> = ({
   const [selectedOption, setSelectedOption] = useState<SelectedOption>(
     SelectedOption.Empty
   )
-  // TODO: 这里需要确认 看着profiles没用
+  // TODO: confirm
   const [profileList, setProfileList] = useState<string[]>(profiles)
 
   const editorViewRef = useRef<EditorView | null>(null)
@@ -99,7 +99,6 @@ const Editor: React.FC<EditorProps> = ({
     setSelectedOption(selectedOption)
   }, [])
 
-  // 插入文本逻辑
   const insertText = useCallback((text: string) => {
     if (!editorViewRef.current) return
 
@@ -133,14 +132,12 @@ const Editor: React.FC<EditorProps> = ({
     [insertText, selectedOption]
   )
 
-  // 创建 slash 命令补全
   const slashCommandsExtension = useCallback(() => {
     return autocompletion({
       override: [createSlashCommands(onSelectedOption)]
     })
   }, [onSelectedOption])
 
-  // 保存编辑器引用
   const handleEditorUpdate = useCallback((view: EditorView) => {
     editorViewRef.current = view
   }, [])
