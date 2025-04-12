@@ -121,7 +121,7 @@ const Editor: React.FC<EditorProps> = ({
       insertText(textToInsert)
       setDialogOpen(false)
     },
-    [insertText]
+    [insertText, selectedOption]
   )
 
   const handleSelectResource = useCallback(
@@ -130,7 +130,7 @@ const Editor: React.FC<EditorProps> = ({
       insertText(textToInsert)
       setDialogOpen(false)
     },
-    [insertText]
+    [insertText, selectedOption]
   )
 
   // 创建 slash 命令补全
