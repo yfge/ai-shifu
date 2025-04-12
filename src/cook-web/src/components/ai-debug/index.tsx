@@ -13,7 +13,11 @@ import {
     PlusIcon
 } from "@heroicons/react/24/outline";
 import { useScenario } from "@/store";
+<<<<<<< HEAD
 import MDXEditor from '@/components/text-editor';
+=======
+import CMEditor from '@/components/cm-editor';
+>>>>>>> upstream/quanquan/feat_new_editor
 import ModelList from '@/components/model-list';
 
 
@@ -96,15 +100,23 @@ const AIModelDialog = ({ blockId, open, onOpenChange }) => {
                         </CollapsibleTrigger>
                         <CollapsibleContent className="p-0">
                             {/* System Prompt Content */}
+<<<<<<< HEAD
                             <MDXEditor
+=======
+                            <CMEditor
+>>>>>>> upstream/quanquan/feat_new_editor
                                 profiles={profiles}
                                 content={systemPrompt}
                                 onChange={setSystemPrompt}
                                 isEdit={true}
+<<<<<<< HEAD
                             >
 
                             </MDXEditor>
 
+=======
+                            />
+>>>>>>> upstream/quanquan/feat_new_editor
                         </CollapsibleContent>
                     </Collapsible>
 
@@ -127,14 +139,23 @@ const AIModelDialog = ({ blockId, open, onOpenChange }) => {
                             </div>
                         </CollapsibleTrigger>
                         <CollapsibleContent className="p-0">
+<<<<<<< HEAD
                             <MDXEditor
+=======
+                            <CMEditor
+>>>>>>> upstream/quanquan/feat_new_editor
                                 profiles={profiles}
                                 content={userPrompt}
                                 onChange={setUserPrompt}
                                 isEdit={true}
+<<<<<<< HEAD
                             >
 
                             </MDXEditor>
+=======
+                            />
+
+>>>>>>> upstream/quanquan/feat_new_editor
                         </CollapsibleContent>
                     </Collapsible>
 

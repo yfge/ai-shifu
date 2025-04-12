@@ -1,6 +1,11 @@
+<<<<<<< HEAD
 
 import TextEditor from '@/components/text-editor';
 
+=======
+import CMEditor from '@/components/cm-editor';
+
+>>>>>>> upstream/quanquan/feat_new_editor
 
 interface SolideContnetProps {
     content: string;
@@ -29,7 +34,11 @@ export default function SolidContent(props: SolideContnet) {
     }
 
     return (
+<<<<<<< HEAD
         <TextEditor
+=======
+        <CMEditor
+>>>>>>> upstream/quanquan/feat_new_editor
             content={props.properties.content}
             profiles={props.properties.profiles}
             isEdit={props.isEdit}
