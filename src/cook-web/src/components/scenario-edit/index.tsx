@@ -10,7 +10,6 @@ import OutlineTree from '@/components/outline-tree'
 import '@mdxeditor/editor/style.css'
 import Header from '../header';
 import { BlockType } from '@/types/scenario';
-import { Separator } from '../ui/separator';
 import RenderBlockContent from '../render-block';
 import RenderBlockUI from '../render-ui';
 import AIDebugDialog from '@/components/ai-debug';
