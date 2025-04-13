@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef, createContext } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import CodeMirror from '@uiw/react-codemirror'
 import {
   autocompletion,
