@@ -1,21 +1,29 @@
 /** inject image to mc-editor */
-import Button from '@/components/button'
-import React from 'react'
+import React, {useState} from 'react'
+import { ImageUploader } from '@/components/file-uploader'
+import { Button } from '@/components/ui/button'
 
 type ImageInjectProps = {
   onSelect: (url: string) => void
 }
 
 const ImageInject: React.FC<ImageInjectProps> = ({ onSelect }) => {
-  const handleClick  = () => {
-    // TODO：test code
-    const imageUrl = 'https://github.com/shadcn.png'
-    onSelect(imageUrl)
+  const [imageUrl, setImageUrl] = useState<string>('')
+  const handleSelect = () => {
+    onSelect?.(imageUrl)
   }
   return (
     <div>
-      <div>图片上传的组件接入到这个组件</div>
-      <Button onClick={handleClick}>插入测试图片</Button>
+      <ImageUploader onChange={(url) =>setImageUrl(url)} />
+      <div className='flex py-4 justify-end'>
+        <Button
+          className='py-6'
+          onClick={handleSelect}
+          disabled={!imageUrl}
+        >
+          使用图片
+        </Button>
+      </div>
     </div>
   )
 }
