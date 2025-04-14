@@ -13,13 +13,11 @@ import { SITE_HOST } from '@/config/site'
 type ImageUploaderProps = {
   value?: string
   onChange?: (value: string) => void
-  onSelect?: (url: string) => void
 }
 
 const ImageUploader:React.FC<ImageUploaderProps> = ({
   value,
   onChange,
-  onSelect
 }) => {
   const [imageUrl, setImageUrl] = useState<string>(value ||'')
   const [inputUrl, setInputUrl] = useState<string>('')
