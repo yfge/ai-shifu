@@ -120,6 +120,17 @@ class AICourse(db.Model):
             and self.ask_mode == other.ask_mode
         )
 
+    def get_str_to_check(self):
+        return (
+            self.course_name
+            if self.course_name
+            else (
+                "" + self.course_desc
+                if self.course_desc
+                else "" + self.course_keywords if self.course_keywords else ""
+            )
+        )
+
 
 class AILesson(db.Model):
     __tablename__ = "ai_lesson"
@@ -255,6 +266,17 @@ class AILesson(db.Model):
             and self.ask_prompt == other.ask_prompt
             and self.ask_with_history == other.ask_with_history
             and self.ask_mode == other.ask_mode
+        )
+
+    def get_str_to_check(self):
+        return (
+            self.lesson_name
+            if self.lesson_name
+            else (
+                "" + self.lesson_desc
+                if self.lesson_desc
+                else "" + self.lesson_summary if self.lesson_summary else ""
+            )
         )
 
 
@@ -419,4 +441,35 @@ class AILessonScript(db.Model):
             and self.ask_prompt == other.ask_prompt
             and self.ask_with_history == other.ask_with_history
             and self.ask_mode == other.ask_mode
+        )
+
+    def get_str_to_check(self):
+        return (
+            self.script_prompt
+            if self.script_prompt
+            else (
+                "" + self.script_ui_content
+                if self.script_ui_content
+                else (
+                    "" + self.script_check_prompt
+                    if self.script_check_prompt
+                    else (
+                        "" + self.script_check_flag
+                        if self.script_check_flag
+                        else (
+                            "" + self.script_ui_profile
+                            if self.script_ui_profile
+                            else (
+                                "" + self.script_end_action
+                                if self.script_end_action
+                                else (
+                                    "" + self.script_other_conf
+                                    if self.script_other_conf
+                                    else ""
+                                )
+                            )
+                        )
+                    )
+                )
+            )
         )
