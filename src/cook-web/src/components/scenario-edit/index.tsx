@@ -4,7 +4,7 @@ import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import type { DropTargetMonitor } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { Button } from '@/components/ui/button';
-import { ChevronsRight, Play, Plus, Variable, GripVertical } from 'lucide-react';
+import { ChevronsRight, Plus, Variable, GripVertical } from 'lucide-react';
 import { useScenario } from '@/store';
 import OutlineTree from '@/components/outline-tree'
 import '@mdxeditor/editor/style.css'
@@ -107,7 +107,6 @@ const ScriptEditor = ({ id }: { id: string }) => {
         blockContentProperties,
         blockUIProperties,
         blockUITypes,
-        currentOutline,
         currentNode,
         isLoading
     } = useScenario();
@@ -139,7 +138,7 @@ const ScriptEditor = ({ id }: { id: string }) => {
             document.getElementById('new_chapter')?.scrollIntoView({
                 behavior: 'smooth',
             });
-        }, 500);
+        }, 800);
     }
 
 
@@ -186,7 +185,7 @@ const ScriptEditor = ({ id }: { id: string }) => {
             <Header />
             <div className="flex-1 container mx-auto flex flex-row  overflow-hidden px-10">
                 <div className='p-2 flex flex-col overflow-hidden h-full'>
-                    <div className='flex-1 overflow-auto pr-4 w-[240px]'>
+                    <div className='flex-1 h-full overflow-auto pr-4 w-[240px]'>
                         <ol className=' text-sm'>
                             <OutlineTree
                                 items={chapters}
@@ -195,7 +194,6 @@ const ScriptEditor = ({ id }: { id: string }) => {
                                 }}
                             />
                         </ol>
-                        <div className='h-20'></div>
                         <Button variant="outline" className='my-2 h-8 sticky bottom-0 left-4 ' size="sm" onClick={onAddChapter}>
                             <Plus />
                             新篇章
@@ -231,7 +229,7 @@ const ScriptEditor = ({ id }: { id: string }) => {
                                                 newBlocks.splice(dragIndex, 1);
                                                 newBlocks.splice(hoverIndex, 0, dragBlock);
                                                 actions.setBlocks(newBlocks);
-                                                actions.autoSaveBlocks(currentOutline, newBlocks, blockContentTypes, blockContentProperties, blockUITypes, blockUIProperties)
+                                                actions.autoSaveBlocks(currentNode!.id, newBlocks, blockContentTypes, blockContentProperties, blockUITypes, blockUIProperties)
                                             }}
                                         >
                                             <div id={block.properties.block_id} className="relative flex flex-col gap-2 ">
@@ -281,7 +279,7 @@ const ScriptEditor = ({ id }: { id: string }) => {
                         style={{
                             top: menuPosition.y + 'px',
                             left: menuPosition.x + 'px',
-                            zIndex: 9999,
+                            zIndex: 50,
                         }}
                     >
 
@@ -292,9 +290,6 @@ const ScriptEditor = ({ id }: { id: string }) => {
                             <DropdownMenuContent align='start' side='bottom' alignOffset={-5}>
                                 <DropdownMenuItem onClick={onDebugBlock.bind(null, menuPosition.blockId || "")}>
                                     <Variable />测试本模块
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                    <Play />从当前预览
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
