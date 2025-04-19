@@ -27,9 +27,6 @@ const api = {
     getScenarioOutlineTree: "GET /scenario/outline-tree",
     getBlocks: "GET /scenario/blocks",
     saveBlocks: "POST /scenario/save-blocks",
-    getProfile: "GET /user/get_profile",
-    getProfileItemDefinations: "GET /profiles/get-profile-item-definations",
-    addProfileItem: "POST /profiles/add-profile-item-quick",
     getUserInfo: "GET /user/info",
     updateChapterOrder: "POST /scenario/update-chapter-order",
     addBlock: "POST /scenario/add-block",
@@ -43,6 +40,17 @@ const api = {
     getModelList: "GET /llm/model-list",
     getSystemPrompt: "GET /llm/get-system-prompt",
     debugPrompt: "GET /llm/debug-prompt",
+
+    // profile
+    getProfile: "GET /user/get_profile",
+    getProfileItemDefinations: "GET /profiles/get-profile-item-definations",
+    addProfileItem: "POST /profiles/add-profile-item-quick",
+    
+    saveProfile: "POST /profiles/save-profile",
+    deleteProfile: "POST /profiles/remove-profile",
+    getProfileList: "GET /profiles/get-profile-list",
+    getProfileInfo: "GET /profiles/get-profile",
+    
 };
 
 export default api;

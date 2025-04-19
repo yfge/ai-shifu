@@ -50,7 +50,7 @@ export const mockAuth = {
   },
 
   // 手机号登录/注册 - 发送OTP
-  signInWithOtp: async ({ phone, email }: { phone?: string; email?: string }) => {
+  signInWithOtp: async ({ }: { phone?: string; email?: string }) => {
     // 模拟网络延迟
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
@@ -59,7 +59,7 @@ export const mockAuth = {
   },
 
   // 验证OTP (手机号)
-  verifyOtp: async ({ phone, email, token, type }: { phone?: string; email?: string; token: string; type: string }) => {
+  verifyOtp: async ({ phone, token }: { phone?: string; email?: string; token: string; type: string }) => {
     // 模拟网络延迟
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
@@ -88,7 +88,7 @@ export const mockAuth = {
   },
 
   // 注册
-  signUp: async ({ email, password }: { email: string; password: string }) => {
+  signUp: async ({ email }: { email: string; password: string }) => {
     // 模拟网络延迟
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
@@ -106,7 +106,7 @@ export const mockAuth = {
   },
 
   // 重置密码邮件 - 现在模拟发送验证码
-  resetPasswordForEmail: async (email: string) => {
+  resetPasswordForEmail: async () => {
     // 模拟网络延迟
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
@@ -115,7 +115,7 @@ export const mockAuth = {
   },
 
   // 更新用户
-  updateUser: async ({ password }: { password: string }) => {
+  updateUser: async ({ }: { password: string }) => {
     // 模拟网络延迟
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
