@@ -88,7 +88,7 @@ export const mockAuth = {
   },
 
   // 注册
-  signUp: async ({ email }: { email: string; password: string }) => {
+  signUp: async ({ email, password }: { email: string; password: string }) => {
     // 模拟网络延迟
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
