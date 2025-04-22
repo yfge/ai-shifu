@@ -1,5 +1,6 @@
 import pytest
 from app import create_app
+from flask_migrate import upgrade
 
 
 # Path: test/test_flaskr.py
@@ -10,7 +11,6 @@ from app import create_app
 def app():
 
     app = create_app()
-    from flask_migrate import upgrade
 
     with app.app_context():
         upgrade("migrations")
