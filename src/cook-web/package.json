@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint --cache-location src/cook-web/.eslintcache --max-warnings 0",
+    "prepare": "husky install",
     "precommit": "lint-staged"
   },
   "dependencies": {
@@ -69,7 +70,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.1.4",
-    "husky": "^7.0.0",
+    "husky": "^8.0.0",
     "less": "^4.2.2",
     "lint-staged": "^15.5.1",
     "next-with-less": "^3.0.1",
