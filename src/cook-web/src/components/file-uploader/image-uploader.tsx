@@ -108,8 +108,8 @@ const ImageUploader:React.FC<ImageUploaderProps> = ({
     <div className='space-y-6'>
       {!imageUrl ? (
         <>
-          <div>
-            <h2 className='text-xl font-bold mb-4'>URL</h2>
+          <div className='text-xs'>
+            <h2 className='font-bold mb-4'>URL</h2>
             <div className='flex gap-2'>
               <Input
                 placeholder='粘贴或输入图片 URL'
@@ -128,9 +128,9 @@ const ImageUploader:React.FC<ImageUploaderProps> = ({
           </div>
 
           <div>
-            <h2 className='text-xl font-bold mb-4'>上传</h2>
+            <h2 className='font-bold mb-4'>上传</h2>
             <Card
-              className='border-dashed border-2 p-12 text-center flex flex-col items-center justify-center min-h-[300px]'
+              className='border-dashed border-2 text-center flex flex-col items-center justify-center min-h-[200px] p-2'
               onDrop={handleDrop}
               onDragOver={handleDragOver}
             >
@@ -155,8 +155,8 @@ const ImageUploader:React.FC<ImageUploaderProps> = ({
                     className='hidden'
                     accept='image/*'
                   />
-                  <Upload className='h-16 w-16 text-gray-400 mb-4' />
-                  <div className='text-xl mb-2'>
+                  <Upload className='h-10 w-10 text-gray-400 mb-4' />
+                  <div className='mb-2'>
                     拖动文件或者
                     <button
                       className='text-blue-600 hover:underline'
@@ -180,7 +180,7 @@ const ImageUploader:React.FC<ImageUploaderProps> = ({
             alt='Uploaded image'
             className='max-w-full max-h-[400px] object-contain mb-4'
           />
-          <div className='text-xl mb-6'>{fileName}</div>
+          <div className=' mb-6'>{fileName}</div>
           <Button
               variant='outline'
               className='w-full py-6 text-lg'

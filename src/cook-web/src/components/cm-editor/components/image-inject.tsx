@@ -17,7 +17,7 @@ const ImageInject: React.FC<ImageInjectProps> = ({ onSelect }) => {
       <ImageUploader onChange={(url) =>setImageUrl(url)} />
       <div className='flex py-4 justify-end'>
         <Button
-          className='py-6'
+          className='h-8'
           onClick={handleSelect}
           disabled={!imageUrl}
         >

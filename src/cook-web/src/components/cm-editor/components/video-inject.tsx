@@ -66,8 +66,10 @@ const VideoInject: React.FC<VideoInjectProps> = ({ onSelect }) => {
           placeholder='请输入B站视频地址'
           autoComplete='off'
         />
-        <Button onClick={handleRun}>运行</Button>
-        {embedUrl && <Button onClick={handleSelect}>使用资源</Button>}
+        <Button className='h-8' onClick={handleRun}>
+          运行
+        </Button>
+        {embedUrl && <Button className='h-8' onClick={handleSelect}>使用资源</Button>}
       </div>
       {!!errorTips && <div>{errorTips}</div>}
 
