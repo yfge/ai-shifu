@@ -15,7 +15,7 @@ const useProfiles = ({
   const [profiles, setProfiles] = useState<Profile[]>()
   const fetchList = async () => {
     const list = await api.getProfileList({
-        parentId
+        parent_id: parentId
       })
     setProfiles(list as unknown as Profile[])
   }

@@ -26,13 +26,9 @@ const ProfileSelect: React.FC<ProfileSelectProps> = ({
   const [refreshFlag, setRefreshFlag] = useState(0)
 
   const handleDeleteProfile = useCallback(async (id: string) => {
-    // TODO: test data
-    const res =
-      true ||
-      (await api.deleteProfile({
-        parentId,
-        id
-      }))
+    const res = await api.deleteProfile({
+      profile_id: id
+    })
     if (res) {
       setRefreshFlag(refreshFlag + 1)
     }
@@ -90,7 +86,9 @@ const ProfileSelect: React.FC<ProfileSelectProps> = ({
                     key={profile.profile_id}
                     className='flex items-center justify-between p-2 rounded-md hover:bg-accent cursor-pointer'
                     onClick={() => onSelect(profile)}
-                    onMouseEnter={() => setHoveredId(profile?.profile_id || null)}
+                    onMouseEnter={() =>
+                      setHoveredId(profile?.profile_id || null)
+                    }
                     onMouseLeave={() => setHoveredId(null)}
                   >
                     <div className='flex flex-col'>
@@ -122,7 +120,9 @@ const ProfileSelect: React.FC<ProfileSelectProps> = ({
                     key={profile.profile_id}
                     className='flex items-center justify-between p-2 rounded-md hover:bg-accent cursor-pointer group'
                     onClick={() => onSelect(profile)}
-                    onMouseEnter={() => setHoveredId(profile?.profile_id || null)}
+                    onMouseEnter={() =>
+                      setHoveredId(profile?.profile_id || null)
+                    }
                     onMouseLeave={() => setHoveredId(null)}
                   >
                     <div className='flex flex-col'>
@@ -169,7 +169,9 @@ const ProfileSelect: React.FC<ProfileSelectProps> = ({
                             className='h-6 w-6'
                             onClick={e => {
                               e.stopPropagation()
-                              handleDeleteProfile(profile.profile_id as unknown as string)
+                              handleDeleteProfile(
+                                profile.profile_id as unknown as string
+                              )
                             }}
                           >
                             <Trash2 className='h-4 w-4' />
