@@ -91,7 +91,7 @@ const Editor: React.FC<EditorProps> = ({
     dialogOpen,
     setDialogOpen,
     profileList,
-    setProfileList
+    setProfileList,
   }
 
   const onSelectedOption = useCallback((selectedOption: SelectedOption) => {

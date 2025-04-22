@@ -15,7 +15,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import type { Profile, EnumItem, DataType } from '@/components/profiles/type'
+import type { Profile, EnumItem, ProfileType } from '@/components/profiles/type'
 import api from '@/api'
 import {
   Select,
@@ -40,84 +40,74 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
   onOpenChange,
   onSaveSuccess = () => {}
 }) => {
-  const [isEditing, setIsEditing] = useState(!!value?.id)
+  const [isEditing, setIsEditing] = useState(!!value?.profile_id)
   const [editingId, setEditingId] = useState<number>()
   const [profile, setProfile] = useState<Profile>({
-    name: '',
-    title: '',
-    type: 'custom',
-    dataType: 'string',
-    defaultValue: '',
-    enumItems: []
+    profile_key: '',
+    profile_remark: '',
+    profile_type: 'option',
+    // defaultValue: '',
+    profile_items: []
   })
   const [newEnumItem, setNewEnumItem] = useState<EnumItem>({
     value: '',
-    title: ''
+    name: ''
   })
 
   const resetForm = () => {
     setProfile({
-      name: '',
-      title: '',
-      type: 'custom',
-      dataType: 'string',
-      defaultValue: '',
-      enumItems: []
+      profile_key: '',
+      profile_remark: '',
+      profile_type: 'option',
+      // defaultValue: '',
+      profile_items: []
     })
-    setNewEnumItem({ value: '', title: '' })
+    setNewEnumItem({ value: '', name: '' })
     setIsEditing(false)
     setEditingId(undefined)
   }
 
   const handleSaveProfile = async () => {
-    if (profile.name.trim()) {
+    if (profile.profile_key.trim()) {
       const profileToSave: Profile = {
         ...profile,
-        enumItems: profile.dataType === 'enum' ? profile.enumItems : undefined,
-        defaultValue:
-          profile.dataType === 'string' ? profile.defaultValue : undefined,
-        id: editingId
+        profile_items: profile.profile_type === 'option' ? profile.profile_items : undefined,
+        profile_id: editingId as unknown as string,
+        parent_id: parentId,
       }
-      // TODO: test code
-      const res =
-        true ||
-        (await api.saveProfile({
-          parentId,
-          data: profileToSave
-        }))
+      const res = await api.saveProfile(profileToSave)
       if (res) {
         onSaveSuccess?.(profileToSave)
         resetForm()
-        // setDialogOpen(false)
         onOpenChange?.(false)
       }
     }
   }
 
   const handleAddEnumItem = () => {
-    if (newEnumItem.value.trim() && newEnumItem.title.trim()) {
+    if (newEnumItem.value.trim() && newEnumItem.name.trim()) {
       setProfile({
         ...profile,
-        enumItems: [...(profile.enumItems || []), { ...newEnumItem }]
+        profile_items: [...(profile.profile_items || []), { ...newEnumItem }]
       })
-      setNewEnumItem({ value: '', title: '' })
+      setNewEnumItem({ value: '', name: '' })
     }
   }
 
   const handleRemoveEnumItem = (index: number) => {
-    const updatedEnumItems = [...(profile.enumItems || [])]
+    const updatedEnumItems = [...(profile.profile_items || [])]
     updatedEnumItems.splice(index, 1)
     setProfile({
       ...profile,
-      enumItems: updatedEnumItems
+      profile_items: updatedEnumItems
     })
   }
 
   useEffect(() => {
     if (value) {
       setProfile(value)
-      setEditingId(value.id as unknown as number)
-      setIsEditing(!!value.id)
+      setEditingId(value.profile_id as unknown as number)
+      setIsEditing(!!value.profile_id)
     } else {
       resetForm()
     }
@@ -141,13 +131,13 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
           </DialogHeader>
           <div className='grid gap-4 py-4'>
             <div className='grid grid-cols-4 items-center gap-4'>
-              <Label htmlFor='name' className='text-right'>
+              <Label htmlFor='profile_key' className='text-right'>
                 变量名
               </Label>
               <Input
-                id='name'
-                value={profile.name}
-                onChange={e => setProfile({ ...profile, name: e.target.value })}
+                id='profile_key'
+                value={profile.profile_key}
+                onChange={e => setProfile({ ...profile, profile_key: e.target.value })}
                 className='col-span-3'
               />
             </div>
@@ -156,10 +146,10 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
                 标题
               </Label>
               <Input
-                id='title'
-                value={profile.title}
+                id='profile_remark'
+                value={profile.profile_remark}
                 onChange={e =>
-                  setProfile({ ...profile, title: e.target.value })
+                  setProfile({ ...profile, profile_remark: e.target.value })
                 }
                 className='col-span-3'
                 placeholder='可选'
@@ -169,25 +159,25 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
               <Label className='text-right'>数据类型</Label>
               <div className='col-span-3'>
                 <RadioGroup
-                  value={profile.dataType}
-                  onValueChange={(value: DataType) =>
-                    setProfile({ ...profile, dataType: value })
+                  value={profile.profile_type}
+                  onValueChange={(value: ProfileType) =>
+                    setProfile({ ...profile, profile_type: value })
                   }
                   className='flex flex-row space-x-4'
                 >
                   <div className='flex items-center space-x-2'>
-                    <RadioGroupItem value='string' id='string' />
-                    <Label htmlFor='string'>字符串</Label>
+                    <RadioGroupItem value='text' id='text' />
+                    <Label htmlFor='text'>字符串</Label>
                   </div>
                   <div className='flex items-center space-x-2'>
-                    <RadioGroupItem value='enum' id='enum' />
-                    <Label htmlFor='enum'>枚举</Label>
+                    <RadioGroupItem value='option' id='option' />
+                    <Label htmlFor='option'>枚举</Label>
                   </div>
                 </RadioGroup>
               </div>
             </div>
 
-            {profile.dataType === 'string' && (
+            {/* {profile.profile_type === 'text' && (
               <div className='grid grid-cols-4 items-center gap-4'>
                 <Label htmlFor='defaultValue' className='text-right'>
                   默认值
@@ -205,14 +195,14 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
                   placeholder='可选'
                 />
               </div>
-            )}
+            )} */}
 
-            {profile.dataType === 'enum' && (
+            {profile.profile_type === 'option' && (
               <>
                 <div className='grid grid-cols-4 gap-4'>
                   <div className='col-span-4'>
                     <Label className='mb-2 block'>枚举项</Label>
-                    {!!profile.enumItems?.length && (
+                    {!!profile.profile_items?.length && (
                       <div className='mb-3 rounded-md border'>
                         <div className='grid grid-cols-12 border-b bg-muted px-3 py-2 text-sm font-medium'>
                           <div className='col-span-5'>枚举值</div>
@@ -220,7 +210,7 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
                           <div className='col-span-2 text-right'>操作</div>
                         </div>
                         <div className='divide-y'>
-                          {(profile.enumItems || []).map((item, index) => (
+                          {(profile.profile_items || []).map((item, index) => (
                             <div
                               key={index}
                               className='grid grid-cols-12 items-center px-3 py-2'
@@ -229,7 +219,7 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
                                 {item.value}
                               </div>
                               <div className='col-span-5 truncate'>
-                                {item.title}
+                                {item.name}
                               </div>
                               <div className='col-span-2 text-right'>
                                 <Button
@@ -261,11 +251,11 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
                       />
                       <Input
                         placeholder='标题'
-                        value={newEnumItem.title}
+                        value={newEnumItem.name}
                         onChange={e =>
                           setNewEnumItem({
                             ...newEnumItem,
-                            title: e.target.value
+                            name: e.target.value
                           })
                         }
                         className='col-span-5'
@@ -274,7 +264,7 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
                         onClick={handleAddEnumItem}
                         className='col-span-2 h-8'
                         disabled={
-                          !newEnumItem.value.trim() || !newEnumItem.title.trim()
+                          !newEnumItem.value.trim() || !newEnumItem.name.trim()
                         }
                       >
                         添加
@@ -282,7 +272,7 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
                     </div>
                   </div>
                 </div>
-                {!!profile.enumItems?.length && (
+                {/* {!!profile.profile_items?.length && (
                   <div className='grid grid-cols-4 gap-4'>
                     <div className='col-span-4 flex flex-row justify-between align-items-center'>
                       <Label className='block w-30' htmlFor='defaultValue'>
@@ -301,20 +291,20 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
                           <SelectValue placeholder='可选' />
                         </SelectTrigger>
                         <SelectContent className='rounded-md border'>
-                          {(profile.enumItems || []).map(item => (
+                          {(profile.profile_items || []).map(item => (
                             <SelectItem
                               key={item.value}
                               value={item.value}
                               className='cursor-pointer'
                             >
-                              {item.title}
+                              {item.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
-                )}
+                )} */}
               </>
             )}
           </div>
@@ -333,9 +323,9 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
               className='h-8'
               onClick={handleSaveProfile}
               disabled={
-                !profile.name.trim() ||
-                (profile.dataType === 'enum' &&
-                  (profile.enumItems || []).length === 0)
+                !profile.profile_key.trim() ||
+                (profile.profile_type === 'option' &&
+                  (profile.profile_items || []).length === 0)
               }
             >
               {isEditing ? '保存' : '添加'}

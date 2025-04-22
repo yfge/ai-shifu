@@ -11,7 +11,7 @@ import api from '@/api'
 import useProfiles from './useProfiles'
 
 interface ProfileSelectProps {
-  parentId?: number
+  parentId?: string
   onSelect?: (profile: Profile) => void
 }
 
@@ -87,23 +87,23 @@ const ProfileSelect: React.FC<ProfileSelectProps> = ({
               <div className='space-y-1'>
                 {systemProfiles?.map(profile => (
                   <div
-                    key={profile.id}
+                    key={profile.profile_id}
                     className='flex items-center justify-between p-2 rounded-md hover:bg-accent cursor-pointer'
                     onClick={() => onSelect(profile)}
-                    onMouseEnter={() => setHoveredId(profile?.id || null)}
+                    onMouseEnter={() => setHoveredId(profile?.profile_id || null)}
                     onMouseLeave={() => setHoveredId(null)}
                   >
                     <div className='flex flex-col'>
-                      <span>{profile.name}</span>
-                      {profile.title && (
+                      <span>{profile.profile_key}</span>
+                      {profile.profile_remark && (
                         <span className='text-xs text-muted-foreground'>
-                          {profile.title}
+                          {profile.profile_remark}
                         </span>
                       )}
                     </div>
                     <div className='flex items-center'>
                       <span className='text-xs text-muted-foreground mr-2'>
-                        {profile.dataType === 'string' ? '字符串' : '枚举'}
+                        {profile.profile_type === 'text' ? '字符串' : '枚举'}
                       </span>
                     </div>
                   </div>
@@ -119,35 +119,35 @@ const ProfileSelect: React.FC<ProfileSelectProps> = ({
               <div className='space-y-1'>
                 {customProfiles?.map(profile => (
                   <div
-                    key={profile.id}
+                    key={profile.profile_id}
                     className='flex items-center justify-between p-2 rounded-md hover:bg-accent cursor-pointer group'
                     onClick={() => onSelect(profile)}
-                    onMouseEnter={() => setHoveredId(profile?.id || null)}
+                    onMouseEnter={() => setHoveredId(profile?.profile_id || null)}
                     onMouseLeave={() => setHoveredId(null)}
                   >
                     <div className='flex flex-col'>
                       <div className='flex items-center'>
-                        <span>{profile.name}</span>
-                        {hoveredId === profile.id &&
-                          profile.dataType === 'string' &&
+                        <span>{profile.profile_remark}</span>
+                        {hoveredId === profile.profile_id &&
+                          profile.profile_type === 'text' &&
                           profile.defaultValue && (
                             <span className='text-xs text-muted-foreground ml-2 bg-muted px-1.5 py-0.5 rounded'>
                               默认值: {profile.defaultValue}
                             </span>
                           )}
                       </div>
-                      {profile.title && (
+                      {profile.profile_remark && (
                         <span className='text-xs text-muted-foreground'>
-                          {profile.title}
+                          {profile.profile_remark}
                         </span>
                       )}
                     </div>
                     <div className='flex items-center'>
                       <span className='text-xs text-muted-foreground mr-2'>
-                        {profile.dataType === 'string' ? '字符串' : '枚举'}
+                        {profile.profile_type === 'text' ? '字符串' : '枚举'}
                       </span>
 
-                      {hoveredId === profile.id ? (
+                      {hoveredId === profile.profile_id ? (
                         <div
                           className='flex'
                           onClick={e => e.stopPropagation()}
@@ -169,7 +169,7 @@ const ProfileSelect: React.FC<ProfileSelectProps> = ({
                             className='h-6 w-6'
                             onClick={e => {
                               e.stopPropagation()
-                              handleDeleteProfile(profile.id)
+                              handleDeleteProfile(profile.profile_id as unknown as string)
                             }}
                           >
                             <Trash2 className='h-4 w-4' />
@@ -199,6 +199,7 @@ const ProfileSelect: React.FC<ProfileSelectProps> = ({
         添加新变量
       </Button>
       <ProfileSave
+        parentId={parentId}
         open={saveOpen}
         onOpenChange={setSaveOpen}
         value={editingProfile}

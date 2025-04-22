@@ -1,19 +1,23 @@
-type ProfileType = 'system' | 'custom'
-type DataType = 'string' | 'enum'
+type ProfileType = 'text' | 'option'
+type ProfileScope = 'system' | 'user'
 
 interface EnumItem {
   value: string
-  title: string
+  name: string
 }
 
 interface Profile {
-  id?: string
-  name: string
-  title: string
-  type: ProfileType
-  dataType: DataType
+  profile_scope?: ProfileScope
+
+  profile_id?: string
+  parent_id?: string
+  profile_key: string
+  profile_type: ProfileType
+  profile_remark: string
+  profile_items?: EnumItem[]
+
+  scope?: string
   defaultValue?: string
-  enumItems?: EnumItem[]
 }
 
-export type { ProfileType, DataType, EnumItem, Profile }
+export type { ProfileType, EnumItem, Profile }

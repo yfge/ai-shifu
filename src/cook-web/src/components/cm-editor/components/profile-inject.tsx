@@ -3,6 +3,7 @@
 import React, { useCallback } from 'react'
 import ProfileSelect from '@/components/profiles/profile-select'
 import type { Profile } from '@/components/profiles/type'
+import { useScenario } from '@/store'
 
 type ProfileInjectProps = {
   onSelect: (profile: Profile) => void
@@ -10,12 +11,11 @@ type ProfileInjectProps = {
 const ProfileInject: React.FC<ProfileInjectProps> = ({
   onSelect = () => {}
 }) => {
+  const { currentScenario } = useScenario()
   const handleSelect = useCallback((profile: Profile) => {
     onSelect?.(profile)
   }, [])
-  
-  return (
-    <ProfileSelect onSelect={handleSelect} />
-  )
+
+  return <ProfileSelect parentId={currentScenario?.id as unknown as number} onSelect={handleSelect} />
 }
 export default ProfileInject

@@ -46,10 +46,9 @@ const api = {
     getProfileItemDefinations: "GET /profiles/get-profile-item-definations",
     addProfileItem: "POST /profiles/add-profile-item-quick",
     
-    saveProfile: "POST /profiles/save-profile",
-    deleteProfile: "POST /profiles/remove-profile",
-    getProfileList: "GET /profiles/get-profile-list",
-    getProfileInfo: "GET /profiles/get-profile",
+    saveProfile: "POST /profiles/save-profile-item",
+    deleteProfile: "POST /profiles/delete-profile-item",
+    getProfileList: "GET /profiles/get-profile-item-definitions",
     
 };
 
