@@ -116,7 +116,7 @@ const Editor: React.FC<EditorProps> = ({
 
   const handleSelectProfile = useCallback(
     (profile: Profile) => {
-      const textToInsert = `{${profile.name}}`
+      const textToInsert = `{${profile.profile_key}}`
       insertText(textToInsert)
       setDialogOpen(false)
     },

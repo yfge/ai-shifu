@@ -45,7 +45,7 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
   const [profile, setProfile] = useState<Profile>({
     profile_key: '',
     profile_remark: '',
-    profile_type: 'option',
+    profile_type: 'text',
     // defaultValue: '',
     profile_items: []
   })
@@ -58,7 +58,7 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
     setProfile({
       profile_key: '',
       profile_remark: '',
-      profile_type: 'option',
+      profile_type: 'text',
       // defaultValue: '',
       profile_items: []
     })
@@ -71,11 +71,14 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
     if (profile.profile_key.trim()) {
       const profileToSave: Profile = {
         ...profile,
-        profile_items: profile.profile_type === 'option' ? profile.profile_items : undefined,
+        profile_items:
+          profile.profile_type === 'option' ? profile.profile_items : undefined,
         profile_id: editingId as unknown as string,
-        parent_id: parentId,
+        parent_id: parentId
       }
-      const res = await api.saveProfile(profileToSave)
+      const res = await api.saveProfile(profileToSave).catch((err: Error) => {
+        console.error('Error saving profile:', err)
+      })
       if (res) {
         onSaveSuccess?.(profileToSave)
         resetForm()
@@ -137,7 +140,9 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
               <Input
                 id='profile_key'
                 value={profile.profile_key}
-                onChange={e => setProfile({ ...profile, profile_key: e.target.value })}
+                onChange={e =>
+                  setProfile({ ...profile, profile_key: e.target.value })
+                }
                 className='col-span-3'
               />
             </div>
