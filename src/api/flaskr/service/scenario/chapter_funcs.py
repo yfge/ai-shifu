@@ -18,7 +18,10 @@ from .utils import (
     change_outline_status_to_history,
     change_block_status_to_history,
     get_original_outline_tree,
+    OutlineTreeNode,
+    reorder_outline_tree_and_save,
 )
+import queue
 from flaskr.service.check_risk.funcs import check_text_with_risk_control
 
 
@@ -242,78 +245,46 @@ def update_chapter_order(
 ) -> list[ChapterDto]:
     with app.app_context():
         time = datetime.now()
-        chapter_list = get_existing_outlines(app, scenario_id)
-        update_chapter_order = [c for c in chapter_list if c.lesson_id in chapter_ids]
-        # check parent no
-        parent_no = ""
-        chapter_no_list = [len(chapter.lesson_no) for chapter in update_chapter_order]
-        if len(set(chapter_no_list)) > 1:
-            raise_error("SCENARIO.CHAPTER_NO_NOT_MATCH")
+        outlines = get_original_outline_tree(app, scenario_id)
 
-        if chapter_no_list[0] > 0:
-            parent_no = chapter_list[0].lesson_no[:2]
-        else:
-            parent_no = ""
-        parent_ids = set([chapter.parent_id for chapter in update_chapter_order])
-        if len(parent_ids) > 1:
-            raise_error("SCENARIO.CHAPTER_PARENT_ID_NOT_MATCH")
-        chapter_dtos = []
-        update_chatpers = []
-        for index, chapter_id in enumerate(chapter_ids):
-            chapter = next(
-                (c for c in update_chapter_order if c.lesson_id == chapter_id), None
-            )
-            if chapter:
-                app.logger.info(
-                    f"update_chapter_order: {chapter.lesson_id} {chapter.lesson_name} {chapter.lesson_no} {index}"
-                )
-                if chapter.lesson_index != index + 1:
-                    # if the chapter index is not the same as the index, then we need to update the chapter index
-                    change_outline_status_to_history(chapter, user_id, time)
-                    new_chapter = chapter.clone()
-                    new_chapter.lesson_index = index + 1
-                    new_chapter.lesson_no = f"{parent_no}{index + 1:02d}"
-                    new_chapter.updated_user_id = user_id
-                    new_chapter.updated_at = time
-                    new_chapter.status = STATUS_DRAFT
-                    app.logger.info(
-                        f"new_chapter: {new_chapter.lesson_id} {new_chapter.lesson_name} {new_chapter.lesson_no}"
-                    )
-                    update_chatpers.append(new_chapter)
-                    db.session.add(new_chapter)
-                    chapter_dtos.append(
-                        ChapterDto(
-                            new_chapter.lesson_id,
-                            new_chapter.lesson_name,
-                            new_chapter.lesson_desc,
-                            new_chapter.lesson_type,
-                        )
-                    )
+        q = queue.Queue()
+        root = OutlineTreeNode(None)
+        for outline in outlines:
+            root.add_child(outline)
+        q.put(root)
 
-        if len(update_chatpers) > 0:
-            for update_chapter in update_chatpers:
-                sub_chapters = [
-                    c for c in chapter_list if c.parent_id == update_chapter.lesson_id
-                ]
-                app.logger.info(
-                    f"update_chapter: {update_chapter.lesson_id} {update_chapter.lesson_name} sub_chapters: len: {len(sub_chapters)}"
-                )
-                for sub_chapter in sub_chapters:
-                    app.logger.info(
-                        f"update sub_chapter: {sub_chapter.lesson_id} {sub_chapter.lesson_name} {update_chapter.lesson_id} {update_chapter.lesson_name}"
+        reorder = False
+        while not q.empty():
+            node = q.get()
+            sub_nodes = node.children
+            if len(sub_nodes) == 0:
+                continue
+
+            check_in = [
+                id
+                for id in chapter_ids
+                if next((o for o in sub_nodes if o.outline.lesson_id == id), None)
+            ]
+            if set(check_in) == set(chapter_ids):
+                app.logger.info(f"chapter_ids: {chapter_ids} {node.lesson_no}")
+
+                node.children = []
+                for id in chapter_ids:
+                    node.children.append(
+                        next((o for o in sub_nodes if o.outline.lesson_id == id))
                     )
-                    new_sub_chapter = sub_chapter.clone()
-                    change_outline_status_to_history(sub_chapter, user_id, time)
-                    new_sub_chapter.lesson_no = (
-                        update_chapter.lesson_no + f"{sub_chapter.lesson_index:02d}"
-                    )
-                    new_sub_chapter.parent_id = update_chapter.lesson_id
-                    new_sub_chapter.updated_user_id = user_id
-                    new_sub_chapter.updated_at = time
-                    new_sub_chapter.status = STATUS_DRAFT
-                    db.session.add(new_sub_chapter)
+                reorder = True
+                break
+            for sub_node in sub_nodes:
+                q.put(sub_node)
+
+        if reorder:
+            reorder_outline_tree_and_save(app, root, user_id, time)
             db.session.commit()
-        return chapter_dtos
+        else:
+            raise_error("SCENARIO.CHAPTER_IDS_NOT_FOUND")
+
+        return [SimpleOutlineDto(node) for node in outlines]
 
 
 # get outline tree
