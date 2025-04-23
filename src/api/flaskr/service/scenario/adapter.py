@@ -14,7 +14,7 @@ from flaskr.service.scenario.dtos import (
     GotoDtoItem,
     GotoSettings,
 )
-
+from sqlalchemy import func
 
 from flaskr.service.lesson.models import AILessonScript
 from flaskr.service.lesson.const import (
@@ -37,6 +37,7 @@ from flaskr.service.profile.dtos import (
     SelectProfileDto,
     ProfileValueDto,
 )
+from flaskr.service.lesson.models import AILesson
 from flaskr.service.profile.models import ProfileItem
 import json
 from flaskr.service.common import raise_error
@@ -366,11 +367,27 @@ def generate_block_dto(block: AILessonScript, profile_items: list[ProfileItem]):
         profile_key = json_data.get("var_name")
         items = []
         for item in json_data.get("jump_rule"):
+            goto_id = item.get("goto_id", None)
+            if not goto_id and item.get("lark_table_id",None):
+                lesson = AILesson.query.filter(AILesson.lesson_id == block.lesson_id).first()
+                course_id = lesson.course_id
+                goto_lesson = AILesson.query.filter(
+                    AILesson.lesson_feishu_id == item.get("lark_table_id", ""),
+                    AILesson.status == 1,
+                    AILesson.course_id == course_id,
+                    func.length(AILesson.lesson_no) > 2,
+                ).first()
+                
+                if goto_lesson:
+                    from flask import current_app as app
+                    app.logger.info(f"migrate lark table id: {item.get('lark_table_id', '')} to goto_id: {goto_lesson.lesson_id}")
+                    goto_id = goto_lesson.lesson_id
+
             items.append(
                 GotoDtoItem(
                     value=item.get("value"),
                     type="outline",
-                    goto_id=item.get("goto_id"),
+                    goto_id=goto_id,
                 )
             )
         ret.block_ui = GotoDto(
