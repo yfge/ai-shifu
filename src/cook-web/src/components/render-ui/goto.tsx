@@ -40,7 +40,7 @@ export default function Goto(props: GotoProps) {
         chapters,
         currentScenario
     } = useScenario();
-    
+
     const [profileItemDefinations, setProfileItemDefinations] = useState<ProfileItemDefination[]>([]);
     const [profileItemId, setProfileItemId] = useState("");
     const [profileItemName, setProfileItemName] = useState("");
