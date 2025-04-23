@@ -121,9 +121,9 @@ const MinimalTreeItemComponent = React.forwardRef<
         await actions.loadBlocks(props.item.id || "");
     }
     return (
-        <SimpleTreeItemWrapper 
-            {...props} 
-            ref={ref} 
+        <SimpleTreeItemWrapper
+            {...props}
+            ref={ref}
             disableCollapseOnItemClick={false}
         >
             <div
@@ -159,9 +159,9 @@ const MinimalTreeItemComponent = React.forwardRef<
                 {
                     (props.item?.depth || 0 > 0) && (
                         <div className='items-center space-x-2 hidden group-hover:flex'>
-                            <Edit 
-                                className='cursor-pointer h-4 w-4 text-gray-500' 
-                                onClick={editNode} 
+                            <Edit
+                                className='cursor-pointer h-4 w-4 text-gray-500'
+                                onClick={editNode}
                             />
                             <div onClick={(e) => {
                                 e.stopPropagation();
@@ -175,9 +175,9 @@ const MinimalTreeItemComponent = React.forwardRef<
                 {
                     ((props.item?.depth || 0) <= 0) && (
                         <div className='items-center space-x-2 hidden group-hover:flex'>
-                            <Edit 
-                                className='cursor-pointer h-4 w-4 text-gray-500' 
-                                onClick={editNode} 
+                            <Edit
+                                className='cursor-pointer h-4 w-4 text-gray-500'
+                                onClick={editNode}
                             />
                             {
                                 cataData[props.item.id!]?.status == 'saving' && (
