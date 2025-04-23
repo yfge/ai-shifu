@@ -18,7 +18,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import type { Profile, EnumItem, ProfileType } from '@/components/profiles/type'
 import api from '@/api'
 
-
 interface ProfileSaveProps {
   parentId?: string
   value?: Profile
@@ -40,7 +39,6 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
     profile_key: '',
     profile_remark: '',
     profile_type: 'text',
-    // defaultValue: '',
     profile_items: []
   })
 
@@ -58,7 +56,6 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
       profile_key: '',
       profile_remark: '',
       profile_type: 'text',
-      // defaultValue: '',
       profile_items: []
     })
     setNewEnumItem({ value: '', name: '' })
@@ -80,10 +77,13 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
       })
       if (res) {
         onSaveSuccess?.(profileToSave)
-        resetForm()
         onOpenChange?.(false)
       }
     }
+  }
+
+  const handleCancelSaveProfile = async () => {
+    onOpenChange?.(false)
   }
 
   const handleAddEnumItem = () => {
@@ -149,7 +149,6 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
       <Dialog
         open={open}
         onOpenChange={() => {
-          resetForm()
           onOpenChange?.(!open)
         }}
       >
@@ -346,10 +345,7 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
             <Button
               className='h-8'
               variant='outline'
-              onClick={() => {
-                resetForm()
-                onOpenChange?.(!open)
-              }}
+              onClick={handleCancelSaveProfile}
             >
               取消
             </Button>
