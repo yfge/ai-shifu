@@ -242,7 +242,7 @@ def save_profile_item(
         ).first()
         if exist_item:
             raise_error("PROFILE.KEY_EXIST")
-       
+
         if type == PROFILE_TYPE_INPUT_TEXT and not profile_prompt:
             # raise_error("PROFILE.PROMPT_REQUIRED")
             profile_prompt = ""

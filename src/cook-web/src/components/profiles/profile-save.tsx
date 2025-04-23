@@ -243,7 +243,7 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
                           <div className='col-span-2 text-right'>操作</div>
                         </div>
                         <div className='divide-y'>
-                          
+
                           {(profile.profile_items || []).map((item, index) => (
                             <div
                               key={index}
