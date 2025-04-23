@@ -5,6 +5,7 @@ import { Outline } from '@/types/scenario';
 import { cn } from '@/lib/utils';
 import { useScenario } from '@/store/useScenario';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { useEffect } from 'react';
 interface ICataTreeProps {
     currentNode?: Outline;
     items: TreeItems<Outline>;
@@ -15,14 +16,11 @@ interface ICataTreeProps {
 export const CataTree = React.memo((props: ICataTreeProps) => {
     const { items, onChange, } = props;
     const onItemsChanged = (data: TreeItems<Outline>) => {
-
         onChange?.(data);
     }
-
     const onSelect = (node: Outline) => {
         props.onSelect?.(node);
     }
-
     return (
         <SortableTree
             disableSorting={true}
@@ -86,15 +84,36 @@ export default function OutlineSelector({ value, chapters = [], onSelect }: { va
     "use client"
     const [nodes, setNodes] = useState(chapters);
     const [open, setOpen] = useState(false);
+    const [selectedNode, setSelectedNode] = useState<Outline | null>(null);
     const onNodeSelect = (node: Outline) => {
         setOpen(false);
         onSelect?.(node);
+        setSelectedNode(node);
+        value = node.id;
     }
+    useEffect(() => {
+        console.log("value", value);
+        for (const chapter of chapters) {
+            if (chapter.id === value) {
+                setSelectedNode(chapter);
+                console.log("chapter", chapter);
+                break;
+            }
+            for (const child of chapter.children || []) {
+                if (child.id === value) {
+                    setSelectedNode(child);
+                    console.log("child", child);
+                    break;
+                }
+            }
+
+        }
+    }, [value,chapters]);
     return (
         <DropdownMenu open={open} onOpenChange={setOpen}>
             <DropdownMenuTrigger>
                 {
-                    value || "选择章节"
+                    selectedNode ? (selectedNode.no + ":" + selectedNode.name) : "选择章节"
                 }
             </DropdownMenuTrigger>
             <DropdownMenuContent align='start'>
