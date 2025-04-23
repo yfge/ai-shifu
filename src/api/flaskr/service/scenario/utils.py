@@ -124,6 +124,7 @@ def get_existing_blocks(app: Flask, outline_ids: list[str]):
         AILessonScript.id.in_(subquery),
         AILessonScript.status.in_([STATUS_PUBLISH, STATUS_DRAFT]),
     ).order_by(AILessonScript.script_index.asc())
+
     blocks = query.all()
     return blocks
 
