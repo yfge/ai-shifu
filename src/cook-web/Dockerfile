@@ -9,7 +9,7 @@ RUN npm ci && \
 
 COPY . .
 
-RUN npm run build  --ignore-scripts 
+RUN npm run build  --ignore-scripts
 
 FROM node:20.11.1-alpine AS runner
 WORKDIR /app
