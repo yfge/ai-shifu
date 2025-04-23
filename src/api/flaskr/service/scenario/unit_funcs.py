@@ -240,8 +240,8 @@ def modify_unit(
         if unit_name and len(unit_name) > 20:
             raise_error("SCENARIO.UNIT_NAME_TOO_LONG")
         unit = AILesson.query.filter(
-            AILesson.lesson_id == unit_id, AILesson.status.in_([STATUS_DRAFT])
-        ).first()
+            AILesson.lesson_id == unit_id, AILesson.status.in_([STATUS_DRAFT, STATUS_PUBLISH])
+        ).order_by(AILesson.id.desc()).first()
         if not unit:
             raise_error("SCENARIO.UNIT_NOT_FOUND")
         if unit:
