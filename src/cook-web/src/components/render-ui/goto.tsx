@@ -6,7 +6,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useScenario } from '@/store'
 import { Outline } from '@/types/scenario'
 import api from '@/api'
-
 interface ColorSetting {
     color: string;
     text_color: string;
@@ -78,7 +77,6 @@ export default function Goto(props: GotoProps) {
         if (profileItemDefinations.length > 0) {
             const selectedItem = profileItemDefinations.find((item) => item.profile_key === properties.goto_settings.profile_key);
             if (selectedItem) {
-                console.log('loadProfileItemDefinations', selectedItem)
                 setProfileItemId(selectedItem.profile_id);
             }
         }
@@ -92,7 +90,6 @@ export default function Goto(props: GotoProps) {
         const list = await api.getProfileItemOptionList({
             parent_id: profileItemId
         })
-        console.log(list)
         props.onChange({
             ...properties,
             goto_settings: {
@@ -108,16 +105,6 @@ export default function Goto(props: GotoProps) {
         })
         setProfileItemDefinations(list)
     }
-    useEffect(() => {
-        console.log('current profileItemId:', profileItemId);
-    }, [profileItemId]);
-    // const addProfileItem = async () => {
-    //     await api.addProfileItem({
-    //         parent_id: currentScenario?.id,
-    //         profile_key: profileItemName
-    //     })
-    //     loadProfileItemDefinations();
-    // }
     useEffect(() => {
         init();
     }, [])
@@ -163,12 +150,6 @@ export default function Goto(props: GotoProps) {
                         }
                     </SelectContent>
                 </Select>
-                    {/* <Input value={profileItemName} onChange={(e) => {
-                        setProfileItemName(e.target.value)
-                    }}></Input>
-                    <Button onClick={addProfileItem} className='h-8'>
-                        添加变量
-                    </Button> */}
             </div>
             <div className='flex flex-row items-start py-2'>
                 <div className='flex flex-row whitespace-nowrap'>
