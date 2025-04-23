@@ -29,6 +29,7 @@ const api = {
     saveBlocks: "POST /scenario/save-blocks",
     getProfile: "GET /user/get_profile",
     getProfileItemDefinitions: "GET /profiles/get-profile-item-definitions",
+    getProfileItemOptionList: "GET /profiles/get-profile-item-definition-option-list",
     addProfileItem: "POST /profiles/add-profile-item-quick",
     getUserInfo: "GET /user/info",
     updateChapterOrder: "POST /scenario/update-chapter-order",
@@ -43,6 +44,13 @@ const api = {
     getModelList: "GET /llm/model-list",
     getSystemPrompt: "GET /llm/get-system-prompt",
     debugPrompt: "GET /llm/debug-prompt",
+
+    // profile
+
+    saveProfile: "POST /profiles/save-profile-item",
+    deleteProfile: "POST /profiles/delete-profile-item",
+    getProfileList: "GET /profiles/get-profile-item-definitions",
+
 };
 
 export default api;

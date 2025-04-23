@@ -1,14 +1,11 @@
 
 import React, { useEffect, useState } from 'react'
 
-import { Input } from '../ui/input'
 import OutlineSelector from '@/components/outline-selector'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { useScenario } from '@/store'
 import { Outline } from '@/types/scenario'
 import api from '@/api'
-import Button from '../button'
-
 interface ColorSetting {
     color: string;
     text_color: string;
@@ -17,10 +14,11 @@ interface ColorSetting {
 interface ProfileItemDefination {
     color_setting: ColorSetting;
     profile_key: string;
+    profile_id: string;
 }
 
 
-interface ButtonProps {
+interface GotoProps {
     properties: {
         "goto_settings": {
             "items": {
@@ -36,24 +34,21 @@ interface ButtonProps {
     onChange: (properties: any) => void
 }
 
-export default function Goto(props: ButtonProps) {
+export default function Goto(props: GotoProps) {
     const { properties } = props
     const {
         chapters,
         currentScenario
     } = useScenario();
+
     const [profileItemDefinations, setProfileItemDefinations] = useState<ProfileItemDefination[]>([]);
+    const [profileItemId, setProfileItemId] = useState("");
     const [profileItemName, setProfileItemName] = useState("");
-    // const onValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    //     console.log('onChange', properties);
-    //     props.onChange({
-    //         ...properties,
-    //         button_name: e.target.value,
-    //         button_key: e.target.value
-    //     })
-    // }
+    useEffect(() => {
+        loadProfileItemDefinations();
+    }, [profileItemId])
+
     const onNodeSelect = (index: number, node: Outline) => {
-        console.log(index, node)
         props.onChange({
             ...properties,
             goto_settings: {
@@ -76,45 +71,86 @@ export default function Goto(props: ButtonProps) {
             parent_id: currentScenario?.id
         })
         setProfileItemDefinations(list)
+        setProfileItemName(list.find((item) => item.profile_id == profileItemId)?.profile_key || "")
     }
+
+    useEffect(() => {
+        if (profileItemDefinations.length > 0) {
+            const selectedItem = profileItemDefinations.find((item) => item.profile_key === properties.goto_settings.profile_key);
+            if (selectedItem) {
+                setProfileItemId(selectedItem.profile_id);
+            }
+        }
+    }, [profileItemDefinations])
+
+
     const init = async () => {
         await loadProfileItemDefinations();
-
     }
-    const addProfileItem = async () => {
-        await api.addProfileItem({
-            parent_id: currentScenario?.id,
-            profile_key: profileItemName
+    const loadProfileItem = async () => {
+        const list = await api.getProfileItemOptionList({
+            parent_id: profileItemId
         })
-        loadProfileItemDefinations();
+        props.onChange({
+            ...properties,
+            goto_settings: {
+                ...properties.goto_settings,
+                items: list.map((item) => {
+                    return {
+                        value: item.value,
+                        goto_id: "",
+                        type: "goto"
+                    }
+                })
+            }
+        })
+        setProfileItemDefinations(list)
     }
     useEffect(() => {
         init();
     }, [])
+    useEffect(() => {
+        if (profileItemId) {
+            loadProfileItem();
+        }
+    }, [profileItemId])
     return (
         <div className='flex flex-col space-y-1'>
             <div className='flex flex-row items-center space-x-1'>
                 <div className='flex flex-row whitespace-nowrap'>
                     变量选择：
                 </div>
-                <Select >
+                <Select value={profileItemId} defaultValue={profileItemId} onValueChange={(value) => {
+                    const selectedItem = profileItemDefinations.find((item) => item.profile_id === value);
+                    if (selectedItem) {
+                        setProfileItemId(value)
+                        setProfileItemName(selectedItem.profile_key)
+                        props.onChange({
+                            ...properties,
+                            goto_settings: {
+                                ...properties.goto_settings,
+                                profile_key: selectedItem.profile_key
+                            }
+                        })
+                    }
+                }} onOpenChange={(open) => {
+                    if (open) {
+                        loadProfileItemDefinations();
+                    }
+                }}>
                     <SelectTrigger className=" h-8 w-[170px]">
-                        <SelectValue placeholder="选择变量" />
+                        <SelectValue defaultValue={profileItemId} placeholder="选择变量" >
+                            {profileItemName}
+                        </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                         {
                             profileItemDefinations?.map((item) => {
-                                return <SelectItem key={item.profile_key} value={item.profile_key}>{item.profile_key}</SelectItem>
+                                return <SelectItem key={item.profile_key} value={item.profile_id} >{item.profile_key}</SelectItem>
                             })
                         }
                     </SelectContent>
                 </Select>
-                <Input value={profileItemName} onChange={(e) => {
-                    setProfileItemName(e.target.value)
-                }}></Input>
-                <Button onClick={addProfileItem} className='h-8'>
-                    添加变量
-                </Button>
             </div>
             <div className='flex flex-row items-start py-2'>
                 <div className='flex flex-row whitespace-nowrap'>
@@ -124,7 +160,7 @@ export default function Goto(props: ButtonProps) {
                     {
                         properties.goto_settings.items.map((item, index) => {
                             return (
-                                <div className='flex flex-row items-center space-x-2' key={index}>
+                                <div className='flex flex-row items-center space-x-2' key={`${item.value}-${index}`}>
                                     <span className='w-40'>{item.value}</span>
                                     <span className='px-2'>跳转到</span>
                                     <span>

@@ -171,6 +171,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
                     id: chapter.id,
                     name: chapter.name,
                     children: chapter.children,
+                    no: chapter.no,
                 }
             })
             if (list.length > 0) {
