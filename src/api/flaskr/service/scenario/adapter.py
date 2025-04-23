@@ -368,8 +368,10 @@ def generate_block_dto(block: AILessonScript, profile_items: list[ProfileItem]):
         items = []
         for item in json_data.get("jump_rule"):
             goto_id = item.get("goto_id", None)
-            if not goto_id and item.get("lark_table_id",None):
-                lesson = AILesson.query.filter(AILesson.lesson_id == block.lesson_id).first()
+            if not goto_id and item.get("lark_table_id", None):
+                lesson = AILesson.query.filter(
+                    AILesson.lesson_id == block.lesson_id
+                ).first()
                 course_id = lesson.course_id
                 goto_lesson = AILesson.query.filter(
                     AILesson.lesson_feishu_id == item.get("lark_table_id", ""),
@@ -377,10 +379,13 @@ def generate_block_dto(block: AILessonScript, profile_items: list[ProfileItem]):
                     AILesson.course_id == course_id,
                     func.length(AILesson.lesson_no) > 2,
                 ).first()
-                
+
                 if goto_lesson:
                     from flask import current_app as app
-                    app.logger.info(f"migrate lark table id: {item.get('lark_table_id', '')} to goto_id: {goto_lesson.lesson_id}")
+
+                    app.logger.info(
+                        f"migrate lark table id: {item.get('lark_table_id', '')} to goto_id: {goto_lesson.lesson_id}"
+                    )
                     goto_id = goto_lesson.lesson_id
 
             items.append(
