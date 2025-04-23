@@ -40,6 +40,7 @@ export default function Goto(props: GotoProps) {
         chapters,
         currentScenario
     } = useScenario();
+    
     const [profileItemDefinations, setProfileItemDefinations] = useState<ProfileItemDefination[]>([]);
     const [profileItemId, setProfileItemId] = useState("");
     const [profileItemName, setProfileItemName] = useState("");
@@ -159,7 +160,7 @@ export default function Goto(props: GotoProps) {
                     {
                         properties.goto_settings.items.map((item, index) => {
                             return (
-                                <div className='flex flex-row items-center space-x-2' key={index}>
+                                <div className='flex flex-row items-center space-x-2' key={`${item.value}-${index}`}>
                                     <span className='w-40'>{item.value}</span>
                                     <span className='px-2'>跳转到</span>
                                     <span>
