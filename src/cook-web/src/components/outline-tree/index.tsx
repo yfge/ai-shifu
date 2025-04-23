@@ -3,12 +3,13 @@ import { SortableTree, SimpleTreeItemWrapper, TreeItemComponentProps, TreeItems 
 import React from 'react';
 import { Outline } from '@/types/scenario';
 import { cn } from '@/lib/utils';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Edit } from 'lucide-react';
 import { InlineInput } from '../inline-input';
 import { useScenario } from '@/store/useScenario';
 import Loading from '../loading';
 import ChapterSetting from '../chapter-setting';
 import { ItemChangedReason } from '../dnd-kit-sortable-tree/types';
+
 interface ICataTreeProps {
     currentNode?: Outline;
     items: TreeItems<Outline>;
@@ -59,13 +60,11 @@ export const CataTree = React.memo((props: ICataTreeProps) => {
 
 CataTree.displayName = 'CataTree';
 
-
-
-
 export type TreeItemProps = {
     currentNode?: Outline;
     onChange?: (node: Outline, value: string) => void;
 }
+
 const MinimalTreeItemComponent = React.forwardRef<
     HTMLDivElement,
     TreeItemComponentProps<Outline> & TreeItemProps
@@ -103,6 +102,10 @@ const MinimalTreeItemComponent = React.forwardRef<
         e.stopPropagation();
         await actions.removeOutline(props.item);
     }
+    const editNode = (e) => {
+        e.stopPropagation();
+        actions.setFocusId(props.item.id || "");
+    }
     const onSelect = async () => {
         if (props.item.id == 'new_chapter') {
             return;
@@ -118,7 +121,11 @@ const MinimalTreeItemComponent = React.forwardRef<
         await actions.loadBlocks(props.item.id || "");
     }
     return (
-        <SimpleTreeItemWrapper {...props} ref={ref}>
+        <SimpleTreeItemWrapper
+            {...props}
+            ref={ref}
+            disableCollapseOnItemClick={false}
+        >
             <div
                 id={props.item.id}
                 className={cn(
@@ -151,20 +158,27 @@ const MinimalTreeItemComponent = React.forwardRef<
                 }
                 {
                     (props.item?.depth || 0 > 0) && (
-                        <div className=' items-center space-x-1 hidden group-hover:flex'>
+                        <div className='items-center space-x-2 hidden group-hover:flex'>
+                            <Edit
+                                className='cursor-pointer h-4 w-4 text-gray-500'
+                                onClick={editNode}
+                            />
                             <div onClick={(e) => {
                                 e.stopPropagation();
                             }}>
                                 <ChapterSetting unitId={props.item.id} />
                             </div>
-
                             <Trash2 className='cursor-pointer h-4 w-4 text-gray-500' onClick={removeNode} />
                         </div>
                     )
                 }
                 {
                     ((props.item?.depth || 0) <= 0) && (
-                        <div className='flex items-center space-x-1'>
+                        <div className='items-center space-x-2 hidden group-hover:flex'>
+                            <Edit
+                                className='cursor-pointer h-4 w-4 text-gray-500'
+                                onClick={editNode}
+                            />
                             {
                                 cataData[props.item.id!]?.status == 'saving' && (
                                     <Loading className='h-4 w-4' />
@@ -172,7 +186,7 @@ const MinimalTreeItemComponent = React.forwardRef<
                             }
                             {
                                 cataData[props.item.id!]?.status !== 'saving' && (
-                                    <Plus className='cursor-pointer h-5 w-5 text-gray-500' onClick={(e) => {
+                                    <Plus className='cursor-pointer h-4 w-4 text-gray-500' onClick={(e) => {
                                         e.stopPropagation();
                                         onAddNodeClick?.(props.item);
                                     }} />
@@ -189,6 +203,5 @@ const MinimalTreeItemComponent = React.forwardRef<
 });
 
 MinimalTreeItemComponent.displayName = 'MinimalTreeItemComponent';
-
 
 export default CataTree;
