@@ -13,7 +13,7 @@ interface Profile {
   profile_type: ProfileType
   profile_remark: string
   profile_items?: EnumItem[]
-  
+
   profile_scope?: ProfileScope
   scope?: string
   defaultValue?: string

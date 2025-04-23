@@ -49,11 +49,11 @@ const api = {
     getProfile: "GET /user/get_profile",
     getProfileItemDefinations: "GET /profiles/get-profile-item-definations",
     addProfileItem: "POST /profiles/add-profile-item-quick",
-    
+
     saveProfile: "POST /profiles/save-profile-item",
     deleteProfile: "POST /profiles/delete-profile-item",
     getProfileList: "GET /profiles/get-profile-item-definitions",
-    
+
 };
 
 export default api;
