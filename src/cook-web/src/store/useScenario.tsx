@@ -456,11 +456,15 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
                     "chapter_description": data.name,
                     "chapter_name": data.name
                 })
+                
+                // 查找当前节点以获取其子节点信息
+                const currentChapter = chapters.find(chapter => chapter.id === data.id);
+                
                 replaceOutline(data.id, {
                     id: data.id,
                     name: data.name,
                     no: '',
-                    children: []
+                    children: currentChapter?.children || [] // 保留原有的子节点信息
                 })
                 setFocusId("")
             } catch (error) {
