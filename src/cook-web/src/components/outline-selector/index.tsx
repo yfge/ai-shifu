@@ -92,18 +92,15 @@ export default function OutlineSelector({ value, chapters = [], onSelect }: { va
         value = node.id;
     }
     useEffect(() => {
-        console.log("value", value);
         for (const chapter of chapters) {
             if (chapter.id === value) {
                 setSelectedNode(chapter);
-                console.log("chapter", chapter);
-                break;
+                return;
             }
             for (const child of chapter.children || []) {
                 if (child.id === value) {
                     setSelectedNode(child);
-                    console.log("child", child);
-                    break;
+                    return;
                 }
             }
 
