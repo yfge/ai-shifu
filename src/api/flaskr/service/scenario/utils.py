@@ -119,14 +119,16 @@ def get_existing_blocks(app: Flask, outline_ids: list[str]):
         )
         .group_by(AILessonScript.script_id)
     )
-    blocks = (
+    
+    query  = (
         AILessonScript.query.filter(
             AILessonScript.id.in_(subquery),
             AILessonScript.status.in_([STATUS_PUBLISH, STATUS_DRAFT]),
         )
         .order_by(AILessonScript.script_index.asc())
-        .all()
+       
     )
+    blocks = query.all()
     return blocks
 
 
