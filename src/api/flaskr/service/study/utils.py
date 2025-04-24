@@ -458,7 +458,10 @@ def update_lesson_status(app: Flask, attend_id: str):
     attend_info = AICourseLessonAttend.query.filter(
         AICourseLessonAttend.attend_id == attend_id
     ).first()
-    lesson = AILesson.query.filter(AILesson.lesson_id == attend_info.lesson_id).first()
+    lesson = AILesson.query.filter(
+        AILesson.lesson_id == attend_info.lesson_id,
+        AILesson.status == 1,
+    ).order_by(AILesson.id.desc()).first()
     lesson_no = lesson.lesson_no
     parent_no = lesson_no
     attend_info.status = ATTEND_STATUS_COMPLETED
@@ -751,7 +754,7 @@ def check_script_is_last_script(
             AILesson.course_id == lesson_info.course_id,
             AILesson.status == 1,
         )
-        .order_by(AILesson.lesson_no.desc())
+        .order_by(AILesson.lesson_no.desc(), AILesson.id.desc())
         .first()
     )
     if last_lesson.lesson_id == script_info.lesson_id:
