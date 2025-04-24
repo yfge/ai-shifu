@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { ChevronDown } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog'
 
 
 const EditBlockMap = {
@@ -94,23 +95,35 @@ export const RenderBlockUI = ({ block, mode = 'edit' }) => {
         blockUIProperties,
     } = useScenario();
     const [expand, setExpand] = useState(false)
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+    const [pendingType, setPendingType] = useState('')
 
     const onUITypeChange = (id: string, type: string) => {
-        setExpand(true);
-        const opt = UITypes.find(p => p.type === type);
-        actions.setBlockUITypesById(id, type)
-        actions.setBlockUIPropertiesById(id, opt?.properties || {}, true)
+        if (type === blockUITypes[block.properties.block_id]) {
+            return;
+        }
+        setPendingType(type);
+        setShowConfirmDialog(true);
     }
+
+    const handleConfirmChange = () => {
+        setExpand(true);
+        const opt = UITypes.find(p => p.type === pendingType);
+        actions.setBlockUITypesById(block.properties.block_id, pendingType)
+        actions.setBlockUIPropertiesById(block.properties.block_id, opt?.properties || {}, true)
+        setShowConfirmDialog(false);
+    }
+
     return (
         <>
             <div className='bg-[#F5F5F4] rounded-md p-2 space-y-1'>
-                <div className=' flex flex-row items-center justify-between py-1 cursor-pointer' onClick={() => setExpand(!expand)}>
+                <div className='flex flex-row items-center justify-between py-1 cursor-pointer' onClick={() => setExpand(!expand)}>
                     <div className='flex flex-row items-center space-x-1'>
                         <span>
                             用户操作：
                         </span>
                         <Select value={blockUITypes[block.properties.block_id]} onValueChange={onUITypeChange.bind(null, block.properties.block_id)}>
-                            <SelectTrigger className=" h-8 w-[120px]">
+                            <SelectTrigger className="h-8 w-[120px]">
                                 <SelectValue placeholder="请选择" />
                             </SelectTrigger>
                             <SelectContent>
@@ -129,7 +142,7 @@ export const RenderBlockUI = ({ block, mode = 'edit' }) => {
 
                     <div className='flex flex-row items-center space-x-1 cursor-pointer' onClick={() => setExpand(!expand)}>
                         <ChevronDown className={cn(
-                            " h-5 w-5 transition-transform duration-200 ease-in-out",
+                            "h-5 w-5 transition-transform duration-200 ease-in-out",
                             expand ? 'rotate-180' : ''
                         )} />
                         {
@@ -152,8 +165,22 @@ export const RenderBlockUI = ({ block, mode = 'edit' }) => {
                         )
                     }
                 </div>
-
             </div>
+
+            <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>确认切换</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            您的操作将会造成当前内容的丢失，是否确认?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>取消</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmChange}>确认</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     )
 }
