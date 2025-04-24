@@ -43,13 +43,8 @@ export default function Goto(props: GotoProps) {
     } = useScenario();
 
     const [profileItemDefinations, setProfileItemDefinations] = useState<ProfileItemDefination[]>([]);
-    const [profileItemId, setProfileItemId] = useState("");
-    const [profileItemName, setProfileItemName] = useState("");
+    const [selectedProfile, setSelectedProfile] = useState<ProfileItemDefination | null>(null);
     const [tempGotoSettings, setTempGotoSettings] = useState(properties.goto_settings);
-
-    useEffect(() => {
-        loadProfileItemDefinations();
-    }, [profileItemId])
 
     const onNodeSelect = (index: number, node: Outline) => {
         setTempGotoSettings({
@@ -73,74 +68,68 @@ export default function Goto(props: GotoProps) {
         });
     }
 
-    const loadProfileItemDefinations = async () => {
+    const loadProfileItemDefinations = async (preserveSelection: boolean = false) => {
         const list = await api.getProfileItemDefinitions({
             parent_id: currentScenario?.id
         })
         setProfileItemDefinations(list)
-        setProfileItemName(list.find((item) => item.profile_id == profileItemId)?.profile_key || "")
-    }
 
-    useEffect(() => {
-        if (profileItemDefinations.length > 0) {
-            const selectedItem = profileItemDefinations.find((item) => item.profile_key === properties.goto_settings.profile_key);
-            if (selectedItem) {
-                setProfileItemId(selectedItem.profile_id);
+        if (!preserveSelection && list.length > 0) {
+            const initialSelected = list.find((item) => item.profile_key === properties.goto_settings.profile_key);
+            if (initialSelected) {
+                setSelectedProfile(initialSelected);
+                await loadProfileItem(initialSelected.profile_id, initialSelected.profile_key);
             }
         }
-    }, [profileItemDefinations])
-
-
-    const init = async () => {
-        await loadProfileItemDefinations();
     }
-    const loadProfileItem = async () => {
+
+    const loadProfileItem = async (id: string, name: string) => {
         const list = await api.getProfileItemOptionList({
-            parent_id: profileItemId
+            parent_id: id
         })
+        // 更新临时变量
         setTempGotoSettings({
-            ...tempGotoSettings,
+            profile_key: name,
             items: list.map((item) => {
                 return {
                     value: item.value,
-                    goto_id: tempGotoSettings.items.find((i) => i.value === item.value)?.goto_id || "",
+                    goto_id: "",
                     type: "goto"
                 }
             })
         });
     }
+
     useEffect(() => {
-        init();
+        loadProfileItemDefinations();
     }, [])
-    useEffect(() => {
-        if (profileItemId) {
-            loadProfileItem();
+
+    const handleValueChange = async (value: string) => {
+        const selectedItem = profileItemDefinations.find((item) => item.profile_id === value);
+        if (selectedItem) {
+            setSelectedProfile(selectedItem);
+            await loadProfileItem(value, selectedItem.profile_key);
         }
-    }, [profileItemId])
+    }
+
     return (
         <div className='flex flex-col space-y-1'>
             <div className='flex flex-row items-center space-x-1'>
                 <div className='flex flex-row whitespace-nowrap w-[70px] shrink-0'>
                     变量选择：
                 </div>
-                <Select value={profileItemId} defaultValue={profileItemId} onValueChange={(value) => {
-                    const selectedItem = profileItemDefinations.find((item) => item.profile_id === value);
-                    if (selectedItem) {
-                        setProfileItemId(value)
-                        setProfileItemName(selectedItem.profile_key)
-                        setTempGotoSettings({
-                            ...tempGotoSettings,
-                            profile_key: selectedItem.profile_key
-                        });
-                    }
-                }} onOpenChange={(open) => {
-                    if (open) {
-                        loadProfileItemDefinations();
-                    }
-                }}>
-                    <SelectTrigger className=" h-8 w-[170px]">
-                        <SelectValue defaultValue={profileItemId} placeholder="选择变量" >
-                            {profileItemName}
+                <Select
+                    value={selectedProfile?.profile_id || ""}
+                    onValueChange={handleValueChange}
+                    onOpenChange={(open) => {
+                        if (open) {
+                            loadProfileItemDefinations(true);
+                        }
+                    }}
+                >
+                    <SelectTrigger className="h-8 w-[170px]">
+                        <SelectValue>
+                            {selectedProfile?.profile_key || "选择变量"}
                         </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
