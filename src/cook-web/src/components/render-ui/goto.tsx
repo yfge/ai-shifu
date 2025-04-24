@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react'
 
 import OutlineSelector from '@/components/outline-selector'
@@ -6,6 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useScenario } from '@/store'
 import { Outline } from '@/types/scenario'
 import api from '@/api'
+import { Button } from '../ui/button'
+
 interface ColorSetting {
     color: string;
     text_color: string;
@@ -44,28 +45,34 @@ export default function Goto(props: GotoProps) {
     const [profileItemDefinations, setProfileItemDefinations] = useState<ProfileItemDefination[]>([]);
     const [profileItemId, setProfileItemId] = useState("");
     const [profileItemName, setProfileItemName] = useState("");
+    const [tempGotoSettings, setTempGotoSettings] = useState(properties.goto_settings);
+
     useEffect(() => {
         loadProfileItemDefinations();
     }, [profileItemId])
 
     const onNodeSelect = (index: number, node: Outline) => {
+        setTempGotoSettings({
+            ...tempGotoSettings,
+            items: tempGotoSettings.items.map((item, i) => {
+                if (i === index) {
+                    return {
+                        ...item,
+                        goto_id: node.id
+                    }
+                }
+                return item
+            })
+        });
+    }
+
+    const handleConfirm = () => {
         props.onChange({
             ...properties,
-            goto_settings: {
-                ...properties.goto_settings,
-                items: properties.goto_settings.items.map((item, i) => {
-                    if (i === index) {
-                        return {
-                            ...item,
-                            goto_id: node.id
-                        }
-                    }
-                    return item
-                })
-
-            }
-        })
+            goto_settings: tempGotoSettings
+        });
     }
+
     const loadProfileItemDefinations = async () => {
         const list = await api.getProfileItemDefinitions({
             parent_id: currentScenario?.id
@@ -91,20 +98,16 @@ export default function Goto(props: GotoProps) {
         const list = await api.getProfileItemOptionList({
             parent_id: profileItemId
         })
-        props.onChange({
-            ...properties,
-            goto_settings: {
-                ...properties.goto_settings,
-                items: list.map((item) => {
-                    return {
-                        value: item.value,
-                        goto_id: properties.goto_settings.items.find((i) => i.value === item.value)?.goto_id || "",
-                        type: "goto"
-                    }
-                })
-            }
-        })
-        setProfileItemDefinations(list)
+        setTempGotoSettings({
+            ...tempGotoSettings,
+            items: list.map((item) => {
+                return {
+                    value: item.value,
+                    goto_id: tempGotoSettings.items.find((i) => i.value === item.value)?.goto_id || "",
+                    type: "goto"
+                }
+            })
+        });
     }
     useEffect(() => {
         init();
@@ -117,7 +120,7 @@ export default function Goto(props: GotoProps) {
     return (
         <div className='flex flex-col space-y-1'>
             <div className='flex flex-row items-center space-x-1'>
-                <div className='flex flex-row whitespace-nowrap'>
+                <div className='flex flex-row whitespace-nowrap w-[70px] shrink-0'>
                     变量选择：
                 </div>
                 <Select value={profileItemId} defaultValue={profileItemId} onValueChange={(value) => {
@@ -125,13 +128,10 @@ export default function Goto(props: GotoProps) {
                     if (selectedItem) {
                         setProfileItemId(value)
                         setProfileItemName(selectedItem.profile_key)
-                        props.onChange({
-                            ...properties,
-                            goto_settings: {
-                                ...properties.goto_settings,
-                                profile_key: selectedItem.profile_key
-                            }
-                        })
+                        setTempGotoSettings({
+                            ...tempGotoSettings,
+                            profile_key: selectedItem.profile_key
+                        });
                     }
                 }} onOpenChange={(open) => {
                     if (open) {
@@ -153,12 +153,12 @@ export default function Goto(props: GotoProps) {
                 </Select>
             </div>
             <div className='flex flex-row items-start py-2'>
-                <div className='flex flex-row whitespace-nowrap'>
+                <div className='flex flex-row whitespace-nowrap w-[70px] shrink-0'>
                     跳转位置：
                 </div>
                 <div className='flex flex-col space-y-1 '>
                     {
-                        properties.goto_settings.items.map((item, index) => {
+                        tempGotoSettings.items.map((item, index) => {
                             return (
                                 <div className='flex flex-row items-center space-x-2' key={`${item.value}-${index}`}>
                                     <span className='w-40'>{item.value}</span>
@@ -172,7 +172,16 @@ export default function Goto(props: GotoProps) {
                     }
                 </div>
             </div>
-
+            <div className='flex flex-row items-center'>
+                <span className='flex flex-row items-center whitespace-nowrap w-[70px] shrink-0'>
+                </span>
+                <Button
+                    className='h-8 w-20'
+                    onClick={handleConfirm}
+                >
+                    完成
+                </Button>
+            </div>
         </div>
     )
 }

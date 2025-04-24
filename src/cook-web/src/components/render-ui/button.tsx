@@ -27,21 +27,29 @@ export default function Button(props: ButtonProps) {
     }
 
     return (
-        <div className='flex flex-row space-x-1 items-center'>
-            <span className='flex flex-row whitespace-nowrap'>
-                按钮文案：
-            </span>
-            <Input
-                className='h-8 w-40'
-                value={tempValue}
-                onChange={handleInputChange}
-            />
-            <UIButton
-                className='h-8'
-                onClick={handleConfirm}
-            >
-                完成
-            </UIButton>
+        <div className='flex flex-col space-y-2'>
+            <div className='flex flex-row space-x-1 items-center'>
+                <span className='flex flex-row whitespace-nowrap w-[70px] shrink-0'>
+                    按钮文案：
+                </span>
+                <Input
+                    className='h-8 w-40'
+                    value={tempValue}
+                    onChange={handleInputChange}
+                />
+            </div>
+
+            <div className='flex flex-row space-x-1 items-center'>
+                <span className='flex flex-row whitespace-nowrap w-[70px] shrink-0'>
+                </span>
+                <UIButton
+                    className='h-8 w-20'
+                    onClick={handleConfirm}
+                >
+                    完成
+                </UIButton>
+            </div>
+
         </div>
     )
 }

@@ -1,5 +1,4 @@
-
-import React from 'react'
+import React, { useState } from 'react'
 import { Input } from '../ui/input'
 import { Plus, Trash } from 'lucide-react'
 import { Button } from '../ui/button'
@@ -24,52 +23,44 @@ interface ButtonProps {
 export default function Option(props: ButtonProps) {
     const { properties } = props;
     const { option_name, buttons } = properties;
+    const [tempValue, setTempValue] = useState(option_name);
+    const [tempButtons, setTempButtons] = useState(buttons);
+
     const onValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        console.log('onChange', properties);
-        props.onChange({
-            ...properties,
-            option_name: e.target.value,
-            option_key: e.target.value
-        })
+        setTempValue(e.target.value);
     }
+
     const onButtonValueChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-        // console.log('onChange', properties);
-        props.onChange({
-            ...properties,
-            buttons: buttons.map((button: any, i: number) => {
-                if (i === index) {
-                    return {
-                        ...button,
-                        properties: {
-                            ...button.properties,
-                            button_key: e.target.value
-                        }
+        setTempButtons(buttons.map((button: any, i: number) => {
+            if (i === index) {
+                return {
+                    ...button,
+                    properties: {
+                        ...button.properties,
+                        button_key: e.target.value
                     }
                 }
-                return button;
-            })
-        })
+            }
+            return button;
+        }));
     }
+
     const onButtonTextChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-        // console.log('onChange', properties);
-        props.onChange({
-            ...properties,
-            buttons: buttons.map((button: any, i: number) => {
-                if (i === index) {
-                    return {
-                        ...button,
-                        properties: {
-                            ...button.properties,
-                            button_name: e.target.value,
-                        }
+        setTempButtons(buttons.map((button: any, i: number) => {
+            if (i === index) {
+                return {
+                    ...button,
+                    properties: {
+                        ...button.properties,
+                        button_name: e.target.value,
                     }
                 }
-                return button;
-            })
-        })
+            }
+            return button;
+        }));
     }
+
     const onAdd = (index: number) => {
-        // console.log('onChange', properties);
         const newButton = {
             "properties": {
                 "button_name": "",
@@ -77,45 +68,37 @@ export default function Option(props: ButtonProps) {
             },
             "type": "button"
         }
-        props.onChange({
-            ...properties,
-            buttons: [
-                ...buttons.slice(0, index + 1),
-                newButton,
-                ...buttons.slice(index + 1)
-            ]
-        })
-        // props.onChange({
-        //     ...properties,
-        //     buttons: [
-        //         ...buttons,
-        //         {
-        //             "properties": {
-        //                 "button_name": "",
-        //                 "button_key": ""
-        //             },
-        //             "type": "button"
-        //         }
-        //     ]
-        // })
+        setTempButtons([
+            ...tempButtons.slice(0, index + 1),
+            newButton,
+            ...tempButtons.slice(index + 1)
+        ]);
     }
+
     const onDelete = (index: number) => {
+        setTempButtons(tempButtons.filter((_: any, i: number) => i !== index));
+    }
+
+    const handleConfirm = () => {
         props.onChange({
             ...properties,
-            buttons: buttons.filter((_: any, i: number) => i !== index)
-        })
+            option_name: tempValue,
+            option_key: tempValue,
+            buttons: tempButtons
+        });
     }
+
     return (
         <div className='flex flex-col space-y-1'>
             <div className='flex flex-row items-center'>
                 <span className='flex flex-row items-center whitespace-nowrap  w-[50px] shrink-0'>
                     变量：
                 </span>
-                <Input className='h-8 w-[400px]' placeholder='请输入' value={option_name} onChange={onValueChange}></Input>
+                <Input className='h-8 w-[400px]' placeholder='请输入' value={tempValue} onChange={onValueChange}></Input>
             </div>
             <div className='flex flex-col space-y-2'>
                 {
-                    buttons.map((button: any, index: number) => {
+                    tempButtons.map((button: any, index: number) => {
                         return (
                             <div key={index} className='flex flex-row items-center'>
                                 <span className='flex flex-row items-center whitespace-nowrap  w-[50px] shrink-0'>
@@ -136,9 +119,18 @@ export default function Option(props: ButtonProps) {
                         )
                     })
                 }
-
+            </div>
+            <div className='flex flex-row items-center'>
+                <span className='flex flex-row items-center whitespace-nowrap  w-[50px] shrink-0'>
+                </span>
+                <Button
+                    className='h-8 w-20'
+                    onClick={handleConfirm}
+                >
+                    完成
+                </Button>
             </div>
 
-        </div >
+        </div>
     )
 }
