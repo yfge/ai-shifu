@@ -31,7 +31,7 @@ export default function Option(props: ButtonProps) {
     }
 
     const onButtonValueChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-        setTempButtons(buttons.map((button: any, i: number) => {
+        setTempButtons(tempButtons.map((button: any, i: number) => {
             if (i === index) {
                 return {
                     ...button,
@@ -46,7 +46,7 @@ export default function Option(props: ButtonProps) {
     }
 
     const onButtonTextChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-        setTempButtons(buttons.map((button: any, i: number) => {
+        setTempButtons(tempButtons.map((button: any, i: number) => {
             if (i === index) {
                 return {
                     ...button,
