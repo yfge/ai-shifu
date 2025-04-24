@@ -458,10 +458,14 @@ def update_lesson_status(app: Flask, attend_id: str):
     attend_info = AICourseLessonAttend.query.filter(
         AICourseLessonAttend.attend_id == attend_id
     ).first()
-    lesson = AILesson.query.filter(
-        AILesson.lesson_id == attend_info.lesson_id,
-        AILesson.status == 1,
-    ).order_by(AILesson.id.desc()).first()
+    lesson = (
+        AILesson.query.filter(
+            AILesson.lesson_id == attend_info.lesson_id,
+            AILesson.status == 1,
+        )
+        .order_by(AILesson.id.desc())
+        .first()
+    )
     lesson_no = lesson.lesson_no
     parent_no = lesson_no
     attend_info.status = ATTEND_STATUS_COMPLETED
