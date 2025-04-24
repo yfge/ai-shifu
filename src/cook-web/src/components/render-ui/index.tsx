@@ -74,6 +74,7 @@ export const BlockUI = ({ id, type, properties, mode = 'edit' }) => {
     return (
         <>
             <Ele
+                id={id}
                 properties={properties}
                 onChange={onPropertiesChange}
             />
