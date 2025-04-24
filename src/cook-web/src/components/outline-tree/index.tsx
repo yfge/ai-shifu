@@ -1,6 +1,6 @@
 "use client"
 import { SortableTree, SimpleTreeItemWrapper, TreeItemComponentProps, TreeItems } from '../dnd-kit-sortable-tree';
-import React from 'react';
+import React, { useState } from 'react';
 import { Outline } from '@/types/scenario';
 import { cn } from '@/lib/utils';
 import { Plus, Trash2, Edit } from 'lucide-react';
@@ -9,6 +9,7 @@ import { useScenario } from '@/store/useScenario';
 import Loading from '../loading';
 import ChapterSetting from '../chapter-setting';
 import { ItemChangedReason } from '../dnd-kit-sortable-tree/types';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 
 interface ICataTreeProps {
     currentNode?: Outline;
@@ -70,6 +71,7 @@ const MinimalTreeItemComponent = React.forwardRef<
     TreeItemComponentProps<Outline> & TreeItemProps
 >((props, ref) => {
     const { focusId, actions, cataData, currentNode } = useScenario();
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
     const onNodeChange = async (value: string) => {
         console.log('onNodeChange', value, props.item)
@@ -100,7 +102,7 @@ const MinimalTreeItemComponent = React.forwardRef<
     }
     const removeNode = async (e) => {
         e.stopPropagation();
-        await actions.removeOutline(props.item);
+        setShowDeleteDialog(true);
     }
     const editNode = (e) => {
         e.stopPropagation();
@@ -120,85 +122,107 @@ const MinimalTreeItemComponent = React.forwardRef<
         actions.setCurrentNode(props.item);
         await actions.loadBlocks(props.item.id || "");
     }
-    return (
-        <SimpleTreeItemWrapper
-            {...props}
-            ref={ref}
-            disableCollapseOnItemClick={false}
-        >
-            <div
-                id={props.item.id}
-                className={cn(
-                    'flex items-center flex-1 px-0 py-1 justify-between w-full group',
-                    (props.item?.children?.length || 0) > 0 ? 'pl-0' : 'pl-4',
-                    currentNode?.id == props.item.id ? 'bg-gray-100' : ''
-                )}
-                onClick={onSelect}
-            >
-                <span className='flex flex-row items-center w-40 whitespace-nowrap overflow-hidden text-ellipsis' >
-                    <InlineInput
-                        isEdit={focusId === props.item.id}
-                        value={cataData[props.item.id!]?.name || ""}
-                        onChange={onNodeChange}
-                        onFocus={() => {
-                            actions.setFocusId(props.item.id || "")
-                        }}
-                    />
-                </span>
-                {
-                    (props.item?.depth || 0 > 0) && (
-                        <div className='flex items-center space-x-1'>
-                            {
-                                cataData[props.item.id!]?.status == 'saving' && (
-                                    <Loading className='h-4 w-4' />
-                                )
-                            }
-                        </div>
-                    )
-                }
-                {
-                    (props.item?.depth || 0 > 0) && (
-                        <div className='items-center space-x-2 hidden group-hover:flex'>
-                            <Edit
-                                className='cursor-pointer h-4 w-4 text-gray-500'
-                                onClick={editNode}
-                            />
-                            <div onClick={(e) => {
-                                e.stopPropagation();
-                            }}>
-                                <ChapterSetting unitId={props.item.id} />
-                            </div>
-                            <Trash2 className='cursor-pointer h-4 w-4 text-gray-500' onClick={removeNode} />
-                        </div>
-                    )
-                }
-                {
-                    ((props.item?.depth || 0) <= 0) && (
-                        <div className='items-center space-x-2 hidden group-hover:flex'>
-                            <Edit
-                                className='cursor-pointer h-4 w-4 text-gray-500'
-                                onClick={editNode}
-                            />
-                            {
-                                cataData[props.item.id!]?.status == 'saving' && (
-                                    <Loading className='h-4 w-4' />
-                                )
-                            }
-                            {
-                                cataData[props.item.id!]?.status !== 'saving' && (
-                                    <Plus className='cursor-pointer h-4 w-4 text-gray-500' onClick={(e) => {
-                                        e.stopPropagation();
-                                        onAddNodeClick?.(props.item);
-                                    }} />
-                                )
-                            }
-                            <Trash2 className='cursor-pointer h-4 w-4 text-gray-500' onClick={removeNode} />
-                        </div>
-                    )
-                }
 
-            </div>
-        </SimpleTreeItemWrapper >
+    const handleConfirmDelete = async () => {
+        await actions.removeOutline(props.item);
+        setShowDeleteDialog(false);
+    }
+
+    return (
+        <>
+            <SimpleTreeItemWrapper
+                {...props}
+                ref={ref}
+                disableCollapseOnItemClick={false}
+            >
+                <div
+                    id={props.item.id}
+                    className={cn(
+                        'flex items-center flex-1 px-0 py-1 justify-between w-full group',
+                        (props.item?.children?.length || 0) > 0 ? 'pl-0' : 'pl-4',
+                        currentNode?.id == props.item.id ? 'bg-gray-100' : ''
+                    )}
+                    onClick={onSelect}
+                >
+                    <span className='flex flex-row items-center w-40 whitespace-nowrap overflow-hidden text-ellipsis' >
+                        <InlineInput
+                            isEdit={focusId === props.item.id}
+                            value={cataData[props.item.id!]?.name || ""}
+                            onChange={onNodeChange}
+                            onFocus={() => {
+                                actions.setFocusId(props.item.id || "")
+                            }}
+                        />
+                    </span>
+                    {
+                        (props.item?.depth || 0 > 0) && (
+                            <div className='flex items-center space-x-1'>
+                                {
+                                    cataData[props.item.id!]?.status == 'saving' && (
+                                        <Loading className='h-4 w-4' />
+                                    )
+                                }
+                            </div>
+                        )
+                    }
+                    {
+                        (props.item?.depth || 0 > 0) && (
+                            <div className='items-center space-x-2 hidden group-hover:flex'>
+                                <Edit
+                                    className='cursor-pointer h-4 w-4 text-gray-500'
+                                    onClick={editNode}
+                                />
+                                <div onClick={(e) => {
+                                    e.stopPropagation();
+                                }}>
+                                    <ChapterSetting unitId={props.item.id} />
+                                </div>
+                                <Trash2 className='cursor-pointer h-4 w-4 text-gray-500' onClick={removeNode} />
+                            </div>
+                        )
+                    }
+                    {
+                        ((props.item?.depth || 0) <= 0) && (
+                            <div className='items-center space-x-2 hidden group-hover:flex'>
+                                <Edit
+                                    className='cursor-pointer h-4 w-4 text-gray-500'
+                                    onClick={editNode}
+                                />
+                                {
+                                    cataData[props.item.id!]?.status == 'saving' && (
+                                        <Loading className='h-4 w-4' />
+                                    )
+                                }
+                                {
+                                    cataData[props.item.id!]?.status !== 'saving' && (
+                                        <Plus className='cursor-pointer h-4 w-4 text-gray-500' onClick={(e) => {
+                                            e.stopPropagation();
+                                            onAddNodeClick?.(props.item);
+                                        }} />
+                                    )
+                                }
+                                <Trash2 className='cursor-pointer h-4 w-4 text-gray-500' onClick={removeNode} />
+                            </div>
+                        )
+                    }
+                </div>
+            </SimpleTreeItemWrapper>
+
+            <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>确认删除</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            您的操作将会造成当前内容的丢失，是否确认？
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>取消</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmDelete}>确认</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     )
 });
 
