@@ -9,6 +9,7 @@ import type { Profile } from '@/components/profiles/type'
 import ProfileSave from './profile-save'
 import api from '@/api'
 import useProfiles from './useProfiles'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 
 interface ProfileSelectProps {
   parentId?: string
@@ -24,15 +25,26 @@ const ProfileSelect: React.FC<ProfileSelectProps> = ({
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [refreshFlag, setRefreshFlag] = useState(0)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [deleteProfileId, setDeleteProfileId] = useState<string | null>(null)
 
   const handleDeleteProfile = useCallback(async (id: string) => {
-    const res = await api.deleteProfile({
-      profile_id: id
-    })
-    if (res) {
-      setRefreshFlag(refreshFlag + 1)
-    }
+    setDeleteProfileId(id)
+    setShowDeleteDialog(true)
   }, [])
+
+  const handleConfirmDelete = async () => {
+    if (deleteProfileId) {
+      const res = await api.deleteProfile({
+        profile_id: deleteProfileId
+      })
+      if (res) {
+        setRefreshFlag(refreshFlag + 1)
+      }
+      setShowDeleteDialog(false)
+      setDeleteProfileId(null)
+    }
+  }
 
   const [systemProfiles, customProfiles] = useProfiles({
     parentId,
@@ -207,6 +219,21 @@ const ProfileSelect: React.FC<ProfileSelectProps> = ({
         value={editingProfile}
         onSaveSuccess={handleProfileSaveSuccess}
       />
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除</AlertDialogTitle>
+            <AlertDialogDescription>
+              您的操作将会造成当前内容的丢失，是否确认？
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete}>确认</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
