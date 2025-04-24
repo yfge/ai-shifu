@@ -23,8 +23,8 @@ const EditBlockMap = {
     phone: SingleInput,
     code: SingleInput,
     textinput: TextInput,
-    login: Button,
-    payment: Button,
+    login: (props) => <Button {...props} mode="login" />,
+    payment: (props) => <Button {...props} mode="payment" />,
 }
 
 const ViewBlockMap = {
