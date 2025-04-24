@@ -391,6 +391,9 @@ def get_study_record(app: Flask, user_id: str, lesson_id: str) -> StudyRecordDTO
             .order_by(AILessonScript.id.desc())
             .first()
         )
+        if last_script is None:
+            ret.ui = []
+            return ret
         last_lesson_id = last_script.lesson_id
         lesson_id = last_lesson_id
         last_attends = [i for i in attend_infos if i.lesson_id == last_lesson_id]
