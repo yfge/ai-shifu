@@ -438,8 +438,8 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         updateOutlineStatus(data.id, 'saving');
         const index = chapters.findIndex((child) => child.id === data.id);
 
-        if (data.id === 'new_chapter') {
-            try {
+        try {
+            if (data.id === 'new_chapter') {
                 const newChapter = await api.createChapter({
                     parent_id: data.parent_id,
                     "chapter_description": data.name,
@@ -455,16 +455,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
                 })
                 setFocusId("")
                 setLastSaveTime(new Date());
-            } catch (error) {
-                console.error(error);
-                setError("Failed to create chapter");
-                updateOutlineStatus('new_chapter', 'new');
-                setFocusId('new_chapter');
-            }
-        } else {
-            try {
-                setIsSaving(true);
-                setError(null);
+            } else {
                 await api.modifyChapter({
                     "chapter_id": data.id,
                     "chapter_index": index,
@@ -482,16 +473,16 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
                 })
                 setFocusId("")
                 setLastSaveTime(new Date());
-            } catch (error) {
-                console.error(error);
-                setError("Failed to modify chapter");
-                updateOutlineStatus(data.id, 'edit');
-                setFocusId(data.id);
-            } finally {
-                setIsSaving(false);
             }
+        } catch (error) {
+            console.error(error);
+            setError(data.id === 'new_chapter' ? "Failed to create chapter" : "Failed to modify chapter");
+            updateOutlineStatus(data.id, data.id === 'new_chapter' ? 'new' : 'edit');
+            setFocusId(data.id);
+        } finally {
+            setIsSaving(false);
+            setIsLoading(false);
         }
-        setIsLoading(false);
     };
 
     const createUnit = async (data: Outline) => {
@@ -502,8 +493,8 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         const parent = findNode(data.parent_id || "");
         const index = parent.children.findIndex((child) => child.id === data.id);
 
-        if (data.id === 'new_chapter') {
-            try {
+        try {
+            if (data.id === 'new_chapter') {
                 const newUnit = await api.createUnit({
                     parent_id: data.parent_id,
                     "unit_index": index,
@@ -521,16 +512,7 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
                 })
                 setFocusId("")
                 setLastSaveTime(new Date());
-            } catch (error) {
-                console.error(error);
-                setError("Failed to create unit");
-                updateOutlineStatus('new_chapter', 'new');
-                setFocusId('new_chapter');
-            }
-        } else {
-            try {
-                setIsSaving(true);
-                setError(null);
+            } else {
                 await api.modifyUnit({
                     "unit_id": data.id,
                     "unit_index": index,
@@ -545,16 +527,16 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
                 })
                 setFocusId("")
                 setLastSaveTime(new Date());
-            } catch (error) {
-                console.error(error);
-                setError("Failed to modify unit");
-                updateOutlineStatus(data.id, 'edit');
-                setFocusId(data.id);
-            } finally {
-                setIsSaving(false);
             }
+        } catch (error) {
+            console.error(error);
+            setError(data.id === 'new_chapter' ? "Failed to create unit" : "Failed to modify unit");
+            updateOutlineStatus(data.id, data.id === 'new_chapter' ? 'new' : 'edit');
+            setFocusId(data.id);
+        } finally {
+            setIsSaving(false);
+            setIsLoading(false);
         }
-        setIsLoading(false);
     };
 
     const createSiblingUnit = async (data: Outline) => {
@@ -617,22 +599,12 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         if (chapters?.find((child: any) => child.id === 'new_chapter')) {
             return;
         }
-        setIsSaving(true);
-        setError(null);
-        try {
-            setChapters([...chapters, chapter]);
-            updateOuline(chapter.id, {
-                ...chapter,
-                status: 'new'
-            });
-            setFocusId(chapter.id);
-            setLastSaveTime(new Date());
-        } catch (error) {
-            console.error(error);
-            setError("Failed to add chapter");
-        } finally {
-            setIsSaving(false);
-        }
+        setChapters([...chapters, chapter]);
+        updateOuline(chapter.id, {
+            ...chapter,
+            status: 'new'
+        });
+        setFocusId(chapter.id);
     }
     const replaceOutline = async (id: string, outline: Outline) => {
         const node = findNode(id)
