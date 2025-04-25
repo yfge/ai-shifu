@@ -358,7 +358,7 @@ def migrate_user_study_record(
                 "update ai_course_lesson_attendscript set user_id = '%s' where attend_id in (%s)"
                 % (
                     to_user_id,
-                    ",".join([str(attend.attend_id) for attend in migrate_attends]),
+                    ",".join(["'" + str(attend.attend_id) + "'" for attend in migrate_attends]),
                 )
             )
         )
