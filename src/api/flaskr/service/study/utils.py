@@ -726,7 +726,9 @@ def get_model_setting(app: Flask, script_info: AILessonScript) -> ModelSetting:
             ai_lesson.lesson_default_model,
             {"temperature": ai_lesson.lesson_default_temprature},
         )
-    ai_course = AICourse.query.filter(AICourse.course_id == ai_lesson.course_id).first()
+    ai_course = AICourse.query.filter(AICourse.course_id == ai_lesson.course_id,
+                                      AICourse.status == 1,
+                                      ).order_by(AICourse.id.desc()).first()
     if (
         ai_course
         and ai_course.course_default_model
