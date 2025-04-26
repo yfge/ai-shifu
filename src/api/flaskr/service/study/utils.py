@@ -675,7 +675,9 @@ def get_follow_up_info(app: Flask, script_info: AILessonScript) -> FollowUpInfo:
             parent_lesson.ask_mode,
         )
 
-    ai_course = AICourse.query.filter(AICourse.course_id == ai_lesson.course_id).first()
+    ai_course = AICourse.query.filter(AICourse.course_id == ai_lesson.course_id,
+                                      AICourse.status == 1,
+                                      ).order_by(AICourse.id.desc()).first()
     ask_model = ai_course.ask_model
     ask_prompt = ai_course.ask_prompt
     ask_history_count = ai_course.ask_with_history
