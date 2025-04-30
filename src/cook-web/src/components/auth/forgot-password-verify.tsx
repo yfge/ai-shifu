@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Loader2 } from 'lucide-react'
 import apiService from '@/api'
 import { setToken } from '@/local/local'
+import { useTranslation } from 'react-i18next';
 
 interface ForgotPasswordVerifyProps {
   email: string
@@ -21,6 +22,7 @@ export function ForgotPasswordVerify ({
   onNext
 }: ForgotPasswordVerifyProps) {
   const { toast } = useToast()
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false)
   const [otp, setOtp] = useState('')
   const [countdown, setCountdown] = useState(60)
@@ -50,20 +52,20 @@ export function ForgotPasswordVerify ({
       if (response.code == 0) {
         setCountdown(60)
         toast({
-          title: '验证码已重新发送',
-          description: '请查看您的邮箱'
+          title: t('login.code-resent'),
+          description: t('login.please-check-your-email')
         })
       } else {
         toast({
-          title: '发送验证码失败',
-          description:  '请稍后重试',
+          title: t('login.send-otp-failed'),
+          description: t('login.please-try-again-later'),
           variant: 'destructive'
         })
       }
     } catch (error: any) {
       toast({
-        title: '发送验证码失败',
-        description: error.message || '网络错误，请稍后重试',
+        title: t('login.send-otp-failed'),
+        description: error.message || t('login.network-error'),
         variant: 'destructive'
       })
     } finally {
@@ -74,7 +76,7 @@ export function ForgotPasswordVerify ({
   const handleVerifyOtp = async () => {
     if (!otp) {
       toast({
-        title: '请输入验证码',
+        title: t('login.please-input-otp'),
         variant: 'destructive'
       })
       return
@@ -92,21 +94,21 @@ export function ForgotPasswordVerify ({
         setToken(response.data.token)
 
         toast({
-          title: '验证成功',
-          description: '请设置新密码'
+          title: t('login.verification-success'),
+          description: t('login.please-set-new-password')
         })
         onNext(otp)
       } else {
         toast({
-          title: '验证失败',
-          description: '验证码错误',
+          title: t('login.verification-failed'),
+          description: t('login.otp-error'),
           variant: 'destructive'
         })
       }
     } catch (error: any) {
       toast({
-        title: '验证失败',
-        description: error.message || '网络错误，请稍后重试',
+        title: t('login.verification-failed'),
+        description: error.message || t('login.network-error'),
         variant: 'destructive'
       })
     } finally {
@@ -117,17 +119,17 @@ export function ForgotPasswordVerify ({
   return (
     <div className='space-y-4'>
       <div className='space-y-2'>
-        <Label htmlFor='otp'>验证码</Label>
+        <Label htmlFor='otp'>{t('login.otp')}</Label>
         <Input
           id='otp'
-          placeholder='请输入验证码'
+          placeholder={t('login.please-input-otp')}
           value={otp}
           onChange={e => setOtp(e.target.value)}
           disabled={isLoading}
         />
         {countdown > 0 ? (
           <p className='text-sm text-muted-foreground mt-1'>
-            {countdown}秒后可重新获取验证码
+            {countdown} {t('login.seconds-later')}
           </p>
         ) : (
           <Button
@@ -136,7 +138,7 @@ export function ForgotPasswordVerify ({
             onClick={handleResendOtp}
             disabled={isLoading}
           >
-            重新获取验证码
+            {t('login.resend-otp')}
           </Button>
         )}
       </div>
@@ -147,11 +149,11 @@ export function ForgotPasswordVerify ({
           disabled={isLoading}
           className='h-8'
         >
-          返回
+          {t('login.back')}
         </Button>
         <Button onClick={handleVerifyOtp} disabled={isLoading} className='h-8'>
           {isLoading ? <Loader2 className='h-4 w-4 animate-spin mr-2' /> : null}
-          验证
+          {t('login.verify')}
         </Button>
       </div>
     </div>
