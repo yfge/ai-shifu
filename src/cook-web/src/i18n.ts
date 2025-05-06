@@ -7,7 +7,11 @@ i18n
   .use(Backend)
   .use(initReactI18next)
   .init({
-    fallbackLng: 'en-US',
+    fallbackLng: {
+      'en': ['en-US'],
+      'zh': ['zh-CN'],
+      'default': ['en-US']
+    },
     debug: true,
     lng: browserLanguage,
     backend: {
@@ -17,6 +21,9 @@ i18n
       escapeValue: false,
     },
     returnNull: false,
+    // load: 'languageOnly',
+    supportedLngs: ['en-US', 'zh-CN', 'en', 'zh'],
+    nonExplicitSupportedLngs: true
   });
 
 export default i18n;

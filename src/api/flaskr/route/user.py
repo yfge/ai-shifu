@@ -222,11 +222,52 @@ def register_user_handler(app: Flask, path_prefix: str) -> Flask:
 
     @app.route(path_prefix + "/update_info", methods=["POST"])
     def update_info():
+        """
+        update user information
+        ---
+        tags:
+            - user
+        parameters:
+            - in: body
+              name: body
+              required: true
+              schema:
+                type: object
+                properties:
+                    name:
+                        type: string
+                        description: name
+                    email:
+                        type: string
+                        description: email
+                    mobile:
+                        type: string
+                        description: mobile
+                    language:
+                        type: string
+                        description: language
+        responses:
+            200:
+                description: update success
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                code:
+                                    type: integer
+                                    description: return code
+                                message:
+                                    type: string
+                                    description: return information
+                                data:
+                                    $ref: "#/components/schemas/UserInfo"
+        """
         email = request.get_json().get("email", None)
         name = request.get_json().get("name", "")
         mobile = request.get_json().get("mobile", None)
+        language = request.get_json().get("language", None)
         return make_common_response(
-            update_user_info(app, request.user, name, email, mobile)
+            update_user_info(app, request.user, name, email, mobile, language)
         )
 
     @app.route(path_prefix + "/update_password", methods=["POST"])

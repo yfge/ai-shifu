@@ -8,7 +8,7 @@ import api from '@/api'
 import { setToken } from "@/local/local";
 import { useTranslation } from 'react-i18next';
 import LanguageSelect from '@/components/language-select';
-
+import i18n from '@/i18n';
 interface UserInfo {
     user_id: string;
     username: string;
@@ -20,6 +20,7 @@ interface UserInfo {
     language: string;
     avatar: string;
 
+
 }
 
 
@@ -27,25 +28,36 @@ interface UserInfo {
 const UserProfileCard = () => {
     const { t } = useTranslation();
     const [profile, setProfile] = useState<UserInfo>();
+    const [language, setLanguage] = useState<string>(i18n.language);
     const init = async () => {
         const res = await api.getUserInfo({});
         setProfile(res);
+        setLanguage(res.language);
     }
     useEffect(() => {
         init();
     }, [])
 
+    useEffect(() => {
+        console.log('language', language);
+        // i18n.changeLanguage(language);
+    }, [language]);
+
     if (!profile) {
         return null;
     }
 
-    const setLanguage = (language: string) => {
-        console.log(language);
-        setProfile({
-            ...profile,
-            language: language
-        });
+
+    const updateLanguage = (language: string) => {
+        console.log('updateLanguage', language);
+        setLanguage(language);
+        api.updateUserInfo({language: language});
     }
+
+
+
+
+
     const userMenuItems: { icon: React.ReactNode, label: string, href: string, id?: string }[] = [
         { icon: <HeartIcon className="w-4 h-4" />, id: 'follow', label: t('common.follow'), href: "#" },
     ];
@@ -121,7 +133,7 @@ const UserProfileCard = () => {
                         )
 
                     })}
-                    <LanguageSelect  language={profile?.language} onSetLanguage={setLanguage} variant='standard' />
+                    <LanguageSelect  language={language} onSetLanguage={updateLanguage} variant='standard' />
                 </div>
                 <hr />
                 <div

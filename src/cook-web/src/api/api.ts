@@ -41,6 +41,7 @@ const api = {
     'GET /profiles/get-profile-item-definition-option-list',
   addProfileItem: 'POST /profiles/add-profile-item-quick',
   getUserInfo: 'GET /user/info',
+  updateUserInfo: 'POST /user/update_info',
   updateChapterOrder: 'POST /scenario/update-chapter-order',
   addBlock: 'POST /scenario/add-block',
   publishScenario: 'POST /scenario/publish-scenario',

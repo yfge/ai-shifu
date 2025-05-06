@@ -137,17 +137,22 @@ def validate_user(app: Flask, token: str) -> UserInfo:
 
 
 def update_user_info(
-    app: Flask, user: UserInfo, name, email=None, mobile=None
+    app: Flask, user: UserInfo, name, email=None, mobile=None, language=None
 ) -> UserInfo:
     User = get_model(app)
     with app.app_context():
         if user:
+            app.logger.info(
+                "update_user_info {} {} {} {}".format(name, email, mobile, language)
+            )
             dbuser = User.query.filter_by(user_id=user.user_id).first()
             dbuser.name = name
             if email is not None:
                 dbuser.email = email
             if mobile is not None:
                 dbuser.mobile = mobile
+            if language is not None:
+                dbuser.user_language = language
             db.session.commit()
             return UserInfo(
                 user_id=user.user_id,
@@ -157,9 +162,9 @@ def update_user_info(
                 mobile=user.mobile,
                 user_state=dbuser.user_state,
                 wx_openid=get_user_openid(user),
-                language=get_user_language(user),
-                user_avatar=user.user_avatar,
-                has_password=user.password_hash != "",
+                language=dbuser.user_language,
+                user_avatar=dbuser.user_avatar,
+                has_password=dbuser.password_hash != "",
             )
         else:
             raise_error("USER.USER_NOT_FOUND")
