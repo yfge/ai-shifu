@@ -211,7 +211,7 @@ const LoginPage = () => {
                     <a className="px-1 text-xs text-stone-900 underline cursor-pointer hover:text-purple-500">
                         {t("login.user-agreement")}
                     </a>
-                    和
+                    {t("login.and")}
                     <a className="px-1 text-xs text-stone-900 underline cursor-pointer hover:text-purple-500">
                         {t("login.service-agreement")}
                     </a>

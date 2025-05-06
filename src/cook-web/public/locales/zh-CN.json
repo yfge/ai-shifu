@@ -145,6 +145,7 @@
     "input-placeholder": "输入占位符"
   },
   "login": {
+    "and": "和",
     "apply-for-admission": "申请入驻",
     "back": "返回",
     "back-to-login": "返回登录",
@@ -220,7 +221,6 @@
     "resend-otp": "重新发送验证码",
     "reset-password": "重置密码",
     "reset-password-failed": "重置密码失败",
-    "seconds-later": "{{count}} 秒后重新获取",
     "send-otp-failed": "发送验证码失败",
     "service-agreement": "服务协议",
     "submit-failed": "提交失败",

@@ -145,6 +145,7 @@
     "input-placeholder": "Input Placeholder"
   },
   "login": {
+    "and": "And",
     "apply-for-admission": "Apply for Admission",
     "back": "Back",
     "back-to-login": "Back to Login",
@@ -220,7 +221,6 @@
     "resend-otp": "Resend Verification Code",
     "reset-password": "Reset Password",
     "reset-password-failed": "Reset Password Failed",
-    "seconds-later": "{{count}} Seconds Later",
     "send-otp-failed": "Send Verification Code Failed",
     "service-agreement": "Service Agreement",
     "submit-failed": "Submit Failed",
