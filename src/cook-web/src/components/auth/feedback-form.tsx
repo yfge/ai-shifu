@@ -27,7 +27,7 @@ export function FeedbackForm ({ onComplete }: FeedbackFormProps) {
   const { t } = useTranslation();
   const validateEmail = (email: string) => {
     if (!email) {
-      setEmailError(t('login.email-error'))
+      setEmailError(t('login.email-empty'))
       return false
     }
 
@@ -42,7 +42,7 @@ export function FeedbackForm ({ onComplete }: FeedbackFormProps) {
 
   const validateContent = (content: string) => {
     if (!content) {
-      setContentError(t('login.content-error'))
+      setContentError(t('login.content-empty'))
       return false
     }
 
@@ -96,13 +96,13 @@ export function FeedbackForm ({ onComplete }: FeedbackFormProps) {
       if (response) {
         toast({
           title: t('login.feedback-submitted'),
-          description: t('login.thank-you-for-your-feedback')
+          description: t('login.feedback-submitted-description')
         })
         onComplete()
       } else {
         toast({
           title: t('login.submit-failed'),
-          description: response.msg || t('login.please-try-again-later'),
+          description: response.msg || t('login.network-error'),
           variant: 'destructive'
         })
       }

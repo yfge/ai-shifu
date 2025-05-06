@@ -31,7 +31,7 @@ export function PhoneLogin ({ onLoginSuccess }: PhoneLoginProps) {
   const { t } = useTranslation();
   const validatePhone = (phone: string) => {
     if (!phone) {
-      setPhoneError(t('login.phone-error'))
+      setPhoneError(t('login.phone-empty'))
       return false
     }
 
@@ -61,7 +61,7 @@ export function PhoneLogin ({ onLoginSuccess }: PhoneLoginProps) {
 
     if (!termsAccepted) {
       toast({
-        title: t('login.please-read-and-agree-to-the-service-agreement-and-privacy-policy'),
+        title: t('login.terms-error'),
         variant: 'destructive'
       })
       return
@@ -87,13 +87,13 @@ export function PhoneLogin ({ onLoginSuccess }: PhoneLoginProps) {
         }, 1000)
 
         toast({
-          title: t('login.code-sent'),
+          title: t('login.otp-sent'),
           description: t('login.please-check-your-phone-sms')
         })
       } else {
         toast({
           title: t('login.send-otp-failed'),
-          description: response.msg || t('login.please-try-again-later'),
+          description: response.msg || t('login.network-error'),
           variant: 'destructive'
         })
       }
@@ -111,7 +111,7 @@ export function PhoneLogin ({ onLoginSuccess }: PhoneLoginProps) {
   const handleVerifyOtp = async () => {
     if (!phoneOtp) {
       toast({
-        title: t('login.please-input-otp'),
+        title: t('login.otp-error'),
         variant: 'destructive'
       })
       return
@@ -119,7 +119,7 @@ export function PhoneLogin ({ onLoginSuccess }: PhoneLoginProps) {
 
     if (!termsAccepted) {
       toast({
-        title: t('login.please-read-and-agree-to-the-service-agreement-and-privacy-policy'),
+        title: t('login.terms-error'),
         variant: 'destructive'
       })
       return

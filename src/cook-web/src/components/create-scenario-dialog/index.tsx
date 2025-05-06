@@ -21,12 +21,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from 'react-i18next';
 
+
+interface FormSchema {
+    scenario_name: string;
+    scenario_description: string;
+    scenario_image: string;
+}
 interface CreateScenarioDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSubmit: (values: z.infer<typeof formSchema>) => Promise<void>;
+    onSubmit: (values: FormSchema) => Promise<void>;
 }
-
 export const CreateScenarioDialog = ({
     open,
     onOpenChange,
@@ -53,7 +58,7 @@ export const CreateScenarioDialog = ({
         },
     });
 
-    const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+    const handleSubmit = async (values) => {
         await onSubmit(values);
         // form.reset();
     };

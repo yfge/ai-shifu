@@ -52,7 +52,7 @@ export function ForgotPasswordVerify ({
       if (response.code == 0) {
         setCountdown(60)
         toast({
-          title: t('login.code-resent'),
+          title: t('login.otp-resent'),
           description: t('login.please-check-your-email')
         })
       } else {
@@ -95,7 +95,7 @@ export function ForgotPasswordVerify ({
 
         toast({
           title: t('login.verification-success'),
-          description: t('login.please-set-new-password')
+          description: t('login.verification-success-description')
         })
         onNext(otp)
       } else {
@@ -122,7 +122,7 @@ export function ForgotPasswordVerify ({
         <Label htmlFor='otp'>{t('login.otp')}</Label>
         <Input
           id='otp'
-          placeholder={t('login.please-input-otp')}
+          placeholder={t('login.otp-placeholder')}
           value={otp}
           onChange={e => setOtp(e.target.value)}
           disabled={isLoading}

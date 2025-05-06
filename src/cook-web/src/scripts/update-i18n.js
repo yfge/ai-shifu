@@ -1,7 +1,8 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require('fs'); // eslint-disable-line
+const path = require('path'); // eslint-disable-line
 
 function getAllFiles(dir, files = []) {
+  console.log(dir);
   fs.readdirSync(dir).forEach(file => {
     const fullPath = path.join(dir, file);
     if (fs.statSync(fullPath).isDirectory()) {
@@ -17,7 +18,7 @@ function getAllFiles(dir, files = []) {
 
 function extractKeysFromFile(filePath) {
   const content = fs.readFileSync(filePath, 'utf8');
-  const regex = /t\('([a-zA-Z0-9_]+)\.([a-zA-Z0-9_.-]+)'\)/g;
+  const regex = /(?:{)?\s*t\s*\(\s*['"]([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_.-]+)['"]\s*\)(?:})?/g;
   let match, keys = [];
   while ((match = regex.exec(content)) !== null) {
     keys.push(match[1] + '.' + match[2]);
@@ -56,6 +57,61 @@ function mergeJson(base, patch) {
   return base;
 }
 
+function sortObjectKeys(obj) {
+  if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
+    return obj;
+  }
+
+  const sortedObj = {};
+  Object.keys(obj)
+    .sort((a, b) => {
+      // 将 langName 放在最前面
+      if (a === 'langName') return -1;
+      if (b === 'langName') return 1;
+      return a.localeCompare(b);
+    })
+    .forEach(key => {
+      sortedObj[key] = sortObjectKeys(obj[key]);
+    });
+  return sortedObj;
+}
+
+function pruneUnusedKeys(obj, validKeys, prefix = '') {
+  if (typeof obj !== 'object' || obj === null) return obj;
+  const result = {};
+
+  // 检查当前对象的所有可能的完整路径
+  const hasValidChildren = (obj, currentPrefix) => {
+    for (const key in obj) {
+      const fullKey = currentPrefix ? `${currentPrefix}.${key}` : key;
+      if (validKeys.includes(fullKey)) return true;
+      if (typeof obj[key] === 'object' && obj[key] !== null) {
+        if (hasValidChildren(obj[key], fullKey)) return true;
+      }
+    }
+    return false;
+  };
+
+  for (const key in obj) {
+    const fullKey = prefix ? `${prefix}.${key}` : key;
+
+    // 保留 langName 或有效的 key
+    if (key === 'langName' || validKeys.includes(fullKey)) {
+      if (typeof obj[key] === 'object' && obj[key] !== null) {
+        result[key] = pruneUnusedKeys(obj[key], validKeys, fullKey);
+      } else {
+        result[key] = obj[key];
+      }
+    } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+      // 只有当子对象中有有效的 key 时才保留
+      if (hasValidChildren(obj[key], fullKey)) {
+        result[key] = pruneUnusedKeys(obj[key], validKeys, fullKey);
+      }
+    }
+  }
+  return result;
+}
+
 const ROOT_DIR = path.join(__dirname, '..'); // src/cook-web/src/
 const LOCALE_DIR = path.join(ROOT_DIR, '../public/locales');
 
@@ -71,8 +127,10 @@ fs.readdirSync(LOCALE_DIR).forEach(file => {
       baseJson = JSON.parse(fs.readFileSync(langFile, 'utf8'));
     }
     const patchJson = buildNestedJson(allKeys, langMark);
-    const merged = mergeJson(baseJson, patchJson);
-    fs.writeFileSync(langFile, JSON.stringify(merged, null, 2), 'utf8');
+    const prunedBaseJson = pruneUnusedKeys(baseJson, allKeys);
+    const merged = mergeJson(prunedBaseJson, patchJson);
+    const sorted = sortObjectKeys(merged);
+    fs.writeFileSync(langFile, JSON.stringify(sorted, null, 2), 'utf8');
     console.log(`${file} updated. ${allKeys.length} keys found.`);
   }
 });

@@ -212,11 +212,11 @@ const ScriptManagementPage = () => {
                             <Loading />
                         )}
                         {!hasMore && scenarios.length > 0 && (
-                            <p className="text-gray-500 text-sm">{t('common.noMoreScenarios')}</p>
+                            <p className="text-gray-500 text-sm">{t('common.no-more-scenarios')}</p>
                         )}
                         {
                             !loading && !hasMore && scenarios.length == 0 && (
-                                <p className="text-gray-500 text-sm">{t('common.noScenarios')}</p>
+                                <p className="text-gray-500 text-sm">{t('common.no-scenarios')}</p>
                             )
                         }
                     </div>

@@ -33,7 +33,7 @@ export function EmailLogin ({
 
   const validateEmail = (email: string) => {
     if (!email) {
-      setEmailError(t('login.email-error'))
+      setEmailError(t('login.email-empty'))
       return false
     }
 
@@ -113,7 +113,6 @@ export function EmailLogin ({
         toast({
           title: t('login.login-failed'),
           description: t('login.username-or-password-error'),
-          // description: response.msg || '用户名或密码错误',
           variant: 'destructive'
         })
       }

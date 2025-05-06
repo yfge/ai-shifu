@@ -204,7 +204,7 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
                   </div>
                   <div className='flex items-center space-x-2'>
                     <RadioGroupItem value='option' id='option' />
-                    <Label htmlFor='option'>{t('profiles.enum')}</Label>
+                    <Label htmlFor='option'>{t('profiles.option')}</Label>
                   </div>
                 </RadioGroup>
               </div>
@@ -238,8 +238,8 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
                     {!!profile.profile_items?.length && (
                       <div className='mb-3 rounded-md border'>
                         <div className='grid grid-cols-12 border-b bg-muted px-3 py-2 text-sm font-medium'>
-                          <div className='col-span-5'>{t('profiles.enum-value')}</div>
-                          <div className='col-span-5'>{t('profiles.title')}</div>
+                          <div className='col-span-5'>{t('profiles.option-value')}</div>
+                          <div className='col-span-5'>{t('profiles.option-name')}</div>
                           <div className='col-span-2 text-right'>{t('profiles.operation')}</div>
                         </div>
                         <div className='divide-y'>
@@ -273,7 +273,7 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
 
                     <div className='grid grid-cols-12 gap-2'>
                       <Input
-                        placeholder={t('profiles.enum-value')}
+                        placeholder={t('profiles.option-value')}
                         value={newEnumItem.value}
                         onChange={e =>
                           setNewEnumItem({

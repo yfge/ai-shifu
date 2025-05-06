@@ -38,9 +38,7 @@ interface GotoProps {
 export default function Goto(props: GotoProps) {
     const { properties } = props
     const { t } = useTranslation();
-        chapters,
-        currentScenario
-    } = useScenario();
+    const { chapters, currentScenario } = useScenario();
 
     const [profileItemDefinations, setProfileItemDefinations] = useState<ProfileItemDefination[]>([]);
     const [selectedProfile, setSelectedProfile] = useState<ProfileItemDefination | null>(null);

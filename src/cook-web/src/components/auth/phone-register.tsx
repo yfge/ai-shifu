@@ -111,12 +111,12 @@ export function PhoneRegister ({ onRegisterSuccess }: PhoneRegisterProps) {
 
         toast({
           title: t('login.otp-sent'),
-          description: t('login.please-check-your-phone-message')
+          description: t('login.please-check-your-phone-sms')
         })
       } else {
         toast({
           title: t('login.send-otp-failed'),
-          description: response.msg || t('login.please-try-again-later'),
+          description: response.msg || t('login.network-error'),
           variant: 'destructive'
         })
       }

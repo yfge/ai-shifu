@@ -20,6 +20,7 @@ function createSlashCommands (
   onSelectOption: (selectedOption: SelectedOption) => void
 ) {
   return (context: CompletionContext): CompletionResult | null => {
+    const { t } = useTranslation();
     const word = context.matchBefore(/\/(\w*)$/)
     if (!word) return null
 

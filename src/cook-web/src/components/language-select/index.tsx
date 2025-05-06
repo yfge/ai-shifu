@@ -25,11 +25,10 @@ type languageProps = {
 
 export default function LanguageSelect(props: languageProps) {
     const { t } = useTranslation();
-    // ...其他逻辑
-  const triggerClass =
-props.variant === 'circle'
-    ? 'w-[40px] h-[40px] rounded-full p-0 flex items-center justify-start border-none shadow-none focus:outline-none'
-    : 'flex items-center justify-start space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100';
+    const triggerClass =
+      props.variant === 'circle'
+          ? 'w-[40px] h-[40px] rounded-full p-0 flex items-center justify-start border-none shadow-none focus:outline-none'
+          : 'flex items-center justify-start space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100';
 
     const [language, setLanguage] = useState(props.language || 'zh-CN');
     const handleSetLanguage = (value: string) => {

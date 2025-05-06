@@ -34,7 +34,7 @@ export function ForgotPasswordCombined ({
 
   const validateEmail = (email: string) => {
     if (!email) {
-      setEmailError(t('login.email-error'))
+      setEmailError(t('login.email-empty'))
       return false
     }
 
@@ -103,7 +103,7 @@ export function ForgotPasswordCombined ({
         }, 1000)
 
         toast({
-          title: t('login.code-sent'),
+          title: t('login.otp-sent'),
           description: t('login.please-check-your-email')
         })
       } else {

@@ -242,7 +242,7 @@ const AIModelDialog = ({ blockId, open, onOpenChange }) => {
                     <DialogTitle className="text-xl font-bold px-2">{t('ai-debug.debug')}</DialogTitle>
                 </DialogHeader>
                 <div className=" flex-1 space-y-4 overflow-auto px-4">
-                    <div className="text-sm font-medium">{t('ai-debug.aiModuleContent')}</div>
+                    <div className="text-sm font-medium">{t('ai-debug.ai-module-content')}</div>
                     <Collapsible
                         open={systemPromptOpen}
                         onOpenChange={setSystemPromptOpen}
@@ -383,7 +383,7 @@ const AIModelDialog = ({ blockId, open, onOpenChange }) => {
                                             <Input value={item} readOnly />
                                         </div>
                                         <div>
-                                            <div className="mb-1 text-sm">{t('ai-debug.inputVariableValue')}</div>
+                                            <div className="mb-1 text-sm">{t('ai-debug.input-variable-value')}</div>
                                             <Input onChange={(e) => onProfileValue(item, e.target.value)} />
                                         </div>
                                     </div>
