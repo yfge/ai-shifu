@@ -8,7 +8,6 @@ import {
 import { GlobeIcon } from "lucide-react";
 import languages from '../../../public/locales/languages.json'
 import { useTranslation } from 'react-i18next';
-import { useState, useEffect } from "react";
 import i18n from '@/i18n';
 
 
