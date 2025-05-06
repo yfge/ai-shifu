@@ -57,7 +57,7 @@ export default function TextInputView(props: TextInputViewProps) {
             </div>
             <div className='flex flex-row items-center space-x-1 w-[275px]'>
                 <label className='whitespace-nowrap w-[70px] shrink-0'>
-                    {t('textinput.temprature')}
+                    {t('textinput.temperature')}
                 </label>
                 <div className='px-3 py-2 bg-gray-50 rounded-md w-full'>
                     {properties.prompt.properties.temprature}

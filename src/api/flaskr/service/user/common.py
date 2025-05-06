@@ -27,6 +27,7 @@ from ...dao import redis_client as redis, db
 from .models import User as CommonUser, AdminUser as AdminUser
 from flaskr.common.log import get_mode
 from flaskr.service.lesson.models import AICourse
+from flaskr.i18n import get_i18n_list
 
 FIX_CHECK_CODE = get_config("UNIVERSAL_VERIFICATION_CODE")
 
@@ -152,7 +153,10 @@ def update_user_info(
             if mobile is not None:
                 dbuser.mobile = mobile
             if language is not None:
-                dbuser.user_language = language
+                if language in get_i18n_list(app):
+                    dbuser.user_language = language
+                else:
+                    raise_error("USER.LANGUAGE_NOT_FOUND")
             db.session.commit()
             return UserInfo(
                 user_id=user.user_id,

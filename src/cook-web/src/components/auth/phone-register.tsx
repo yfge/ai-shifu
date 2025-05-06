@@ -222,7 +222,7 @@ export function PhoneRegister ({ onRegisterSuccess }: PhoneRegisterProps) {
           {isLoading && !showPhoneOtpInput ? (
             <Loader2 className='h-4 w-4 animate-spin mr-2' />
           ) : phoneCountdown > 0 ? (
-            `${phoneCountdown}`+t('login.seconds-later')
+            t('login.seconds-later', { count: phoneCountdown })
           ) : (
             t('login.get-otp')
           )}

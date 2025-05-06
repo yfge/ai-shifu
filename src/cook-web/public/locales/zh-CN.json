@@ -220,7 +220,7 @@
     "resend-otp": "重新发送验证码",
     "reset-password": "重置密码",
     "reset-password-failed": "重置密码失败",
-    "seconds-later": "秒后重新获取",
+    "seconds-later": "{{count}} 秒后重新获取",
     "send-otp-failed": "发送验证码失败",
     "service-agreement": "服务协议",
     "submit-failed": "提交失败",
@@ -282,12 +282,12 @@
     "data-type": "数据类型",
     "default-value": "默认值",
     "edit-variable": "编辑变量",
-    "enum-item": "@zh-CN.json",
+    "enum-item": "枚举项",
     "modify-existing-variable": "修改现有变量属性。",
     "no-variable-found": "没有找到变量",
     "operation": "操作",
     "option": "枚举",
-    "option-name": "@zh-CN.json",
+    "option-name": "枚举名称",
     "option-value": "枚举值",
     "optional": "可选",
     "save": "保存",
@@ -334,6 +334,6 @@
     "input-placeholder": "输入占位符",
     "model": "模型",
     "prompt": "提示",
-    "temprature": "温度"
+    "temperature": "温度"
   }
 }

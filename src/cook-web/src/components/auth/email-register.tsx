@@ -343,7 +343,7 @@ export function EmailRegister ({ onRegisterSuccess }: EmailRegisterProps) {
                 {isSendingCode && !showOtpInput ? (
                   <Loader2 className='h-4 w-4 animate-spin mr-2' />
                 ) : countdown > 0 ? (
-                  `${countdown}`+t('login.seconds-later')
+                  t('login.seconds-later', { count: countdown })
                 ) : (
                   t('login.get-otp')
                 )}

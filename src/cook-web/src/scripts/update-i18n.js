@@ -65,7 +65,6 @@ function sortObjectKeys(obj) {
   const sortedObj = {};
   Object.keys(obj)
     .sort((a, b) => {
-      // 将 langName 放在最前面
       if (a === 'langName') return -1;
       if (b === 'langName') return 1;
       return a.localeCompare(b);
@@ -80,7 +79,6 @@ function pruneUnusedKeys(obj, validKeys, prefix = '') {
   if (typeof obj !== 'object' || obj === null) return obj;
   const result = {};
 
-  // 检查当前对象的所有可能的完整路径
   const hasValidChildren = (obj, currentPrefix) => {
     for (const key in obj) {
       const fullKey = currentPrefix ? `${currentPrefix}.${key}` : key;
@@ -95,7 +93,6 @@ function pruneUnusedKeys(obj, validKeys, prefix = '') {
   for (const key in obj) {
     const fullKey = prefix ? `${prefix}.${key}` : key;
 
-    // 保留 langName 或有效的 key
     if (key === 'langName' || validKeys.includes(fullKey)) {
       if (typeof obj[key] === 'object' && obj[key] !== null) {
         result[key] = pruneUnusedKeys(obj[key], validKeys, fullKey);
@@ -103,7 +100,6 @@ function pruneUnusedKeys(obj, validKeys, prefix = '') {
         result[key] = obj[key];
       }
     } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-      // 只有当子对象中有有效的 key 时才保留
       if (hasValidChildren(obj[key], fullKey)) {
         result[key] = pruneUnusedKeys(obj[key], validKeys, fullKey);
       }
@@ -123,14 +119,18 @@ fs.readdirSync(LOCALE_DIR).forEach(file => {
     const langFile = path.join(LOCALE_DIR, file);
     const langMark = `@${file}`;
     let baseJson = {};
-    if (fs.existsSync(langFile)) {
-      baseJson = JSON.parse(fs.readFileSync(langFile, 'utf8'));
+    try{
+      if (fs.existsSync(langFile)) {
+        baseJson = JSON.parse(fs.readFileSync(langFile, 'utf8'));
+      }
+      const patchJson = buildNestedJson(allKeys, langMark);
+      const prunedBaseJson = pruneUnusedKeys(baseJson, allKeys);
+      const merged = mergeJson(prunedBaseJson, patchJson);
+      const sorted = sortObjectKeys(merged);
+      fs.writeFileSync(langFile, JSON.stringify(sorted, null, 2), 'utf8');
+      console.log(`${file} updated. ${allKeys.length} keys found.`);
+    } catch (error) {
+      console.error(`${file} update failed. ${error}`);
     }
-    const patchJson = buildNestedJson(allKeys, langMark);
-    const prunedBaseJson = pruneUnusedKeys(baseJson, allKeys);
-    const merged = mergeJson(prunedBaseJson, patchJson);
-    const sorted = sortObjectKeys(merged);
-    fs.writeFileSync(langFile, JSON.stringify(sorted, null, 2), 'utf8');
-    console.log(`${file} updated. ${allKeys.length} keys found.`);
   }
 });

@@ -114,7 +114,7 @@ export default function TextInput(props: ButtonProps) {
             </div>
             <div className='flex flex-row items-center space-x-1 w-[275px]'>
                 <label htmlFor="" className='whitespace-nowrap w-[70px] shrink-0'>
-                    {t('textinput.temprature')}
+                    {t('textinput.temperature')}
                 </label>
                 <InputNumber min={0} max={1} step={0.1}
                     value={Number(tempProperties.prompt?.properties?.temprature)}

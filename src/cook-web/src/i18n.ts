@@ -1,8 +1,10 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import Backend from 'i18next-http-backend';
-const browserLanguage = navigator.language || navigator.languages[0]
-
+const browserLanguage =
+  typeof window !== 'undefined' && navigator.language
+    ? navigator.language
+    : 'en-US'
 i18n
   .use(Backend)
   .use(initReactI18next)

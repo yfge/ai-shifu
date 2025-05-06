@@ -220,7 +220,7 @@
     "resend-otp": "Resend Verification Code",
     "reset-password": "Reset Password",
     "reset-password-failed": "Reset Password Failed",
-    "seconds-later": "Seconds Later",
+    "seconds-later": "{{count}} Seconds Later",
     "send-otp-failed": "Send Verification Code Failed",
     "service-agreement": "Service Agreement",
     "submit-failed": "Submit Failed",
@@ -286,9 +286,9 @@
     "modify-existing-variable": "Modify Existing Variable",
     "no-variable-found": "No Variable Found",
     "operation": "Operation",
-    "option": "@en-US.json",
-    "option-name": "@en-US.json",
-    "option-value": "@en-US.json",
+    "option": "Option",
+    "option-name": "Option Name",
+    "option-value": "Option Value",
     "optional": "Optional",
     "save": "Save",
     "string": "String",
@@ -334,6 +334,6 @@
     "input-placeholder": "Input Placeholder",
     "model": "Model",
     "prompt": "Prompt",
-    "temprature": "Temprature"
+    "temperature": "Temperature"
   }
 }
