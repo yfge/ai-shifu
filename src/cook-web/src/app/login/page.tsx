@@ -19,14 +19,7 @@ import { ForgotPasswordForm } from '@/components/auth/forgot-password-form'
 import { FeedbackForm } from '@/components/auth//feedback-form'
 import Image from 'next/image'
 import { setToken } from '@/local/local'
-import { GlobeIcon } from 'lucide-react'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import LanguageSelect from '@/components/language-select'
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 export default function AuthPage () {
@@ -68,24 +61,13 @@ export default function AuthPage () {
     <div className='min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4'>
 
 
-<div className='absolute bottom-4 left-4'>
-  <Select value={language} onValueChange={setLanguage}>
-    <SelectTrigger className='w-[40px] h-[40px] rounded-full p-0 flex items-center justify-center'>
-      <GlobeIcon className='w-5 h-5' />
-      <SelectValue className='hidden' placeholder={t('login.language')} />
-    </SelectTrigger>
-    <SelectContent>
-      <SelectItem value='zh-CN'>中文</SelectItem>
-      <SelectItem value='en-US'>English</SelectItem>
-    </SelectContent>
-  </Select>
-</div>
+
 
 
 
       <div className='w-full max-w-md space-y-2'>
-        <div className='flex flex-col items-center'>
-          <h2 className='text-purple-600 flex items-center font-semibold pb-2'>
+        <div className='flex flex-col items-center relative'>
+          <h2 className='text-purple-600 flex items-center font-semibold pb-2  w-full justify-center'>
             <Image
               className='dark:invert'
               src='/logo.svg'
@@ -94,7 +76,11 @@ export default function AuthPage () {
               height={30}
               priority
             />
-          </h2>
+
+          <div className='absolute top-0 right-0'>
+          <LanguageSelect language={language} onSetLanguage={setLanguage} variant='circle' />
+        </div>
+        </h2>
         </div>
         <Card>
           <CardHeader>
@@ -130,7 +116,9 @@ export default function AuthPage () {
                 </CardDescription>
               </>
             )}
+
           </CardHeader>
+
           <CardContent>
             {authMode === 'login' && (
               <Tabs
@@ -237,6 +225,9 @@ export default function AuthPage () {
             )}
           </CardFooter>
         </Card>
+
+
+
       </div>
     </div>
   )

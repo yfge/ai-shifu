@@ -8,7 +8,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint --cache-location src/cook-web/.eslintcache --max-warnings 0",
-    "precommit": "lint-staged"
+    "precommit": "lint-staged",
+    "generate-languages": "node src/scripts/generateLanguages.js",
+    "update-i18n": "node src/scripts/update-i18n.js"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

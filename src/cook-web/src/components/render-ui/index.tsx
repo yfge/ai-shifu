@@ -14,7 +14,7 @@ import { ChevronDown } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog'
-
+import { useTranslation } from 'react-i18next';
 
 const EditBlockMap = {
     button: Button,
@@ -97,7 +97,7 @@ export const RenderBlockUI = ({ block, mode = 'edit' }) => {
     const [expand, setExpand] = useState(false)
     const [showConfirmDialog, setShowConfirmDialog] = useState(false)
     const [pendingType, setPendingType] = useState('')
-
+    const { t } = useTranslation();
     const onUITypeChange = (id: string, type: string) => {
         if (type === blockUITypes[block.properties.block_id]) {
             return;
@@ -120,11 +120,11 @@ export const RenderBlockUI = ({ block, mode = 'edit' }) => {
                 <div className='flex flex-row items-center justify-between py-1 cursor-pointer' onClick={() => setExpand(!expand)}>
                     <div className='flex flex-row items-center space-x-1'>
                         <span>
-                            用户操作：
+                            {t('render-ui.user-operation')}
                         </span>
                         <Select value={blockUITypes[block.properties.block_id]} onValueChange={onUITypeChange.bind(null, block.properties.block_id)}>
                             <SelectTrigger className="h-8 w-[120px]">
-                                <SelectValue placeholder="请选择" />
+                                <SelectValue placeholder={t('render-ui.select-placeholder')} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
@@ -146,7 +146,7 @@ export const RenderBlockUI = ({ block, mode = 'edit' }) => {
                             expand ? 'rotate-180' : ''
                         )} />
                         {
-                            expand ? "收起" : "展开"
+                            expand ? t('render-ui.collapse') : t('render-ui.expand')
                         }
                     </div>
                 </div>
@@ -170,14 +170,14 @@ export const RenderBlockUI = ({ block, mode = 'edit' }) => {
             <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>确认切换</AlertDialogTitle>
+                        <AlertDialogTitle>{t('render-ui.confirm-change')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            您的操作将会造成当前内容的丢失，是否确认?
+                            {t('render-ui.confirm-change-description')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>取消</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmChange}>确认</AlertDialogAction>
+                        <AlertDialogCancel>{t('render-ui.cancel')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmChange}>{t('render-ui.confirm')}</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

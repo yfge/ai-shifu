@@ -10,7 +10,7 @@ import Loading from '../loading';
 import ChapterSetting from '../chapter-setting';
 import { ItemChangedReason } from '../dnd-kit-sortable-tree/types';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
-
+import { useTranslation } from 'react-i18next';
 interface ICataTreeProps {
     currentNode?: Outline;
     items: TreeItems<Outline>;
@@ -72,7 +72,7 @@ const MinimalTreeItemComponent = React.forwardRef<
 >((props, ref) => {
     const { focusId, actions, cataData, currentNode } = useScenario();
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-
+    const { t } = useTranslation();
     const onNodeChange = async (value: string) => {
         console.log('onNodeChange', value, props.item)
         if (props.item.depth == 0) {
@@ -211,14 +211,14 @@ const MinimalTreeItemComponent = React.forwardRef<
             <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>确认删除</AlertDialogTitle>
+                        <AlertDialogTitle>{t('outline-tree.confirm-delete')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            您的操作将会造成当前内容的丢失，是否确认？
+                            {t('outline-tree.confirm-delete-description')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>取消</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmDelete}>确认</AlertDialogAction>
+                        <AlertDialogCancel>{t('outline-tree.cancel')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmDelete}>{t('outline-tree.confirm')}</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

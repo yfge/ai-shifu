@@ -16,7 +16,7 @@ import AIDebugDialog from '@/components/ai-debug';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import AddBlock from '@/components/add-block';
 import Loading from '../loading';
-
+import { useTranslation } from 'react-i18next';
 interface DragItem {
     id: string;
     index: number;
@@ -30,6 +30,7 @@ interface DraggableBlockProps {
 }
 
 const DraggableBlock = ({ id, index, moveBlock, children }: DraggableBlockProps) => {
+
     const ref = React.useRef<HTMLDivElement>(null);
 
     const [{ handlerId }, drop] = useDrop<DragItem, void, { handlerId: string | symbol | null }>({
@@ -99,6 +100,7 @@ const DraggableBlock = ({ id, index, moveBlock, children }: DraggableBlockProps)
 };
 
 const ScriptEditor = ({ id }: { id: string }) => {
+    const { t } = useTranslation();
     const {
         blocks,
         chapters,
@@ -289,7 +291,7 @@ const ScriptEditor = ({ id }: { id: string }) => {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align='start' side='bottom' alignOffset={-5}>
                                 <DropdownMenuItem onClick={onDebugBlock.bind(null, menuPosition.blockId || "")}>
-                                    <Variable />测试本模块
+                                    <Variable />{t('scenario.debug')}
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
