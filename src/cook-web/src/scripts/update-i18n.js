@@ -2,28 +2,37 @@ const fs = require('fs'); // eslint-disable-line
 const path = require('path'); // eslint-disable-line
 
 function getAllFiles(dir, files = []) {
-  console.log(dir);
-  fs.readdirSync(dir).forEach(file => {
-    const fullPath = path.join(dir, file);
-    if (fs.statSync(fullPath).isDirectory()) {
-      if (!['local', 'assets'].includes(file)) {
-        getAllFiles(fullPath, files);
+  try{
+    fs.readdirSync(dir).forEach(file => {
+      const fullPath = path.join(dir, file);
+      if (fs.statSync(fullPath).isDirectory()) {
+        if (!['local', 'assets'].includes(file)) {
+          getAllFiles(fullPath, files);
+        }
+      } else if (/\.(js|jsx|ts|tsx)$/.test(file)) {
+        files.push(fullPath);
       }
-    } else if (/\.(js|jsx|ts|tsx)$/.test(file)) {
-      files.push(fullPath);
-    }
-  });
-  return files;
+    });
+    return files;
+  } catch (error) {
+    console.error(`${dir} read failed. ${error}`);
+    return [];
+  }
 }
 
 function extractKeysFromFile(filePath) {
-  const content = fs.readFileSync(filePath, 'utf8');
-  const regex = /(?:{)?\s*t\s*\(\s*['"]([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_.-]+)['"]\s*\)(?:})?/g;
-  let match, keys = [];
-  while ((match = regex.exec(content)) !== null) {
-    keys.push(match[1] + '.' + match[2]);
+  try{
+    const content = fs.readFileSync(filePath, 'utf8');
+    const regex = /(?:{)?\s*t\s*\(\s*['"]([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_.-]+)['"]\s*\)(?:})?/g;
+    let match, keys = [];
+    while ((match = regex.exec(content)) !== null) {
+      keys.push(match[1] + '.' + match[2]);
+    }
+    return keys;
+  } catch (error) {
+    console.error(`${filePath} read failed. ${error}`);
+    return [];
   }
-  return keys;
 }
 
 function setNested(obj, key, value) {
