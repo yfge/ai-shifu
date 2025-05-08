@@ -6,6 +6,7 @@ Create Date: 2025-04-25 06:00:44.318139
 
 """
 
+from alembic import op
 from flaskr.service.profile.profile_manage import save_profile_item, add_profile_i18n
 from flaskr.service.profile.models import (
     PROFILE_TYPE_INPUT_TEXT,
@@ -22,6 +23,13 @@ depends_on = None
 
 
 def upgrade():
+    with op.batch_alter_table("profile_item", schema=None) as batch_op:
+        batch_op.drop_column("profile_color")
+        batch_op.drop_column("profile_check_prompt")
+        batch_op.drop_column("profile_check_model")
+        batch_op.drop_column("profile_check_model_args")
+        # batch_op.drop_column("profile_script_id")
+
     from flask import current_app as app
 
     with app.app_context():
