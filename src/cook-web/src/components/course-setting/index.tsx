@@ -178,11 +178,6 @@ export default function CourseCreationDialog({ scenarioId, onSave }: { scenarioI
     // Handle form submission
     const onSubmit = async (data) => {
         // Combine form data with keywords and image
-        const fullFormData = {
-            ...data,
-            keywords,
-            courseImage
-        };
 
         await api.saveScenarioDetail({
             "scenario_description": data.description,

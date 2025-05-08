@@ -401,7 +401,6 @@ export function EmailRegister ({ onRegisterSuccess }: EmailRegisterProps) {
               }
             />
             <PasswordStrengthIndicator
-              score={passwordStrength.score}
               feedback={passwordStrength.feedback}
             />
             {passwordError && (

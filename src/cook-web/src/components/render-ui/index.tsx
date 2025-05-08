@@ -1,3 +1,5 @@
+'use client';
+
 import Button from './button'
 import ButtonView from './view/button'
 import Option from './option'
@@ -39,8 +41,8 @@ const ViewBlockMap = {
 export const BlockUI = ({ id, type, properties, mode = 'edit' }) => {
     const { actions, currentNode, blocks, blockContentTypes, blockUITypes, blockUIProperties, blockContentProperties } = useScenario();
     const [error, setError] = useState('');
+    const UITypes = useUITypes()
     const onPropertiesChange = async (properties) => {
-        await actions.setBlockUIPropertiesById(id, properties)
         const p = {
             ...blockUIProperties,
             [id]: {
@@ -97,6 +99,7 @@ export const RenderBlockUI = ({ block, mode = 'edit' }) => {
     const [showConfirmDialog, setShowConfirmDialog] = useState(false)
     const [pendingType, setPendingType] = useState('')
     const { t } = useTranslation();
+    const UITypes = useUITypes()
     const onUITypeChange = (id: string, type: string) => {
         if (type === blockUITypes[block.properties.block_id]) {
             return;
@@ -186,24 +189,26 @@ export const RenderBlockUI = ({ block, mode = 'edit' }) => {
 
 export default RenderBlockUI
 
-export const UITypes = [
-    {
-        type: 'button',
-        name: '按钮',
-        properties: {
-            "button_name": "继续",
-            "button_key": "继续"
+export const useUITypes = () => {
+    const { t } = useTranslation();
+    return [
+        {
+            type: 'button',
+            name: t('render-ui.button'),
+            properties: {
+            "button_name": t('render-ui.button-button-name'),
+            "button_key": t('render-ui.button-button-key')
         },
         validate: (properties): string => {
             if (!properties.button_name) {
-                return "按钮名称不能为空"
+                return t('render-ui.button-name-empty')
             }
             return ""
         }
     },
     {
         type: 'option',
-        name: '按钮组',
+        name: t('render-ui.option'),
         properties: {
             "option_name": "",
             "option_key": "",
@@ -211,8 +216,8 @@ export const UITypes = [
             "buttons": [
                 {
                     "properties": {
-                        "button_name": "全部",
-                        "button_key": "全部"
+                        "button_name": t('render-ui.button-name'),
+                        "button_key": t('render-ui.button-key')
                     },
                     "type": "button"
                 }
@@ -220,15 +225,15 @@ export const UITypes = [
         },
         validate: (properties): string => {
             if (!properties.option_name) {
-                return "变量名称不能为空"
+                return t('render-ui.option-name-empty')
             }
             if (properties.buttons.length === 0) {
-                return "按钮组不能为空"
+                return t('render-ui.option-buttons-empty')
             }
             for (let i = 0; i < properties.buttons.length; i++) {
                 const item = properties.buttons[i];
                 if (!item.properties.button_key || item.properties.button_name == "") {
-                    return "值或标题不能为空"
+                    return t('render-ui.option-button-empty')
                 }
             }
             return ""
@@ -236,30 +241,30 @@ export const UITypes = [
     },
     {
         type: 'goto',
-        name: '跳转',
+        name: t('render-ui.goto'),
         properties: {
             "goto_settings": {
                 "items": [
                     {
-                        "value": "通义灵码",
+                        "value": t('render-ui.goto-value'),
                         "type": "outline",
                         "goto_id": "tblDUfFbHGnM4LQl"
                     },
                     {
-                        "value": "GitHub_Copilot",
+                        "value": t('render-ui.goto-value'),
                         "type": "outline",
                         "goto_id": "tbl9gl38im3rd1HB"
                     }
                 ],
                 "profile_key": "ai_tools"
             },
-            "button_name": "来吧",
-            "button_key": "来吧"
+            "button_name": t('render-ui.goto-button-name'),
+            "button_key": t('render-ui.goto-button-key')
         }
     },
     {
         type: 'textinput',
-        name: '输入框',
+        name: t('render-ui.textinput'),
         properties: {
             "prompt": {
                 "properties": {
@@ -278,19 +283,19 @@ export const UITypes = [
         },
         validate: (properties): string => {
             if (!properties.input_placeholder) {
-                return "提示不能为空"
+                return t('render-ui.textinput-placeholder-empty')
             }
             if (!properties.input_key) {
-                return "变量名不能为空"
+                return t('render-ui.textinput-key-empty')
             }
             if (!properties?.prompt?.properties?.prompt) {
-                return "提示不能为空"
+                return t('render-ui.textinput-prompt-empty')
             }
             if (typeof properties?.prompt?.properties?.temprature == 'undefined') {
-                return "温度不能为空"
+                return t('render-ui.textinput-temprature-empty')
             }
             if (!properties?.prompt?.properties?.model) {
-                return "模型不能为空"
+                return t('render-ui.textinput-model-empty')
             }
             return ""
         }
@@ -335,30 +340,31 @@ export const UITypes = [
     }, **/
     {
         type: 'login',
-        name: '登录',
+        name: t('render-ui.login'),
         properties: {
             "button_name": "",
             "button_key": ""
         },
         validate: (properties): string => {
             if (!properties.button_name) {
-                return "按钮名称不能为空"
+                return t('render-ui.login-button-name-empty')
             }
             return ""
         }
     },
     {
         type: 'payment',
-        name: '支付',
+        name: t('render-ui.payment'),
         properties: {
             "button_name": "",
             "button_key": ""
         },
         validate: (properties): string => {
             if (!properties.button_name) {
-                return "按钮名称不能为空"
+                return t('render-ui.payment-button-name-empty')
             }
             return ""
         }
     },
-]
+    ]
+}

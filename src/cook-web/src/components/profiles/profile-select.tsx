@@ -70,7 +70,7 @@ const ProfileSelect: React.FC<ProfileSelectProps> = ({
     <div className='space-y-4 text-xs'>
       <div className='relative'>
         <Input
-          placeholder='搜索变量...'
+          placeholder={t('profiles-manage.search-variable')}
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
           className='w-full'
@@ -114,7 +114,7 @@ const ProfileSelect: React.FC<ProfileSelectProps> = ({
                     </div>
                     <div className='flex items-center'>
                       <span className='text-xs text-muted-foreground mr-2'>
-                        {profile.profile_type === 'text' ? '字符串' : '枚举'}
+                        {profile.profile_type === 'text' ? t('profiles-manage.text') : t('profiles-manage.enum')}
                       </span>
                     </div>
                   </div>
@@ -157,7 +157,7 @@ const ProfileSelect: React.FC<ProfileSelectProps> = ({
                     </div>
                     <div className='flex items-center'>
                       <span className='text-xs text-muted-foreground mr-2'>
-                        {profile.profile_type === 'text' ? '字符串' : '枚举'}
+                        {profile.profile_type === 'text' ? t('profiles-manage.text') : t('profiles-manage.enum')}
                       </span>
 
                       {hoveredId === profile.profile_id ? (

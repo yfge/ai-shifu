@@ -296,7 +296,13 @@
     "title": "标题",
     "variable-name": "变量名"
   },
+  "profiles-manage": {
+    "enum": "选项",
+    "search-variable": "搜索变量...",
+    "text": "字符串"
+  },
   "render-block": {
+    "ai-content": "AI 块",
     "ai-content-empty": "AI内容不能为空",
     "cancel": "取消",
     "complete": "完成",
@@ -304,20 +310,46 @@
     "confirm-delete": "确认删除",
     "confirm-delete-description": "确认删除描述",
     "select-content-type": "选择内容类型",
-    "solid-content-empty": "固体内容不能为空"
+    "solid-content": "固定块",
+    "solid-content-empty": "固定块内容不能为空"
   },
   "render-ui": {
+    "button": "按钮",
+    "button-button-key": "按钮key",
+    "button-button-name": "按钮名称",
+    "button-key": "按钮key",
+    "button-name": "按钮名称",
+    "button-name-empty": "按钮名称不能为空",
     "cancel": "取消",
     "collapse": "收起",
     "confirm": "确认",
     "confirm-change": "确认修改",
     "confirm-change-description": "确认修改描述",
     "expand": "展开",
-    "select-placeholder": "选择占位符",
+    "goto": "跳转",
+    "goto-button-key": "跳转key值",
+    "goto-button-name": "跳转名称",
+    "goto-value": "跳转值",
+    "login": "登录",
+    "login-button-name-empty": "登录按钮名称不能为空",
+    "option": "选项",
+    "option-button-empty": "选项按钮不能为空",
+    "option-buttons-empty": "选项按钮组不能为空",
+    "option-name-empty": "选项名称不能为空",
+    "payment": "支付",
+    "payment-button-name-empty": "支付按钮名称不能为空",
+    "select-placeholder": "输入项提示",
+    "textinput": "文本输入",
+    "textinput-key-empty": "文本输入key不能为空",
+    "textinput-model-empty": "文本输入模型不能为空",
+    "textinput-placeholder-empty": "文本输入占位符不能为空",
+    "textinput-prompt-empty": "文本输入提示不能为空",
+    "textinput-temprature-empty": "文本输入温度不能为空",
     "user-operation": "用户操作"
   },
   "scenario": {
-    "debug": "调试"
+    "debug": "调试",
+    "new_chapter": "新章节"
   },
   "social": {
     "about-us": "关于我们",

@@ -1,7 +1,14 @@
 'use client';
-import { createContext, useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { setRuntimeConfig } from '@/config/runtime-config';
-const ConfigContext = createContext<{ isLoaded: boolean }>({ isLoaded: false });
+import '@/i18n';
+
+interface ConfigContextType {
+  isLoaded: boolean;
+}
+
+const ConfigContext = React.createContext<ConfigContextType>({ isLoaded: false });
+
 export function ConfigProvider({ children }: { children: React.ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false);
   useEffect(() => {
@@ -24,9 +31,17 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  return <ConfigContext.Provider value={{ isLoaded }}>{children}</ConfigContext.Provider>;
+  return (
+    <ConfigContext.Provider value={{ isLoaded }}>
+      {children}
+    </ConfigContext.Provider>
+  );
 }
 
 export function useConfig() {
-  return useContext(ConfigContext);
+  const context = useContext(ConfigContext);
+  if (context === undefined) {
+    throw new Error('useConfig must be used within a ConfigProvider');
+  }
+  return context;
 }

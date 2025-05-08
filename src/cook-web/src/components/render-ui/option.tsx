@@ -137,7 +137,7 @@ export default function Option(props: ButtonProps) {
                 <span className='flex flex-row items-center whitespace-nowrap  w-[50px] shrink-0'>
                     {t('option.variable')}
                 </span>
-                <Input className='h-8 w-[400px]' placeholder='请输入' value={tempValue} onChange={onValueChange}></Input>
+                <Input className='h-8 w-[400px]' placeholder={t('option.variable-placeholder')} value={tempValue} onChange={onValueChange}></Input>
             </div>
             <div className='flex flex-col space-y-2'>
                 {
@@ -146,7 +146,7 @@ export default function Option(props: ButtonProps) {
                             <span className='flex flex-row items-center whitespace-nowrap  w-[50px] shrink-0'>
                                 {t('option.value')}
                             </span>
-                            <Input className='w-40' placeholder='请输入值' value="全部" onChange={(e) => {
+                            <Input className='w-40' placeholder={t('option.variable-placeholder')} value="全部" onChange={(e) => {
                                 const newButton = {
                                     "properties": {
                                         "button_name": "全部",
@@ -159,7 +159,7 @@ export default function Option(props: ButtonProps) {
                             <span className='flex flex-row items-center whitespace-nowrap  w-[50px] ml-4'>
                                 {t('option.title')}
                             </span>
-                            <Input className='w-40 ml-4' placeholder='请输入标题' value="全部" onChange={(e) => {
+                            <Input className='w-40 ml-4' placeholder={t('option.title-placeholder')} value="全部" onChange={(e) => {
                                 const newButton = {
                                     "properties": {
                                         "button_name": e.target.value,

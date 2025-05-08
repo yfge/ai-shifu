@@ -141,7 +141,7 @@ export function ForgotPasswordReset({ email, onBack, onComplete }: ForgotPasswor
           disabled={isLoading}
           className={passwordError ? "border-red-500 focus-visible:ring-red-500" : ""}
         />
-        <PasswordStrengthIndicator score={passwordStrength.score} feedback={passwordStrength.feedback} />
+        <PasswordStrengthIndicator feedback={passwordStrength.feedback} />
         {passwordError && <p className="text-xs text-red-500">{passwordError}</p>}
       </div>
       <div className="space-y-2">

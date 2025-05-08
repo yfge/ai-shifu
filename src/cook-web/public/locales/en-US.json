@@ -296,7 +296,13 @@
     "title": "Title",
     "variable-name": "Variable Name"
   },
+  "profiles-manage": {
+    "enum": "Option",
+    "search-variable": "Search Variable...",
+    "text": "Text"
+  },
   "render-block": {
+    "ai-content": "AI Content",
     "ai-content-empty": "AI Content Empty",
     "cancel": "Cancel",
     "complete": "Complete",
@@ -304,20 +310,46 @@
     "confirm-delete": "Confirm Delete",
     "confirm-delete-description": "Confirm Delete Description",
     "select-content-type": "Select Content Type",
+    "solid-content": "Solid Content",
     "solid-content-empty": "Solid Content Empty"
   },
   "render-ui": {
+    "button": "Button",
+    "button-button-key": "Button Key",
+    "button-button-name": "Button Name",
+    "button-key": "Button Key",
+    "button-name": "Button Name",
+    "button-name-empty": "Button Name Empty",
     "cancel": "Cancel",
     "collapse": "Collapse",
     "confirm": "Confirm",
     "confirm-change": "Confirm Change",
     "confirm-change-description": "Confirm Change Description",
     "expand": "Expand",
+    "goto": "Goto",
+    "goto-button-key": "Goto Key",
+    "goto-button-name": "Goto Name",
+    "goto-value": "Goto Value",
+    "login": "Login",
+    "login-button-name-empty": "Login Button Name Empty",
+    "option": "Option",
+    "option-button-empty": "Option Button Empty",
+    "option-buttons-empty": "Option Buttons Empty",
+    "option-name-empty": "Option Name Empty",
+    "payment": "Payment",
+    "payment-button-name-empty": "Payment Button Name Empty",
     "select-placeholder": "Select Placeholder",
+    "textinput": "Text Input",
+    "textinput-key-empty": "Text Input Key Empty",
+    "textinput-model-empty": "Text Input Model Empty",
+    "textinput-placeholder-empty": "Text Input Placeholder Empty",
+    "textinput-prompt-empty": "Text Input Prompt Empty",
+    "textinput-temprature-empty": "Text Input Temprature Empty",
     "user-operation": "User Operation"
   },
   "scenario": {
-    "debug": "Debug"
+    "debug": "Debug",
+    "new_chapter": "New Chapter"
   },
   "social": {
     "about-us": "About Us",

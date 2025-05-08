@@ -18,6 +18,7 @@ export const RenderBlockContent = ({ id, type, properties }) => {
     const { actions, blocks, blockContentTypes, blockContentState, currentNode, blockUITypes, blockContentProperties, blockUIProperties } = useScenario();
     const [error, setError] = useState('')
     const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+    const ContentTypes = useContentTypes()
 
     const onPropertiesChange = async (properties) => {
         await actions.setBlockContentPropertiesById(id, properties)
@@ -146,24 +147,28 @@ export const RenderBlockContent = ({ id, type, properties }) => {
 
 export default RenderBlockContent;
 
-export const ContentTypes = [
+export const useContentTypes = () =>
     {
-        type: 'ai',
-        name: 'AI块',
-        properties: {
+        const { t } = useTranslation();
+        return [
+            {
+                type: 'ai',
+                name: t('render-block.ai-content'),
+                properties: {
             "prompt": "",
             "profiles": [],
             "model": "",
             "temprature": "0.40",
             "other_conf": ""
-        }
-    },
-    {
-        type: 'solidcontent',
-        name: '固定内容',
-        properties: {
-            "content": "",
-            "profiles": [],
-        }
-    }
-]
+            }
+        },
+        {
+            type: 'solidcontent',
+            name: t('render-block.solid-content'),
+            properties: {
+                "content": "",
+                "profiles": [],
+            }
+            }
+        ]
+}

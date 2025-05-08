@@ -1,11 +1,10 @@
 // import { getPasswordStrengthColor, getPasswordStrengthText } from "@/lib/validators"
 
 interface PasswordStrengthIndicatorProps {
-  score?: number
   feedback: string[]
 }
 
-export function PasswordStrengthIndicator({ score, feedback }: PasswordStrengthIndicatorProps) {
+export function PasswordStrengthIndicator({ feedback }: PasswordStrengthIndicatorProps) {
   // const strengthText = getPasswordStrengthText(score)
   // const strengthColor = getPasswordStrengthColor(score)
 

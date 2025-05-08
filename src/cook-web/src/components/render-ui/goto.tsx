@@ -42,7 +42,10 @@ export default function Goto(props: GotoProps) {
 
     const [profileItemDefinations, setProfileItemDefinations] = useState<ProfileItemDefination[]>([]);
     const [selectedProfile, setSelectedProfile] = useState<ProfileItemDefination | null>(null);
-    const [tempGotoSettings, setTempGotoSettings] = useState(properties.goto_settings);
+    const [tempGotoSettings, setTempGotoSettings] = useState(properties.goto_settings || {
+        items: [],
+        profile_key: ""
+    });
 
     const onNodeSelect = (index: number, node: Outline) => {
         setTempGotoSettings({
@@ -73,7 +76,7 @@ export default function Goto(props: GotoProps) {
         setProfileItemDefinations(list)
 
         if (!preserveSelection && list.length > 0) {
-            const initialSelected = list.find((item) => item.profile_key === properties.goto_settings.profile_key);
+            const initialSelected = list.find((item) => item.profile_key === properties.goto_settings?.profile_key);
             if (initialSelected) {
                 setSelectedProfile(initialSelected);
                 await loadProfileItem(initialSelected.profile_id, initialSelected.profile_key);

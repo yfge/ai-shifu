@@ -5,7 +5,7 @@ import type { DropTargetMonitor } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { Button } from '@/components/ui/button';
 import { ChevronsRight, Plus, Variable, GripVertical } from 'lucide-react';
-import { useScenario } from '@/store';
+import { useScenario, useAuth } from '@/store';
 import OutlineTree from '@/components/outline-tree'
 import '@mdxeditor/editor/style.css'
 import Header from '../header';
@@ -17,6 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import AddBlock from '@/components/add-block';
 import Loading from '../loading';
 import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 interface DragItem {
     id: string;
     index: number;
@@ -101,6 +102,12 @@ const DraggableBlock = ({ id, index, moveBlock, children }: DraggableBlockProps)
 
 const ScriptEditor = ({ id }: { id: string }) => {
     const { t } = useTranslation();
+    const { profile } = useAuth();
+    useEffect(() => {
+        if (profile){
+            i18n.changeLanguage(profile.language);
+        }
+    }, [profile]);
     const {
         blocks,
         chapters,
@@ -198,7 +205,7 @@ const ScriptEditor = ({ id }: { id: string }) => {
                         </ol>
                         <Button variant="outline" className='my-2 h-8 sticky bottom-0 left-4 ' size="sm" onClick={onAddChapter}>
                             <Plus />
-                            新篇章
+                            {t('scenario.new_chapter')}
                         </Button>
                     </div>
 
