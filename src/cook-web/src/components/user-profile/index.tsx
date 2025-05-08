@@ -39,8 +39,9 @@ const UserProfileCard = () => {
     }, [])
 
     useEffect(() => {
-        console.log('language', language);
-        // i18n.changeLanguage(language);
+        if (language !== i18n.language) {
+            i18n.changeLanguage(language);
+        }
     }, [language]);
 
     if (!profile) {
@@ -49,7 +50,6 @@ const UserProfileCard = () => {
 
 
     const updateLanguage = (language: string) => {
-        console.log('updateLanguage', language);
         setLanguage(language);
         api.updateUserInfo({language: language});
     }

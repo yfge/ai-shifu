@@ -480,6 +480,7 @@ def register_user_handler(app: Flask, path_prefix: str) -> Flask:
             mobile = request.get_json().get("mobile", None)
             sms_code = request.get_json().get("sms_code", None)
             course_id = request.get_json().get("course_id", None)
+            language = request.get_json().get("language", None)
             user_id = (
                 None if getattr(request, "user", None) is None else request.user.user_id
             )
@@ -487,7 +488,7 @@ def register_user_handler(app: Flask, path_prefix: str) -> Flask:
                 raise_param_error("mobile")
             if not sms_code:
                 raise_param_error("sms_code")
-            ret = verify_sms_code(app, user_id, mobile, sms_code, course_id)
+            ret = verify_sms_code(app, user_id, mobile, sms_code, course_id, language)
             db.session.commit()
             resp = make_response(make_common_response(ret))
             return resp
@@ -753,13 +754,14 @@ def register_user_handler(app: Flask, path_prefix: str) -> Flask:
 
         """
         mail = request.get_json().get("mail", None)
+        language = request.get_json().get("language", None)
         if not mail:
             raise_param_error("mail")
         if "X-Forwarded-For" in request.headers:
             client_ip = request.headers["X-Forwarded-For"].split(",")[0].strip()
         else:
             client_ip = request.remote_addr
-        return make_common_response(send_email_code(app, mail, client_ip))
+        return make_common_response(send_email_code(app, mail, client_ip, language))
 
     @app.route(path_prefix + "/verify_mail_code", methods=["POST"])
     @bypass_token_validation
@@ -784,6 +786,9 @@ def register_user_handler(app: Flask, path_prefix: str) -> Flask:
                         course_id:
                             type: string
                             description: course id
+                        language:
+                            type: string
+                            description: language
         responses:
             200:
                 description: user logs in success
@@ -812,11 +817,12 @@ def register_user_handler(app: Flask, path_prefix: str) -> Flask:
             user_id = (
                 None if getattr(request, "user", None) is None else request.user.user_id
             )
+            language = request.get_json().get("language", None)
             if not mail:
                 raise_param_error("mail")
             if not mail_code:
-                raise_param_error("sms_code")
-            ret = verify_mail_code(app, user_id, mail, mail_code, course_id)
+                raise_param_error("mail_code")
+            ret = verify_mail_code(app, user_id, mail, mail_code, course_id, language)
             db.session.commit()
             resp = make_response(make_common_response(ret))
             return resp

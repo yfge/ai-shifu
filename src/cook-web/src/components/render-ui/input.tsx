@@ -14,7 +14,6 @@ export default function SingleInput(props: ButtonProps) {
     const { properties } = props
     const { t } = useTranslation();
     const onValueChange = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
-        console.log('onChange', properties);
         if (field === 'input_name') {
             props.onChange({
                 ...properties,

@@ -178,7 +178,6 @@ export default function CourseCreationDialog({ scenarioId, onSave }: { scenarioI
     // Handle form submission
     const onSubmit = async (data) => {
         // Combine form data with keywords and image
-        console.log("data", data)
         const fullFormData = {
             ...data,
             keywords,
@@ -195,7 +194,6 @@ export default function CourseCreationDialog({ scenarioId, onSave }: { scenarioI
             "scenario_teacher_avatar": uploadedImageUrl
         })
 
-        console.log("Form submitted:", fullFormData);
         if (onSave) {
             await onSave()
         }

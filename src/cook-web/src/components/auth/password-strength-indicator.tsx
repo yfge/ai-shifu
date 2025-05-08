@@ -6,7 +6,6 @@ interface PasswordStrengthIndicatorProps {
 }
 
 export function PasswordStrengthIndicator({ score, feedback }: PasswordStrengthIndicatorProps) {
-  console.log('score', score)
   // const strengthText = getPasswordStrengthText(score)
   // const strengthColor = getPasswordStrengthColor(score)
 

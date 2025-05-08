@@ -10,7 +10,6 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
         const response = await fetch('/api/config');
         const config = await response.json();
         await setRuntimeConfig(config);
-        console.debug('Runtime config loaded:', config);
         setIsLoaded(true);
       } catch (error) {
         console.error('Failed to load runtime config:', error);

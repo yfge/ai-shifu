@@ -43,10 +43,6 @@ const ProfileSave: React.FC<ProfileSaveProps> = ({
     profile_items: []
   })
 
-
-  useEffect(() => {
-    console.log(profile)
-  }, [profile])
   const [newEnumItem, setNewEnumItem] = useState<EnumItem>({
     value: '',
     name: ''

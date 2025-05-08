@@ -20,7 +20,6 @@ export const RenderBlockContent = ({ id, type, properties }) => {
     const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
     const onPropertiesChange = async (properties) => {
-        console.log(id, properties)
         await actions.setBlockContentPropertiesById(id, properties)
         const p = {
             ...blockContentProperties,

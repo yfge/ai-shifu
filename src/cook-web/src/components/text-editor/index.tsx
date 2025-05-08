@@ -87,7 +87,6 @@ export default function TextEditor(props: TextEditorProps) {
   const insertVariable = (variable: Variable) => {
 
 
-    console.log(variable.name)
     const textBeforeCursor = props.content.substring(0, cursorPosition);
     const textAfterCursor = props.content.substring(cursorPosition);
     const newContent = textBeforeCursor + variable.name + '}}' + textAfterCursor;

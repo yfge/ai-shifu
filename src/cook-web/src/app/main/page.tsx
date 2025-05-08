@@ -79,7 +79,6 @@ const ScriptManagementPage = () => {
                 page_size: pageSize,
                 is_favorite: activeTab === "favorites",
             });
-            console.log(items)
             if (items.length < pageSize) {
                 setHasMore(false);
             }

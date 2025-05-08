@@ -22,6 +22,7 @@ import { setToken } from '@/local/local'
 import LanguageSelect from '@/components/language-select'
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
+import { browserLanguage } from '@/i18n';
 export default function AuthPage () {
   const router = useRouter()
   const [authMode, setAuthMode] = useState<
@@ -31,7 +32,7 @@ export default function AuthPage () {
   const [registerMethod, setRegisterMethod] = useState<'phone' | 'email'>(
     'phone'
   )
-  const [language, setLanguage] = useState('zh-CN')
+  const [language, setLanguage] = useState(browserLanguage)
   const handleAuthSuccess = () => {
     router.push('/main')
   }
@@ -59,11 +60,6 @@ export default function AuthPage () {
   }, [language])
   return (
     <div className='min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4'>
-
-
-
-
-
 
       <div className='w-full max-w-md space-y-2'>
         <div className='flex flex-col items-center relative'>

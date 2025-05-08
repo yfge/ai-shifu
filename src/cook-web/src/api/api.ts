@@ -14,7 +14,6 @@
 const api = {
   // auth
   login: 'POST /user/login',
-  register: 'POST /user/register',
   sendSmsCode: 'POST /user/send_sms_code',
   sendMailCode: 'POST /user/send_mail_code',
   requireTmp: 'POST /user/require_tmp',

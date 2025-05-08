@@ -11,7 +11,7 @@ import { Loader2 } from 'lucide-react'
 import apiService from '@/api'
 import { isValidEmail } from '@/lib/validators'
 import { useTranslation } from 'react-i18next';
-
+import i18n from '@/i18n';
 interface ForgotPasswordEmailProps {
   onNext: (email: string) => void
 }
@@ -57,7 +57,8 @@ export function ForgotPasswordEmail ({ onNext }: ForgotPasswordEmailProps) {
       setIsLoading(true)
 
       const response = await apiService.sendMailCode({
-        mail: email
+        mail: email,
+        language: i18n.language
       })
 
       if (response.code==0) {

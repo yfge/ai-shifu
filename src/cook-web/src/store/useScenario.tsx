@@ -545,7 +545,6 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
 
     const createSiblingUnit = async (data: Outline) => {
         try {
-            console.log('createSiblingUnit')
             updateOutlineStatus(data.id, 'saving');
             setError(null);
 
@@ -586,7 +585,6 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
         })
     }
     const updateOuline = async (id: string, value: Outline) => {
-        console.log(id, value)
         setCataData({
             ...cataData,
             [id]: {

@@ -388,7 +388,12 @@ def migrate_user_study_record(
 
 # verify sms code
 def verify_sms_code(
-    app: Flask, user_id, phone: str, chekcode: str, course_id: str = None
+    app: Flask,
+    user_id,
+    phone: str,
+    chekcode: str,
+    course_id: str = None,
+    language: str = None,
 ) -> UserToken:
     from flaskr.service.profile.funcs import (
         get_user_profile_labels,
@@ -445,6 +450,7 @@ def verify_sms_code(
             ):
                 user_info.user_state = USER_STATE_REGISTERED
             user_info.mobile = phone
+            user_info.user_language = language
             db.session.add(user_info)
             # New user registration requires course association detection
             # When there is an install ui, the logic here should be removed
@@ -453,6 +459,7 @@ def verify_sms_code(
         if user_info.user_state == USER_STATE_UNTEGISTERED:
             user_info.mobile = phone
             user_info.user_state = USER_STATE_REGISTERED
+            user_info.user_language = language
         user_id = user_info.user_id
         token = generate_token(app, user_id=user_id)
         db.session.flush()
@@ -475,7 +482,12 @@ def verify_sms_code(
 
 # verify mail code
 def verify_mail_code(
-    app: Flask, user_id, mail: str, chekcode: str, course_id: str = None
+    app: Flask,
+    user_id,
+    mail: str,
+    chekcode: str,
+    course_id: str = None,
+    language: str = None,
 ) -> UserToken:
     from flaskr.service.profile.funcs import (
         get_user_profile_labels,
@@ -532,6 +544,7 @@ def verify_mail_code(
             ):
                 user_info.user_state = USER_STATE_REGISTERED
             user_info.email = mail
+            user_info.user_language = language
             db.session.add(user_info)
             # New user registration requires course association detection
             # When there is an install ui, the logic here should be removed
@@ -540,6 +553,7 @@ def verify_mail_code(
         if user_info.user_state == USER_STATE_UNTEGISTERED:
             user_info.email = mail
             user_info.user_state = USER_STATE_REGISTERED
+            user_info.user_language = language
         user_id = user_info.user_id
         token = generate_token(app, user_id=user_id)
         db.session.flush()

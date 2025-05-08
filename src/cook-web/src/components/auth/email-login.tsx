@@ -13,6 +13,7 @@ import apiService from '@/api'
 import { isValidEmail } from '@/lib/validators'
 import { setToken } from '@/local/local'
 import { useTranslation } from 'react-i18next';
+
 interface EmailLoginProps {
   onLoginSuccess: () => void
   onForgotPassword: () => void

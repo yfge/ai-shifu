@@ -13,7 +13,7 @@ import apiService from '@/api'
 import { isValidPhoneNumber } from '@/lib/validators'
 import { setToken } from '@/local/local'
 import { useTranslation } from 'react-i18next';
-
+import i18n from '@/i18n';
 interface PhoneLoginProps {
   onLoginSuccess: () => void
 }
@@ -71,7 +71,8 @@ export function PhoneLogin ({ onLoginSuccess }: PhoneLoginProps) {
       setIsLoading(true)
 
       const response = await apiService.sendSmsCode({
-        mobile: phoneNumber
+        mobile: phoneNumber,
+        language: i18n.language
       })
       if (response.code==0) {
         setShowOtpInput(true)
@@ -130,7 +131,8 @@ export function PhoneLogin ({ onLoginSuccess }: PhoneLoginProps) {
 
       const response = await apiService.verifySmsCode({
         mobile: phoneNumber,
-        sms_code: phoneOtp
+        sms_code: phoneOtp,
+        language: i18n.language
       })
 
       if (response.code == 0) {

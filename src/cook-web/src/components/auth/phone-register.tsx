@@ -13,6 +13,7 @@ import apiService from '@/api'
 import { isValidPhoneNumber } from '@/lib/validators'
 import { setToken } from '@/local/local'
 import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 interface PhoneRegisterProps {
   onRegisterSuccess: () => void
 }
@@ -92,7 +93,8 @@ export function PhoneRegister ({ onRegisterSuccess }: PhoneRegisterProps) {
       setIsLoading(true)
 
       const response = await apiService.sendSmsCode({
-        mobile: phoneNumber
+        mobile: phoneNumber,
+        language: i18n.language
       })
 
 
@@ -149,7 +151,8 @@ export function PhoneRegister ({ onRegisterSuccess }: PhoneRegisterProps) {
 
       const response = await apiService.verifySmsCode({
         mobile: phoneNumber,
-        sms_code: phoneOtp
+        sms_code: phoneOtp,
+        language: i18n.language
       })
 
       if (response.code==0) {

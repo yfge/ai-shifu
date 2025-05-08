@@ -22,14 +22,11 @@ export const CataTree = React.memo((props: ICataTreeProps) => {
     const { items, onChange, } = props;
     const { actions } = useScenario();
     const onItemsChanged = async (data: TreeItems<Outline>, reason: ItemChangedReason<Outline>) => {
-        console.log(data, reason)
         if (reason.type == 'dropped') {
-            console.log(reason.draggedItem);
             const parentId = reason.draggedItem.parentId;
             if (parentId) {
                 const parent = data.find((item) => item.id == parentId);
                 const ids = parent?.children?.map((item) => item.id) || [];
-                console.log(ids)
                 await actions.updateChapterOrder(ids);
             } else {
                 const ids = data.map((item) => item.id);
@@ -74,7 +71,6 @@ const MinimalTreeItemComponent = React.forwardRef<
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const { t } = useTranslation();
     const onNodeChange = async (value: string) => {
-        console.log('onNodeChange', value, props.item)
         if (props.item.depth == 0) {
             await actions.createChapter({
                 parent_id: props.item.parentId,

@@ -64,7 +64,6 @@ export const InlineInput: React.FC<InlineInputProps> = ({ isEdit = false, value,
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       setIsEditing(false);
-      console.log('enter', inputValue)
       debouncedOnChange(inputValue);
     }
   };

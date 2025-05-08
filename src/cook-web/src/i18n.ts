@@ -14,7 +14,6 @@ i18n
       'zh': ['zh-CN'],
       'default': ['en-US']
     },
-    debug: true,
     lng: browserLanguage,
     backend: {
       loadPath: `/locales/{{lng}}.json`,
@@ -23,9 +22,10 @@ i18n
       escapeValue: false,
     },
     returnNull: false,
-    // load: 'languageOnly',
-    supportedLngs: ['en-US', 'zh-CN', 'en', 'zh'],
-    nonExplicitSupportedLngs: true
+    load: 'all',
+    supportedLngs: ['en-US', 'zh-CN'],
+    nonExplicitSupportedLngs: false
   });
 
 export default i18n;
+export { browserLanguage };

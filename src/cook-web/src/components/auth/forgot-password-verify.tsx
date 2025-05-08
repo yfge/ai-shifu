@@ -9,7 +9,7 @@ import { Loader2 } from 'lucide-react'
 import apiService from '@/api'
 import { setToken } from '@/local/local'
 import { useTranslation } from 'react-i18next';
-
+import i18n from '@/i18n';
 interface ForgotPasswordVerifyProps {
   email: string
   onBack: () => void
@@ -46,7 +46,8 @@ export function ForgotPasswordVerify ({
       setIsLoading(true)
 
       const response = await apiService.sendMailCode({
-        mail: email
+        mail: email,
+        language: i18n.language
       })
 
       if (response.code == 0) {
@@ -87,7 +88,8 @@ export function ForgotPasswordVerify ({
 
       const response = await apiService.verifyMailCode({
         mail: email,
-        mail_code: otp
+        mail_code: otp,
+        language: i18n.language
       })
 
       if (response.code == 0) {

@@ -12,7 +12,7 @@ import apiService from '@/api'
 import { isValidEmail } from '@/lib/validators'
 import { setToken } from '@/local/local'
 import { useTranslation } from 'react-i18next';
-
+import i18n from '@/i18n';
 interface ForgotPasswordCombinedProps {
   onNext: (email: string, otp: string) => void
 }
@@ -31,6 +31,7 @@ export function ForgotPasswordCombined ({
   const [otpError, setOtpError] = useState('')
   const [countdown, setCountdown] = useState(0)
   const [codeSent, setCodeSent] = useState(false)
+
 
   const validateEmail = (email: string) => {
     if (!email) {
@@ -86,7 +87,8 @@ export function ForgotPasswordCombined ({
       setIsSendingCode(true)
 
       const response = await apiService.sendMailCode({
-        mail: email
+        mail: email,
+        language: i18n.language
       })
 
       if (response.code == 0) {
@@ -139,7 +141,8 @@ export function ForgotPasswordCombined ({
 
       const response = await apiService.verifyMailCode({
         mail: email,
-        mail_code: otp
+        mail_code: otp,
+        language: i18n.language
       })
 
       if (response.code == 0) {

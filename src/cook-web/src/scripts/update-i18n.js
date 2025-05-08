@@ -137,7 +137,6 @@ fs.readdirSync(LOCALE_DIR).forEach(file => {
       const merged = mergeJson(prunedBaseJson, patchJson);
       const sorted = sortObjectKeys(merged);
       fs.writeFileSync(langFile, JSON.stringify(sorted, null, 2), 'utf8');
-      console.log(`${file} updated. ${allKeys.length} keys found.`);
     } catch (error) {
       console.error(`${file} update failed. ${error}`);
     }

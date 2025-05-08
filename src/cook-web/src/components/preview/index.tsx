@@ -31,7 +31,6 @@ const PreviewSettingsModal = () => {
     const handleStartPreview = async () => {
         await actions.saveBlocks();
         // Handle the start preview action
-        console.log('Start preview with values:', formValues);
         const reuslt = await api.previewScenario({
             "scenario_id": currentScenario?.id || '',
             "skip": autoSkipEmptyFields,

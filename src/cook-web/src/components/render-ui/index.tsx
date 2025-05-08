@@ -67,7 +67,6 @@ export const BlockUI = ({ id, type, properties, mode = 'edit' }) => {
     const componentMap = mode === 'edit' ? EditBlockMap : ViewBlockMap
     const Ele = componentMap[type]
     if (!Ele) {
-        // console.log('type', type)
         return null
     }
 

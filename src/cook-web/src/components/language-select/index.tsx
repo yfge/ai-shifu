@@ -9,7 +9,7 @@ import { GlobeIcon } from "lucide-react";
 import languages from '../../../public/locales/languages.json'
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
-
+import { browserLanguage } from '@/i18n';
 
 
 type languageProps = {
@@ -21,22 +21,18 @@ type languageProps = {
 
 
 
-
 export default function LanguageSelect(props: languageProps) {
-  console.log('props.language', props.language);
     const { t, i18n: i18nInstance } = useTranslation();
     const triggerClass =
       props.variant === 'circle'
           ? 'w-[40px] h-[40px] rounded-full p-0 flex items-center justify-start border-none shadow-none focus:outline-none'
           : 'flex items-center justify-start space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100';
 
-    const  language=props?.language || i18nInstance.language || 'zh-CN';
+    const  language=props?.language || i18nInstance.language || browserLanguage;
 
 
     const handleSetLanguage = (value: string) => {
         i18n.changeLanguage(value)
-        console.log('handleSetLanguage', value);
-        console.log(props);
         props.onSetLanguage?.(value)
     }
 
