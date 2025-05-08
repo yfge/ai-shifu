@@ -129,7 +129,7 @@
     "close": "Close",
     "confirm": "Confirm",
     "confirm-publish": "Confirm Publish",
-    "confirm-publish-description": "Confirm Publish Description",
+    "confirm-publish-description": "Publish will update the current content online, please confirm before publishing!",
     "go-to-view": "Go to View",
     "publish": "Publish",
     "publish-success": "Publish Success",
@@ -250,7 +250,7 @@
     "complete": "Complete",
     "confirm": "Confirm",
     "confirm-delete": "Confirm Delete",
-    "confirm-delete-description": "Confirm Delete Description",
+    "confirm-delete-description": "Your operation will cause the current content to be lost, whether to confirm?",
     "option-name": "Option Name",
     "title": "Title",
     "value": "Value",
@@ -260,7 +260,7 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "confirm-delete": "Confirm Delete",
-    "confirm-delete-description": "Confirm Delete Description"
+    "confirm-delete-description": "Your operation will cause the current content to be lost, whether to confirm?"
   },
   "preview": {
     "auto-skip": "Auto Skip",
@@ -276,7 +276,7 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "confirm-delete": "Confirm Delete",
-    "confirm-delete-description": "Confirm Delete Description",
+    "confirm-delete-description": "Your operation will cause the current content to be lost, whether to confirm?",
     "create-a-new-custom-variable": "Create a New Custom Variable",
     "custom-variable": "Custom Variable",
     "data-type": "Data Type",
@@ -308,7 +308,7 @@
     "complete": "Complete",
     "confirm": "Confirm",
     "confirm-delete": "Confirm Delete",
-    "confirm-delete-description": "Confirm Delete Description",
+    "confirm-delete-description": "Your operation will cause the current content to be lost, whether to confirm?",
     "select-content-type": "Select Content Type",
     "solid-content": "Solid Content",
     "solid-content-empty": "Solid Content Empty"
@@ -324,7 +324,7 @@
     "collapse": "Collapse",
     "confirm": "Confirm",
     "confirm-change": "Confirm Change",
-    "confirm-change-description": "Confirm Change Description",
+    "confirm-change-description": "Your operation will cause the current content to be lost, whether to confirm?",
     "expand": "Expand",
     "goto": "Goto",
     "goto-button-key": "Goto Key",
