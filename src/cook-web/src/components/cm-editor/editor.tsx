@@ -16,54 +16,6 @@ import VideoInject from './components/video-inject'
 import ProfileInject from './components/profile-inject'
 import { SelectedOption, IEditorContext } from './type'
 import { useTranslation } from 'react-i18next'
-function createSlashCommands (
-  onSelectOption: (selectedOption: SelectedOption) => void
-) {
-  return (context: CompletionContext): CompletionResult | null => {
-    const { t } = useTranslation();
-    const word = context.matchBefore(/\/(\w*)$/)
-    if (!word) return null
-
-    const handleSelect = (
-      view: EditorView,
-      _: any,
-      from: number,
-      to: number,
-      selectedOption: SelectedOption
-    ) => {
-      view.dispatch({
-        changes: { from, to, insert: '' }
-      })
-      onSelectOption(selectedOption)
-    }
-
-    return {
-      from: word.from,
-      to: word.to,
-      options: [
-        {
-          label: t('cm-editor.variable'),
-          apply: (view, _, from, to) => {
-            handleSelect(view, _, from, to, SelectedOption.Profile)
-          }
-        },
-        {
-          label: t('cm-editor.image'),
-          apply: (view, _, from, to) => {
-            handleSelect(view, _, from, to, SelectedOption.Image)
-          }
-        },
-        {
-          label: t('cm-editor.video'),
-          apply: (view, _, from, to) => {
-            handleSelect(view, _, from, to, SelectedOption.Video)
-          }
-        }
-      ],
-      filter: false
-    }
-  }
-}
 
 type EditorProps = {
   content?: string
@@ -116,6 +68,7 @@ const Editor: React.FC<EditorProps> = ({
     })
   }, [])
 
+
   const handleSelectProfile = useCallback(
     (profile: Profile) => {
       const textToInsert = `{${profile.profile_key}}`
@@ -133,6 +86,54 @@ const Editor: React.FC<EditorProps> = ({
     },
     [insertText, selectedOption]
   )
+
+  function createSlashCommands (
+    onSelectOption: (selectedOption: SelectedOption) => void
+  ) {
+    return (context: CompletionContext): CompletionResult | null => {
+      const word = context.matchBefore(/\/(\w*)$/)
+      if (!word) return null
+
+      const handleSelect = (
+        view: EditorView,
+        _: any,
+        from: number,
+        to: number,
+        selectedOption: SelectedOption
+      ) => {
+        view.dispatch({
+          changes: { from, to, insert: '' }
+        })
+        onSelectOption(selectedOption)
+      }
+
+      return {
+        from: word.from,
+        to: word.to,
+        options: [
+          {
+            label: t('cm-editor.variable'),
+            apply: (view, _, from, to) => {
+              handleSelect(view, _, from, to, SelectedOption.Profile)
+            }
+          },
+          {
+            label: t('cm-editor.image'),
+            apply: (view, _, from, to) => {
+              handleSelect(view, _, from, to, SelectedOption.Image)
+            }
+          },
+          {
+            label: t('cm-editor.video'),
+            apply: (view, _, from, to) => {
+              handleSelect(view, _, from, to, SelectedOption.Video)
+            }
+          }
+        ],
+        filter: false
+      }
+    }
+  }
 
   const slashCommandsExtension = useCallback(() => {
     return autocompletion({

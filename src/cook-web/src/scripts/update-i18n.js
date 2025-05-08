@@ -23,10 +23,10 @@ function getAllFiles(dir, files = []) {
 function extractKeysFromFile(filePath) {
   try{
     const content = fs.readFileSync(filePath, 'utf8');
-    const regex = /(?:{)?\s*t\s*\(\s*['"]([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_.-]+)['"]\s*\)(?:})?/g;
+    const regex = /(?:{)?\s*t\s*\(\s*['"]([a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_-]+)+)['"]\s*\)(?:})?/g;
     let match, keys = [];
     while ((match = regex.exec(content)) !== null) {
-      keys.push(match[1] + '.' + match[2]);
+      keys.push(match[1]);
     }
     return keys;
   } catch (error) {
