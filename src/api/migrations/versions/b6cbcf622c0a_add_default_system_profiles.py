@@ -28,7 +28,6 @@ def upgrade():
         batch_op.drop_column("profile_check_prompt")
         batch_op.drop_column("profile_check_model")
         batch_op.drop_column("profile_check_model_args")
-        # batch_op.drop_column("profile_script_id")
 
     from flask import current_app as app
 
