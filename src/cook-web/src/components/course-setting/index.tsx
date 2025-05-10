@@ -328,7 +328,7 @@ export default function CourseCreationDialog({ scenarioId, onSave }: { scenarioI
                                 )}
                             />
                             <div className="grid grid-cols-4 items-start gap-4">
-                                <label className="text-right text-sm pt-2 font-semibold">{t('course-setting.keywords')}</label>
+                                <label className="text-right text-sm pt-2">{t('course-setting.keywords')}</label>
                                 <div className="col-span-3">
                                     <div className="flex flex-wrap gap-2 mb-2">
                                         {keywords.map((keyword, index) => (
@@ -367,7 +367,7 @@ export default function CourseCreationDialog({ scenarioId, onSave }: { scenarioI
                                 </div>
                             </div>
                             <div className="grid grid-cols-4 items-start gap-4">
-                                <label className="text-right text-sm pt-2 font-semibold">{t('course-setting.course-avatar')}</label>
+                                <label className="text-right text-sm pt-2">{t('course-setting.course-avatar')}</label>
                                 <div className="col-span-3">
                                     {uploadedImageUrl ? (
                                         <div className="mb-2">
