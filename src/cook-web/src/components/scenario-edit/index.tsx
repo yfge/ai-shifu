@@ -151,7 +151,8 @@ const ScriptEditor = ({ id }: { id: string }) => {
     }
 
 
-    const onShowMenu = (id: string, type: string, e) => {
+    const onShowMenu = (id: string, type: string, e: MouseEvent) => {
+        console.log(id, type, e);
         if (type !== 'ai') {
             return;
         }
