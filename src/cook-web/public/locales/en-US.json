@@ -120,9 +120,9 @@
   "goto": {
     "button-name": "Button Name",
     "complete": "Complete",
-    "goto-settings": "Go to Settings",
-    "goto-settings-jump-to": "Go to Settings Jump to",
-    "select-variable": "Select Variable"
+    "goto-settings": "Settings",
+    "goto-settings-jump-to": "Jump to",
+    "select-variable": "Variable"
   },
   "header": {
     "cancel": "Cancel",
@@ -254,16 +254,19 @@
     "confirm-delete-description": "Your operation will cause the current content to be lost, whether to confirm?",
     "option-name": "Option Name",
     "title": "Title",
-    "title-placeholder": "@en-US.json",
+    "title-placeholder": "Title",
     "value": "Value",
     "variable": "Variable",
-    "variable-placeholder": "@en-US.json"
+    "variable-placeholder": "Variable"
   },
   "outline-tree": {
     "cancel": "Cancel",
     "confirm": "Confirm",
     "confirm-delete": "Confirm Delete",
     "confirm-delete-description": "Your operation will cause the current content to be lost, whether to confirm?"
+  },
+  "outline-selector": {
+    "select-chapter": "Select Outline"
   },
   "preview": {
     "auto-skip": "Auto Skip",
@@ -285,7 +288,7 @@
     "data-type": "Data Type",
     "default-value": "Default Value",
     "edit-variable": "Edit Variable",
-    "enum-item": "Enum Item",
+    "enum-item": "Option Item",
     "modify-existing-variable": "Modify Existing Variable",
     "no-variable-found": "No Variable Found",
     "operation": "Operation",
@@ -294,7 +297,7 @@
     "option-value": "Option Value",
     "optional": "Optional",
     "save": "Save",
-    "string": "String",
+    "string": "Text",
     "system-variable": "System Variable",
     "title": "Title",
     "variable-name": "Variable Name"
@@ -364,9 +367,9 @@
   },
   "textinput": {
     "complete": "Complete",
-    "input-key": "Input Key",
-    "input-name": "Input Name",
-    "input-placeholder": "Input Placeholder",
+    "input-key": "Key",
+    "input-name": "Name",
+    "input-placeholder": "Placeholder",
     "model": "Model",
     "prompt": "Prompt",
     "temperature": "Temperature"
