@@ -125,8 +125,8 @@ export default function AuthPage () {
                 className='w-full'
               >
                 <TabsList className='grid w-full grid-cols-2'>
-                  <TabsTrigger value='phone'>{t('login.phone-register')}</TabsTrigger>
-                  <TabsTrigger value='password'>{t('login.email-register')}</TabsTrigger>
+                  <TabsTrigger value='phone'>{t('login.phone')}</TabsTrigger>
+                  <TabsTrigger value='password'>{t('login.email')}</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value='phone'>
@@ -151,8 +151,8 @@ export default function AuthPage () {
                 className='w-full'
               >
                 <TabsList className='grid w-full grid-cols-2'>
-                  <TabsTrigger value='phone'>{t('login.phone')}</TabsTrigger>
-                  <TabsTrigger value='email'>{t('login.email')}</TabsTrigger>
+                  <TabsTrigger value='phone'>{t('login.phone-register')}</TabsTrigger>
+                  <TabsTrigger value='email'>{t('login.email-register')}</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value='phone'>
