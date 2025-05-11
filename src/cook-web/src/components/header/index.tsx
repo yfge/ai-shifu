@@ -24,7 +24,7 @@ const Header = () => {
     const publish = async () => {
         // TODO: publish
         // actions.publishScenario();
-        await actions.saveBlocks();
+        await actions.saveBlocks(currentScenario?.id || '');
         alert.showAlert({
             confirmText: t('header.confirm'),
             cancelText: t('header.cancel'),

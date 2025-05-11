@@ -67,7 +67,7 @@ const MinimalTreeItemComponent = React.forwardRef<
     HTMLDivElement,
     TreeItemComponentProps<Outline> & TreeItemProps
 >((props, ref) => {
-    const { focusId, actions, cataData, currentNode } = useScenario();
+    const { focusId, actions, cataData, currentNode, currentScenario } = useScenario();
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const { t } = useTranslation();
     const onNodeChange = async (value: string) => {
@@ -116,7 +116,7 @@ const MinimalTreeItemComponent = React.forwardRef<
         }
 
         await actions.setCurrentNode(props.item);
-        await actions.loadBlocks(props.item.id || "");
+        await actions.loadBlocks(props.item.id || "", currentScenario?.id || "");
     }
 
     const handleConfirmDelete = async () => {

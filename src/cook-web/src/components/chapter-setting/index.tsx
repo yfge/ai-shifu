@@ -8,9 +8,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { SlidersHorizontal } from 'lucide-react';
 import api from '@/api';
 import Loading from '../loading';
+
 import { useTranslation } from 'react-i18next';
+import { useScenario } from '@/store';
 
 const ChapterSettingsDialog = ({ unitId, onOpenChange }: { unitId: string; onOpenChange?: (open: boolean) => void }) => {
+    const { currentScenario } = useScenario();
     const { t } = useTranslation();
     const [open, setOpen] = useState(false);
     const [chapterType, setChapterType] = useState("normal");
@@ -22,20 +25,22 @@ const ChapterSettingsDialog = ({ unitId, onOpenChange }: { unitId: string; onOpe
         setOpen(true);
         setLoading(true);
         const result = await api.getUnitInfo({
-            unit_id: unitId
+            unit_id: unitId,
+            scenario_id: currentScenario?.id
         })
         setChapterType(result.type);
         setSystemPrompt(result.system_prompt);
         setHideChapter(result.is_hidden);
         setLoading(false);
-    }, [unitId]);
+    }, [unitId, currentScenario?.id]);
 
     const onConfirm = async () => {
         await api.modifyUnit({
             "unit_id": unitId,
             "unit_is_hidden": hideChapter,
             "unit_system_prompt": systemPrompt,
-            "unit_type": chapterType
+            "unit_type": chapterType,
+            "scenario_id": currentScenario?.id
         })
         setOpen(false);
     }

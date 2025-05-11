@@ -29,7 +29,7 @@ const PreviewSettingsModal = () => {
         setFormValues(prev => ({ ...prev, [key]: value }));
     };
     const handleStartPreview = async () => {
-        await actions.saveBlocks();
+        await actions.saveBlocks(currentScenario?.id || '');
         // Handle the start preview action
         const reuslt = await api.previewScenario({
             "scenario_id": currentScenario?.id || '',
