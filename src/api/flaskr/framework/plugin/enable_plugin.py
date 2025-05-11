@@ -21,7 +21,7 @@ def enable_plugins(app: Flask):
     def add(repo_url):
         """Add a plugin by cloning the repository."""
         repo_name = repo_url.split("/")[-1].replace(".git", "")
-        dest_dir = os.path.join("flaskr", "plugins", repo_name)
+        dest_dir = os.path.join("flaskr", "plugins", repo_name.replace("-", "_"))
         if os.path.exists(dest_dir):
             return
         subprocess.run(["git", "clone", repo_url, dest_dir])
@@ -30,7 +30,7 @@ def enable_plugins(app: Flask):
     @click.argument("repo_name")
     def delete(repo_name):
         """Delete a plugin by its repository name."""
-        dest_dir = os.path.join("flaskr", "plugins", repo_name)
+        dest_dir = os.path.join("flaskr", "plugins", repo_name.replace("-", "_"))
         if not os.path.exists(dest_dir):
             return
         shutil.rmtree(dest_dir)
