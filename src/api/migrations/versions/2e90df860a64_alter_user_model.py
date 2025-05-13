@@ -25,5 +25,10 @@ def upgrade():
 def downgrade():
     with op.batch_alter_table("user_info", schema=None) as batch_op:
         batch_op.add_column(
-            sa.Column("default_model", sa.String(length=255), nullable=True)
+            sa.Column(
+                "default_model",
+                sa.String(length=255),
+                nullable=False,
+                comment="Default model",
+            )
         )
