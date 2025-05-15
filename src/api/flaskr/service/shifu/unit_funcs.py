@@ -8,18 +8,18 @@ from flaskr.util.uuid import generate_id
 from flaskr.dao import db
 from flaskr.service.common.models import raise_error
 from datetime import datetime
-from flaskr.service.scenario.dtos import UnitDto, OutlineDto
+from flaskr.service.shifu.dtos import UnitDto, OutlineDto
 from flaskr.service.lesson.const import (
     LESSON_TYPE_TRIAL,
     LESSON_TYPE_NORMAL,
     LESSON_TYPE_BRANCH_HIDDEN,
     SCRIPT_TYPE_SYSTEM,
 )
-from flaskr.service.scenario.const import UNIT_TYPE_TRIAL, UNIT_TYPE_NORMAL
+from flaskr.service.shifu.const import UNIT_TYPE_TRIAL, UNIT_TYPE_NORMAL
 from sqlalchemy.sql import func, cast
 from sqlalchemy import String
 from flaskr.service.check_risk.funcs import check_text_with_risk_control
-from flaskr.service.scenario.utils import (
+from flaskr.service.shifu.utils import (
     get_existing_outlines,
     change_outline_status_to_history,
     get_original_outline_tree,

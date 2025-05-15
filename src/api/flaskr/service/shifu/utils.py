@@ -196,8 +196,8 @@ def change_block_status_to_history(
         db.session.add(new_block)
 
 
-def get_original_outline_tree(app: Flask, scenario_id: str) -> list["OutlineTreeNode"]:
-    outlines = get_existing_outlines(app, scenario_id)
+def get_original_outline_tree(app: Flask, shifu_id: str) -> list["OutlineTreeNode"]:
+    outlines = get_existing_outlines(app, shifu_id)
     sorted_outlines = sorted(outlines, key=lambda x: (len(x.lesson_no), x.lesson_no))
     outline_tree = []
 
