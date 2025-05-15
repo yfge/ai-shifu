@@ -134,7 +134,7 @@ def create_shifu(
             raise_error("SHIFU.SHIFU_DESCRIPTION_TOO_LONG")
         existing_shifu = AICourse.query.filter_by(course_name=shifu_name).first()
         if existing_shifu:
-            raise_error("SCENARIO.SCENARIO_NAME_ALREADY_EXISTS")
+            raise_error("SHIFU.SHIFU_NAME_ALREADY_EXISTS")
         course = AICourse(
             course_id=shifu_id,
             course_name=shifu_name,

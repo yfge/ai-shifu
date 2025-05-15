@@ -84,7 +84,7 @@ class ShifuTokenValidation:
 
 
 @inject
-def register_scenario_routes(app: Flask, path_prefix="/api/shifu"):
+def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
     app.logger.info(f"register shifu routes {path_prefix}")
 
     @app.route(path_prefix + "/shifu-list", methods=["GET"])
