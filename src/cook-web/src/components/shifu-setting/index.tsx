@@ -35,7 +35,6 @@ import { useTranslation } from 'react-i18next'
 import api from "@/api";
 import { getSiteHost } from "@/config/runtime-config";
 import { useShifu } from "@/store";
-import { Shifu } from "@/types/shifu";
 
 interface Shifu {
     shifu_description: string;

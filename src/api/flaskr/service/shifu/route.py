@@ -106,7 +106,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
               required: true
         responses:
             200:
-                description: get scenario list success
+                description: get shifu list success
                 content:
                     application/json:
                         schema:
@@ -136,7 +136,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         if page_index < 0 or page_size < 1:
             raise_param_error("page_index or page_size is less than 0")
         app.logger.info(
-            f"get scenario list, user_id: {user_id}, page_index: {page_index}, page_size: {page_size}, is_favorite: {is_favorite}"
+            f"get shifu list, user_id: {user_id}, page_index: {page_index}, page_size: {page_size}, is_favorite: {is_favorite}"
         )
         return make_common_response(
             get_shifu_list(app, user_id, page_index, page_size, is_favorite)
@@ -342,8 +342,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         mark favorite shifu
         ---
         tags:
-            - scenario
-            - cook
+            - shifu
         parameters:
             - in: body
               name: body
@@ -359,7 +358,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                         description: is favorite
         responses:
             200:
-                description: mark favorite scenario success
+                description: mark favorite shifu success
                 content:
                     application/json:
                         schema:
@@ -782,7 +781,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
               schema:
                 type: object
                 properties:
-                    scenario_id:
+                    shifu_id:
                         type: string
                         description: shifu id
                     parent_id:
@@ -1185,7 +1184,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                                     description: return msg
                                 data:
                                     type: string
-                                    description: scenario file url
+                                    description: shifu file url
         """
         file = request.files.get("file", None)
         resource_id = request.values.get("resource_id", None)

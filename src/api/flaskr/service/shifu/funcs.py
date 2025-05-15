@@ -83,11 +83,11 @@ def get_favorite_shifu_list(
             .limit(page_size)
             .all()
         )
-        course_ids = [
+        shifu_ids = [
             favorite_scenario.scenario_id for favorite_scenario in favorite_scenarios
         ]
         courses = AICourse.query.filter(
-            AICourse.course_id.in_(course_ids),
+            AICourse.course_id.in_(shifu_ids),
             AICourse.status.in_([STATUS_PUBLISH, STATUS_DRAFT]),
         ).all()
         shifu_dtos = [
@@ -194,13 +194,15 @@ def get_shifu_info(app, user_id: str, shifu_id: str):
 def mark_favorite_shifu(app, user_id: str, shifu_id: str):
     with app.app_context():
         existing_favorite_shifu = FavoriteScenario.query.filter_by(
-            shifu_id=shifu_id, user_id=user_id
+            scenario_id=shifu_id, user_id=user_id
         ).first()
         if existing_favorite_shifu:
             existing_favorite_shifu.status = 1
             db.session.commit()
             return True
-        favorite_shifu = FavoriteScenario(shifu_id=shifu_id, user_id=user_id, status=1)
+        favorite_shifu = FavoriteScenario(
+            scenario_id=shifu_id, user_id=user_id, status=1
+        )
         db.session.add(favorite_shifu)
         db.session.commit()
         return True
@@ -210,7 +212,7 @@ def mark_favorite_shifu(app, user_id: str, shifu_id: str):
 def unmark_favorite_shifu(app, user_id: str, shifu_id: str):
     with app.app_context():
         favorite_shifu = FavoriteScenario.query.filter_by(
-            shifu_id=shifu_id, user_id=user_id
+            scenario_id=shifu_id, user_id=user_id
         ).first()
         if favorite_shifu:
             favorite_shifu.status = 0

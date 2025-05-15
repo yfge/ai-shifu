@@ -141,7 +141,7 @@ const ScriptManagementPage = () => {
         <div className="h-full bg-gray-50 p-0">
             <div className="max-w-7xl mx-auto h-full overflow-hidden flex flex-col">
                 <div className="flex justify-between items-center mb-5">
-                    <h1 className="text-2xl font-semibold text-gray-900">{t('common.scenario')}</h1>
+                    <h1 className="text-2xl font-semibold text-gray-900">{t('common.shifu')}</h1>
                 </div>
                 <div className="flex space-x-3 mb-5">
                     <Button size='sm' variant="outline" onClick={handleCreateShifuModal}>
