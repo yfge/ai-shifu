@@ -47,7 +47,6 @@ async function* makeTextSteamLineIterator(reader: ReadableStreamDefaultReader) {
   let startIndex = 0;
 
   for (; ;) {
-    // eslint-disable-next-line prefer-const
     const result = re.exec(chunk);
     if (!result) {
       if (readerDone) {
@@ -64,7 +63,6 @@ async function* makeTextSteamLineIterator(reader: ReadableStreamDefaultReader) {
     startIndex = re.lastIndex;
   }
   if (startIndex < chunk.length) {
-    // last line didn't end in a newline char
     yield chunk.substr(startIndex);
   }
 }
@@ -133,7 +131,7 @@ export class Request {
         if (location.pathname != '/login' && (res.code == 1001 || res.code == 1005 || res.code == 1004)) {
             window.location.href = '/login';
         }
-        if (location.pathname.startsWith('/scenario/') && res.code == 9002) {
+        if (location.pathname.startsWith('/shifu/') && res.code == 9002) {
           // todo It should be changed to i18n
           fail('您当前没有权限访问此内容，请联系管理员获取权限');
         }

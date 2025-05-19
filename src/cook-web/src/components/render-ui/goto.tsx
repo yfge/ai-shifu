@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react'
 
 import OutlineSelector from '@/components/outline-selector'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
-import { useScenario } from '@/store'
-import { Outline } from '@/types/scenario'
+import { useShifu } from '@/store'
+import { Outline } from '@/types/shifu'
 import api from '@/api'
 import { Button } from '../ui/button'
 import { useTranslation } from 'react-i18next';
+import { useCallback } from 'react';
 interface ColorSetting {
     color: string;
     text_color: string;
@@ -38,7 +39,7 @@ interface GotoProps {
 export default function Goto(props: GotoProps) {
     const { properties } = props
     const { t } = useTranslation();
-    const { chapters, currentScenario } = useScenario();
+    const { chapters, currentShifu } = useShifu();
 
     const [profileItemDefinations, setProfileItemDefinations] = useState<ProfileItemDefination[]>([]);
     const [selectedProfile, setSelectedProfile] = useState<ProfileItemDefination | null>(null);
@@ -69,9 +70,9 @@ export default function Goto(props: GotoProps) {
         });
     }
 
-    const loadProfileItemDefinations = async (preserveSelection: boolean = false) => {
+    const loadProfileItemDefinations = useCallback(async (preserveSelection: boolean = false) => {
         const list = await api.getProfileItemDefinitions({
-            parent_id: currentScenario?.id
+            parent_id: currentShifu?.shifu_id
         })
         setProfileItemDefinations(list)
 
@@ -82,7 +83,7 @@ export default function Goto(props: GotoProps) {
                 await loadProfileItem(initialSelected.profile_id, initialSelected.profile_key);
             }
         }
-    }
+    }, [currentScenario?.id, properties.goto_settings?.profile_key])
 
     const loadProfileItem = async (id: string, name: string) => {
         const list = await api.getProfileItemOptionList({
@@ -103,7 +104,7 @@ export default function Goto(props: GotoProps) {
 
     useEffect(() => {
         loadProfileItemDefinations();
-    }, [])
+    }, [loadProfileItemDefinations])
 
     const handleValueChange = async (value: string) => {
         const selectedItem = profileItemDefinations.find((item) => item.profile_id === value);
