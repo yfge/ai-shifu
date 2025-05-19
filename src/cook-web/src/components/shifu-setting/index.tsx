@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Copy, Check, SlidersVertical, Plus } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -34,7 +34,6 @@ import {
 import { useTranslation } from 'react-i18next'
 import api from "@/api";
 import { getSiteHost } from "@/config/runtime-config";
-<<<<<<< HEAD:src/cook-web/src/components/shifu-setting/index.tsx
 import { useShifu } from "@/store";
 
 interface Shifu {
@@ -47,20 +46,6 @@ interface Shifu {
     shifu_price: number;
     shifu_avatar: string;
     shifu_url: string;
-=======
-import { useScenario } from "@/store";
-import { useCallback } from "react";
-interface Scenario {
-    scenario_description: string;
-    scenario_id: string;
-    scenario_keywords: string[];
-    scenario_model: string;
-    scenario_name: string;
-    scenario_preview_url: string;
-    scenario_price: number;
-    scenario_teacher_avatar: string;
-    scenario_url: string;
->>>>>>> b431124a (chore: fix all cook-web lint warnings):src/cook-web/src/components/course-setting/index.tsx
 }
 
 
@@ -210,17 +195,10 @@ export default function ShifuSettingDialog({ shifuId, onSave }: { shifuId: strin
         // Here you would typically make an API call to save the data
         setOpen(false);
     };
-<<<<<<< HEAD:src/cook-web/src/components/shifu-setting/index.tsx
-    const init = async () => {
+    const init =  useCallback(async () => {
         const result = await api.getShifuDetail({
             shifu_id: shifuId
         }) as Shifu;
-=======
-    const init = useCallback(async () => {
-        const result = await api.getScenarioDetail({
-            scenario_id: scenarioId
-        }) as Scenario;
->>>>>>> b431124a (chore: fix all cook-web lint warnings):src/cook-web/src/components/course-setting/index.tsx
 
         if (result) {
             form.reset({
@@ -234,17 +212,14 @@ export default function ShifuSettingDialog({ shifuId, onSave }: { shifuId: strin
             setKeywords(result.shifu_keywords)
             setUploadedImageUrl(result.shifu_avatar || "")
         }
-    }, [scenarioId, form])
+    }, [shifuId, form])
     useEffect(() => {
         if (!open) {
             return;
         }
         init()
-<<<<<<< HEAD:src/cook-web/src/components/shifu-setting/index.tsx
-    }, [shifuId, open])
-=======
-    }, [scenarioId, open, init])
->>>>>>> b431124a (chore: fix all cook-web lint warnings):src/cook-web/src/components/course-setting/index.tsx
+    }, [shifuId, open,init])
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>

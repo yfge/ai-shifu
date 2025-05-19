@@ -83,7 +83,7 @@ export default function Goto(props: GotoProps) {
                 await loadProfileItem(initialSelected.profile_id, initialSelected.profile_key);
             }
         }
-    }, [currentScenario?.id, properties.goto_settings?.profile_key])
+    }, [currentShifu?.shifu_id, properties.goto_settings?.profile_key])
 
     const loadProfileItem = async (id: string, name: string) => {
         const list = await api.getProfileItemOptionList({

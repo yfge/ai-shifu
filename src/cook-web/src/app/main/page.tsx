@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect,useCallback} from 'react';
 import { PlusIcon, StarIcon as StarOutlineIcon, RectangleStackIcon as RectangleStackOutlineIcon } from '@heroicons/react/24/outline';
 import { TrophyIcon, RectangleStackIcon, StarIcon } from '@heroicons/react/24/solid';
 import api from "@/api";
@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import Loading from '@/components/loading';
 import { useTranslation } from 'react-i18next';
+
 interface ShifuCardProps {
     id: string;
     image: string | undefined;
@@ -68,7 +69,7 @@ const ScriptManagementPage = () => {
     const currentPage = useRef(1);
     const containerRef = useRef(null);
 
-    const fetchShifus = async () => {
+    const fetchShifus =  useCallback( async () => {
 
         if (loading || !hasMore) return;
 
@@ -90,7 +91,7 @@ const ScriptManagementPage = () => {
         } catch (error) {
             console.error("Failed to fetch shifus:", error);
         }
-    };
+    },[activeTab,hasMore,loading])
     const onCreateShifu = async (values: any) => {
 
         try {
@@ -121,6 +122,7 @@ const ScriptManagementPage = () => {
         currentPage.current = 1;
     }, [activeTab]);
 
+
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
@@ -136,7 +138,7 @@ const ScriptManagementPage = () => {
 
         observer.observe(container);
         return () => observer.disconnect();
-    }, [hasMore,fetchScenarios]);
+    }, [hasMore,fetchShifus]);
 
 
     return (
