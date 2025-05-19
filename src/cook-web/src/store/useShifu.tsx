@@ -427,8 +427,8 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             blockContentProperties: Record<string, any>,
             blockUITypes: Record<string, any>,
             blockUIProperties: Record<string, any>,
-            scenario_id: string) => {
-            return saveCurrentBlocks(outline, blocks, blockContentTypes, blockContentProperties, blockUITypes, blockUIProperties, scenario_id);
+            shifu_id: string) => {
+            return saveCurrentBlocks(outline, blocks, blockContentTypes, blockContentProperties, blockUITypes, blockUIProperties, shifu_id);
         }, 3000),
         [saveCurrentBlocks]
     );
@@ -439,8 +439,8 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             blockContentProperties: Record<string, any>,
             blockUITypes: Record<string, any>,
             blockUIProperties: Record<string, any>,
-            scenario_id: string) => {
-            return debouncedSaveBlocks(outline, blocks, blockContentTypes, blockContentProperties, blockUITypes, blockUIProperties, scenario_id);
+            shifu_id: string) => {
+            return debouncedSaveBlocks(outline, blocks, blockContentTypes, blockContentProperties, blockUITypes, blockUIProperties, shifu_id);
         },
         [debouncedSaveBlocks]
     ) as (outline: string, blocks: Block[], blockContentTypes: Record<string, any>, blockContentProperties: Record<string, any>, blockUITypes: Record<string, any>, blockUIProperties: Record<string, any>, scenario_id: string) => Promise<void>;
