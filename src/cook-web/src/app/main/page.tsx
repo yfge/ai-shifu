@@ -70,7 +70,6 @@ const ScriptManagementPage = () => {
     const containerRef = useRef(null);
 
     const fetchShifus =  useCallback( async () => {
-
         if (loading || !hasMore) return;
 
         setLoading(true);
@@ -92,8 +91,8 @@ const ScriptManagementPage = () => {
             console.error("Failed to fetch shifus:", error);
         }
     },[activeTab,hasMore,loading])
-    const onCreateShifu = async (values: any) => {
 
+    const onCreateShifu = async (values: any) => {
         try {
             await api.createShifu(values);
             toast({
