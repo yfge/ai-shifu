@@ -1,5 +1,9 @@
 from flask import Flask, request
-from flaskr.service.lesson.funs import delete_lesson, update_lesson_ask_info
+from flaskr.service.lesson.funs import (
+    delete_lesson,
+    update_lesson_ask_info,
+    get_lesson_detail,
+)
 from flaskr.service.common.models import raise_param_error
 from flaskr.service.lesson.const import LESSON_TYPE_NORMAL
 from .common import bypass_token_validation, make_common_response
@@ -177,7 +181,7 @@ def register_lesson_handler(app: Flask, path_prefix: str) -> Flask:
 
     @app.route(path_prefix + "/get_lesson_detail", methods=["GET"])
     @bypass_token_validation
-    def get_lesson_detail():
+    def get_lesson_detail_api():
         """
         获取课程详情
         ---

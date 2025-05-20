@@ -657,7 +657,11 @@ def update_lesson_ask_info(
     lesson_summary_multi_language: str,
 ):
     with app.app_context():
-        lesson = AILesson.query.filter(AILesson.lesson_id == lesson_id).first()
+        lesson = (
+            AILesson.query.filter(AILesson.lesson_id == lesson_id)
+            .order_by(AILesson.id.desc())
+            .first()
+        )
         if lesson is None:
             raise_error("LESSON.LESSON_NOT_FOUND")
         lesson.lesson_ask_count_limit = lesson_ask_count_limit
