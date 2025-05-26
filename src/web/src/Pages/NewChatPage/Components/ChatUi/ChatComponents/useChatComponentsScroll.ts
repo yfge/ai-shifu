@@ -1,3 +1,4 @@
+import { message } from "antd";
 import { useCallback, useRef, useState, useEffect } from "react"
 import { smoothScroll } from 'Utils/smoothScroll';
 
@@ -16,15 +17,9 @@ export const useChatComponentsScroll = ({
   const needUpdateScrollRef = useRef(false);
   const fixedScrollPositionRef = useRef(0);
   const [scrollPosition, setScrollPosition] = useState(0);
+  const [lastMessageHeight, setLastMessageHeight] = useState(0);
 
 
-    // 使用 ref 记录上一次的消息高度
-    const lastMessageHeightRef = useRef(0);
-
-
-  useEffect(() => {
-    console.log('messages', messages);
-  }, [messages]);
 
   const startAutoScroll = useCallback(() => {
     setAutoScroll(true);
@@ -42,6 +37,7 @@ export const useChatComponentsScroll = ({
     appendMsg({ type: 'loading', position: 'pop' });
   }, [appendMsg, messages]);
 
+
   const onMessageListScroll = useCallback((e) => {
     const scrollWrapper = e.target;
     const inner = scrollWrapper.children[0];
@@ -56,9 +52,9 @@ export const useChatComponentsScroll = ({
       currentScrollTop + scrollWrapper.clientHeight <
       inner.clientHeight - SCROLL_BOTTOM_THROTTLE
     ) {
-      stopAutoScroll();
+      // stopAutoScroll();
     } else {
-      startAutoScroll();
+      // startAutoScroll();
     }
   }, [startAutoScroll, stopAutoScroll, fixedScrollPositionRef]);
 
@@ -69,6 +65,7 @@ export const useChatComponentsScroll = ({
   }, [fixedScrollPositionRef.current]);
 
   const scrollTo = useCallback((height, stopScroll = false) => {
+    console.log('scrollTo', height);
     if (stopScroll) {
       stopAutoScroll();
     }
@@ -122,7 +119,10 @@ export const useChatComponentsScroll = ({
   }, [autoScroll]);
 
   const scrollLastMessageToTop = useCallback(() => {
-    setAutoScroll(false);
+    if (autoScroll) {
+      console.log('stopAutoScroll in scrollLastMessageToTop');
+      stopAutoScroll();
+    }
     setIsLastMessageAtTop(true);
     needUpdateScrollRef.current = true;
     const wrapper = chatRef.current?.querySelector(
@@ -136,31 +136,41 @@ export const useChatComponentsScroll = ({
       return;
     }
 
-    const messageElements = inner.querySelectorAll('.Message-main');
+    const messageElements = inner.querySelector('.MessageList').children;
     if (messageElements.length === 0) {
+      console.log('messageElements', messageElements);
       return;
     }
 
-    const lastMessage = messageElements[messageElements.length - 1];
-    console.log('lastMessage', lastMessage);
-    const wrapperRect = wrapper.getBoundingClientRect();
+  const lastMessage = messageElements[messageElements.length - 1];
+  const secondLastMessage = messageElements[messageElements.length - 2];
+
+  // 添加调试信息
+  console.log('lastMessage height:', lastMessage.offsetHeight);
+  console.log('secondLastMessage height:', secondLastMessage.offsetHeight);
+  console.log('lastMessage offsetTop:', lastMessage.offsetTop);
+  console.log('secondLastMessage offsetTop:', secondLastMessage.offsetTop);
+  console.log('实际间距:', lastMessage.offsetTop - secondLastMessage.offsetTop - secondLastMessage.offsetHeight);
+
+
+
+    // const lastMessage = messageElements[messageElements.length - 1];
+    const wrapperRect = inner.getBoundingClientRect();
     const lastMessageRect = lastMessage.getBoundingClientRect();
-    const relativeTop = lastMessageRect.top - wrapperRect.top + wrapper.scrollTop;
-    // 计算滚动位置，使最后一条消息位于顶部
-    const scrollPosition = Math.max(0, relativeTop - wrapper.clientHeight * 0.1);
-    lastScrollPositionRef.current = scrollPosition;
-
-
-    // 添加底部 padding 创建滚动空间
-    const extraSpace = wrapper.clientHeight;
-    inner.style.paddingBottom = `${extraSpace}px`;
-
+    const offsetTop = lastMessage.offsetTop;
     // 记录当前消息高度
     lastMessageHeightRef.current = lastMessageRect.height;
 
-    scrollTo(scrollPosition, true);
-    fixedScrollPositionRef.current = scrollPosition;
+    console.log('messageHeight', lastMessageRect.height);
+    // 添加底部 padding 创建滚动空间
+    const extraSpace = wrapper.clientHeight - lastMessageRect.height;
+
+    console.log('extraSpace', extraSpace);
+    inner.style.paddingBottom = `${extraSpace}px`;
+
+    scrollTo(offsetTop, true);
   }, [chatRef, containerStyle, scrollTo]);
+
 
 
   return {

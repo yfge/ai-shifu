@@ -722,13 +722,13 @@ export const ChatComponents = forwardRef(
             await appendMsg(message);
             scrollLastMessageToTop();
 
-            const message2 = createMessage({
-              role: USER_ROLE.TEACHER,
-              content: 'hahahaahahah',
-              type: CHAT_MESSAGE_TYPE.TEXT,
-            });
-            await appendMsg(message2);
-            return
+            // const message2 = createMessage({
+            //   role: USER_ROLE.TEACHER,
+            //   content: 'hahahaahahah',
+            //   type: CHAT_MESSAGE_TYPE.TEXT,
+            // });
+            // await appendMsg(message2);
+            // return
           }
         }
 
@@ -961,6 +961,7 @@ export const ChatComponents = forwardRef(
           Composer={() => {
             return <></>;
           }}
+          autoScroll={false}
           onScroll={onMessageListScroll}
         />
 
