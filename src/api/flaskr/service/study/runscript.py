@@ -73,14 +73,22 @@ def run_script_inner(
             if not lesson_id:
                 app.logger.info("lesson_id is None")
                 if course_id:
-                    course_info = AICourse.query.filter(
-                        AICourse.course_id == course_id,
-                        AICourse.status.in_(ai_course_status),
-                    ).first()
+                    course_info = (
+                        AICourse.query.filter(
+                            AICourse.course_id == course_id,
+                            AICourse.status.in_(ai_course_status),
+                        )
+                        .order_by(AICourse.id.desc())
+                        .first()
+                    )
                 else:
-                    course_info = AICourse.query.filter(
-                        AICourse.status.in_(ai_course_status),
-                    ).first()
+                    course_info = (
+                        AICourse.query.filter(
+                            AICourse.status.in_(ai_course_status),
+                        )
+                        .order_by(AICourse.id.desc())
+                        .first()
+                    )
                     if course_info is None:
                         raise_error("LESSON.HAS_NOT_LESSON")
                 if not course_info:
@@ -89,12 +97,16 @@ def run_script_inner(
                     "teacher_avator", course_info.course_teacher_avator, ""
                 )
                 course_id = course_info.course_id
-                lessons = init_trial_lesson(app, user_id, course_id)
+                lessons = init_trial_lesson(app, user_id, course_id, preview_mode)
                 attend = get_current_lesson(app, lessons)
                 lesson_id = attend.lesson_id
-                lesson_info = AILesson.query.filter(
-                    AILesson.lesson_id == lesson_id,
-                ).first()
+                lesson_info = (
+                    AILesson.query.filter(
+                        AILesson.lesson_id == lesson_id,
+                    )
+                    .order_by(AILesson.id.desc())
+                    .first()
+                )
                 if not lesson_info:
                     raise_error("LESSON.LESSON_NOT_FOUND_IN_COURSE")
             else:

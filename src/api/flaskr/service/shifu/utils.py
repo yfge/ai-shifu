@@ -171,6 +171,17 @@ def change_outline_status_to_history(
         db.session.add(new_outline)
 
 
+# mark the outline to delete
+# @author: yfge
+# @date: 2025-05-27
+def mark_outline_to_delete(outline_info: AILesson, user_id: str, time: datetime):
+    delete_outline = outline_info.clone()
+    delete_outline.status = STATUS_TO_DELETE
+    delete_outline.updated_user_id = user_id
+    delete_outline.updated = time
+    db.session.add(delete_outline)
+
+
 # change the block status to history
 # @author: yfge
 # @date: 2025-04-14
@@ -194,6 +205,17 @@ def change_block_status_to_history(
         new_block.updated_user_id = user_id
         new_block.updated = time
         db.session.add(new_block)
+
+
+# mark the block to delete
+# @author: yfge
+# @date: 2025-05-27
+def mark_block_to_delete(block_info: AILessonScript, user_id: str, time: datetime):
+    delete_block = block_info.clone()
+    delete_block.status = STATUS_TO_DELETE
+    delete_block.updated_user_id = user_id
+    delete_block.updated = time
+    db.session.add(delete_block)
 
 
 def get_original_outline_tree(app: Flask, shifu_id: str) -> list["OutlineTreeNode"]:
