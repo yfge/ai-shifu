@@ -284,7 +284,6 @@ def publish_shifu(app, user_id, shifu_id: str):
                 elif to_publish_lesson.status == STATUS_PUBLISH:
                     # change the lesson status to history
                     # these logic would be removed in the future
-                    to_publish_lesson.status = STATUS_PUBLISH
                     AILesson.query.filter(
                         AILesson.lesson_id == to_publish_lesson.lesson_id,
                         AILesson.status.in_([STATUS_PUBLISH]),
