@@ -13,7 +13,7 @@ const agreements = {
 
 export default function AgreementPage () {
 
-  const Agreement = agreements[i18n.language];
+  const Agreement = agreements[i18n.language] || agreements['en-US'];
   return (
     <div className="h-screen flex flex-col">
       <div className='flex-1 overflow-y-auto p-4'>

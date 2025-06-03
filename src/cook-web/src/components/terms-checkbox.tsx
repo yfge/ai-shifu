@@ -21,14 +21,14 @@ export function TermsCheckbox({ checked, onCheckedChange, disabled = false }: Te
         {t('login.i-have-read-and-agree-to-the')}
         <a onClick={() => {
           router.push('/agreement');
-        }} className="text-primary hover:underline mx-1" target="_blank">
+        }} className="text-primary hover:underline mx-1" >
           {t('login.service-agreement')}
         </a>
         &
         <a onClick={() => {
           router.push('/privacy');
         }}
-         className="text-primary hover:underline mx-1" target="_blank">
+         className="text-primary hover:underline mx-1" >
           {t('login.privacy-policy')}
         </a>
       </label>
