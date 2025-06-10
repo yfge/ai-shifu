@@ -27,6 +27,14 @@ from flaskr.service.profile.models import ProfileItem
 from flaskr.service.study.utils import ModelSetting
 
 
+def safe_get_temprature(app: Flask, profile_item: ProfileItem):
+    try:
+        return float(profile_item.profile_prompt_model_args)
+    except Exception as e:
+        app.logger.error(f"safe_get_temprature error: {e}")
+        return 0.3
+
+
 @register_input_handler(input_type=INPUT_TYPE_TEXT)
 @extensible_generic
 def handle_input_text(
@@ -40,6 +48,7 @@ def handle_input_text(
     trace_args,
 ):
     model_setting = None
+    prompt_template = script_info.script_check_prompt
     if (
         script_info.script_ui_profile_id is not None
         and script_info.script_ui_profile_id != ""
@@ -58,8 +67,9 @@ def handle_input_text(
         ):
             model_setting = ModelSetting(
                 profile_item.profile_prompt_model,
-                {"temperature": float(profile_item.profile_prompt_model_args)},
+                {"temperature": safe_get_temprature(app, profile_item)},
             )
+            prompt_template = profile_item.profile_prompt
 
     if model_setting is None:
         model_setting = get_model_setting(app, script_info)
@@ -68,7 +78,7 @@ def handle_input_text(
         app,
         user_info.user_id,
         attend.course_id,
-        script_info.script_check_prompt,
+        prompt_template,
         input,
         script_info.script_profile,
     )
