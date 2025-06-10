@@ -58,7 +58,7 @@ def handle_input_text(
         ):
             model_setting = ModelSetting(
                 profile_item.profile_prompt_model,
-                {"temperature": profile_item.profile_prompt_temprature},
+                {"temperature": float(profile_item.profile_prompt_model_args)},
             )
 
     if model_setting is None:
