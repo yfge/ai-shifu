@@ -361,7 +361,7 @@ def update_block_model(
                 or not block_dto.block_ui.prompt.prompt.strip()
             ):
                 return BlockUpdateResultDto(None, _("SHIFU.TEXT_INPUT_PROMPT_REQUIRED"))
-            if "json" not in block_dto.block_ui.prompt.strip().lower():
+            if "json" not in block_dto.block_ui.prompt.prompt.strip().lower():
                 return BlockUpdateResultDto(
                     None, _("SHIFU.TEXT_INPUT_PROMPT_JSON_REQUIRED")
                 )
