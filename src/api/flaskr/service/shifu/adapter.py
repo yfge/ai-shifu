@@ -242,11 +242,7 @@ def update_block_model(
                 block_model.script_temprature = block_dto.block_content.temprature
         else:
             return BlockUpdateResultDto(None, _("SHIFU.INVALID_BLOCK_CONTENT_TYPE"))
-        if (
-            block_model.script_prompt is None
-            or block_model.script_prompt == ""
-            or block_model.script_prompt.strip() == ""
-        ):
+        if not block_model.script_prompt or not block_model.script_prompt.strip():
             return BlockUpdateResultDto(None, _("SHIFU.PROMPT_REQUIRED"))
 
     if block_dto.block_ui:
