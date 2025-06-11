@@ -35,5 +35,5 @@ SHIFU_BLOCK_DESCRIPTION_TOO_SHORT = (
 
 TEXT_INPUT_PROMPT_REQUIRED = "text input prompt is required"
 TEXT_INPUT_PROMPT_JSON_REQUIRED = (
-    "text input prompt must contains keyword 'json' to tell the model to return json"
+    "text input prompt must contain keyword 'json' to tell the model to return json"
 )
