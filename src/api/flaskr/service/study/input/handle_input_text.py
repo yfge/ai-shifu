@@ -83,7 +83,20 @@ def handle_input_text(
         input,
         script_info.script_profile,
     )
-    # todo 换成通用的
+
+    content_prompt_template = script_info.script_prompt
+    if content_prompt_template is not None and content_prompt_template != "":
+        content_prompt = get_fmt_prompt(
+            app,
+            user_info.user_id,
+            attend.course_id,
+            content_prompt_template,
+            input,
+            script_info.script_profile,
+        )
+    else:
+        content_prompt = ""
+
     log_script = generation_attend(app, attend, script_info)
     log_script.script_content = input
     log_script.script_role = ROLE_STUDENT
@@ -103,7 +116,7 @@ def handle_input_text(
         lesson,
         script_info,
         attend,
-        prompt,
+        content_prompt,
     )
     try:
         first_value = next(res)
