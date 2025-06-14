@@ -116,7 +116,6 @@ def handle_input_text(
     )
     try:
         first_value = next(res)
-        app.logger.info("check_text_by_edun is not None")
         yield first_value
         yield from res
         db.session.flush()
