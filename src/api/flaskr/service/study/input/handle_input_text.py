@@ -49,7 +49,8 @@ def handle_input_text(
     trace_args,
 ):
     model_setting = None
-    prompt_template = script_info.script_check_prompt
+    check_prompt_template = None
+
     if (
         script_info.script_ui_profile_id is not None
         and script_info.script_ui_profile_id != ""
@@ -70,20 +71,14 @@ def handle_input_text(
                 profile_item.profile_prompt_model,
                 {"temperature": safe_get_temprature(app, profile_item)},
             )
-            prompt_template = profile_item.profile_prompt
+            check_prompt_template = profile_item.profile_prompt
 
     if model_setting is None:
         model_setting = get_model_setting(app, script_info)
-    app.logger.info(f"model_setting: {model_setting.__json__()}")
-    prompt = get_fmt_prompt(
-        app,
-        user_info.user_id,
-        attend.course_id,
-        prompt_template,
-        input,
-        script_info.script_profile,
-    )
 
+    app.logger.info(f"model_setting: {model_setting.__json__()}")
+
+    # get content prompt to generate content if check failed
     content_prompt_template = script_info.script_prompt
     if content_prompt_template is not None and content_prompt_template != "":
         content_prompt = get_fmt_prompt(
@@ -107,6 +102,7 @@ def handle_input_text(
     )
     db.session.add(log_script)
     span = trace.span(name="user_input", input=input)
+
     res = check_text_with_llm_response(
         app,
         user_info.user_id,
@@ -128,6 +124,7 @@ def handle_input_text(
     except StopIteration:
         app.logger.info("check_text_by_edun is None ,invoke_llm")
 
+    # get system prompt to generate content
     system_prompt_template = get_lesson_system(app, script_info.lesson_id)
     system_prompt = (
         None
@@ -135,6 +132,19 @@ def handle_input_text(
         else get_fmt_prompt(
             app, user_info.user_id, attend.course_id, system_prompt_template
         )
+    )
+
+    # get check prompt to extract profile
+    if check_prompt_template is None or check_prompt_template == "":
+        check_prompt_template = script_info.script_check_prompt
+
+    check_prompt = get_fmt_prompt(
+        app,
+        user_info.user_id,
+        attend.course_id,
+        check_prompt_template,
+        input,
+        script_info.script_profile,
     )
     resp = invoke_llm(
         app,
@@ -144,7 +154,7 @@ def handle_input_text(
         json=True,
         stream=True,
         system=system_prompt,
-        message=prompt,
+        message=check_prompt,
         generation_name="user_input_"
         + lesson.lesson_no
         + "_"
