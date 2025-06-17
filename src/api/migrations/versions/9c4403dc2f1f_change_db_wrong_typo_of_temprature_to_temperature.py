@@ -9,6 +9,7 @@ Create Date: 2025-06-17 11:38:19.224326
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import mysql
+from sqlalchemy import text
 
 # revision identifiers, used by Alembic.
 revision = "9c4403dc2f1f"
@@ -91,25 +92,20 @@ def upgrade():
             existing_nullable=False,
             existing_server_default=sa.text("'0'"),
         )
-    from flask import current_app as app
-    from flaskr.dao import db
-    from sqlalchemy import text
 
-    with app.app_context():
-        db.session.execute(
-            text(
-                "UPDATE ai_course set course_default_temperature = course_default_temprature"
-            )
+    op.execute(
+        text(
+            "UPDATE ai_course set course_default_temperature = course_default_temprature"
         )
-        db.session.execute(
-            text(
-                "UPDATE ai_lesson set lesson_default_temperature = lesson_default_temprature"
-            )
+    )
+    op.execute(
+        text(
+            "UPDATE ai_lesson set lesson_default_temperature = lesson_default_temprature"
         )
-        db.session.execute(
-            text("UPDATE ai_lesson_script set script_temperature = script_temprature")
-        )
-        db.session.commit()
+    )
+    op.execute(
+        text("UPDATE ai_lesson_script set script_temperature = script_temprature")
+    )
 
     # ### end Alembic commands ###
 

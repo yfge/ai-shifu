@@ -3,6 +3,7 @@ from sqlalchemy.dialects.mysql import BIGINT
 from sqlalchemy.sql import func
 from ...dao import db
 from .const import ASK_MODE_DEFAULT, LESSON_TYPE_TRIAL
+from decimal import Decimal
 
 
 class AICourse(db.Model):
@@ -32,7 +33,7 @@ class AICourse(db.Model):
     course_default_temperature = Column(
         DECIMAL(10, 2),
         nullable=False,
-        default="0.3",
+        default=Decimal("0.3"),
         comment="Course default temperature",
     )
     course_language = Column(
@@ -165,7 +166,7 @@ class AILesson(db.Model):
     lesson_default_temperature = Column(
         DECIMAL(10, 2),
         nullable=False,
-        default="0.3",
+        default=Decimal("0.3"),
         comment="Lesson default temperature",
     )
     lesson_name_multi_language = Column(
@@ -321,7 +322,10 @@ class AILessonScript(db.Model):
         String(36), nullable=False, default="", comment="Script model"
     )
     script_temperature = Column(
-        DECIMAL(10, 2), nullable=False, default="0.8", comment="Script Temperature"
+        DECIMAL(10, 2),
+        nullable=False,
+        default=Decimal("0.3"),
+        comment="Script Temperature",
     )
     script_profile = Column(Text, nullable=False, default="", comment="Script profile")
     script_media_url = Column(
