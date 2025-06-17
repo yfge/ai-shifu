@@ -83,9 +83,9 @@ export default function ShifuSettingDialog({ shifuId, onSave }: { shifuId: strin
             .min(1, t('shifu-setting.shifu-price-cannot-be-empty'))
             .regex(/^\d+(\.\d{1,2})?$/, t('shifu-setting.shifu-price-must-be-valid-number-format')),
         temperature: z.string()
-            .regex(/^\d+(\.\d{1,2})?$/, t('shifu-setting.shifu-temprature-must-be-valid-number-format')),
-        temperature_min: z.number().min(0, t('shifu-setting.shifu-temprature-cannot-be-less-than-0')),
-        temperature_max: z.number().max(2, t('shifu-setting.shifu-temprature-cannot-exceed-2')),
+            .regex(/^\d+(\.\d{1,2})?$/, t('shifu-setting.shifu-temperature-must-be-valid-number-format')),
+        temperature_min: z.number().min(0, t('shifu-setting.shifu-temperature-cannot-be-less-than-0')),
+        temperature_max: z.number().max(2, t('shifu-setting.shifu-temperature-cannot-exceed-2')),
     });
 
     const form = useForm({
@@ -472,7 +472,7 @@ export default function ShifuSettingDialog({ shifuId, onSave }: { shifuId: strin
                                 name="temperature"
                                 render={({ field }) => (
                                     <FormItem className="grid grid-cols-4 items-center gap-4">
-                                        <FormLabel className="text-right text-sm">{t('shifu-setting.shifu-temprature')}</FormLabel>
+                                        <FormLabel className="text-right text-sm">{t('shifu-setting.shifu-temperature')}</FormLabel>
                                         <div className="col-span-3">
                                             <FormControl>
                                                 <Input {...field} placeholder={t('shifu-setting.number')} type="number" min={0} max={2} step={0.1} />
