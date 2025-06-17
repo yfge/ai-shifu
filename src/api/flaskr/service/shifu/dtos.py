@@ -49,7 +49,7 @@ class ShifuDetailDto:
     shifu_avatar: str
     shifu_keywords: list[str]
     shifu_model: str
-    shifu_temprature: float
+    shifu_temperature: float
     shifu_price: float
     shifu_preview_url: str
     shifu_url: str
