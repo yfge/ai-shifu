@@ -46,7 +46,7 @@ interface Shifu {
     shifu_price: number;
     shifu_avatar: string;
     shifu_url: string;
-    shifu_temprature: number;
+    shifu_temperature: number;
 }
 
 
@@ -82,10 +82,10 @@ export default function ShifuSettingDialog({ shifuId, onSave }: { shifuId: strin
         price: z.string()
             .min(1, t('shifu-setting.shifu-price-cannot-be-empty'))
             .regex(/^\d+(\.\d{1,2})?$/, t('shifu-setting.shifu-price-must-be-valid-number-format')),
-        temprature: z.string()
+        temperature: z.string()
             .regex(/^\d+(\.\d{1,2})?$/, t('shifu-setting.shifu-temprature-must-be-valid-number-format')),
-        temprature_min: z.number().min(0, t('shifu-setting.shifu-temprature-cannot-be-less-than-0')),
-        temprature_max: z.number().max(2, t('shifu-setting.shifu-temprature-cannot-exceed-2')),
+        temperature_min: z.number().min(0, t('shifu-setting.shifu-temprature-cannot-be-less-than-0')),
+        temperature_max: z.number().max(2, t('shifu-setting.shifu-temprature-cannot-exceed-2')),
     });
 
     const form = useForm({
@@ -97,7 +97,7 @@ export default function ShifuSettingDialog({ shifuId, onSave }: { shifuId: strin
             description: "",
             model: "",
             price: "",
-            temprature: ""
+            temperature: ""
         },
     });
 
@@ -191,7 +191,7 @@ export default function ShifuSettingDialog({ shifuId, onSave }: { shifuId: strin
             "shifu_name": data.name,
             "shifu_price": Number(data.price),
             "shifu_avatar": uploadedImageUrl,
-            "shifu_temprature": Number(data.temprature)
+            "shifu_temperature": Number(data.temperature)
         })
 
         if (onSave) {
@@ -212,7 +212,7 @@ export default function ShifuSettingDialog({ shifuId, onSave }: { shifuId: strin
                 model: result.shifu_model,
                 previewUrl: result.shifu_preview_url,
                 url: result.shifu_url,
-                temprature: result.shifu_temprature + ''
+                temperature: result.shifu_temperature + ''
             })
             setKeywords(result.shifu_keywords)
             setUploadedImageUrl(result.shifu_avatar || "")
@@ -469,7 +469,7 @@ export default function ShifuSettingDialog({ shifuId, onSave }: { shifuId: strin
                             />
                             <FormField
                                 control={form.control}
-                                name="temprature"
+                                name="temperature"
                                 render={({ field }) => (
                                     <FormItem className="grid grid-cols-4 items-center gap-4">
                                         <FormLabel className="text-right text-sm">{t('shifu-setting.shifu-temprature')}</FormLabel>

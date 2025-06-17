@@ -62,7 +62,7 @@ class ShifuDetailDto:
         shifu_avatar: str,
         shifu_keywords: list[str],
         shifu_model: str,
-        shifu_temprature: float,
+        shifu_temperature: float,
         shifu_price: float,
         shifu_preview_url: str,
         shifu_url: str,
@@ -76,7 +76,7 @@ class ShifuDetailDto:
         self.shifu_price = shifu_price
         self.shifu_preview_url = shifu_preview_url
         self.shifu_url = shifu_url
-        self.shifu_temprature = shifu_temprature
+        self.shifu_temperature = shifu_temperature
 
     def __json__(self):
         return {
@@ -89,7 +89,7 @@ class ShifuDetailDto:
             "shifu_price": self.shifu_price,
             "shifu_preview_url": self.shifu_preview_url,
             "shifu_url": self.shifu_url,
-            "shifu_temprature": self.shifu_temprature,
+            "shifu_temperature": self.shifu_temperature,
         }
 
 

@@ -299,9 +299,9 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                     shifu_price:
                         type: number
                         description: shifu price
-                    shifu_temprature:
+                    shifu_temperature:
                         type: number
-                        description: shifu temprature
+                        description: shifu temperature
         responses:
             200:
                 description: save shifu detail success
@@ -327,7 +327,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         shifu_keywords = request.get_json().get("shifu_keywords")
         shifu_model = request.get_json().get("shifu_model")
         shifu_price = request.get_json().get("shifu_price")
-        shifu_temprature = request.get_json().get("shifu_temprature")
+        shifu_temperature = request.get_json().get("shifu_temperature")
         return make_common_response(
             save_shifu_detail(
                 app,
@@ -339,7 +339,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                 shifu_keywords,
                 shifu_model,
                 shifu_price,
-                shifu_temprature,
+                shifu_temperature,
             )
         )
 
