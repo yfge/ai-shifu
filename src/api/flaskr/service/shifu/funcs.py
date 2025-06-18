@@ -209,7 +209,7 @@ def get_shifu_info(app, user_id: str, shifu_id: str):
                     shifu.course_keywords.split(",") if shifu.course_keywords else []
                 ),
                 shifu_model=shifu.course_default_model,
-                shifu_temperature=shifu.course_default_temprature,
+                shifu_temperature=shifu.course_default_temperature,
                 shifu_price=shifu.course_price,
                 shifu_url=get_config("WEB_URL", "UNCONFIGURED")
                 + "/c/"
@@ -680,7 +680,7 @@ def get_shifu_detail(app, user_id: str, shifu_id: str):
                 shifu_avatar=shifu.course_teacher_avator,
                 shifu_keywords=keywords,
                 shifu_model=shifu.course_default_model,
-                shifu_temperature=shifu.course_default_temprature,
+                shifu_temperature=shifu.course_default_temperature,
                 shifu_price=shifu.course_price,
                 shifu_preview_url=get_config("WEB_URL", "UNCONFIGURED")
                 + "/c/"
@@ -728,7 +728,7 @@ def save_shifu_detail(
             new_shifu.course_price = shifu_price
             new_shifu.updated_user_id = user_id
             new_shifu.updated_at = datetime.now()
-            new_shifu.course_default_temprature = shifu_temperature
+            new_shifu.course_default_temperature = shifu_temperature
             new_check_str = new_shifu.get_str_to_check()
             if old_check_str != new_check_str:
                 check_text_with_risk_control(app, shifu_id, user_id, new_check_str)
@@ -756,7 +756,7 @@ def save_shifu_detail(
                 shifu_url=get_config("WEB_URL", "UNCONFIGURED")
                 + "/c/"
                 + new_shifu.course_id,
-                shifu_temperature=new_shifu.course_default_temprature,
+                shifu_temperature=new_shifu.course_default_temperature,
             )
         raise_error("SHIFU.SHIFU_NOT_FOUND")
 
