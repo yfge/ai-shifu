@@ -16,7 +16,7 @@ from .utils import (
     get_existing_outlines,
     get_existing_blocks,
     change_outline_status_to_history,
-    change_block_status_to_history,
+    mark_outline_to_delete,
     get_original_outline_tree,
     OutlineTreeNode,
     reorder_outline_tree_and_save,
@@ -238,7 +238,7 @@ def delete_chapter(app, user_id: str, chapter_id: str):
                     db.session.add(new_outline)
             blocks = get_existing_blocks(app, outline_ids)
             for block in blocks:
-                change_block_status_to_history(block, user_id, time)
+                mark_outline_to_delete(block, user_id, time)
             db.session.commit()
             return True
         raise_error("SHIFU.CHAPTER_NOT_FOUND")
