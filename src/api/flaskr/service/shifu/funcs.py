@@ -284,6 +284,7 @@ def check_shifu_can_publish(app, shifu_id: str):
 
 def publish_shifu(app, user_id, shifu_id: str):
     with app.app_context():
+        current_time = datetime.now()
         shifu = (
             AICourse.query.filter(
                 AICourse.course_id == shifu_id,
@@ -296,7 +297,7 @@ def publish_shifu(app, user_id, shifu_id: str):
             check_shifu_can_publish(app, shifu_id)
             shifu.status = STATUS_PUBLISH
             shifu.updated_user_id = user_id
-            shifu.updated_at = datetime.now()
+            shifu.updated_at = current_time
             # deal with draft lessons
             to_publish_lessons = get_existing_outlines_for_publish(app, shifu_id)
             publish_outline_ids = []
@@ -311,7 +312,7 @@ def publish_shifu(app, user_id, shifu_id: str):
                         {
                             "status": STATUS_DELETE,
                             "updated_user_id": user_id,
-                            "updated": datetime.now(),
+                            "updated": current_time,
                         }
                     )
                     publish_outline_ids.append(to_publish_lesson.lesson_id)
@@ -326,7 +327,7 @@ def publish_shifu(app, user_id, shifu_id: str):
                         {
                             "status": STATUS_HISTORY,
                             "updated_user_id": user_id,
-                            "updated": datetime.now(),
+                            "updated": current_time,
                         }
                     )
                     publish_outline_ids.append(to_publish_lesson.lesson_id)
@@ -336,7 +337,7 @@ def publish_shifu(app, user_id, shifu_id: str):
                     new_lesson = to_publish_lesson.clone()
                     new_lesson.status = STATUS_PUBLISH
                     new_lesson.updated_user_id = user_id
-                    new_lesson.updated = datetime.now()
+                    new_lesson.updated = current_time
                     db.session.add(new_lesson)
                     # change the lesson status to history
                     AILesson.query.filter(
@@ -347,7 +348,7 @@ def publish_shifu(app, user_id, shifu_id: str):
                         {
                             "status": STATUS_HISTORY,
                             "updated_user_id": user_id,
-                            "updated": datetime.now(),
+                            "updated": current_time,
                         }
                     )
                     publish_outline_ids.append(to_publish_lesson.lesson_id)
@@ -366,7 +367,7 @@ def publish_shifu(app, user_id, shifu_id: str):
                             {
                                 "status": STATUS_DELETE,
                                 "updated_user_id": user_id,
-                                "updated": datetime.now(),
+                                "updated": current_time,
                             }
                         )
 
@@ -375,7 +376,7 @@ def publish_shifu(app, user_id, shifu_id: str):
                         new_block_script = block_script.clone()
                         new_block_script.status = STATUS_PUBLISH
                         new_block_script.updated_user_id = user_id
-                        new_block_script.updated = datetime.now()
+                        new_block_script.updated = current_time
                         db.session.add(new_block_script)
                         # change the block status to history
                         AILessonScript.query.filter(
@@ -386,7 +387,7 @@ def publish_shifu(app, user_id, shifu_id: str):
                             {
                                 "status": STATUS_HISTORY,
                                 "updated_user_id": user_id,
-                                "updated": datetime.now(),
+                                "updated": current_time,
                             }
                         )
                         publish_block_ids.append(block_script.script_id)
@@ -403,12 +404,12 @@ def publish_shifu(app, user_id, shifu_id: str):
                             {
                                 "status": STATUS_HISTORY,
                                 "updated_user_id": user_id,
-                                "updated": datetime.now(),
+                                "updated": current_time,
                             }
                         )
                         publish_block_ids.append(block_script.script_id)
                     block_script.updated_user_id = user_id
-                    block_script.updated = datetime.now()
+                    block_script.updated = current_time
                     db.session.add(block_script)
             AILessonScript.query.filter(
                 AILessonScript.lesson_id.in_(publish_outline_ids),
@@ -418,7 +419,7 @@ def publish_shifu(app, user_id, shifu_id: str):
                 {
                     "status": STATUS_DELETE,
                     "updated_user_id": user_id,
-                    "updated": datetime.now(),
+                    "updated": current_time,
                 }
             )
 
@@ -430,7 +431,7 @@ def publish_shifu(app, user_id, shifu_id: str):
                 {
                     "status": STATUS_DELETE,
                     "updated_user_id": user_id,
-                    "updated": datetime.now(),
+                    "updated": current_time,
                 }
             )
             db.session.commit()
