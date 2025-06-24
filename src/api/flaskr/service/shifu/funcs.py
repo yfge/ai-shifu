@@ -424,9 +424,8 @@ def publish_shifu(app, user_id, shifu_id: str):
 
             AILesson.query.filter(
                 AICourse.course_id == shifu_id,
-                AILesson.lesson_id.in_(publish_outline_ids),
+                AILesson.lesson_id.notin_(publish_outline_ids),
                 AILesson.status.in_([STATUS_PUBLISH]),
-                AILesson.id.notin_(publish_outline_ids),
             ).update(
                 {
                     "status": STATUS_DELETE,
