@@ -423,7 +423,7 @@ def publish_shifu(app, user_id, shifu_id: str):
             )
 
             AILesson.query.filter(
-                AICourse.course_id == shifu_id,
+                AILesson.course_id == shifu_id,
                 AILesson.lesson_id.notin_(publish_outline_ids),
                 AILesson.status.in_([STATUS_PUBLISH]),
             ).update(
