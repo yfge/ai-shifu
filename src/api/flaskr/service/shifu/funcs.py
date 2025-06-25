@@ -174,7 +174,7 @@ def create_shifu(
             created_user_id=user_id,
             updated_user_id=user_id,
             status=STATUS_DRAFT,
-            course_keywords=shifu_keywords,
+            course_keywords=json.dumps(shifu_keywords) if shifu_keywords else "[]",
         )
         check_text_with_risk_control(app, shifu_id, user_id, course.get_str_to_check())
         db.session.add(course)

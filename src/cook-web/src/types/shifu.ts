@@ -1,19 +1,19 @@
 export type BlockType = 'ai' | 'systemprompt' | 'solidcontent';
 
 export interface Shifu {
-    shifu_id: string;
-    shifu_name?: string;
-    shifu_description?: string;
-    shifu_avatar?: string;
+    bid: string;
+    name?: string;
+    description?: string;
+    avatar?: string;
     state?: number;
     is_favorite?: boolean;
 }
 
 export interface Outline {
-    parent_id?: string;
-    parentId?: string;
     id: string;
-    no?: string;
+    bid: string;
+    parent_bid?: string;
+    position?: string;
     name?: string;
     children?: Outline[];
     depth?: number;

@@ -221,14 +221,14 @@ def get_unit_by_id(app, user_id: str, unit_id: str) -> OutlineDto:
         else:
             system_prompt = ""
         return OutlineDto(
-            outline_id=unit.lesson_id,
-            outline_no=unit.lesson_no,
-            outline_name=unit.lesson_name,
-            outline_desc=unit.lesson_desc,
-            outline_index=unit.lesson_index,
-            outline_type=unit_type,
-            outline_system_prompt=system_prompt,
-            outline_is_hidden=hidden,
+            bid=unit.lesson_id,
+            position=unit.lesson_no,
+            name=unit.lesson_name,
+            description=unit.lesson_desc,
+            index=unit.lesson_index,
+            type=unit_type,
+            system_prompt=system_prompt,
+            is_hidden=hidden,
         )
 
 

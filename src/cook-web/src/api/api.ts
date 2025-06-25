@@ -22,8 +22,16 @@ const api = {
   setPassword: 'POST /user/set_user_password',
   submitFeedback: 'POST /user/submit-feedback',
 
-  getShifuList: 'GET /shifu/shifu-list',
-  createShifu: 'POST /shifu/create-shifu',
+  // shifu api start
+  getShifuList: 'GET /shifu/shifus',
+  createShifu: 'PUT /shifu/shifus',
+  getShifuDetail: 'GET /shifu/shifus/{shifu_bid}/detail',
+  saveShifuDetail: 'POST /shifu/shifus/{shifu_bid}/detail',
+
+  publishShifu: 'POST /shifu/shifus/{shifu_bid}/publish',
+  previewShifu: 'POST /shifu/shifus/{shifu_bid}/preview',
+  // shifu api end
+
   getShifuChapters: 'GET /shifu/chapters',
   createChapter: 'POST /shifu/create-chapter',
   createUnit: 'POST /shifu/create-unit',
@@ -31,9 +39,19 @@ const api = {
   deleteUnit: 'POST /shifu/delete-unit',
   markFavoriteShifu: 'POST /shifu/mark-favorite-shifu',
   modifyChapter: 'POST /shifu/modify-chapter',
-  getShifuOutlineTree: 'GET /shifu/outline-tree',
-  getBlocks: 'GET /shifu/blocks',
-  saveBlocks: 'POST /shifu/save-blocks',
+
+  // outline api start
+  getShifuOutlineTree: 'GET /shifu/shifus/{shifu_bid}/outlines',
+  modifyUnit: 'POST /shifu/shifus/{shifu_bid}/outlines/{outline_bid}',
+  getUnitInfo: 'GET /shifu/shifus/{shifu_bid}/outlines/{outline_bid}',
+  // outline api end
+
+  // blocks api
+  getBlocks: 'GET /shifu/shifus/{shifu_bid}/outlines/{outline_bid}/blocks',
+  saveBlocks: 'POST /shifu/shifus/{shifu_bid}/outlines/{outline_bid}/blocks',
+  addBlock: 'PUT /shifu/shifus/{shifu_bid}/outlines/{outline_bid}/blocks',
+  // block api end
+
   getProfile: 'GET /user/get_profile',
   getProfileItemDefinitions: 'GET /profiles/get-profile-item-definitions',
   getProfileItemOptionList:
@@ -42,14 +60,11 @@ const api = {
   getUserInfo: 'GET /user/info',
   updateUserInfo: 'POST /user/update_info',
   updateChapterOrder: 'POST /shifu/update-chapter-order',
-  addBlock: 'POST /shifu/add-block',
-  publishShifu: 'POST /shifu/publish-shifu',
-  previewShifu: 'POST /shifu/preview-shifu',
-  modifyUnit: 'POST /shifu/modify-unit',
-  getUnitInfo: 'GET /shifu/unit-info',
-  getShifuInfo: 'GET /shifu/shifu-info',
-  getShifuDetail: 'GET /shifu/shifu-detail',
-  saveShifuDetail: 'POST /shifu/save-shifu-detail',
+
+  // unit api start
+
+  // unit api end
+
   getModelList: 'GET /llm/model-list',
   getSystemPrompt: 'GET /llm/get-system-prompt',
   debugPrompt: 'GET /llm/debug-prompt',

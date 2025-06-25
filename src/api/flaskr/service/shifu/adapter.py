@@ -416,7 +416,7 @@ def generate_block_dto(block: AILessonScript, profile_items: list[ProfileItem]):
     if block.script_type == SCRIPT_TYPE_FIX:
         ret.block_content = SolidContentDto(
             prompt=markdown_2_html(block.script_prompt),
-            profiles=get_profiles(block.script_profile),
+            variables=get_profiles(block.script_profile),
         )
         ret.block_type = "solid"
     elif block.script_type == SCRIPT_TYPE_PROMPT:

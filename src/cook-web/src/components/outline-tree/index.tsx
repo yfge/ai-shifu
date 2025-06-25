@@ -118,19 +118,21 @@ const MinimalTreeItemComponent = React.forwardRef<
     }
     if (props.item.depth == 0) {
       await actions.createChapter({
-        parent_id: props.item.parentId,
         id: props.item.id,
+        parent_bid: props.item.parent_bid,
+        bid: props.item.bid,
         name: value,
         children: [],
-        no: ''
+        position: ''
       })
     } else if (props.item.depth == 1) {
       await actions.createUnit({
-        parent_id: props.item.parentId,
         id: props.item.id,
+        parent_bid: props.item.parent_bid,
+        bid: props.item.bid,
         name: value,
         children: [],
-        no: ''
+        position: ''
       })
     }
   }
@@ -161,7 +163,7 @@ const MinimalTreeItemComponent = React.forwardRef<
     }
 
     await actions.setCurrentNode(props.item)
-    await actions.loadBlocks(props.item.id || '', currentShifu?.shifu_id || '')
+    await actions.loadBlocks(props.item.id || '', currentShifu?.bid || '')
   }
 
   const handleConfirmDelete = async () => {
@@ -322,7 +324,7 @@ const MinimalTreeItemComponent = React.forwardRef<
         </div>
       </SimpleTreeItemWrapper>
       <ChapterSettingsDialog
-        unitId={props.item.id}
+        outlineBid={props.item.bid}
         open={settingsDialogOpen}
         onOpenChange={setSettingsDialogOpen}
       />
