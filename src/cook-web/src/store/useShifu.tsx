@@ -781,10 +781,12 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
   }
   const replaceOutline = async (id: string, outline: Outline) => {
     const node = findNode(id)
+    console.log('replaceOutline', id, outline, node)
     node.id = outline.id
     node.name = outline.name
     node.position = outline.position
     node.parent_bid = outline.parent_bid
+    node.bid = outline.bid
     if (outline.children && outline.children.length > 0) {
       node.children = outline.children
     }
