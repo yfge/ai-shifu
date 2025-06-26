@@ -221,6 +221,7 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
         id: item.bid,
         name: item.name,
         bid: item.bid,
+        position: item.position,
         children: remapOutlineTree(item.children)
       }
     })
@@ -244,6 +245,7 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
           await loadBlocks(list[0].children[0].bid, shifuId)
         }
       }
+      console.log('loadChapters', list)
       setChapters(list)
       buildOutlineTree(list)
       loadProfileItemDefinations(shifuId)
