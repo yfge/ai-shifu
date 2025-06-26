@@ -7,7 +7,8 @@ import {
   AIBlockProperties,
   SolidContentBlockProperties,
   SaveBlockListResult,
-  ApiResponse
+  ApiResponse,
+  ReorderOutlineItemDto
 } from '../types/shifu'
 import api from '@/api'
 import { useContentTypes } from '@/components/render-block'

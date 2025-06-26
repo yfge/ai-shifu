@@ -60,7 +60,7 @@ const getReorderOutlineDto = (items: TreeItems<Outline>) => {
 
 export const CataTree = React.memo((props: ICataTreeProps) => {
   const { items, onChange } = props
-  const { actions, focusId, currentShifu } = useShifu()
+  const { actions, focusId } = useShifu()
   const onItemsChanged = async (
     data: TreeItems<Outline>,
     reason: ItemChangedReason<Outline>
