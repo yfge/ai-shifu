@@ -62,8 +62,10 @@ const api = {
   getSystemPrompt: 'GET /llm/get-system-prompt',
   debugPrompt: 'GET /llm/debug-prompt',
 
+  // resource api start
   getVideoInfo:'POST /shifu/get-video-info',
   upfileByUrl:'POST /shifu/url-upfile',
+  // resource api end
 
   // profile
 

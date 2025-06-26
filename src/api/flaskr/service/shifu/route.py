@@ -876,7 +876,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
             add_block(app, user_id, outline_bid, block, block_index)
         )
 
-    @app.route(path_prefix + "/shifus/<shifu_id>/upfile", methods=["POST"])
+    @app.route(path_prefix + "/upfile", methods=["POST"])
     def upfile_api():
         """
         upfile to oss
@@ -915,7 +915,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
             raise_param_error("file")
         return make_common_response(upload_file(app, user_id, resource_id, file))
 
-    @app.route(path_prefix + "/shifus/<shifu_id>/url-upfile", methods=["POST"])
+    @app.route(path_prefix + "/url-upfile", methods=["POST"])
     def upload_url_api():
         """
         upload url to oss
@@ -955,7 +955,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
             raise_param_error("url is required")
         return make_common_response(upload_url(app, user_id, url))
 
-    @app.route(path_prefix + "/shifus/<shifu_id>/get-video-info", methods=["POST"])
+    @app.route(path_prefix + "/get-video-info", methods=["POST"])
     def get_video_info_api():
         """
         get video info
