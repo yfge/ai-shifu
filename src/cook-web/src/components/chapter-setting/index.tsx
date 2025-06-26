@@ -21,7 +21,7 @@ const ChapterSettingsDialog = ({ outlineBid, open, onOpenChange }: { outlineBid:
 
     const init = useCallback(async () => {
         setLoading(true);
-        const result = await api.getUnitInfo({
+        const result = await api.getOutlineInfo({
             outline_bid: outlineBid,
             shifu_bid: currentShifu?.bid
         })
@@ -32,7 +32,7 @@ const ChapterSettingsDialog = ({ outlineBid, open, onOpenChange }: { outlineBid:
     }, [outlineBid, currentShifu?.bid]);
 
     const onConfirm = async () => {
-        await api.modifyUnit({
+        await api.modifyOutline({
             "outline_bid": outlineBid,
             "is_hidden": hideChapter,
             "system_prompt": systemPrompt,

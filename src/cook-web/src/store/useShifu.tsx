@@ -608,11 +608,11 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
         setFocusId('')
         setLastSaveTime(new Date())
       } else {
-        await api.modifyChapter({
-          chapter_bid: data.id,
-          chapter_index: index,
-          chapter_description: data.name,
-          chapter_name: data.name,
+        await api.modifyOutline({
+          outline_bid: data.id,
+          index: index,
+          description: data.name,
+          name: data.name,
           shifu_id: currentShifu?.bid || ''
         })
 

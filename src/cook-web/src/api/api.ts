@@ -27,25 +27,19 @@ const api = {
   createShifu: 'PUT /shifu/shifus',
   getShifuDetail: 'GET /shifu/shifus/{shifu_bid}/detail',
   saveShifuDetail: 'POST /shifu/shifus/{shifu_bid}/detail',
-
   publishShifu: 'POST /shifu/shifus/{shifu_bid}/publish',
   previewShifu: 'POST /shifu/shifus/{shifu_bid}/preview',
   // shifu api end
 
-  getShifuChapters: 'GET /shifu/chapters',
-  createChapter: 'POST /shifu/create-chapter',
-  createUnit: 'POST /shifu/create-unit',
-  deleteChapter: 'POST /shifu/delete-chapter',
-  deleteUnit: 'POST /shifu/delete-unit',
   markFavoriteShifu: 'POST /shifu/mark-favorite-shifu',
-  modifyChapter: 'POST /shifu/modify-chapter',
 
   // outline api start
   getShifuOutlineTree: 'GET /shifu/shifus/{shifu_bid}/outlines',
   createOutline: 'PUT /shifu/shifus/{shifu_bid}/outlines',
   deleteOutline: 'DELETE /shifu/shifus/{shifu_bid}/outlines/{outline_bid}',
   modifyOutline: 'POST /shifu/shifus/{shifu_bid}/outlines/{outline_bid}',
-  getUnitInfo: 'GET /shifu/shifus/{shifu_bid}/outlines/{outline_bid}',
+  getOutlineInfo: 'GET /shifu/shifus/{shifu_bid}/outlines/{outline_bid}',
+  reorderOutlineTree: 'POST /shifu/shifus/{shifu_bid}/outlines/reorder',
   // outline api end
 
   // blocks api
@@ -63,9 +57,6 @@ const api = {
   updateUserInfo: 'POST /user/update_info',
   updateChapterOrder: 'POST /shifu/update-chapter-order',
 
-  // unit api start
-
-  // unit api end
 
   getModelList: 'GET /llm/model-list',
   getSystemPrompt: 'GET /llm/get-system-prompt',
