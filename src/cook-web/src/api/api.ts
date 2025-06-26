@@ -39,7 +39,7 @@ const api = {
   deleteOutline: 'DELETE /shifu/shifus/{shifu_bid}/outlines/{outline_bid}',
   modifyOutline: 'POST /shifu/shifus/{shifu_bid}/outlines/{outline_bid}',
   getOutlineInfo: 'GET /shifu/shifus/{shifu_bid}/outlines/{outline_bid}',
-  reorderOutlineTree: 'POST /shifu/shifus/{shifu_bid}/outlines/reorder',
+  reorderOutlineTree: 'PATCH /shifu/shifus/{shifu_bid}/outlines/reorder',
   // outline api end
 
   // blocks api

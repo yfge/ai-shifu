@@ -15,6 +15,7 @@ from flaskr.service.shifu.dtos import (
     GotoSettings,
     EmptyDto,
     BlockUpdateResultDto,
+    ReorderOutlineItemDto,
 )
 from sqlalchemy import func
 from flaskr.i18n import _
@@ -538,3 +539,17 @@ def generate_block_dto(block: AILessonScript, profile_items: list[ProfileItem]):
     elif block.script_ui_type == UI_TYPE_EMPTY:
         ret.block_ui = EmptyDto()
     return ret
+
+
+def convert_outline_to_reorder_outline_item_dto(
+    json_array: list[dict],
+) -> ReorderOutlineItemDto:
+    return [
+        ReorderOutlineItemDto(
+            bid=item.get("bid"),
+            children=convert_outline_to_reorder_outline_item_dto(
+                item.get("children", [])
+            ),
+        )
+        for item in json_array
+    ]

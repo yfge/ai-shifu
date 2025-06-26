@@ -13,7 +13,7 @@ from .funcs import (
     shifu_permission_verification,
 )
 from .outline_funcs import (
-    update_chapter_order,
+    reorder_outline_tree,
     get_outline_tree,
     create_outline,
 )
@@ -436,7 +436,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
             preview_shifu(app, user_id, shifu_bid, variables, skip)
         )
 
-    @app.route(path_prefix + "/shifus/<shifu_bid>/chapters/order", methods=["POST"])
+    @app.route(path_prefix + "/shifus/<shifu_bid>/outlines/reorder", methods=["PATCH"])
     @ShifuTokenValidation(ShifuPermission.EDIT)
     def update_chapter_order_api(shifu_bid: str):
         """
@@ -446,26 +446,17 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         tags:
             - shifu
         parameters:
+            - name: shifu_bid
+              type: string
+              required: true
             - in: body
               name: body
               required: true
               schema:
                 type: object
-                properties:
-                    shifu_id:
-                        type: string
-                        description: shifu id
-                    chapter_ids:
-                        type: array
-                        items:
-                            type: string
-                        description: chapter ids
-                    move_chapter_id:
-                        type: string
-                        description: the chapter id to be moved
-                    move_to_parent_id:
-                        type: string
-                        description: the parent chapter id where the chapter will be moved to
+                $ref: "#/components/schemas/ReorderOutlineDto"
+
+
         responses:
             200:
                 description: update chapter order success
@@ -482,18 +473,16 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                                 data:
                                     type: array
                                     items:
-                                        $ref: "#/components/schemas/ChapterDto"
+                                        $ref: "#/components/schemas/OutlineDto"
         """
         user_id = request.user.user_id
-        chapter_ids = request.get_json().get("chapter_ids")
-        move_chapter_id = request.get_json().get("move_chapter_id")
-        if not move_chapter_id:
-            raise_param_error("move_chapter_id is required")
-        move_to_parent_id = request.get_json().get("move_to_parent_id")
+        outlines = request.get_json().get("outlines")
+        app.logger.info(type(outlines))
+        app.logger.info(
+            f"reorder outline tree, user_id: {user_id}, shifu_bid: {shifu_bid}, outlines: {outlines}"
+        )
         return make_common_response(
-            update_chapter_order(
-                app, user_id, shifu_bid, chapter_ids, move_chapter_id, move_to_parent_id
-            )
+            reorder_outline_tree(app, user_id, shifu_bid, outlines)
         )
 
     @app.route(path_prefix + "/shifus/<shifu_bid>/outlines", methods=["PUT"])

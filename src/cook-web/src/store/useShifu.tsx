@@ -245,7 +245,6 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
           await loadBlocks(list[0].children[0].bid, shifuId)
         }
       }
-      console.log('loadChapters', list)
       setChapters(list)
       buildOutlineTree(list)
       loadProfileItemDefinations(shifuId)
@@ -321,7 +320,6 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
       setIsLoading(true)
       setError(null)
       clearBlockErrors()
-      console.log('loadBlocks', shifuId, outlineId)
       const blocksData = await api.getBlocks({
         shifu_bid: shifuId,
         outline_bid: outlineId
@@ -910,6 +908,12 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
     setBlockErrors({})
   }
 
+  const reorderOutlineTree = async (outlines: ReorderOutlineItemDto[]) => {
+    await api.reorderOutlineTree({
+      shifu_bid: currentShifu?.bid || '',
+      outlines
+    })
+  }
   const value: ShifuContextType = {
     currentShifu,
     chapters,
@@ -961,7 +965,8 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
       setCurrentNode,
       loadModels,
       setBlockError,
-      clearBlockErrors
+      clearBlockErrors,
+      reorderOutlineTree
     }
   }
 

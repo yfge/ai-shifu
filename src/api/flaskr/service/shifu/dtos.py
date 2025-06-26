@@ -689,3 +689,24 @@ class SaveBlockListResultDto:
 
     def __str__(self):
         return str(self.__json__())
+
+
+@register_schema_to_swagger
+class ReorderOutlineItemDto:
+    bid: str
+    children: list["ReorderOutlineItemDto"]
+
+    def __init__(self, bid: str, children: list["ReorderOutlineItemDto"]):
+        self.bid = bid
+        self.children = children
+
+    def __json__(self):
+        return {
+            "bid": self.bid,
+            "children": self.children,
+        }
+
+
+@register_schema_to_swagger
+class ReorderOutlineDto:
+    outlines: list[ReorderOutlineItemDto]

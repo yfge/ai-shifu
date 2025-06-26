@@ -24,6 +24,8 @@ from .utils import (
 import queue
 from flaskr.service.check_risk.funcs import check_text_with_risk_control
 from .unit_funcs import create_unit
+from .dtos import ReorderOutlineItemDto
+from .adapter import convert_outline_to_reorder_outline_item_dto
 
 
 # get chapter list
@@ -436,3 +438,47 @@ def create_outline(
             chapter_index=outline_index,
             chapter_type=outline_type,
         )
+
+
+def convert_reorder_outline_item_dto_to_outline_tree(
+    outlines: list[ReorderOutlineItemDto], existing_outlines_map: dict[str, AILesson]
+):
+    ret = []
+    for outline in outlines:
+        if outline.bid in existing_outlines_map:
+            existing_outline = existing_outlines_map[outline.bid]
+            node = OutlineTreeNode(existing_outline)
+            if outline.children:
+                outline_children = convert_reorder_outline_item_dto_to_outline_tree(
+                    outline.children, existing_outlines_map
+                )
+                for child in outline_children:
+                    node.add_child(child)
+            ret.append(node)
+    return ret
+
+
+def reorder_outline_tree(
+    app, user_id: str, shifu_id: str, outlines: list[ReorderOutlineItemDto]
+):
+    with app.app_context():
+        app.logger.info(
+            f"reorder outline tree, user_id: {user_id}, shifu_id: {shifu_id}, outlines: {outlines}"
+        )
+        existing_outlines = get_existing_outlines(app, shifu_id)
+        new_outline_tree = convert_outline_to_reorder_outline_item_dto(outlines)
+        app.logger.info(f"new_outline_tree: {new_outline_tree}")
+        existing_outlines_map = {o.lesson_id: o for o in existing_outlines}
+        to_save_outlines = convert_reorder_outline_item_dto_to_outline_tree(
+            new_outline_tree, existing_outlines_map
+        )
+        app.logger.info(f"to_save_outlines: {to_save_outlines}")
+        root = OutlineTreeNode(None)
+        for outline in to_save_outlines:
+            app.logger.info(
+                f"add outline: {outline.outline.lesson_id} {outline.outline.lesson_no}"
+            )
+            root.add_child(outline)
+        reorder_outline_tree_and_save(app, root, user_id, datetime.now())
+        db.session.commit()
+        return True

@@ -48,24 +48,29 @@ interface ICataTreeProps {
   onAddNodeClick?: (node: Outline) => void
 }
 
+
+const getReorderOutlineDto = (items: TreeItems<Outline>) => {
+  return items.map(item => {
+    return {
+      bid: item.bid,
+      children: getReorderOutlineDto(item?.children || [])
+    }
+  })
+}
+
 export const CataTree = React.memo((props: ICataTreeProps) => {
   const { items, onChange } = props
-  const { actions, focusId } = useShifu()
+  const { actions, focusId, currentShifu } = useShifu()
   const onItemsChanged = async (
     data: TreeItems<Outline>,
     reason: ItemChangedReason<Outline>
   ) => {
     if (reason.type == 'dropped') {
-      const moveToParentId = reason?.droppedToParent?.id
-      const moveChapterId = reason?.draggedItem?.id
-      let ids
-      if (moveToParentId) {
-        const parent = data.find(item => item.id == moveToParentId)
-        ids = parent?.children?.map(item => item.id) || []
-      } else {
-        ids = data.map(item => item.id)
-      }
-      await actions.updateChapterOrder(moveChapterId, moveToParentId, ids)
+
+      const reorderOutlineDtos = getReorderOutlineDto(data)
+
+      console.log('onItemsChanged', reason, data)
+      await actions.reorderOutlineTree(reorderOutlineDtos)
 
     }
 

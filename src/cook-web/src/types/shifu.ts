@@ -81,6 +81,11 @@ export interface SaveBlockListResult {
     error_messages: Record<string, string>;
 }
 
+export interface ReorderOutlineItemDto {
+    bid: string;
+    children: ReorderOutlineItemDto[];
+}
+
 export interface ShifuActions {
     addChapter: (chapter: Outline) => void;
     loadShifu: (shifuId: string) => Promise<void>;
@@ -113,6 +118,7 @@ export interface ShifuActions {
     loadModels: () => void;
     setBlockError: (blockId: string, error: string | null) => void;
     clearBlockErrors: () => void;
+    reorderOutlineTree: (outlines: ReorderOutlineItemDto[]) => Promise<void>;
 }
 
 export interface ShifuContextType extends ShifuState {
