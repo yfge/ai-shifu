@@ -42,7 +42,9 @@ const api = {
 
   // outline api start
   getShifuOutlineTree: 'GET /shifu/shifus/{shifu_bid}/outlines',
-  modifyUnit: 'POST /shifu/shifus/{shifu_bid}/outlines/{outline_bid}',
+  createOutline: 'PUT /shifu/shifus/{shifu_bid}/outlines',
+  deleteOutline: 'DELETE /shifu/shifus/{shifu_bid}/outlines/{outline_bid}',
+  modifyOutline: 'POST /shifu/shifus/{shifu_bid}/outlines/{outline_bid}',
   getUnitInfo: 'GET /shifu/shifus/{shifu_bid}/outlines/{outline_bid}',
   // outline api end
 

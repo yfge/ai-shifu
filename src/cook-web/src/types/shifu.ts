@@ -13,11 +13,13 @@ export interface Outline {
     id: string;
     bid: string;
     parent_bid?: string;
+    parentId?: string;
     position?: string;
     name?: string;
     children?: Outline[];
     depth?: number;
     status?: 'new' | 'edit' | 'saving';
+    shifu_bid?: string;
 }
 
 export interface Block {
@@ -92,7 +94,7 @@ export interface ShifuActions {
     addSiblingOutline: (item: Outline, name: string) => Promise<void>;
     removeOutline: (item: Outline) => Promise<void>;
     replaceOutline: (id: string, outline: Outline) => Promise<void>;
-    createUnit: (chapter: Outline) => Promise<void>;
+    createOutline: (outline: Outline) => Promise<void>;
     createSiblingUnit: (chapter: Outline) => Promise<void>;
     loadBlocks: (outlineId: string, shifuId: string) => void;
     addBlock: (index: number, type: BlockType, shifuId: string) => void;

@@ -15,9 +15,9 @@ from .funcs import (
 from .outline_funcs import (
     update_chapter_order,
     get_outline_tree,
+    create_outline,
 )
 from .unit_funcs import (
-    create_unit,
     modify_unit,
     delete_unit,
     get_unit_by_id,
@@ -498,46 +498,46 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
 
     @app.route(path_prefix + "/shifus/<shifu_bid>/outlines", methods=["PUT"])
     @ShifuTokenValidation(ShifuPermission.EDIT)
-    def create_unit_api(shifu_bid: str):
+    def create_outline_api(shifu_bid: str):
         """
         create unit
         ---
         tags:
             - shifu
         parameters:
+            - name: shifu_bid
+              type: string
+              required: true
             - in: body
               name: body
               required: true
               schema:
                 type: object
                 properties:
-                    shifu_id:
+                    parent_bid:
                         type: string
-                        description: shifu id
-                    parent_id:
+                        description: parent id
+                    name:
                         type: string
-                        description: chapter id
-                    unit_name:
+                        description: outline name
+                    description:
                         type: string
-                        description: unit name
-                    unit_description:
+                        description: outline description
+                    type:
                         type: string
-                        description: unit description
-                    unit_type:
+                        description: outline type (normal,trial)
+                    system_prompt:
                         type: string
-                        description: unit type (normal,trial)
-                    unit_system_prompt:
-                        type: string
-                        description: unit system prompt
-                    unit_is_hidden:
+                        description: outline system prompt
+                    is_hidden:
                         type: boolean
-                        description: unit is hidden
-                    unit_index:
+                        description: outline is hidden
+                    index:
                         type: integer
-                        description: unit index
+                        description: outline index
         responses:
             200:
-                description: create unit success
+                description: create outline success
                 content:
                     application/json:
                         schema:
@@ -550,28 +550,28 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                                     description: message
                                 data:
                                     type: object
-                                    $ref: "#/components/schemas/OutlineDto"
+                                    $ref: "#/components/schemas/SimpleOutlineDto"
         """
         user_id = request.user.user_id
         parent_bid = request.get_json().get("parent_bid")
-        unit_name = request.get_json().get("unit_name")
-        unit_description = request.get_json().get("unit_description", "")
-        unit_type = request.get_json().get("unit_type", LESSON_TYPE_TRIAL)
-        unit_index = request.get_json().get("unit_index", None)
-        unit_system_prompt = request.get_json().get("unit_system_prompt", None)
-        unit_is_hidden = request.get_json().get("unit_is_hidden", False)
+        name = request.get_json().get("name")
+        description = request.get_json().get("description", "")
+        type = request.get_json().get("type", LESSON_TYPE_TRIAL)
+        index = request.get_json().get("index", None)
+        system_prompt = request.get_json().get("system_prompt", None)
+        is_hidden = request.get_json().get("is_hidden", False)
         return make_common_response(
-            create_unit(
+            create_outline(
                 app,
                 user_id,
                 shifu_bid,
                 parent_bid,
-                unit_name,
-                unit_description,
-                unit_type,
-                unit_index,
-                unit_system_prompt,
-                unit_is_hidden,
+                name,
+                description,
+                index,
+                type,
+                system_prompt,
+                is_hidden,
             )
         )
 
@@ -579,9 +579,9 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         path_prefix + "/shifus/<shifu_bid>/outlines/<outline_bid>", methods=["POST"]
     )
     @ShifuTokenValidation(ShifuPermission.EDIT)
-    def modify_unit_api(shifu_bid: str, outline_bid: str):
+    def modify_outline_api(shifu_bid: str, outline_bid: str):
         """
-        modify unit
+        modify outline
         ---
         tags:
             - shifu
@@ -612,7 +612,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                         description: unit type (normal,trial)
         responses:
             200:
-                description: modify unit success
+                description: modify outline success
                 content:
                     application/json:
                         schema:
@@ -628,23 +628,23 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                                     $ref: "#/components/schemas/OutlineDto"
         """
         user_id = request.user.user_id
-        unit_name = request.get_json().get("name")
-        unit_description = request.get_json().get("description")
-        unit_index = request.get_json().get("index")
-        unit_system_prompt = request.get_json().get("system_prompt", None)
-        unit_is_hidden = request.get_json().get("is_hidden", False)
-        unit_type = request.get_json().get("type", LESSON_TYPE_TRIAL)
+        name = request.get_json().get("name")
+        description = request.get_json().get("description")
+        index = request.get_json().get("index")
+        system_prompt = request.get_json().get("system_prompt", None)
+        is_hidden = request.get_json().get("is_hidden", False)
+        type = request.get_json().get("type", LESSON_TYPE_TRIAL)
         return make_common_response(
             modify_unit(
                 app,
                 user_id,
                 outline_bid,
-                unit_name,
-                unit_description,
-                unit_index,
-                unit_system_prompt,
-                unit_is_hidden,
-                unit_type,
+                name,
+                description,
+                index,
+                system_prompt,
+                is_hidden,
+                type,
             )
         )
 
@@ -683,26 +683,23 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         return make_common_response(get_unit_by_id(app, user_id, outline_bid))
 
     @app.route(
-        path_prefix + "/shifus/<shifu_id>/chapters/<chapter_id>/units/<unit_id>",
+        path_prefix + "/shifus/<shifu_bid>/outlines/<outline_bid>",
         methods=["DELETE"],
     )
     @ShifuTokenValidation(ShifuPermission.EDIT)
-    def delete_unit_api():
+    def delete_unit_api(shifu_bid: str, outline_bid: str):
         """
         delete unit
         ---
         tags:
             - shifu
         parameters:
-            - in: body
-              name: body
+            - name: shifu_bid
+              type: string
               required: true
-              schema:
-                type: object
-                properties:
-                    unit_id:
-                        type: string
-                        description: unit id
+            - name: outline_bid
+              type: string
+              required: true
         responses:
             200:
                 description: delete unit success
@@ -721,8 +718,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                                     description: delete unit success
         """
         user_id = request.user.user_id
-        unit_id = request.get_json().get("unit_id")
-        return make_common_response(delete_unit(app, user_id, unit_id))
+        return make_common_response(delete_unit(app, user_id, outline_bid))
 
     @app.route(path_prefix + "/shifus/<shifu_bid>/outlines", methods=["GET"])
     @ShifuTokenValidation(ShifuPermission.VIEW)

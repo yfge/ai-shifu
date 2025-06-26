@@ -8,7 +8,7 @@ from flaskr.util.uuid import generate_id
 from flaskr.dao import db
 from flaskr.service.common.models import raise_error
 from datetime import datetime
-from flaskr.service.shifu.dtos import UnitDto, OutlineDto
+from flaskr.service.shifu.dtos import UnitDto, OutlineDto, SimpleOutlineDto
 from flaskr.service.lesson.const import (
     LESSON_TYPE_TRIAL,
     LESSON_TYPE_NORMAL,
@@ -23,6 +23,7 @@ from flaskr.service.shifu.utils import (
     get_original_outline_tree,
     OutlineTreeNode,
     reorder_outline_tree_and_save,
+    mark_outline_to_delete,
 )
 
 import queue
@@ -65,7 +66,7 @@ def create_unit(
     unit_index: int = 0,
     unit_system_prompt: str = None,
     unit_is_hidden: bool = False,
-) -> OutlineDto:
+) -> SimpleOutlineDto:
     with app.app_context():
         if len(unit_name) > 20:
             raise_error("SCENARIO.UNIT_NAME_TOO_LONG")
@@ -171,15 +172,7 @@ def create_unit(
 
             db.session.add(unit)
             db.session.commit()
-            return OutlineDto(
-                unit.lesson_id,
-                unit.lesson_no,
-                unit.lesson_name,
-                unit.lesson_desc,
-                unit.lesson_type,
-                unit_system_prompt,
-                unit_is_hidden,
-            )
+            return SimpleOutlineDto(OutlineTreeNode(outline=unit))
         raise_error("SCENARIO.CHAPTER_NOT_FOUND")
 
 
@@ -378,9 +371,10 @@ def delete_unit(app, user_id: str, unit_id: str):
         while not delete_q.empty():
             node = delete_q.get()
             delete_unit_ids.append(node.outline_id)
-            change_outline_status_to_history(node.outline, user_id, time)
+            mark_outline_to_delete(node.outline, user_id, time)
             for child in node.children:
                 delete_q.put(child)
         # reorder the outline tree
         reorder_outline_tree_and_save(app, root, user_id, time)
         db.session.commit()
+        return True

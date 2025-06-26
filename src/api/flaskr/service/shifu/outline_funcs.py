@@ -1,6 +1,6 @@
 from ...dao import db
 from ..lesson.models import AILesson
-from .dtos import ChapterDto
+from .dtos import ChapterDto, SimpleOutlineDto
 from sqlalchemy import func
 from ...util.uuid import generate_id
 from ..common.models import raise_error
@@ -11,7 +11,6 @@ from ..lesson.const import (
     STATUS_HISTORY,
 )
 from datetime import datetime
-from .dtos import SimpleOutlineDto
 from .utils import (
     get_existing_outlines,
     get_existing_blocks,
@@ -24,6 +23,7 @@ from .utils import (
 )
 import queue
 from flaskr.service.check_risk.funcs import check_text_with_risk_control
+from .unit_funcs import create_unit
 
 
 # get chapter list
@@ -115,12 +115,7 @@ def create_chapter(
                 db.session.add(new_outline)
 
         db.session.commit()
-        return ChapterDto(
-            chapter.lesson_id,
-            chapter.lesson_name,
-            chapter.lesson_desc,
-            chapter.lesson_type,
-        )
+        return SimpleOutlineDto(OutlineTreeNode(outline=chapter))
 
 
 # modify chapter
@@ -404,3 +399,40 @@ def update_children_lesson_no(node, parent_lesson_no, start_index, user_id, time
         db.session.add(new_child_outline)
         child.outline = new_child_outline
         update_children_lesson_no(child, child.outline.lesson_no, 0, user_id, time)
+
+
+def create_outline(
+    app,
+    user_id: str,
+    shifu_id: str,
+    parent_id: str,
+    outline_name: str,
+    outline_description: str,
+    outline_index: int = 0,
+    outline_type: int = LESSON_TYPE_TRIAL,
+    system_prompt: str = None,
+    is_hidden: bool = False,
+) -> SimpleOutlineDto:
+    if parent_id:
+        return create_unit(
+            app=app,
+            user_id=user_id,
+            shifu_id=shifu_id,
+            parent_id=parent_id,
+            unit_name=outline_name,
+            unit_description=outline_description,
+            unit_index=outline_index,
+            unit_type=outline_type,
+            unit_system_prompt=None,
+            unit_is_hidden=False,
+        )
+    else:
+        return create_chapter(
+            app=app,
+            user_id=user_id,
+            shifu_id=shifu_id,
+            chapter_name=outline_name,
+            chapter_description=outline_description,
+            chapter_index=outline_index,
+            chapter_type=outline_type,
+        )

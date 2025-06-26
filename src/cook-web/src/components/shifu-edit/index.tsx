@@ -276,8 +276,8 @@ const ScriptEditor = ({ id }: { id: string }) => {
 
   const onAddChapter = () => {
     actions.addChapter({
-      parent_bid: currentShifu?.bid || '',
-      bid: '',
+      parent_bid: '',
+      bid: 'new_chapter',
       id: 'new_chapter',
       name: ``,
       children: [],

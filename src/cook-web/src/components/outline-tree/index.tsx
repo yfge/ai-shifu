@@ -110,31 +110,21 @@ const MinimalTreeItemComponent = React.forwardRef<
         description: '',
         confirmText: t('common.confirm'),
         onConfirm () {
-          actions.removeOutline(props.item)
+          actions.removeOutline({ parent_bid: props.item.parentId, ...props.item })
           actions.setFocusId('')
         }
       })
       return
     }
-    if (props.item.depth == 0) {
-      await actions.createChapter({
-        id: props.item.id,
-        parent_bid: props.item.parent_bid,
-        bid: props.item.bid,
-        name: value,
-        children: [],
-        position: ''
-      })
-    } else if (props.item.depth == 1) {
-      await actions.createUnit({
-        id: props.item.id,
-        parent_bid: props.item.parent_bid,
-        bid: props.item.bid,
-        name: value,
-        children: [],
-        position: ''
-      })
-    }
+    await actions.createOutline({
+      shifu_bid: currentShifu?.bid || '',
+      id: props.item.id,
+      parent_bid: props.item.parent_bid || '',
+      bid: props.item.bid,
+      name: value,
+      children: [],
+      position: ''
+    })
   }
   const onAddNodeClick = (node: Outline) => {
     if (node.depth && node.depth >= 1) {
@@ -163,11 +153,11 @@ const MinimalTreeItemComponent = React.forwardRef<
     }
 
     await actions.setCurrentNode(props.item)
-    await actions.loadBlocks(props.item.id || '', currentShifu?.bid || '')
+    await actions.loadBlocks(props.item.bid || '', currentShifu?.bid || '')
   }
 
   const handleConfirmDelete = async () => {
-    await actions.removeOutline(props.item)
+    await actions.removeOutline({ parent_bid: props.item.parentId, ...props.item })
     setShowDeleteDialog(false)
   }
 
