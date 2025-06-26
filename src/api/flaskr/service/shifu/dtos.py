@@ -36,12 +36,6 @@ class ShifuDto(BaseModel):
             state=shifu_state,
             is_favorite=is_favorite,
         )
-        self.bid = shifu_id
-        self.name = shifu_name
-        self.description = shifu_description
-        self.avatar = shifu_avatar
-        self.state = shifu_state
-        self.is_favorite = is_favorite
 
     def __json__(self):
         return {
@@ -54,17 +48,17 @@ class ShifuDto(BaseModel):
 
 
 @register_schema_to_swagger
-class ShifuDetailDto:
-    bid: str
-    name: str
-    description: str
-    avatar: str
-    keywords: list[str]
-    model: str
-    temperature: float
-    price: float
-    preview_url: str
-    url: str
+class ShifuDetailDto(BaseModel):
+    bid: str = Field(..., description="shifu id", required=False)
+    name: str = Field(..., description="shifu name", required=False)
+    description: str = Field(..., description="shifu description", required=False)
+    avatar: str = Field(..., description="shifu avatar", required=False)
+    keywords: list[str] = Field(..., description="shifu keywords", required=False)
+    model: str = Field(..., description="shifu model", required=False)
+    temperature: float = Field(..., description="shifu temperature", required=False)
+    price: float = Field(..., description="shifu price", required=False)
+    preview_url: str = Field(..., description="shifu preview url", required=False)
+    url: str = Field(..., description="shifu url", required=False)
 
     def __init__(
         self,
@@ -79,16 +73,18 @@ class ShifuDetailDto:
         shifu_preview_url: str,
         shifu_url: str,
     ):
-        self.bid = shifu_id
-        self.name = shifu_name
-        self.description = shifu_description
-        self.avatar = shifu_avatar
-        self.keywords = shifu_keywords
-        self.model = shifu_model
-        self.price = shifu_price
-        self.preview_url = shifu_preview_url
-        self.url = shifu_url
-        self.temperature = shifu_temperature
+        super().__init__(
+            bid=shifu_id,
+            name=shifu_name,
+            description=shifu_description,
+            avatar=shifu_avatar,
+            keywords=shifu_keywords,
+            model=shifu_model,
+            temperature=shifu_temperature,
+            price=shifu_price,
+            preview_url=shifu_preview_url,
+            url=shifu_url,
+        )
 
     def __json__(self):
         return {
@@ -106,11 +102,13 @@ class ShifuDetailDto:
 
 
 @register_schema_to_swagger
-class ChapterDto:
-    chapter_id: str
-    chapter_name: str
-    chapter_description: str
-    chapter_type: int
+class ChapterDto(BaseModel):
+    chapter_id: str = Field(..., description="chapter id", required=False)
+    chapter_name: str = Field(..., description="chapter name", required=False)
+    chapter_description: str = Field(
+        ..., description="chapter description", required=False
+    )
+    chapter_type: int = Field(..., description="chapter type", required=False)
 
     def __init__(
         self,
@@ -119,10 +117,12 @@ class ChapterDto:
         chapter_description: str,
         chapter_type: int,
     ):
-        self.chapter_id = chapter_id
-        self.chapter_name = chapter_name
-        self.chapter_description = chapter_description
-        self.chapter_type = chapter_type
+        super().__init__(
+            chapter_id=chapter_id,
+            chapter_name=chapter_name,
+            chapter_description=chapter_description,
+            chapter_type=chapter_type,
+        )
 
     def __json__(self):
         return {
@@ -134,23 +134,27 @@ class ChapterDto:
 
 
 @register_schema_to_swagger
-class SimpleOutlineDto:
-    bid: str
-    position: str
-    name: str
-    children: list["SimpleOutlineDto"]
+class SimpleOutlineDto(BaseModel):
+    bid: str = Field(..., description="outline id", required=False)
+    position: str = Field(..., description="outline position", required=False)
+    name: str = Field(..., description="outline name", required=False)
+    children: list["SimpleOutlineDto"] = Field(
+        ..., description="outline children", required=False
+    )
 
     def __init__(
         self,
         node: OutlineTreeNode,
     ):
-        self.bid = node.outline_id
-        self.position = node.lesson_no
-        self.name = node.outline.lesson_name
-        self.children = (
-            [SimpleOutlineDto(child) for child in node.children]
-            if node.children
-            else []
+        super().__init__(
+            bid=node.outline_id,
+            position=node.lesson_no,
+            name=node.outline.lesson_name,
+            children=(
+                [SimpleOutlineDto(child) for child in node.children]
+                if node.children
+                else []
+            ),
         )
 
     def __json__(self):
@@ -170,15 +174,15 @@ class UnitDto:
 
 
 @register_schema_to_swagger
-class OutlineDto:
-    bid: str  # outline id
-    position: str  # outline no
-    name: str  # outline name
-    description: str  # outline desc
-    type: str  # outline type (trial,normal)
-    index: int  # outline index
-    system_prompt: str  # outline system prompt
-    is_hidden: bool  # outline is hidden
+class OutlineDto(BaseModel):
+    bid: str = Field(..., description="outline id", required=False)
+    position: str = Field(..., description="outline no", required=False)
+    name: str = Field(..., description="outline name", required=False)
+    description: str = Field(..., description="outline desc", required=False)
+    type: str = Field(..., description="outline type (trial,normal)", required=False)
+    index: int = Field(..., description="outline index", required=False)
+    system_prompt: str = Field(..., description="outline system prompt", required=False)
+    is_hidden: bool = Field(..., description="outline is hidden", required=False)
 
     def __init__(
         self,
@@ -191,21 +195,23 @@ class OutlineDto:
         system_prompt: str = None,
         is_hidden: bool = None,
     ):
-        self.bid = bid
-        self.position = position
-        self.name = name
-        self.description = description
-        self.type = type
-        self.index = index
-        self.system_prompt = system_prompt
-        self.is_hidden = is_hidden
+        super().__init__(
+            bid=bid,
+            position=position,
+            name=name,
+            description=description,
+            type=type,
+            index=index,
+            system_prompt=system_prompt,
+            is_hidden=is_hidden,
+        )
 
     def __json__(self):
         return {
             "bid": self.bid,
             "position": self.position,
             "name": self.name,
-            "desc": self.description,
+            "description": self.description,
             "type": self.type,
             "index": self.index,
             "system_prompt": self.system_prompt,

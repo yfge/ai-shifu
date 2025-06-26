@@ -333,7 +333,8 @@ def modify_unit(
                 unit.lesson_no,
                 unit.lesson_name,
                 unit.lesson_desc,
-                unit.lesson_type,
+                unit_type,
+                unit.lesson_index,
                 unit_system_prompt,
                 unit_is_hidden,
             )

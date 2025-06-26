@@ -27,7 +27,7 @@ export const gen = (option: string) => {
         let body;
 
         const urlParams = url.match(/\{([^}]+)\}/g);
-        const urlParamsMap = params;
+        const urlParamsMap = { ...params };
         if (urlParams) {
             urlParams.forEach(param => {
                 const key = param.replace('{', '').replace('}', '');
