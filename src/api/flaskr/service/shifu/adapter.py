@@ -423,7 +423,7 @@ def generate_block_dto(block: AILessonScript, profile_items: list[ProfileItem]):
     elif block.script_type == SCRIPT_TYPE_PROMPT:
         ret.block_content = AIDto(
             prompt=markdown_2_html(block.script_prompt),
-            profiles=get_profiles(block.script_profile),
+            variables=get_profiles(block.script_profile),
             model=block.script_model,
             temperature=block.script_temperature,
             other_conf=block.script_other_conf,
@@ -432,7 +432,7 @@ def generate_block_dto(block: AILessonScript, profile_items: list[ProfileItem]):
     elif block.script_type == SCRIPT_TYPE_SYSTEM:
         ret.block_content = SystemPromptDto(
             prompt=markdown_2_html(block.script_prompt),
-            profiles=get_profiles(block.script_profile),
+            variables=get_profiles(block.script_profile),
             model=block.script_model,
             temperature=block.script_temperature,
             other_conf=block.script_other_conf,
@@ -444,7 +444,7 @@ def generate_block_dto(block: AILessonScript, profile_items: list[ProfileItem]):
 
         prompt = AIDto(
             prompt=block.script_check_prompt,
-            profiles=get_profiles(block.script_ui_profile),
+            variables=get_profiles(block.script_ui_profile),
             model=block.script_model,
             temperature=block.script_temperature,
             other_conf=block.script_other_conf,

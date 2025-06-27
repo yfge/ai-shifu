@@ -25,7 +25,7 @@ import { useTranslation } from 'react-i18next'
 type EditorProps = {
   content?: string
   isEdit?: boolean
-  profiles?: string[]
+  variables?: string[]
   onChange?: (value: string, isEdit: boolean) => void
   onBlur?: () => void
 }
@@ -33,7 +33,7 @@ type EditorProps = {
 const Editor: React.FC<EditorProps> = ({
   content = '',
   isEdit,
-  profiles = [],
+  variables = [],
   onChange,
   onBlur
 }) => {
@@ -42,7 +42,7 @@ const Editor: React.FC<EditorProps> = ({
   const [selectedOption, setSelectedOption] = useState<SelectedOption>(
     SelectedOption.Empty
   )
-  const [profileList, setProfileList] = useState<string[]>(profiles)
+  const [profileList, setProfileList] = useState<string[]>(variables)
   const [selectContentInfo, setSelectContentInfo] = useState<any>()
   const editorViewRef = useRef<EditorView | null>(null)
 

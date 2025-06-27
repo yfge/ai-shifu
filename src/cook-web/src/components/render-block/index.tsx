@@ -124,7 +124,7 @@ export const useContentTypes = () => {
       name: t('render-block.ai-content'),
       properties: {
         prompt: '',
-        profiles: [],
+        variables: [],
         model: '',
         temperature: '0.40',
         other_conf: ''
@@ -135,7 +135,7 @@ export const useContentTypes = () => {
       name: t('render-block.solid-content'),
       properties: {
         prompt: '',
-        profiles: []
+        variables: []
       }
     }
   ]
