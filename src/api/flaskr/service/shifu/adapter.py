@@ -385,7 +385,7 @@ def update_block_model(
                 block_model.script_model = block_dto.block_ui.prompt.model
 
             block_model.script_ui_profile = (
-                "[" + "][".join(block_dto.block_ui.prompt.profiles) + "]"
+                "[" + "][".join(block_dto.block_ui.prompt.variables) + "]"
             )
             return BlockUpdateResultDto(
                 TextProfileDto(
