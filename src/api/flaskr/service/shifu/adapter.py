@@ -216,9 +216,9 @@ def update_block_model(
         if isinstance(block_dto.block_content, AIDto):
             block_model.script_type = SCRIPT_TYPE_PROMPT
             block_model.script_prompt = html_2_markdown(block_dto.block_content.prompt)
-            if block_dto.block_content.profiles:
+            if block_dto.block_content.variables:
                 block_model.script_profile = (
-                    "[" + "][".join(block_dto.block_content.profiles) + "]"
+                    "[" + "][".join(block_dto.block_content.variables) + "]"
                 )
             if block_dto.block_content.model and block_dto.block_content.model != "":
                 block_model.script_model = block_dto.block_content.model
@@ -230,12 +230,18 @@ def update_block_model(
         elif isinstance(block_dto.block_content, SolidContentDto):
             block_model.script_type = SCRIPT_TYPE_FIX
             block_model.script_prompt = html_2_markdown(block_dto.block_content.prompt)
+            if block_dto.block_content.variables:
+                block_model.script_profile = (
+                    "[" + "][".join(block_dto.block_content.variables) + "]"
+                )
         elif isinstance(block_dto.block_content, SystemPromptDto):
             block_model.script_type = SCRIPT_TYPE_SYSTEM
-            block_model.script_prompt = html_2_markdown(block_dto.block_content.prompt)
-            if block_dto.block_content.profiles:
+            block_model.script_prompt = html_2_markdown(
+                block_dto.block_content.system_prompt
+            )
+            if block_dto.block_content.variables:
                 block_model.script_profile = (
-                    "[" + "][".join(block_dto.block_content.profiles) + "]"
+                    "[" + "][".join(block_dto.block_content.variables) + "]"
                 )
             if block_dto.block_content.model and block_dto.block_content.model != "":
                 block_model.script_model = block_dto.block_content.model
