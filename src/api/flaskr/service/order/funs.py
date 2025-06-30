@@ -152,9 +152,14 @@ def send_order_feishu(app: Flask, record_id: str):
     urser_info = User.query.filter(User.user_id == order_info.user_id).first()
     if not urser_info:
         return
-    course_info = AICourse.query.filter(
-        AICourse.course_id == order_info.course_id
-    ).first()
+    course_info = (
+        AICourse.query.filter(
+            AICourse.course_id == order_info.course_id,
+            AICourse.status.in_([STATUS_PUBLISH]),
+        )
+        .order_by(AICourse.id.desc())
+        .first()
+    )
     if not course_info:
         return
 
