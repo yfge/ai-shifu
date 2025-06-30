@@ -300,6 +300,7 @@ def publish_shifu(app, user_id, shifu_id: str):
             publish_shifu.updated_user_id = user_id
             publish_shifu.updated_at = current_time
             db.session.add(publish_shifu)
+            db.session.flush()
             # deal with draft lessons
             to_publish_lessons = get_existing_outlines_for_publish(app, shifu_id)
             publish_outline_ids = []
