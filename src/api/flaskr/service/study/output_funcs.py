@@ -21,6 +21,77 @@ from ...service.study.const import ROLE_TEACHER
 from ...dao import db
 from .utils import make_script_dto, get_lesson_system
 from flaskr.framework import extensible_generic
+import re
+
+
+def _split_text_with_html_buffering(text):
+    """
+    split text into fragments, html tags will be cached together
+    """
+    # html tag pattern
+    html_pattern = r"<[^>]*>"
+
+    result = []
+    current_buffer = ""
+    i = 0
+
+    while i < len(text):
+        # find next html tag
+        match = re.search(html_pattern, text[i:])
+
+        if match:
+            # find html tag
+            tag_start = i + match.start()
+            tag_end = i + match.end()
+
+            # output plain text before html tag character by character
+            if tag_start > i:
+                plain_text = text[i:tag_start]
+                if plain_text:
+                    for char in plain_text:
+                        result.append(char)
+
+            # cache html tag
+            html_tag = text[tag_start:tag_end]
+            current_buffer += html_tag
+
+            # check if it is a self-closing tag or a start tag
+            if html_tag.endswith("/>") or not re.search(r"</[^>]*>", text[tag_end:]):
+                # self-closing tag or no corresponding end tag, output directly
+                if current_buffer:
+                    result.append(current_buffer)
+                    current_buffer = ""
+            else:
+                # find corresponding end tag
+                tag_name = re.match(r"<(\w+)", html_tag)
+                if tag_name:
+                    tag_name = tag_name.group(1)
+                    end_tag_pattern = rf"</{tag_name}>"
+                    end_match = re.search(end_tag_pattern, text[tag_end:])
+
+                    if end_match:
+                        # find end tag, cache the whole tag pair
+                        end_tag_end = tag_end + end_match.end()
+                        current_buffer += text[tag_end:end_tag_end]
+                        result.append(current_buffer)
+                        current_buffer = ""
+                        i = end_tag_end
+                        continue
+
+            i = tag_end
+        else:
+            # no html tag found, output remaining text character by character
+            remaining_text = text[i:]
+            if remaining_text:
+                for char in remaining_text:
+                    result.append(char)
+            break
+
+    # output remaining cached content
+    if current_buffer:
+        result.append(current_buffer)
+
+    return result
 
 
 def generate_fix_output(
@@ -48,9 +119,11 @@ def generate_fix_output(
         )
         if not prompt:
             prompt = ""
-        for i in prompt:
+        text_segments = _split_text_with_html_buffering(prompt)
+
+        for segment in text_segments:
             msg = make_script_dto(
-                "text", i, script_info.script_id, script_info.lesson_id
+                "text", segment, script_info.script_id, script_info.lesson_id
             )
             yield msg
             time.sleep(0.01)
