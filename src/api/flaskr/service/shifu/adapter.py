@@ -13,8 +13,13 @@ from flaskr.service.shifu.dtos import (
     OutlineEditDto,
     GotoDtoItem,
     GotoSettings,
+    EmptyDto,
+    BlockUpdateResultDto,
+    ReorderOutlineItemDto,
 )
 from sqlalchemy import func
+from flaskr.i18n import _
+from flask import current_app as app
 
 from flaskr.service.lesson.models import AILessonScript
 from flaskr.service.lesson.const import (
@@ -25,11 +30,11 @@ from flaskr.service.lesson.const import (
     UI_TYPE_LOGIN,
     UI_TYPE_PHONE,
     UI_TYPE_CHECKCODE,
-    UI_TYPE_CONTINUED,
     UI_TYPE_SELECTION,
     UI_TYPE_TO_PAY,
     UI_TYPE_BRANCH,
     UI_TYPE_INPUT,
+    UI_TYPE_EMPTY,
 )
 
 from flaskr.service.profile.dtos import (
@@ -49,8 +54,8 @@ import re
 def convert_dict_to_block_dto(block_dict: dict) -> BlockDto:
     type = block_dict.get("type")
     if type != "block":
-        raise_error("SHIFU.INVALID_BLOCK_TYPE")
-    block_info = BlockDto(**block_dict.get("properties"))
+        raise_error(_("SHIFU.INVALID_BLOCK_TYPE"))
+    block_info = BlockDto(**(block_dict.get("properties") or {}))
     block_info.block_ui = None
     block_info.block_content = None
     properties = block_dict.get("properties", {})
@@ -60,34 +65,40 @@ def convert_dict_to_block_dto(block_dict: dict) -> BlockDto:
     if content:
         type = content.get("type")
         if type == "ai":
-            block_info.block_content = AIDto(**content.get("properties"))
+            block_info.block_content = AIDto(**(content.get("properties") or {}))
         elif type == "solidcontent":
-            block_info.block_content = SolidContentDto(**content.get("properties"))
+            block_info.block_content = SolidContentDto(
+                **(content.get("properties") or {})
+            )
         elif type == "systemprompt":
-            block_info.block_content = SystemPromptDto(**content.get("properties"))
+            block_info.block_content = SystemPromptDto(
+                **(content.get("properties") or {})
+            )
         else:
-            raise_error("SCENARIO.INVALID_BLOCK_CONTENT_TYPE")
+            raise_error(_("SHIFU.INVALID_BLOCK_CONTENT_TYPE"))
     ui = properties.get("block_ui")
     if ui:
         type = ui.get("type")
         if type == "button":
-            block_info.block_ui = ButtonDto(**ui.get("properties"))
+            block_info.block_ui = ButtonDto(**(ui.get("properties") or {}))
         elif type == "login":
-            block_info.block_ui = LoginDto(**ui.get("properties"))
+            block_info.block_ui = LoginDto(**(ui.get("properties") or {}))
         elif type == "phone":
-            block_info.block_ui = PhoneDto(**ui.get("properties"))
+            block_info.block_ui = PhoneDto(**(ui.get("properties") or {}))
         elif type == "code":
-            block_info.block_ui = CodeDto(**ui.get("properties"))
+            block_info.block_ui = CodeDto(**(ui.get("properties") or {}))
         elif type == "payment":
-            block_info.block_ui = PaymentDto(**ui.get("properties"))
+            block_info.block_ui = PaymentDto(**(ui.get("properties") or {}))
         elif type == "goto":
-            block_info.block_ui = GotoDto(**ui.get("properties"))
+            block_info.block_ui = GotoDto(**(ui.get("properties") or {}))
         elif type == "option":
-            block_info.block_ui = OptionDto(**ui.get("properties"))
+            block_info.block_ui = OptionDto(**(ui.get("properties") or {}))
         elif type == "textinput":
-            block_info.block_ui = TextInputDto(**ui.get("properties"))
+            block_info.block_ui = TextInputDto(**(ui.get("properties") or {}))
+        elif type == "empty":
+            block_info.block_ui = EmptyDto()
         else:
-            raise_error("SHIFU.INVALID_BLOCK_UI_TYPE")
+            raise_error(_("SHIFU.INVALID_BLOCK_UI_TYPE"))
 
     return block_info
 
@@ -96,22 +107,104 @@ def convert_dict_to_block_dto(block_dict: dict) -> BlockDto:
 def convert_dict_to_outline_edit_dto(outline_dict: dict) -> OutlineEditDto:
     type = outline_dict.get("type")
     if type != "outline":
-        raise_error("SHIFU.INVALID_OUTLINE_TYPE")
-    outline_info = OutlineEditDto(**outline_dict.get("properties"))
+        raise_error(_("SHIFU.INVALID_OUTLINE_TYPE"))
+    outline_info = OutlineEditDto(**(outline_dict.get("properties") or {}))
     return outline_info
 
 
 def check_button_dto(button_dto: ButtonDto):
-    if not button_dto.button_name:
-        raise_error("SHIFU.BUTTON_NAME_REQUIRED")
-    if not button_dto.button_key:
-        raise_error("SHIFU.BUTTON_KEY_REQUIRED")
+    # The button title is allowed to be empty
+    pass
+
+
+def html_2_markdown(content, variables_in_prompt):
+    def video_repl(match):
+        url = match.group("url")
+        title = match.group("title")
+        bvid_match = re.search(r"BV\w+", url)
+        if bvid_match:
+            bvid = bvid_match.group(0)
+            return f'<iframe src="https://player.bilibili.com/player.html?isOutside=true&bvid={bvid}&p=1&high_quality=1" title="{title}" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"></iframe>'  # noqa: E501 E261
+        return url
+
+    def profile_repl(match):
+        var = match.group("var")
+        var = var.strip("{}")
+        if var not in variables_in_prompt:
+            variables_in_prompt.append(var)
+        return f"{{{var}}}"
+
+    def image_repl(match):
+        title = match.group("title")
+        url = match.group("url")
+        scale = match.group("scale")
+        return f"<img src='{url}' alt='{title}' style='width: {scale}%;' />"
+
+    content = re.sub(
+        r'<span\s+data-tag="video"[^>]*data-url="(?P<url>[^"]+)"[^>]*data-title="(?P<title>[^"]+)"[^>]*>[^<]*</span>',
+        video_repl,
+        content,
+    )
+    content = re.sub(
+        r'<span\s+data-tag="profile"[^>]*>(?P<var>\{[^}]+\})</span>',
+        profile_repl,
+        content,
+    )
+    content = re.sub(
+        r'<span\s+data-tag="image"[^>]*data-url="(?P<url>[^"]+)"[^>]*data-title="(?P<title>[^"]+)"[^>]*data-scale="(?P<scale>[^"]+)"[^>]*>[^<]*</span>',
+        image_repl,
+        content,
+    )
+
+    return content
+
+
+def markdown_2_html(content, variables_in_prompt):
+    import re
+
+    def iframe_repl(match):
+        bvid = match.group("bvid")
+        title = match.group("title")
+        return f'<span data-tag="video" data-url="https://www.bilibili.com/video/{bvid}/" data-title="{title}">{title}</span>'
+
+    def profile_repl(match):
+        var = match.group("var")
+        if var not in variables_in_prompt:
+            variables_in_prompt.append(var)
+        return f'<span data-tag="profile">{{{var}}}</span>'
+
+    def image_repl(match):
+        title = match.group("title")
+        url = match.group("url")
+        scale = match.group("scale")
+        return f'<span data-tag="image" data-url="{url}" data-title="{title}" data-scale="{scale}">{title}</span>'
+
+    content = re.sub(
+        r'(?s)<iframe[^>]*src="[^"]*bvid=(?P<bvid>BV\w+)[^"]*"[^>]*title="(?P<title>[^"]*)"[^>]*></iframe>',
+        iframe_repl,
+        content,
+    )
+
+    content = re.sub(
+        r"{(?P<var>[^}]+)}",
+        profile_repl,
+        content,
+    )
+
+    content = re.sub(
+        r'<img[^>]*?src=[\'"](?P<url>[^\'"]+)[\'"][^>]*?alt=[\'"](?P<title>[^\'"]+)[\'"][^>]*?style=[\'"][^>]*?width:\s*(?P<scale>[^%;\s]+)[%;][^>]*?(?:/>|>)',
+        image_repl,
+        content,
+    )
+
+    app.logger.info(f"content: {content}")
+    return content
 
 
 # update block model
 def update_block_model(
-    block_model: AILessonScript, block_dto: BlockDto
-) -> TextProfileDto | SelectProfileDto | None:
+    block_model: AILessonScript, block_dto: BlockDto, new_block: bool = False
+) -> BlockUpdateResultDto:
     block_model.script_name = block_dto.block_name
     block_model.script_desc = block_dto.block_desc
     block_model.script_media_url = ""
@@ -123,43 +216,68 @@ def update_block_model(
     block_model.script_prompt = ""
     block_model.script_profile = ""
     block_model.script_ui_content = ""
+    variables_in_prompt = []
     if block_dto.block_content:
         if isinstance(block_dto.block_content, AIDto):
             block_model.script_type = SCRIPT_TYPE_PROMPT
-            block_model.script_prompt = block_dto.block_content.prompt
-            if block_dto.block_content.profiles:
+
+            block_model.script_prompt = html_2_markdown(
+                block_dto.block_content.prompt, variables_in_prompt
+            )
+            if block_dto.block_content.variables:
                 block_model.script_profile = (
-                    "[" + "][".join(block_dto.block_content.profiles) + "]"
+                    "["
+                    + "][".join(block_dto.block_content.variables + variables_in_prompt)
+                    + "]"
                 )
             if block_dto.block_content.model and block_dto.block_content.model != "":
                 block_model.script_model = block_dto.block_content.model
             if (
-                block_dto.block_content.temprature
-                and block_dto.block_content.temprature != 0
+                block_dto.block_content.temperature
+                and block_dto.block_content.temperature != 0
             ):
-                block_model.script_temprature = block_dto.block_content.temprature
+                block_model.script_temperature = block_dto.block_content.temperature
         elif isinstance(block_dto.block_content, SolidContentDto):
             block_model.script_type = SCRIPT_TYPE_FIX
-            block_model.script_prompt = block_dto.block_content.content
+            block_model.script_prompt = html_2_markdown(
+                block_dto.block_content.prompt, variables_in_prompt
+            )
+            if block_dto.block_content.variables:
+                block_model.script_profile = (
+                    "["
+                    + "][".join(block_dto.block_content.variables + variables_in_prompt)
+                    + "]"
+                )
         elif isinstance(block_dto.block_content, SystemPromptDto):
             block_model.script_type = SCRIPT_TYPE_SYSTEM
-            block_model.script_prompt = block_dto.block_content.prompt
-            if block_dto.block_content.profiles:
+            block_model.script_prompt = html_2_markdown(
+                block_dto.block_content.system_prompt, variables_in_prompt
+            )
+            if block_dto.block_content.variables:
                 block_model.script_profile = (
-                    "[" + "][".join(block_dto.block_content.profiles) + "]"
+                    "["
+                    + "][".join(block_dto.block_content.variables + variables_in_prompt)
+                    + "]"
                 )
             if block_dto.block_content.model and block_dto.block_content.model != "":
                 block_model.script_model = block_dto.block_content.model
             if (
-                block_dto.block_content.temprature
-                and block_dto.block_content.temprature != 0
+                block_dto.block_content.temperature
+                and block_dto.block_content.temperature != 0
             ):
-                block_model.script_temprature = block_dto.block_content.temprature
+                block_model.script_temperature = block_dto.block_content.temperature
         else:
-            raise_error("SHIFU.INVALID_BLOCK_CONTENT_TYPE")
+            return BlockUpdateResultDto(None, _("SHIFU.INVALID_BLOCK_CONTENT_TYPE"))
+        if not new_block and (
+            not block_model.script_prompt or not block_model.script_prompt.strip()
+        ):
+            return BlockUpdateResultDto(None, _("SHIFU.PROMPT_REQUIRED"))
+
     if block_dto.block_ui:
         if isinstance(block_dto.block_ui, LoginDto):
-            check_button_dto(block_dto.block_ui)
+            error_message = check_button_dto(block_dto.block_ui)
+            if error_message:
+                return BlockUpdateResultDto(None, error_message)
             block_model.script_ui_type = UI_TYPE_LOGIN
             block_model.script_ui_content = block_dto.block_ui.button_key
             block_model.script_ui_content = block_dto.block_ui.button_name
@@ -172,12 +290,13 @@ def update_block_model(
             block_model.script_ui_content = block_dto.block_ui.input_key
             block_model.script_ui_content = block_dto.block_ui.input_name
         elif isinstance(block_dto.block_ui, PaymentDto):
-            check_button_dto(block_dto.block_ui)
+            error_message = check_button_dto(block_dto.block_ui)
+            if error_message:
+                return BlockUpdateResultDto(None, error_message)
             block_model.script_ui_type = UI_TYPE_TO_PAY
             block_model.script_ui_content = block_dto.block_ui.button_key
             block_model.script_ui_content = block_dto.block_ui.button_name
         elif isinstance(block_dto.block_ui, GotoDto):
-            from flask import current_app as app
 
             app.logger.info(f"GOTODTO block_dto.block_ui: {block_dto.block_ui}")
             block_model.script_ui_type = UI_TYPE_BRANCH
@@ -198,86 +317,107 @@ def update_block_model(
                 }
             )
         elif isinstance(block_dto.block_ui, ButtonDto):
-            check_button_dto(block_dto.block_ui)
+            error_message = check_button_dto(block_dto.block_ui)
+            if error_message:
+                return BlockUpdateResultDto(None, error_message)
             block_model.script_ui_type = UI_TYPE_BUTTON
             block_model.script_ui_content = block_dto.block_ui.button_key
             block_model.script_ui_content = block_dto.block_ui.button_name
-
         elif isinstance(block_dto.block_ui, OptionDto):
-            if not block_dto.block_ui.option_key:
-                raise_error("SHIFU.OPTION_KEY_REQUIRED")
-            if not block_dto.block_ui.option_name:
-                raise_error("SHIFU.OPTION_NAME_REQUIRED")
-            if not block_dto.block_ui.profile_key:
-                raise_error("SHIFU.PROFILE_KEY_REQUIRED")
+            block_model.script_ui_type = UI_TYPE_SELECTION
+            if not block_dto.block_ui.profile_id:
+                return BlockUpdateResultDto(None, _("SHIFU.PROFILE_KEY_REQUIRED"))
+            profile_option_info = block_dto.profile_info
+            if not profile_option_info:
+                return BlockUpdateResultDto(None, _("SHIFU.PROFILE_NOT_FOUND"))
             for btn in block_dto.block_ui.buttons:
                 if not btn.button_name:
-                    raise_error("SHIFU.BUTTON_NAME_REQUIRED")
+                    return BlockUpdateResultDto(None, _("SHIFU.BUTTON_NAME_REQUIRED"))
                 if not btn.button_key:
-                    raise_error("SHIFU.BUTTON_KEY_REQUIRED")
-            block_model.script_ui_type = UI_TYPE_SELECTION
-            block_model.script_ui_content = block_dto.block_ui.option_key
-            block_model.script_ui_content = block_dto.block_ui.option_name
+                    return BlockUpdateResultDto(None, _("SHIFU.BUTTON_KEY_REQUIRED"))
+
+            block_model.script_ui_content = profile_option_info.profile_key
+            block_dto.block_ui.profile_key = profile_option_info.profile_key
             block_model.script_ui_profile = "[" + block_dto.block_ui.profile_key + "]"
+
+            block_model.script_ui_profile_id = profile_option_info.profile_id
+            block_dto.block_ui.profile_id = profile_option_info.profile_id
             block_model.script_other_conf = json.dumps(
                 {
-                    "var_name": block_dto.block_ui.option_key,
+                    "var_name": profile_option_info.profile_key,
                     "btns": [
                         {
+                            # "label": profile_item_value.name,
+                            # "value": profile_item_value.value,
                             "label": btn.button_name,
                             "value": btn.button_key,
                         }
+                        # for profile_item_value in profile_item_value_list
                         for btn in block_dto.block_ui.buttons
                     ],
                 }
             )
-            return SelectProfileDto(
-                block_dto.block_ui.option_key,
-                block_dto.block_ui.option_name,
-                [
-                    ProfileValueDto(btn.button_name, btn.button_key)
-                    for btn in block_dto.block_ui.buttons
-                ],
+
+            return BlockUpdateResultDto(
+                SelectProfileDto(
+                    profile_option_info.profile_key,
+                    profile_option_info.profile_key,
+                    [
+                        ProfileValueDto(btn.button_name, btn.button_key)
+                        for btn in block_dto.block_ui.buttons
+                    ],
+                )
             )
         elif isinstance(block_dto.block_ui, TextInputDto):
             if not block_dto.block_ui.prompt:
-                raise_error("SHIFU.PROMPT_REQUIRED")
-            if not block_dto.block_ui.input_key:
-                raise_error("SHIFU.INPUT_KEY_REQUIRED")
-            if not block_dto.block_ui.input_name:
-                raise_error("SHIFU.INPUT_NAME_REQUIRED")
-            if not block_dto.block_ui.input_placeholder:
-                raise_error("SHIFU.INPUT_PLACEHOLDER_REQUIRED")
-            from flask import current_app as app
-
+                return BlockUpdateResultDto(None, _("SHIFU.PROMPT_REQUIRED"))
             app.logger.info(f"block_dto.block_ui.prompt: {block_dto.block_ui}")
-
             block_model.script_ui_type = UI_TYPE_INPUT
-            if block_dto.block_ui.input_key:
-                block_model.script_ui_content = block_dto.block_ui.input_key
-            if block_dto.block_ui.input_name:
-                block_model.script_ui_content = block_dto.block_ui.input_name
-            if block_dto.block_ui.input_placeholder:
-                block_model.script_ui_content = block_dto.block_ui.input_placeholder
-            if block_dto.block_ui.prompt:
-                block_model.script_check_prompt = block_dto.block_ui.prompt.prompt
-            if block_dto.block_ui.prompt.model:
+            if not block_dto.block_ui.profile_ids:
+                return BlockUpdateResultDto(None, _("SHIFU.PROFILE_KEY_REQUIRED"))
+            if len(block_dto.block_ui.profile_ids) != 1:
+                return BlockUpdateResultDto(None, _("SHIFU.PROFILE_IDS_NOT_CORRECT"))
+            input_profile_info = block_dto.profile_info
+            if not input_profile_info:
+                return BlockUpdateResultDto(None, _("SHIFU.PROFILE_NOT_FOUND"))
+            input_profile_info.profile_remark = block_dto.block_ui.input_name
+            block_model.script_ui_content = input_profile_info.profile_remark
+            block_model.script_ui_profile_id = input_profile_info.profile_id
+            block_dto.block_ui.input_key = input_profile_info.profile_key
+            # block_dto.block_ui.input_name = input_profile_info.profile_remark
+            block_dto.block_ui.input_placeholder = input_profile_info.profile_remark
+            if (
+                not block_dto.block_ui.prompt
+                or not block_dto.block_ui.prompt.prompt
+                or not block_dto.block_ui.prompt.prompt.strip()
+            ):
+                return BlockUpdateResultDto(None, _("SHIFU.TEXT_INPUT_PROMPT_REQUIRED"))
+            if "json" not in block_dto.block_ui.prompt.prompt.strip().lower():
+                return BlockUpdateResultDto(
+                    None, _("SHIFU.TEXT_INPUT_PROMPT_JSON_REQUIRED")
+                )
+            block_model.script_check_prompt = block_dto.block_ui.prompt.prompt
+            if block_dto.block_ui.prompt.model is not None:
                 block_model.script_model = block_dto.block_ui.prompt.model
 
             block_model.script_ui_profile = (
-                "[" + "][".join(block_dto.block_ui.prompt.profiles) + "]"
+                "[" + "][".join(block_dto.block_ui.prompt.variables) + "]"
             )
-            return TextProfileDto(
-                block_dto.block_ui.input_key,
-                block_dto.block_ui.input_name,
-                block_dto.block_ui.prompt,
-                block_dto.block_ui.input_placeholder,
+            return BlockUpdateResultDto(
+                TextProfileDto(
+                    block_dto.block_ui.input_key,
+                    block_dto.block_ui.input_name,
+                    block_dto.block_ui.prompt,
+                    block_dto.block_ui.input_placeholder,
+                )
             )
+        elif isinstance(block_dto.block_ui, EmptyDto):
+            block_model.script_ui_type = UI_TYPE_EMPTY
         else:
-            raise_error("SHIFU.INVALID_BLOCK_UI_TYPE")
+            return BlockUpdateResultDto(None, _("SHIFU.INVALID_BLOCK_UI_TYPE"))
     else:
-        block_model.script_ui_type = UI_TYPE_CONTINUED
-    return None
+        block_model.script_ui_type = UI_TYPE_EMPTY
+    return BlockUpdateResultDto(None)
 
 
 def get_profiles(profiles: str):
@@ -296,26 +436,28 @@ def generate_block_dto(block: AILessonScript, profile_items: list[ProfileItem]):
         block_index=block.script_index,
     )
 
+    variables_in_prompt = []
     if block.script_type == SCRIPT_TYPE_FIX:
         ret.block_content = SolidContentDto(
-            block.script_prompt, get_profiles(block.script_profile)
+            prompt=markdown_2_html(block.script_prompt, variables_in_prompt),
+            variables=get_profiles(block.script_profile) + variables_in_prompt,
         )
         ret.block_type = "solid"
     elif block.script_type == SCRIPT_TYPE_PROMPT:
         ret.block_content = AIDto(
-            prompt=block.script_prompt,
-            profiles=get_profiles(block.script_profile),
+            prompt=markdown_2_html(block.script_prompt, variables_in_prompt),
+            variables=get_profiles(block.script_profile) + variables_in_prompt,
             model=block.script_model,
-            temprature=block.script_temprature,
+            temperature=block.script_temperature,
             other_conf=block.script_other_conf,
         )
         ret.block_type = "ai"
     elif block.script_type == SCRIPT_TYPE_SYSTEM:
         ret.block_content = SystemPromptDto(
-            prompt=block.script_prompt,
-            profiles=get_profiles(block.script_profile),
+            prompt=markdown_2_html(block.script_prompt, variables_in_prompt),
+            variables=get_profiles(block.script_profile) + variables_in_prompt,
             model=block.script_model,
-            temprature=block.script_temprature,
+            temperature=block.script_temperature,
             other_conf=block.script_other_conf,
         )
         ret.block_type = "system"
@@ -325,9 +467,9 @@ def generate_block_dto(block: AILessonScript, profile_items: list[ProfileItem]):
 
         prompt = AIDto(
             prompt=block.script_check_prompt,
-            profiles=get_profiles(block.script_ui_profile),
+            variables=get_profiles(block.script_ui_profile) + variables_in_prompt,
             model=block.script_model,
-            temprature=block.script_temprature,
+            temperature=block.script_temperature,
             other_conf=block.script_other_conf,
         )
 
@@ -341,6 +483,7 @@ def generate_block_dto(block: AILessonScript, profile_items: list[ProfileItem]):
             input_key = profile_item.profile_key
 
         ret.block_ui = TextInputDto(
+            profile_ids=[block.script_ui_profile_id],
             input_name=block.script_ui_content,
             input_key=input_key,
             input_placeholder=block.script_ui_content,
@@ -381,8 +524,6 @@ def generate_block_dto(block: AILessonScript, profile_items: list[ProfileItem]):
                 ).first()
 
                 if goto_lesson:
-                    from flask import current_app as app
-
                     app.logger.info(
                         f"migrate lark table id: {item.get('lark_table_id', '')} to goto_id: {goto_lesson.lesson_id}"
                     )
@@ -400,8 +541,8 @@ def generate_block_dto(block: AILessonScript, profile_items: list[ProfileItem]):
             button_key=block.script_ui_content,
             goto_settings=GotoSettings(items=items, profile_key=profile_key),
         )
-    elif block.script_ui_type == UI_TYPE_CONTINUED:
-        ret.block_ui = None
+    elif block.script_ui_type == UI_TYPE_EMPTY:
+        ret.block_ui = EmptyDto()
     elif block.script_ui_type == UI_TYPE_TO_PAY:
         ret.block_ui = PaymentDto(block.script_ui_content, block.script_ui_content)
     elif block.script_ui_type == UI_TYPE_SELECTION:
@@ -412,10 +553,26 @@ def generate_block_dto(block: AILessonScript, profile_items: list[ProfileItem]):
             items.append(
                 ButtonDto(button_name=item.get("label"), button_key=item.get("value"))
             )
-        from flask import current_app as app
-
         app.logger.info(f"profile_key: {profile_key}")
         app.logger.info(f"items: {items}")
         app.logger.info(f"block.script_ui_content: {block.script_ui_content}")
-        ret.block_ui = OptionDto(profile_key, profile_key, profile_key, items)
+        ret.block_ui = OptionDto(
+            block.script_ui_profile_id, profile_key, profile_key, profile_key, items
+        )
+    elif block.script_ui_type == UI_TYPE_EMPTY:
+        ret.block_ui = EmptyDto()
     return ret
+
+
+def convert_outline_to_reorder_outline_item_dto(
+    json_array: list[dict],
+) -> ReorderOutlineItemDto:
+    return [
+        ReorderOutlineItemDto(
+            bid=item.get("bid"),
+            children=convert_outline_to_reorder_outline_item_dto(
+                item.get("children", [])
+            ),
+        )
+        for item in json_array
+    ]

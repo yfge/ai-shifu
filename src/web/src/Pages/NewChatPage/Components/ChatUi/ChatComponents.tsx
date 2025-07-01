@@ -1,5 +1,5 @@
-import '@chatui/core/dist/index.css';
-import Chat, { useMessages } from '@chatui/core';
+import '@ai-shifu/chatui/dist/index.css';
+import Chat, { useMessages } from '@ai-shifu/chatui';
 import { LikeOutlined, DislikeOutlined, LikeFilled, DislikeFilled } from '@ant-design/icons';
 import {
   useEffect,
@@ -60,7 +60,7 @@ const createMessage = ({
   interaction_type,
   logid,
   type = CHAT_MESSAGE_TYPE.TEXT,
-  teach_avator,
+  teacher_avatar,
 }) => {
   const mid = id || genUuid();
   if (type === CHAT_MESSAGE_TYPE.LESSON_SEPARATOR) {
@@ -73,7 +73,7 @@ const createMessage = ({
   }
   const position = role === USER_ROLE.STUDENT ? 'right' : 'left';
 
-  let avatar = teach_avator || logoColor120;
+  let avatar = teacher_avatar || logoColor120;
 
   if (role === USER_ROLE.STUDENT) {
     avatar = null;
@@ -92,7 +92,7 @@ const createMessage = ({
   };
 };
 
-const convertMessage = (serverMessage, userInfo, teach_avator) => {
+const convertMessage = (serverMessage, userInfo, teacher_avatar) => {
   if (serverMessage.script_type === CHAT_MESSAGE_TYPE.TEXT) {
     return createMessage({
       id: serverMessage.id,
@@ -102,7 +102,7 @@ const convertMessage = (serverMessage, userInfo, teach_avator) => {
       logid: serverMessage.logid,
       type: serverMessage.script_type,
       userInfo,
-      teach_avator,
+      teacher_avatar,
       isComplete: true,
     });
   } else if (serverMessage.script_type === CHAT_MESSAGE_TYPE.LESSON_SEPARATOR) {
@@ -114,7 +114,7 @@ const convertMessage = (serverMessage, userInfo, teach_avator) => {
       interaction_type: serverMessage.interaction_type,
       logid: serverMessage.logid,
       userInfo,
-      teach_avator,
+      teacher_avatar,
       isComplete: true,
     });
   }
@@ -330,12 +330,14 @@ export const ChatComponents = forwardRef(
         }));
         let lastMsg = null;
         let isEnd = false;
-        let teach_avator = null;
+        let teacher_avatar = null;
         let lastLessonId = messageLessonId;
+        let lastActiveMsg = null;
 
         runScript(chatId, lessonId, val, type, scriptId, async (response) => {
+
           if (response.type === RESP_EVENT_TYPE.TEACHER_AVATOR) {
-            teach_avator = response.content;
+            teacher_avatar = response.content;
           }
 
           const scriptId = response.script_id;
@@ -375,7 +377,7 @@ export const ChatComponents = forwardRef(
                   role: USER_ROLE.TEACHER,
                   content: response.content,
                   userInfo,
-                  teach_avator: teach_avator,
+                  teacher_avatar: teacher_avatar,
                 });
                 appendMsg(lastMsg);
                 lastMsgRef.current = lastMsg;
@@ -389,6 +391,10 @@ export const ChatComponents = forwardRef(
                   lastMsg.logid = response.log_id;
                 }
                 updateMsg(lastMsg.id, lastMsg);
+                // lastMsg = null;
+                lastActiveMsg = lastMsg;
+                lastMsg = null;
+                lastMsgRef.current = null;
               }
               lastMsgRef.current = null;
               if (isEnd) {
@@ -396,12 +402,13 @@ export const ChatComponents = forwardRef(
                 return;
               }
             } else if (response.type === RESP_EVENT_TYPE.ACTIVE) {
-              if (lastMsg) {
-                lastMsg.ext = {
-                  ...lastMsg.ext,
+              if (lastActiveMsg) {
+                lastActiveMsg.ext = {
+                  ...lastActiveMsg.ext,
                   active: convertKeysToCamelCase(response.content),
                 };
-                updateMsg(lastMsg.id, lastMsg);
+                updateMsg(lastActiveMsg.id, lastActiveMsg);
+                lastActiveMsg = null;
               }
             } else if (
               response.type === RESP_EVENT_TYPE.INPUT ||
@@ -504,12 +511,6 @@ export const ChatComponents = forwardRef(
       ]
     );
 
-    const onImageLoaded = useCallback(() => {
-      if (!autoScroll) {
-        return;
-      }
-      scrollToBottom();
-    }, [autoScroll, scrollToBottom]);
 
     useEffect(() => {
       if (!loadedData) {
@@ -541,7 +542,7 @@ export const ChatComponents = forwardRef(
 
       const resp = await getLessonStudyRecord(chapterId);
       const records = resp.data?.records || [];
-      const teach_avator = resp.data?.teach_avator || null;
+      const teacher_avatar = resp.data?.teacher_avatar || null;
       setInitRecords(records);
       const ui = resp.data?.ui || null;
 
@@ -588,7 +589,7 @@ export const ChatComponents = forwardRef(
               logid: v.id,
             },
             userInfo,
-            teach_avator
+            teacher_avatar
           );
           appendMsg(newMessage);
           lastMsg = newMessage;
@@ -808,7 +809,6 @@ export const ChatComponents = forwardRef(
                 content={content}
                 isStreaming={isStreaming}
                 mobileStyle={mobileStyle}
-                onImageLoaded={onImageLoaded}
               />
               {ext?.active && <ActiveMessageControl {...ext.active} />}
               {((msg.isComplete || msg.logid) && msg.position == 'left') && renderMessageContentOperation(msg)}
@@ -817,7 +817,7 @@ export const ChatComponents = forwardRef(
         }
         return <></>;
       },
-      [isStreaming, mobileStyle, onImageLoaded, renderMessageContentOperation]
+      [isStreaming, mobileStyle, renderMessageContentOperation]
     );
 
     const onChatInputSend = useCallback(

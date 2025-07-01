@@ -15,6 +15,10 @@ from flaskr.service.order.consts import (
     DISCOUNT_TYPE_FIXED,
     DISCOUNT_TYPE_PERCENT,
 )
+from flaskr.service.lesson.const import (
+    STATUS_PUBLISH,
+    STATUS_DRAFT,
+)
 from flaskr.service.common.dtos import USER_STATE_PAID, USER_STATE_REGISTERED
 from flaskr.service.user.models import User, UserConversion
 from flaskr.service.active import (
@@ -38,6 +42,17 @@ from ..lesson.const import LESSON_TYPE_TRIAL
 from .pingxx_order import create_pingxx_order
 from .models import Discount
 import pytz
+
+
+def get_course_info(app: Flask, course_id: str) -> AICourse:
+    return (
+        AICourse.query.filter(
+            AICourse.course_id == course_id,
+            AICourse.status.in_([STATUS_PUBLISH]),
+        )
+        .order_by(AICourse.id.desc())
+        .first()
+    )
 
 
 @register_schema_to_swagger
@@ -145,19 +160,17 @@ def send_order_feishu(app: Flask, record_id: str):
     order_info = query_buy_record(app, record_id)
     if order_info is None:
         return
-    urser_info = User.query.filter(User.user_id == order_info.user_id).first()
-    if not urser_info:
+    user_info = User.query.filter(User.user_id == order_info.user_id).first()
+    if not user_info:
         return
-    course_info = AICourse.query.filter(
-        AICourse.course_id == order_info.course_id
-    ).first()
+    course_info = get_course_info(app, order_info.course_id)
     if not course_info:
         return
 
     title = "购买课程通知"
     msgs = []
-    msgs.append("手机号：{}".format(urser_info.mobile))
-    msgs.append("昵称：{}".format(urser_info.name))
+    msgs.append("手机号：{}".format(user_info.mobile))
+    msgs.append("昵称：{}".format(user_info.name))
     msgs.append("课程名称：{}".format(course_info.course_name))
     msgs.append("实付金额：{}".format(order_info.value_to_pay))
     user_convertion = UserConversion.query.filter(
@@ -208,7 +221,7 @@ def init_buy_record(app: Flask, user_id: str, course_id: str, active_id: str = N
     with app.app_context():
         order_timeout_make_new_order = False
         find_active_id = None
-        course_info = AICourse.query.filter(AICourse.course_id == course_id).first()
+        course_info = get_course_info(app, course_id)
         if not course_info:
             raise_error("LESSON.COURSE_NOT_FOUND")
         origin_record = (
@@ -221,7 +234,8 @@ def init_buy_record(app: Flask, user_id: str, course_id: str, active_id: str = N
             .first()
         )
         if origin_record:
-            order_timeout_make_new_order = is_order_has_timeout(app, origin_record)
+            if origin_record.status != BUY_STATUS_SUCCESS:
+                order_timeout_make_new_order = is_order_has_timeout(app, origin_record)
             if order_timeout_make_new_order:
                 # Check if there are any coupons in the order. If there are, make them failure
                 find_active_id = query_to_failure_active(
@@ -324,9 +338,7 @@ def generate_charge(
         ).first()
         if not buy_record:
             raise_error("ORDER.ORDER_NOT_FOUND")
-        course = AICourse.query.filter(
-            AICourse.course_id == buy_record.course_id
-        ).first()
+        course = get_course_info(app, buy_record.course_id)
         if not course:
             raise_error("COURSE.COURSE_NOT_FOUND")
         app.logger.info("buy record found:{}".format(buy_record))
@@ -584,16 +596,21 @@ def success_buy_record(app: Flask, record_id: str):
 
 
 def init_trial_lesson(
-    app: Flask, user_id: str, course_id: str
+    app: Flask, user_id: str, course_id: str, preview_mode: bool = False
 ) -> list[AICourseLessonAttendDTO]:
     app.logger.info(
         "init trial lesson for user:{} course:{}".format(user_id, course_id)
     )
     response = []
+
+    if preview_mode:
+        status = [STATUS_DRAFT]
+    else:
+        status = [STATUS_PUBLISH]
     lessons = AILesson.query.filter(
         AILesson.course_id == course_id,
         AILesson.lesson_type == LESSON_TYPE_TRIAL,
-        AILesson.status == 1,
+        AILesson.status.in_(status),
     ).all()
     app.logger.info("init trial lesson:{}".format(lessons))
     for lesson in lessons:
@@ -652,7 +669,7 @@ def init_trial_lesson_inner(
     lessons = AILesson.query.filter(
         AILesson.course_id == course_id,
         AILesson.lesson_type == LESSON_TYPE_TRIAL,
-        AILesson.status == 1,
+        AILesson.status.in_([STATUS_PUBLISH]),
     ).all()
     response = []
     app.logger.info("init trial lesson:{}".format(lessons))

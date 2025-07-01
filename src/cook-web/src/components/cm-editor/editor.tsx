@@ -11,37 +11,36 @@ import ImageInject from './components/image-inject'
 import VideoInject from './components/video-inject'
 import ProfileInject from './components/profile-inject'
 import { SelectedOption, IEditorContext } from './type'
-
 import './index.css'
 
 import {
-  profilePlaceholders,
+  variablePlaceholders,
   imgPlaceholders,
   videoPlaceholders,
-  createSlashCommands
+  createSlashCommands,
+  parseContentInfo,
+  getProfileKeyListFromContent
 } from './util'
 import { useTranslation } from 'react-i18next'
 
 type EditorProps = {
   content?: string
   isEdit?: boolean
-  profiles?: string[]
-  onChange?: (value: string, isEdit: boolean) => void
+  onChange?: (value: string, variables: string[], isEdit: boolean) => void
+  onBlur?: () => void
 }
 
 const Editor: React.FC<EditorProps> = ({
   content = '',
   isEdit,
-  profiles = [],
-  onChange
+  onChange,
+  onBlur
 }) => {
-  console.log('content', content)
-  const { t } = useTranslation();
+  const { t } = useTranslation()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedOption, setSelectedOption] = useState<SelectedOption>(
     SelectedOption.Empty
   )
-  const [profileList, setProfileList] = useState<string[]>(profiles)
   const [selectContentInfo, setSelectContentInfo] = useState<any>()
   const editorViewRef = useRef<EditorView | null>(null)
 
@@ -50,8 +49,6 @@ const Editor: React.FC<EditorProps> = ({
     setSelectedOption,
     dialogOpen,
     setDialogOpen,
-    profileList,
-    setProfileList
   }
 
   const onSelectedOption = useCallback((selectedOption: SelectedOption) => {
@@ -90,10 +87,9 @@ const Editor: React.FC<EditorProps> = ({
     })
   }, [selectContentInfo, editorViewRef])
 
-
   const handleSelectProfile = useCallback(
     (profile: Profile) => {
-      const textToInsert = `{${profile.profile_key}}`
+      const textToInsert = `<span data-tag="profile">{${profile.profile_key}}</span>`
       if (selectContentInfo?.type === SelectedOption.Profile) {
         deleteSelectedContent()
         if (!editorViewRef.current) return
@@ -111,8 +107,17 @@ const Editor: React.FC<EditorProps> = ({
   )
 
   const handleSelectImage = useCallback(
-    (resourceUrl: string) => {
-      const textToInsert = resourceUrl
+    ({
+      resourceUrl,
+      resourceTitle,
+      resourceScale
+    }: {
+      resourceUrl?: string
+      resourceTitle?: string
+      resourceScale?: number
+    }) => {
+      // const textToInsert = resourceUrl
+      const textToInsert = `<span data-tag="image" data-url="${resourceUrl}" data-title="${resourceTitle}" data-scale="${resourceScale}">${resourceTitle}</span>`
       if (selectContentInfo?.type === SelectedOption.Image) {
         deleteSelectedContent()
         if (!editorViewRef.current) return
@@ -129,8 +134,15 @@ const Editor: React.FC<EditorProps> = ({
   )
 
   const handleSelectVideo = useCallback(
-    (resourceUrl: string) => {
-      const textToInsert = resourceUrl
+    ({
+      resourceUrl,
+      resourceTitle
+    }: {
+      resourceUrl: string
+      resourceTitle: string
+    }) => {
+      // const textToInsert = resourceUrl
+      const textToInsert = `<span data-tag="video" data-url="${resourceUrl}" data-title="${resourceTitle}">${resourceTitle}</span>`
       if (selectContentInfo?.type === SelectedOption.Video) {
         deleteSelectedContent()
         if (!editorViewRef.current) return
@@ -156,20 +168,19 @@ const Editor: React.FC<EditorProps> = ({
     editorViewRef.current = view
   }, [])
 
-  const handleTagClick = useCallback(
-    (event: any) => {
-      const { type, content, from, to } = event.detail
-      setSelectContentInfo({
-        type,
-        content,
-        from,
-        to
-      })
-      setSelectedOption(type)
-      setDialogOpen(true)
-    },
-    [setSelectedOption, setDialogOpen]
-  )
+  const handleTagClick = useCallback((event: any) => {
+    event.stopPropagation()
+    const { type, from, to, dataset } = event.detail
+    const value = parseContentInfo(type, dataset)
+    setSelectContentInfo({
+      type,
+      value,
+      from,
+      to
+    })
+    setSelectedOption(type)
+    setDialogOpen(true)
+  }, [])
 
   useEffect(() => {
     if (!dialogOpen) {
@@ -179,12 +190,16 @@ const Editor: React.FC<EditorProps> = ({
   }, [dialogOpen])
 
   useEffect(() => {
-    window.addEventListener('globalTagClick', handleTagClick)
-
-    return () => {
-      window.removeEventListener('globalTagClick', handleTagClick)
+    const handleWrap = (e: any) => {
+      if (e.detail.view === editorViewRef.current) {
+        handleTagClick(e);
+      }
     }
-  }, [handleTagClick])
+    window.addEventListener('globalTagClick', handleWrap)
+    return () => {
+      window.removeEventListener('globalTagClick', handleWrap)
+    }
+  }, [])
 
   return (
     <>
@@ -195,7 +210,7 @@ const Editor: React.FC<EditorProps> = ({
               extensions={[
                 EditorView.lineWrapping,
                 slashCommandsExtension(),
-                profilePlaceholders,
+                variablePlaceholders,
                 imgPlaceholders,
                 videoPlaceholders,
                 EditorView.updateListener.of(update => {
@@ -209,38 +224,39 @@ const Editor: React.FC<EditorProps> = ({
                 highlightActiveLineGutter: false,
                 foldGutter: false
               }}
-              className='border rounded-md'
+              className='rounded-md'
               placeholder={t('cm-editor.input-slash-to-insert-content')}
               value={content}
               theme='light'
-              height='10em'
+              minHeight='2rem'
               onChange={(value: string) => {
-                onChange?.(value, isEdit || false)
+                onChange?.(value, getProfileKeyListFromContent(value), isEdit || false)
               }}
+              onBlur={onBlur}
             />
             <CustomDialog>
               {selectedOption === SelectedOption.Profile && (
                 <ProfileInject
-                  value={selectContentInfo?.content}
+                  value={selectContentInfo?.value}
                   onSelect={handleSelectProfile}
                 />
               )}
               {selectedOption === SelectedOption.Image && (
                 <ImageInject
-                  value={selectContentInfo?.content}
+                  value={selectContentInfo?.value}
                   onSelect={handleSelectImage}
                 />
               )}
               {selectedOption === SelectedOption.Video && (
                 <VideoInject
-                  value={selectContentInfo?.content}
+                  value={selectContentInfo?.value}
                   onSelect={handleSelectVideo}
                 />
               )}
             </CustomDialog>
           </>
         ) : (
-          <div className='w-full p-2 rounded cursor-pointer font-mono break-words'>
+          <div className='w-full p-2 rounded cursor-pointer font-mono break-words whitespace-pre-wrap'>
             {content}
           </div>
         )}
@@ -248,4 +264,5 @@ const Editor: React.FC<EditorProps> = ({
     </>
   )
 }
+
 export default Editor

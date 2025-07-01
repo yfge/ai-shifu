@@ -22,6 +22,7 @@ from .dtos import (
     TextProfileDto,
     SelectProfileDto,
     ProfileValueDto,
+    ProfileOptionListDto,
 )
 from flaskr.i18n import _, get_current_language
 
@@ -124,20 +125,8 @@ def get_profile_item_definition_option_list(
     app: Flask, parent_id: str
 ) -> list[ProfileValueDto]:
     with app.app_context():
-        profile_option_list = (
-            ProfileItemValue.query.filter(
-                ProfileItemValue.profile_id == parent_id, ProfileItemValue.status == 1
-            )
-            .order_by(ProfileItemValue.profile_value_index.asc())
-            .all()
-        )
-        return [
-            ProfileValueDto(
-                profile_option.profile_value,
-                profile_option.profile_value,
-            )
-            for profile_option in profile_option_list
-        ]
+        current_language = get_current_language()
+        return get_profile_option_list(app, parent_id, current_language)
 
 
 # quick add profile item
@@ -524,7 +513,7 @@ def save_profile_item_defination(
                 profile_color_setting=str(get_next_corlor_setting(scenario_id)),
                 profile_prompt=profile.profile_prompt.prompt,
                 profile_prompt_model=profile.profile_prompt.model,
-                profile_prompt_model_args=str(profile.profile_prompt.temprature),
+                profile_prompt_model_args=str(profile.profile_prompt.temperature),
                 created_by=user_id,
                 updated_by=user_id,
                 updated=datetime.now(),
@@ -537,24 +526,11 @@ def save_profile_item_defination(
             profile_item.profile_prompt = profile.profile_prompt.prompt
             profile_item.profile_prompt_model = profile.profile_prompt.model
             profile_item.profile_prompt_model_args = str(
-                profile.profile_prompt.temprature
+                profile.profile_prompt.temperature
             )
 
             profile_item.profile_raw_prompt = profile.profile_prompt.prompt
-            profile_item.profile_prompt = f"""
-            从用户输入的内容中提取{profile.profile_key}
-            这个{profile.profile_key}的详细定义是：
-
-            {profile.profile_prompt.prompt}
-
-            如果输入中含有{profile.profile_key},
-
-            请根据用户输入的内容，提取出{profile.profile_key},
-            请直接返回JSON `{{{{"result": "ok", "parse_vars": "{profile.profile_key}": "解析出的{profile.profile_key}"}}}}`,
-            如果输入中不含有{profile.profile_key}，请直接返回JSON `{{{{"result": "illegal", "reason":"具体不合法的原因,并提示用户再次输入"}}}}`
-            无论是否合法，都只返回 JSON,不要输出思考过程。
-
-            用户输入是：`{{input}}`"""
+            profile_item.profile_prompt = profile.profile_prompt.prompt
 
             app.logger.info(
                 "save text profile item defination:{}".format(
@@ -606,7 +582,6 @@ def save_profile_item_defination(
             app.logger.info(
                 "update select profile item defination:{}".format(profile_item)
             )
-
         app.logger.info("save select profile item defination:{}".format(profile_item))
         profile_item_id_list = []
         profile_item_value_list = ProfileItemValue.query.filter(
@@ -650,3 +625,69 @@ def save_profile_item_defination(
         ).update({"status": 0})
         db.session.flush()
     return profile_item
+
+
+def get_profile_info(app: Flask, profile_id: str):
+    profile_item = ProfileItem.query.filter(
+        ProfileItem.profile_id == profile_id,
+        ProfileItem.status == 1,
+    ).first()
+    if not profile_item:
+        return None
+    return profile_item
+
+
+def get_profile_option_info(app: Flask, profile_id: str, language: str):
+    profile_item = ProfileItem.query.filter(
+        ProfileItem.profile_id == profile_id,
+        ProfileItem.status == 1,
+    ).first()
+    if not profile_item:
+        return None
+    profile_option_list = get_profile_option_list(app, profile_id, language)
+    return ProfileOptionListDto(
+        info=profile_item,
+        list=profile_option_list,
+    )
+
+
+def get_profile_option_list(app: Flask, profile_id: str, language: str):
+    profile_option_list = (
+        ProfileItemValue.query.filter(
+            ProfileItemValue.profile_id == profile_id, ProfileItemValue.status == 1
+        )
+        .order_by(ProfileItemValue.profile_value_index.asc())
+        .all()
+    )
+    if profile_option_list:
+        profile_item_value_i18n_list = ProfileItemI18n.query.filter(
+            ProfileItemI18n.parent_id.in_(
+                [item.profile_item_id for item in profile_option_list]
+            ),
+            ProfileItemI18n.conf_type == PROFILE_CONF_TYPE_ITEM,
+        ).all()
+
+        available_languages = set(
+            item.language for item in profile_item_value_i18n_list
+        )
+
+        if len(available_languages) == 1 and language not in available_languages:
+            language = list(available_languages)[0]
+
+        profile_item_value_i18n_map = {
+            (item.parent_id, item.language): item
+            for item in profile_item_value_i18n_list
+        }
+    else:
+        profile_item_value_i18n_map = {}
+        profile_option_list = []
+    return [
+        ProfileValueDto(
+            name=profile_item_value_i18n_map.get(
+                (profile_option.profile_item_id, language), ProfileItemI18n()
+            ).profile_item_remark
+            or "",
+            value=profile_option.profile_value,
+        )
+        for profile_option in profile_option_list
+    ]

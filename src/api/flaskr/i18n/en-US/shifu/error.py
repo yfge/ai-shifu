@@ -11,8 +11,11 @@ BUTTON_KEY_REQUIRED = "button key is required"
 OPTION_KEY_REQUIRED = "option key is required"
 OPTION_NAME_REQUIRED = "option name is required"
 PROFILE_KEY_REQUIRED = "profile key is required"
+PROFILE_TYPE_NOT_MATCH = "profile type not match"
+PROFILE_NOT_FOUND = "profile not found"
+PROFILE_IDS_NOT_CORRECT = "profile ids not correct"
 PROMPT_REQUIRED = "prompt is required"
-INPUT_KEY_REQUIRED = "input key is required"
+INPUT_KEY_REQUIRED = "input variable name is required"
 INPUT_NAME_REQUIRED = "input name is required"
 INPUT_PLACEHOLDER_REQUIRED = "input placeholder is required"
 SHIFU_NAME_TOO_LONG = "shifu name is too long (max 20 characters)"
@@ -32,3 +35,5 @@ SHIFU_BLOCK_DESCRIPTION_TOO_LONG = (
 SHIFU_BLOCK_DESCRIPTION_TOO_SHORT = (
     "shifu block description is too short (min 10 characters)"
 )
+TEXT_INPUT_PROMPT_REQUIRED = "text input prompt is required"
+TEXT_INPUT_PROMPT_JSON_REQUIRED = "User input content will be parsed as JSON format. Please ensure the prompt contains the keyword 'JSON'."

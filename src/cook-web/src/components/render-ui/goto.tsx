@@ -7,6 +7,8 @@ import { Outline } from '@/types/shifu'
 import api from '@/api'
 import { Button } from '../ui/button'
 import { useTranslation } from 'react-i18next';
+import { memo } from 'react'
+import _ from 'lodash'
 interface ColorSetting {
     color: string;
     text_color: string;
@@ -33,10 +35,34 @@ interface GotoProps {
         "button_key": string
     }
     onChange: (properties: any) => void
+    onChanged?: (changed: boolean) => void
 }
 
-export default function Goto(props: GotoProps) {
-    const { properties } = props
+const GotoPropsEqual = (prevProps: GotoProps, nextProps: GotoProps) => {
+    if (! _.isEqual(prevProps.properties, nextProps.properties)) {
+        return false
+    }
+    if (!_.isEqual(prevProps.properties.goto_settings.profile_key, nextProps.properties.goto_settings.profile_key)) {
+        return false
+    }
+
+    if (!_.isEqual(prevProps.properties.goto_settings.items, nextProps.properties.goto_settings.items)) {
+        return false
+    }
+    for (let i = 0; i < prevProps.properties.goto_settings.items.length; i++) {
+        if (!_.isEqual(prevProps.properties.goto_settings.items[i].value, nextProps.properties.goto_settings.items[i].value)
+            || !_.isEqual(prevProps.properties.goto_settings.items[i].goto_id, nextProps.properties.goto_settings.items[i].goto_id)
+            || !_.isEqual(prevProps.properties.goto_settings.items[i].type, nextProps.properties.goto_settings.items[i].type)
+        ) {
+            return false
+        }
+    }
+
+    return true
+}
+export default memo(function Goto(props: GotoProps) {
+    const { properties, onChanged } = props
+    const [changed, setChanged] = useState(false);
     const { t } = useTranslation();
     const { chapters, currentShifu } = useShifu();
 
@@ -48,6 +74,7 @@ export default function Goto(props: GotoProps) {
     });
 
     const onNodeSelect = (index: number, node: Outline) => {
+
         setTempGotoSettings({
             ...tempGotoSettings,
             items: tempGotoSettings.items.map((item, i) => {
@@ -71,7 +98,7 @@ export default function Goto(props: GotoProps) {
 
     const loadProfileItemDefinations = async (preserveSelection: boolean = false) => {
         const list = await api.getProfileItemDefinitions({
-            parent_id: currentShifu?.shifu_id
+            parent_id: currentShifu?.bid
         })
         setProfileItemDefinations(list)
 
@@ -88,7 +115,6 @@ export default function Goto(props: GotoProps) {
         const list = await api.getProfileItemOptionList({
             parent_id: id
         })
-        // 更新临时变量
         setTempGotoSettings({
             profile_key: name,
             items: list.map((item) => {
@@ -106,6 +132,10 @@ export default function Goto(props: GotoProps) {
     }, [])
 
     const handleValueChange = async (value: string) => {
+        if (!changed) {
+            setChanged(true);
+            onChanged?.(true);
+        }
         const selectedItem = profileItemDefinations.find((item) => item.profile_id === value);
         if (selectedItem) {
             setSelectedProfile(selectedItem);
@@ -174,4 +204,4 @@ export default function Goto(props: GotoProps) {
             </div>
         </div>
     )
-}
+},GotoPropsEqual)

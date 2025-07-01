@@ -65,13 +65,10 @@
       }
 
       &>p {
-        margin-bottom: 1.5em;
-
+        margin-bottom: 1em;
         &:last-child {
           margin-bottom: 0;
         }
-
-        margin-bottom: 1em;
       }
 
       :global(.ant-image) {
@@ -84,6 +81,11 @@
       white-space: normal;
       padding-inline-start: 1em;
       margin: 0;
+
+      margin-bottom: 1em;
+      &:last-child {
+        margin-bottom: 0;
+      }
 
       :global(li) {
         margin-top: 0.5em;
@@ -164,4 +166,33 @@
 
 .brandcolor {
   color: var(--color-21);
+}
+
+:global(.scroll-more) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 130px;
+  z-index: 10;
+
+  :global(.scroll-more-btn) {
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .8);
+    box-shadow: 2px 4px 12px rgba(0, 0, 0, 0.6);
+    border: 0;
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    color: var(--brand-1);
+    font-size: var(--font-size-sm);
+  }
+
+  :global(.scroll-more-icon) {
+    transform: rotate(90deg);
+    font-size: 24px;
+    color: rgba(0, 0, 0, .45);
+  }
 }

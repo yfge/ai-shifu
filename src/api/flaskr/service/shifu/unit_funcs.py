@@ -8,7 +8,7 @@ from flaskr.util.uuid import generate_id
 from flaskr.dao import db
 from flaskr.service.common.models import raise_error
 from datetime import datetime
-from flaskr.service.shifu.dtos import UnitDto, OutlineDto
+from flaskr.service.shifu.dtos import UnitDto, OutlineDto, SimpleOutlineDto
 from flaskr.service.lesson.const import (
     LESSON_TYPE_TRIAL,
     LESSON_TYPE_NORMAL,
@@ -16,8 +16,6 @@ from flaskr.service.lesson.const import (
     SCRIPT_TYPE_SYSTEM,
 )
 from flaskr.service.shifu.const import UNIT_TYPE_TRIAL, UNIT_TYPE_NORMAL
-from sqlalchemy.sql import func, cast
-from sqlalchemy import String
 from flaskr.service.check_risk.funcs import check_text_with_risk_control
 from flaskr.service.shifu.utils import (
     get_existing_outlines,
@@ -25,6 +23,7 @@ from flaskr.service.shifu.utils import (
     get_original_outline_tree,
     OutlineTreeNode,
     reorder_outline_tree_and_save,
+    mark_outline_to_delete,
 )
 
 import queue
@@ -67,7 +66,7 @@ def create_unit(
     unit_index: int = 0,
     unit_system_prompt: str = None,
     unit_is_hidden: bool = False,
-) -> OutlineDto:
+) -> SimpleOutlineDto:
     with app.app_context():
         if len(unit_name) > 20:
             raise_error("SCENARIO.UNIT_NAME_TOO_LONG")
@@ -87,10 +86,39 @@ def create_unit(
             app.logger.info(
                 f"create unit, user_id: {user_id}, shifu_id: {shifu_id}, parent_id: {parent_id}, unit_index: {unit_index}"
             )
+
+            chapter_units = [
+                unit for unit in existing_outlines if unit.parent_id == parent_id
+            ]
+            chapter_units.sort(key=lambda x: x.lesson_no)
+
+            max_lesson_index = (
+                max([unit.lesson_index for unit in chapter_units])
+                if chapter_units
+                else 0
+            )
+            new_lesson_index = max_lesson_index + 1
+
+            if not chapter_units:
+                unit_no = chapter.lesson_no + "01"
+            else:
+                if unit_index >= len(chapter_units):
+                    last_unit_no = chapter_units[-1].lesson_no[-2:]
+                    unit_no = chapter.lesson_no + f"{int(last_unit_no) + 1:02d}"
+                else:
+                    next_unit_no = chapter_units[unit_index].lesson_no[-2:]
+                    unit_no = chapter.lesson_no + next_unit_no
+
+                    for unit in chapter_units[unit_index:]:
+                        current_unit_no = unit.lesson_no[-2:]
+                        unit.lesson_no = (
+                            chapter.lesson_no + f"{int(current_unit_no) + 1:02d}"
+                        )
+                        db.session.add(unit)
+
             unit_id = generate_id(app)
-            unit_no = chapter.lesson_no + f"{unit_index + 1:02d}"
             app.logger.info(
-                f"create unit, user_id: {user_id}, shifu_id: {shifu_id}, parent_id: {parent_id}, unit_no: {unit_no} unit_index: {unit_index}"
+                f"create unit, user_id: {user_id}, shifu_id: {shifu_id}, parent_id: {parent_id}, unit_no: {unit_no} unit_index: {new_lesson_index}"
             )
 
             type = LESSON_TYPE_TRIAL
@@ -98,7 +126,6 @@ def create_unit(
                 type = LESSON_TYPE_NORMAL
             elif unit_type == UNIT_TYPE_TRIAL:
                 type = LESSON_TYPE_TRIAL
-
             if unit_is_hidden:
                 type = LESSON_TYPE_BRANCH_HIDDEN
 
@@ -111,24 +138,11 @@ def create_unit(
                 created_user_id=user_id,
                 updated_user_id=user_id,
                 status=STATUS_DRAFT,
-                lesson_index=unit_index,
+                lesson_index=new_lesson_index,
                 lesson_type=type,
                 parent_id=parent_id,
             )
             check_text_with_risk_control(app, unit_id, user_id, unit.get_str_to_check())
-            AILesson.query.filter(
-                AILesson.course_id == shifu_id,
-                AILesson.status.in_([STATUS_PUBLISH, STATUS_DRAFT]),
-                AILesson.parent_id == parent_id,
-                AILesson.lesson_index >= unit_index,
-                AILesson.lesson_id != unit_id,
-            ).update(
-                {
-                    "lesson_index": AILesson.lesson_index + 1,
-                    "lesson_no": chapter.lesson_no
-                    + func.lpad(cast(AILesson.lesson_index + 1, String), 2, "0"),
-                }
-            )
 
             if unit_system_prompt:
                 system_script = AILessonScript.query.filter(
@@ -158,15 +172,7 @@ def create_unit(
 
             db.session.add(unit)
             db.session.commit()
-            return OutlineDto(
-                unit.lesson_id,
-                unit.lesson_no,
-                unit.lesson_name,
-                unit.lesson_desc,
-                unit.lesson_type,
-                unit_system_prompt,
-                unit_is_hidden,
-            )
+            return SimpleOutlineDto(OutlineTreeNode(outline=unit))
         raise_error("SCENARIO.CHAPTER_NOT_FOUND")
 
 
@@ -208,14 +214,14 @@ def get_unit_by_id(app, user_id: str, unit_id: str) -> OutlineDto:
         else:
             system_prompt = ""
         return OutlineDto(
-            outline_id=unit.lesson_id,
-            outline_no=unit.lesson_no,
-            outline_name=unit.lesson_name,
-            outline_desc=unit.lesson_desc,
-            outline_index=unit.lesson_index,
-            outline_type=unit_type,
-            outline_system_prompt=system_prompt,
-            outline_is_hidden=hidden,
+            bid=unit.lesson_id,
+            position=unit.lesson_no,
+            name=unit.lesson_name,
+            description=unit.lesson_desc,
+            index=unit.lesson_index,
+            type=unit_type,
+            system_prompt=system_prompt,
+            is_hidden=hidden,
         )
 
 
@@ -322,14 +328,17 @@ def modify_unit(
                         )
 
             db.session.commit()
+            final_system_prompt = unit_system_prompt or ""
+
             return OutlineDto(
-                unit.lesson_id,
-                unit.lesson_no,
-                unit.lesson_name,
-                unit.lesson_desc,
-                unit.lesson_type,
-                unit_system_prompt,
-                unit_is_hidden,
+                bid=unit.lesson_id,
+                position=unit.lesson_no,
+                name=unit.lesson_name,
+                description=unit.lesson_desc,
+                type=unit_type,
+                index=unit.lesson_index,
+                system_prompt=final_system_prompt,
+                is_hidden=unit_is_hidden,
             )
         raise_error("SCENARIO.UNIT_NOT_FOUND")
 
@@ -365,9 +374,10 @@ def delete_unit(app, user_id: str, unit_id: str):
         while not delete_q.empty():
             node = delete_q.get()
             delete_unit_ids.append(node.outline_id)
-            change_outline_status_to_history(node.outline, user_id, time)
+            mark_outline_to_delete(node.outline, user_id, time)
             for child in node.children:
                 delete_q.put(child)
         # reorder the outline tree
         reorder_outline_tree_and_save(app, root, user_id, time)
         db.session.commit()
+        return True

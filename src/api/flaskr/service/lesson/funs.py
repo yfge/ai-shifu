@@ -9,10 +9,11 @@ from .const import (
     LESSON_TYPE_NORMAL,
     SCRIPT_TYPE_FIX,
     SCRIPT_TYPES,
-    UI_TYPE_CONTINUED,
+    UI_TYPE_EMPTY,
     UI_TYPE_SELECTION,
     UI_TYPES,
     STATUS_PUBLISH,
+    STATUS_DRAFT,
 )
 from flask import Flask
 from ...dao import db
@@ -281,7 +282,7 @@ DB_SAVE_MAP = {
     "后续交互": "script_ui_type",
     "按钮标题": "script_ui_content",
     "跳转配置": "script_other_conf",
-    "temperature": "script_temprature",
+    "temperature": "script_temperature",
     "ask_count_history": "ask_with_history",
     "ask_count_limit": "ask_count_limit",
     "ask_model": "ask_model",
@@ -483,12 +484,12 @@ def update_lesson_info(
                 scripDb["script_check_prompt"] = ""
                 scripDb["script_check_flag"] = ""
                 scripDb["script_index"] = script_index
-                scripDb["script_ui_type"] = UI_TYPE_CONTINUED
+                scripDb["script_ui_type"] = UI_TYPE_EMPTY
                 scripDb["script_type"] = SCRIPT_TYPE_FIX
                 scripDb["script_content_type"] = CONTENT_TYPE_TEXT
                 scripDb["script_model"] = ""
                 scripDb["status"] = 1
-                scripDb["script_temprature"] = 0.4
+                scripDb["script_temperature"] = 0.4
                 scripDb["ask_count_limit"] = 5
                 scripDb["ask_mode"] = ASK_MODE_DEFAULT
                 scripDb["ask_prompt"] = ""
@@ -684,7 +685,7 @@ def get_course_list(app: Flask) -> list[AICourseDTO]:
                 course.course_price,
                 course.course_feishu_id,
                 course.course_status,
-                course.course_teacher_avator,
+                course.course_teacher_avatar,
             )
             for course in courses
         ]
@@ -715,7 +716,9 @@ def update_course_info(
 
 
 @extensible
-def get_course_info(app: Flask, course_id: str) -> AICourseDTO:
+def get_course_info(
+    app: Flask, course_id: str, preview_mode: bool = False
+) -> AICourseDTO:
     with app.app_context():
         if course_id is None or course_id == "":
             course = (
@@ -726,10 +729,13 @@ def get_course_info(app: Flask, course_id: str) -> AICourseDTO:
             if course is None:
                 raise_error("LESSON.HAS_NOT_LESSON")
         else:
+            ai_course_status = [STATUS_PUBLISH]
+            if preview_mode:
+                ai_course_status.append(STATUS_DRAFT)
             course = (
                 AICourse.query.filter(
                     AICourse.course_id == course_id,
-                    AICourse.status.in_([STATUS_PUBLISH]),
+                    AICourse.status.in_(ai_course_status),
                 )
                 .order_by(AICourse.id.desc())
                 .first()
@@ -744,6 +750,6 @@ def get_course_info(app: Flask, course_id: str) -> AICourseDTO:
             course.course_price,
             course.course_feishu_id,
             course.course_status,
-            course.course_teacher_avator,
+            course.course_teacher_avatar,
             course.course_keywords,
         )

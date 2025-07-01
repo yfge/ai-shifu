@@ -1,14 +1,28 @@
-from flaskr.service.shifu.dtos import BlockDto, OutlineEditDto
+from flaskr.service.shifu.dtos import (
+    BlockDto,
+    OutlineEditDto,
+    SaveBlockListResultDto,
+    OptionDto,
+    TextInputDto,
+)
 from flaskr.service.shifu.adapter import (
     convert_dict_to_block_dto,
     update_block_model,
     generate_block_dto,
 )
 from flaskr.service.lesson.models import AILesson, AILessonScript
-from flaskr.service.profile.profile_manage import save_profile_item_defination
+from flaskr.service.profile.profile_manage import (
+    save_profile_item_defination,
+    get_profile_info,
+)
 from flaskr.service.profile.models import ProfileItem
 from flaskr.service.common.models import raise_error
-from flaskr.service.shifu.utils import get_existing_blocks, get_original_outline_tree
+from flaskr.service.shifu.utils import (
+    get_existing_blocks,
+    get_original_outline_tree,
+    change_block_status_to_history,
+    mark_block_to_delete,
+)
 from flaskr.util import generate_id
 from flaskr.dao import db
 from datetime import datetime
@@ -19,7 +33,6 @@ from flaskr.service.lesson.const import (
     STATUS_DELETE,
 )
 from flaskr.service.check_risk.funcs import check_text_with_risk_control
-from .utils import change_block_status_to_history
 import queue
 from flaskr.dao import redis_client
 
@@ -85,20 +98,18 @@ def get_block_list(app, user_id: str, outline_id: str):
 
 def delete_block(app, user_id: str, outline_id: str, block_id: str):
     with app.app_context():
-        block = AILessonScript.query.filter(
-            AILessonScript.lesson_id == outline_id,
-            AILessonScript.status.in_([STATUS_DRAFT]),
-            AILessonScript.script_id == block_id,
-        ).first()
-        if not block:
-            block = AILessonScript.query.filter(
+        block = (
+            AILessonScript.query.filter(
                 AILessonScript.lesson_id == outline_id,
-                AILessonScript.status.in_([STATUS_PUBLISH]),
+                AILessonScript.status.in_([STATUS_DRAFT, STATUS_PUBLISH]),
                 AILessonScript.script_id == block_id,
-            ).first()
+            )
+            .order_by(AILessonScript.id.desc())
+            .first()
+        )
         if not block:
             raise_error("SHIFU.BLOCK_NOT_FOUND")
-        change_block_status_to_history(block, user_id, datetime.now())
+        mark_block_to_delete(block, user_id, datetime.now())
         db.session.commit()
         return True
     pass
@@ -119,7 +130,7 @@ def get_block(app, user_id: str, outline_id: str, block_id: str):
 # save block list
 def save_block_list_internal(
     app, user_id: str, outline_id: str, block_list: list[BlockDto]
-):
+) -> SaveBlockListResultDto:
     with app.app_context():
         time = datetime.now()
         app.logger.info(f"save_block_list: {outline_id}")
@@ -131,7 +142,7 @@ def save_block_list_internal(
 
         # pass the top outline
         if len(outline.lesson_no) == 2:
-            return []
+            return SaveBlockListResultDto([], {})
         outline_id = outline.lesson_id
 
         tree = get_original_outline_tree(app, outline.course_id)
@@ -162,6 +173,7 @@ def save_block_list_internal(
         block_models = []
         save_block_ids = []
         profile_items = []
+        error_messages = {}
         for block in block_list:
             type = block.get("type")
             app.logger.info(f"block type : {type} , {block}")
@@ -198,8 +210,45 @@ def save_block_list_internal(
                         status=STATUS_DRAFT,
                     )
                     app.logger.info(f"new block : {block_model.script_id}")
-                    profile = update_block_model(block_model, block_dto)
-                    if profile:
+                    _fetch_profile_info_for_block_dto(app, block_dto)
+                    update_block_result = update_block_model(block_model, block_dto)
+                    profile = None
+                    if update_block_result.error_message:
+                        error_messages[block_model.script_id] = (
+                            update_block_result.error_message
+                        )
+                        # Read the original data from the database
+                        original_block = (
+                            AILessonScript.query.filter(
+                                AILessonScript.script_id == block_model.script_id,
+                                AILessonScript.status.in_(
+                                    [STATUS_PUBLISH, STATUS_DRAFT]
+                                ),
+                            )
+                            .order_by(AILessonScript.id.desc())
+                            .first()
+                        )
+                        if original_block:
+                            block_model = original_block
+                            block_model.script_index = block_index
+                            block_model.updated = time
+                            block_model.updated_user_id = user_id
+                            block_model.status = STATUS_DRAFT
+                            db.session.add(block_model)
+                            block_models.append(block_model)
+                            save_block_ids.append(block_model.script_id)
+                            # Continue to execute the subsequent processes using the original data
+                            profile = None
+                            if original_block.script_ui_profile_id:
+                                profile_item = ProfileItem.query.filter(
+                                    ProfileItem.profile_id
+                                    == original_block.script_ui_profile_id,
+                                    ProfileItem.status == 1,
+                                ).first()
+                                if profile_item:
+                                    profile_items.append(profile_item)
+                    if update_block_result.data:
+                        profile = update_block_result.data
                         profile_item = save_profile_item_defination(
                             app, user_id, outline.course_id, profile
                         )
@@ -221,11 +270,50 @@ def save_block_list_internal(
                     app.logger.info(f"new block : {block_model.id}")
                     block_models.append(block_model)
                     save_block_ids.append(block_model.script_id)
+
                 else:
                     # update origin block
                     new_block = block_model.clone()
                     old_check_str = block_model.get_str_to_check()
-                    profile = update_block_model(new_block, block_dto)
+                    _fetch_profile_info_for_block_dto(app, block_dto)
+                    update_block_result = update_block_model(new_block, block_dto)
+                    profile = None
+                    if update_block_result.error_message:
+                        error_messages[new_block.script_id] = (
+                            update_block_result.error_message
+                        )
+                        # Read the original data from the database
+                        original_block = (
+                            AILessonScript.query.filter(
+                                AILessonScript.script_id == new_block.script_id,
+                                AILessonScript.status.in_(
+                                    [STATUS_PUBLISH, STATUS_DRAFT]
+                                ),
+                            )
+                            .order_by(AILessonScript.id.desc())
+                            .first()
+                        )
+                        if original_block:
+                            new_block = original_block
+                            new_block.script_index = block_index
+                            new_block.updated = time
+                            new_block.updated_user_id = user_id
+                            new_block.status = STATUS_DRAFT
+                            db.session.add(new_block)
+                            block_models.append(new_block)
+                            save_block_ids.append(new_block.script_id)
+                            # Continue to execute the subsequent processes using the original data
+                            profile = None
+                            if original_block.script_ui_profile_id:
+                                profile_item = ProfileItem.query.filter(
+                                    ProfileItem.profile_id
+                                    == original_block.script_ui_profile_id,
+                                    ProfileItem.status == 1,
+                                ).first()
+                                if profile_item:
+                                    profile_items.append(profile_item)
+                    else:
+                        profile = update_block_result.data
                     new_block.script_index = block_index
                     if profile:
                         profile_item = save_profile_item_defination(
@@ -244,7 +332,6 @@ def save_block_list_internal(
                         new_block.script_index = block_index
                         new_block.lesson_id = current_outline_id
                         change_block_status_to_history(block_model, user_id, time)
-
                         db.session.add(new_block)
                         app.logger.info(
                             f"update block : {new_block.id} {new_block.status}"
@@ -264,12 +351,15 @@ def save_block_list_internal(
         for block in blocks:
             if block.script_id not in save_block_ids:
                 app.logger.info("delete block : {}".format(block.script_id))
-                change_block_status_to_history(block, user_id, time)
+                mark_block_to_delete(block, user_id, time)
         db.session.commit()
-        return [
-            generate_block_dto(block_model, profile_items)
-            for block_model in block_models
-        ]
+        return SaveBlockListResultDto(
+            [
+                generate_block_dto(block_model, profile_items)
+                for block_model in block_models
+            ],
+            error_messages,
+        )
 
 
 def save_block_list(app, user_id: str, outline_id: str, block_list: list[BlockDto]):
@@ -290,7 +380,7 @@ def save_block_list(app, user_id: str, outline_id: str, block_list: list[BlockDt
     else:
 
         app.logger.error("lockfail")
-        return []
+        return SaveBlockListResultDto([], {})
     return
 
 
@@ -322,7 +412,12 @@ def add_block(app, user_id: str, outline_id: str, block: BlockDto, block_index: 
             updated_user_id=user_id,
             status=STATUS_DRAFT,
         )
-        update_block_model(block_model, block_dto)
+
+        _fetch_profile_info_for_block_dto(app, block_dto)
+
+        update_block_result = update_block_model(block_model, block_dto, new_block=True)
+        if update_block_result.error_message:
+            raise_error(update_block_result.error_message)
         check_str = block_model.get_str_to_check()
         check_text_with_risk_control(app, block_model.script_id, user_id, check_str)
         block_model.lesson_id = outline_id
@@ -401,3 +496,16 @@ def get_system_block_by_outline_id(app, outline_id: str):
             if not outline:
                 raise_error("SHIFU.OUTLINE_NOT_FOUND")
         return block
+
+
+def _fetch_profile_info_for_block_dto(app, block_dto):
+    """根据 block_dto 的类型获取相应的 profile 信息"""
+    if isinstance(block_dto.block_ui, OptionDto) and block_dto.block_ui.profile_id:
+        block_dto.profile_info = get_profile_info(app, block_dto.block_ui.profile_id)
+    elif (
+        isinstance(block_dto.block_ui, TextInputDto) and block_dto.block_ui.profile_ids
+    ):
+        if len(block_dto.block_ui.profile_ids) == 1:
+            block_dto.profile_info = get_profile_info(
+                app, block_dto.block_ui.profile_ids[0]
+            )

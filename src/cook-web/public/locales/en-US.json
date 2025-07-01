@@ -8,7 +8,6 @@
     "expand": "Expand",
     "input-variable-value": "Input Variable Value",
     "row-count": "Row Count",
-    "select-model": "Select Model",
     "set-temperature": "Set Temperature",
     "start-debug": "Start Debug",
     "stop-output": "Stop Output",
@@ -19,7 +18,10 @@
   },
   "button": {
     "button-name": "Button Name",
-    "complete": "Complete"
+    "complete": "Complete",
+    "placeholder-edit": "Default is \"Continue\"",
+    "placeholder-login": "Default is \"Login\"",
+    "placeholder-payment": "Default is \"Checkout\""
   },
   "chapter-setting": {
     "chapter-type": "Chapter Type",
@@ -45,9 +47,13 @@
     "create-failed": "Create Failed",
     "create-success": "Create Success",
     "create-success-description": "Create Success Description",
+    "default": "Default",
+    "select-model": "Select Model",
+    "error.save.failed": "Save failed: Invalid server response",
     "favorites": "Favorites",
     "follow": "Follow",
     "home": "Home",
+    "image-name": "Image Name",
     "logout": "Logout",
     "no-more-shifus": "No More Shifus",
     "no-shifus": "No Shifus",
@@ -58,7 +64,9 @@
     "shifu": "Shifu",
     "unknown-error": "Unknown Error",
     "use-image": "Use Image",
-    "use-resource": "Use Resource"
+    "use-resource": "Use Resource",
+    "video-title": "Video Title",
+    "video-title-placeholder": "Please Input Video Title"
   },
   "shifu-setting": {
     "add-keyword": "Add Keyword",
@@ -70,6 +78,10 @@
     "shifu-name": "Shifu Name",
     "shifu-name-cannot-be-empty": "Shifu Name Cannot Be Empty",
     "shifu-name-cannot-exceed-50-characters": "Shifu Name Cannot Exceed 50 Characters",
+    "shifu-temperature": "Temperature",
+    "shifu-temperature-cannot-be-less-than-0": "Temperature Cannot Be Less Than 0",
+    "shifu-temperature-cannot-exceed-2": "Temperature Cannot Exceed 2",
+    "shifu-temperature-must-be-valid-number-format": "Temperature Must Be Valid Number Format",
     "file-size-cannot-exceed-2mb": "File Size Cannot Exceed 2MB",
     "input-keywords": "Input Keywords",
     "keywords": "Keywords",
@@ -78,13 +90,11 @@
     "limit-50-characters": "Limit 50 Characters",
     "number": "Number",
     "only-support-jpg-and-png-format": "Only Support JPG and PNG Format",
-    "please-select-model": "Please Select Model",
     "preview-url": "Preview URL",
     "price": "Price",
     "price-cannot-be-empty": "Price Cannot Be Empty",
     "price-must-be-valid-number-format": "Price Must Be Valid Number Format",
     "save": "Save",
-    "select-model": "Select Model",
     "selected": "Selected",
     "support-jpg-png-format-file-less-than-2mb": "Support JPG and PNG Format File Less Than 2MB",
     "title": "Title",
@@ -109,14 +119,17 @@
     "drag-file-or-click-to-upload": "Drag File or Click to Upload",
     "failed-to-upload-image": "Failed to Upload Image",
     "check-image-url": "Please check if the image URL is correct",
-    "paste-or-input-image-url": "Paste or Input Image URL",
+    "paste-or-input-image-url": "Input Image URL",
     "replace-image": "Replace Image",
     "run": "Run",
     "tips": "Tips",
     "upload": "Upload",
     "upload-failed": "Upload Failed",
     "uploading": "Uploading",
-    "url": "URL"
+    "url": "URL",
+    "image-title": "Image Title",
+    "image-title-placeholder": "Please Input Image Title",
+    "image-scale": "Image Scale"
   },
   "goto": {
     "button-name": "Button Name",
@@ -242,9 +255,6 @@
     "want-to-experience-creation": "Want to Experience Creation",
     "your-email": "Your Email"
   },
-  "model-list": {
-    "select-model": "Select Model"
-  },
   "option": {
     "button-key": "Option Key",
     "button-name": "Option Name",
@@ -264,10 +274,14 @@
     "select-chapter": "Select Outline"
   },
   "outline-tree": {
+    "name-required": "Chapter name cannot be empty",
+    "confirm-delete": "Confirm Delete",
+    "confirm-delete-description": "This action cannot be undone. Are you sure you want to delete?",
     "cancel": "Cancel",
     "confirm": "Confirm",
-    "confirm-delete": "Confirm Delete",
-    "confirm-delete-description": "Your operation will cause the current content to be lost, whether to confirm?"
+    "edit": "Edit",
+    "delete": "Delete",
+    "setting": "Setting"
   },
   "preview": {
     "auto-skip": "Auto Skip",
@@ -275,7 +289,11 @@
     "preview": "Preview",
     "preview-settings": "Preview Settings",
     "start-preview": "Start Preview",
-    "variable-appear": "Variable Appear"
+    "variable-appear": "Variable Appear",
+    "title": "Preview",
+    "view": "View",
+    "close": "Close",
+    "link": "Preview Link"
   },
   "profiles": {
     "add": "Add",
@@ -303,6 +321,10 @@
     "title": "Title",
     "variable-name": "Variable Name"
   },
+  "profile-select-modal": {
+    "add-variable": "Add Variable",
+    "add": "Add"
+  },
   "profiles-manage": {
     "enum": "Option",
     "search-variable": "Search Variable...",
@@ -323,10 +345,8 @@
   "render-ui": {
     "button": "Button",
     "button-button-key": "Button Key",
-    "button-button-name": "Continue",
     "button-key": "Button Key",
     "button-name": "Button Name",
-    "button-name-empty": "Button Name Empty",
     "cancel": "Cancel",
     "collapse": "Collapse",
     "confirm": "Confirm",
@@ -338,25 +358,28 @@
     "goto-button-name": "Goto Name",
     "goto-value": "Goto Value",
     "login": "Login",
-    "login-button-name-empty": "Login Button Name Empty",
+    "none": "None",
     "option": "Option",
     "option-button-empty": "Option Button Empty",
     "option-buttons-empty": "Option Buttons Empty",
     "option-name-empty": "Option Name Empty",
     "payment": "Payment",
-    "payment-button-name-empty": "Payment Button Name Empty",
     "select-placeholder": "Select Placeholder",
     "textinput": "Text Input",
     "textinput-key-empty": "Text Input Key Empty",
-    "textinput-model-empty": "Text Input Model Empty",
     "textinput-placeholder-empty": "Text Input Placeholder Empty",
     "textinput-prompt-empty": "Text Input Prompt Empty",
-    "textinput-temprature-empty": "Text Input Temprature Empty",
+    "textinput-temperature-empty": "Text Input Temperature Empty",
     "user-operation": "User Operation"
   },
   "shifu": {
     "debug": "Debug",
-    "new_chapter": "New Chapter"
+    "new_chapter": "New Chapter",
+    "delete": "Delete",
+    "ai-block": "AI Block",
+    "regular-block": "Regular Block",
+    "setting-ai-block": "Set as AI Block",
+    "setting-regular-block": "Set as Regular Block"
   },
   "social": {
     "about-us": "About Us",
@@ -373,6 +396,7 @@
     "input-placeholder": "Placeholder",
     "model": "Model",
     "prompt": "Prompt",
+    "prompt-placeholder": "Please enter a prompt to extract and constrain the variable.",
     "temperature": "Temperature"
   }
 }

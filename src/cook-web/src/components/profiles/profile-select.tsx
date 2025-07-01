@@ -9,20 +9,30 @@ import type { Profile } from '@/components/profiles/type'
 import ProfileSave from './profile-save'
 import api from '@/api'
 import useProfiles from './useProfiles'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import { useTranslation } from 'react-i18next';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogOverlay,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog'
+import { useTranslation } from 'react-i18next'
+import { useShifu } from '@/store'
+
 interface ProfileSelectProps {
   value?: string
-  parentId?: string
   onSelect?: (profile: Profile) => void
 }
 
 const ProfileSelect: React.FC<ProfileSelectProps> = ({
   value,
-  parentId,
   onSelect = () => {}
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation()
   const [saveOpen, setSaveOpen] = useState<boolean>(false)
   const [editingProfile, setEditingProfile] = useState<Profile | undefined>()
   const [hoveredId, setHoveredId] = useState<string | null>(null)
@@ -30,6 +40,7 @@ const ProfileSelect: React.FC<ProfileSelectProps> = ({
   const [refreshFlag, setRefreshFlag] = useState(0)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deleteProfileId, setDeleteProfileId] = useState<string | null>(null)
+  const { currentShifu } = useShifu()
 
   const handleDeleteProfile = useCallback(async (id: string) => {
     setDeleteProfileId(id)
@@ -50,7 +61,6 @@ const ProfileSelect: React.FC<ProfileSelectProps> = ({
   }
 
   const [systemProfiles, customProfiles] = useProfiles({
-    parentId,
     searchTerm,
     refreshFlag
   })
@@ -116,7 +126,9 @@ const ProfileSelect: React.FC<ProfileSelectProps> = ({
                     </div>
                     <div className='flex items-center'>
                       <span className='text-xs text-muted-foreground mr-2'>
-                        {profile.profile_type === 'text' ? t('profiles-manage.text') : t('profiles-manage.enum')}
+                        {profile.profile_type === 'text'
+                          ? t('profiles-manage.text')
+                          : t('profiles-manage.enum')}
                       </span>
                     </div>
                   </div>
@@ -147,7 +159,8 @@ const ProfileSelect: React.FC<ProfileSelectProps> = ({
                           profile.profile_type === 'text' &&
                           profile.defaultValue && (
                             <span className='text-xs text-muted-foreground ml-2 bg-muted px-1.5 py-0.5 rounded'>
-                              {t('profiles.default-value')}: {profile.defaultValue}
+                              {t('profiles.default-value')}:{' '}
+                              {profile.defaultValue}
                             </span>
                           )}
                       </div>
@@ -159,7 +172,9 @@ const ProfileSelect: React.FC<ProfileSelectProps> = ({
                     </div>
                     <div className='flex items-center'>
                       <span className='text-xs text-muted-foreground mr-2'>
-                        {profile.profile_type === 'text' ? t('profiles-manage.text') : t('profiles-manage.enum')}
+                        {profile.profile_type === 'text'
+                          ? t('profiles-manage.text')
+                          : t('profiles-manage.enum')}
                       </span>
 
                       {hoveredId === profile.profile_id ? (
@@ -216,7 +231,7 @@ const ProfileSelect: React.FC<ProfileSelectProps> = ({
         {t('profiles.add-new-variable')}
       </Button>
       <ProfileSave
-        parentId={parentId}
+        parentId={currentShifu?.bid}
         open={saveOpen}
         onOpenChange={setSaveOpen}
         value={editingProfile}
@@ -224,7 +239,14 @@ const ProfileSelect: React.FC<ProfileSelectProps> = ({
       />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
+        <AlertDialogOverlay
+          className='fixed inset-0 bg-black/50 z-[50]'
+          onClick={e => {
+            e.preventDefault()
+            e.stopPropagation()
+          }}
+        />
+        <AlertDialogContent className='z-[51]'>
           <AlertDialogHeader>
             <AlertDialogTitle>{t('profiles.confirm-delete')}</AlertDialogTitle>
             <AlertDialogDescription>
@@ -233,7 +255,9 @@ const ProfileSelect: React.FC<ProfileSelectProps> = ({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t('profiles.cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete}>{t('profiles.confirm')}</AlertDialogAction>
+            <AlertDialogAction onClick={handleConfirmDelete}>
+              {t('profiles.confirm')}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
