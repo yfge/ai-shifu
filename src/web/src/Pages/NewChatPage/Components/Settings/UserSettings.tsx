@@ -22,7 +22,7 @@ import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import { useEnvStore } from 'stores/envStore';
 
-const fixed_keys = ['nickname', 'avatar', 'sex', 'birth'];
+const fixed_keys = ['sys_user_nickname', 'avatar', 'sex', 'birth'];
 const hidden_keys = ['language'];
 
 export const UserSettings = ({
@@ -46,7 +46,7 @@ export const UserSettings = ({
   // 头像
   const [avatar, setAvatar] = useState('');
   // 昵称
-  const [nickName, setNickName] = useState('');
+  const [sys_user_nickname, setSys_user_nickname] = useState('');
   // 性别
   const [sex, setSex] = useState(SEX_NAMES[SEX.SECRET]);
   // 生日
@@ -57,8 +57,8 @@ export const UserSettings = ({
   const onSaveSettingsClick = useCallback(async () => {
     const data = [];
     data.push({
-      key: 'nickname',
-      value: nickName,
+      key: 'sys_user_nickname',
+      value: sys_user_nickname,
     });
     data.push({
       key: 'avatar',
@@ -81,13 +81,13 @@ export const UserSettings = ({
     await updateUserProfile(data, courseId);
     await refreshUserInfo();
     onClose();
-  }, [avatar, birth, dynFormData, nickName, onClose, refreshUserInfo, sex, courseId]);
+  }, [avatar, birth, dynFormData, sys_user_nickname, onClose, refreshUserInfo, sex, courseId]);
 
   const onNickNameChanged = useCallback(
     (e) => {
-      setNickName(e.target.value);
+      setSys_user_nickname(e.target.value);
     },
-    [setNickName]
+    [setSys_user_nickname]
   );
 
   const onSexSettingModalOk = useCallback(
@@ -121,8 +121,8 @@ export const UserSettings = ({
   const loadData = useCallback(async () => {
     const { data: respData } = await getUserProfile(courseId);
     respData.forEach((v) => {
-      if (v.key === 'nickname') {
-        setNickName(v.value);
+      if (v.key === 'sys_user_nickname') {
+        setSys_user_nickname(v.value);
       } else if (v.key === 'avatar') {
         setAvatar(v.value);
       } else if (v.key === 'sex') {
@@ -184,7 +184,7 @@ export const UserSettings = ({
                 placeholder={t('settings.nicknamePlaceholder')}
                 onChange={onNickNameChanged}
                 className={styles.inputUnit}
-                value={nickName}
+                value={sys_user_nickname}
                 maxLength={10}
               />
               <SettingSelectElement
@@ -218,7 +218,7 @@ export const UserSettings = ({
                 placeholder={t('settings.nicknamePlaceholder')}
                 onChange={onNickNameChanged}
                 className={styles.inputUnit}
-                value={nickName}
+                value={sys_user_nickname}
                 maxLength={10}
               />
               {dynFormData.map((item) => {
