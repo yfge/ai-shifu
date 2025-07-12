@@ -15,7 +15,6 @@ from flaskr.service.study.plugin import register_input_handler
 from flaskr.service.study.utils import (
     extract_json,
     generation_attend,
-    get_fmt_prompt,
     make_script_dto,
     get_model_setting,
     get_script_ui_label,
