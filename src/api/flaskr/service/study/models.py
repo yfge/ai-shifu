@@ -92,27 +92,29 @@ class AICourseAttendAsssotion(db.Model):
 class UserGeneralInformation(db.Model):
     __tablename__ = "user_general_information"
 
-    id = Column(BIGINT, primary_key=True, autoincrement=True, comment="主键")
+    id = Column(BIGINT, primary_key=True, autoincrement=True, comment="Unique ID")
     user_id = Column(
-        String(36), nullable=False, default="", comment="用户ID", index=True
+        String(36), nullable=False, default="", comment="User ID", index=True
     )
-    general_information = Column(Text, nullable=False, comment="通用信息内容")
+    general_information = Column(
+        Text, nullable=False, comment="General information content"
+    )
     shifu_id = Column(
-        String(36), nullable=False, default="", comment="课程ID", index=True
+        String(36), nullable=False, default="", comment="Shifu ID", index=True
     )
     shifu_outline_id = Column(
-        String(36), nullable=False, default="", comment="课程大纲ID", index=True
+        String(36), nullable=False, default="", comment="Shifu outline ID", index=True
     )
     shifu_block_id = Column(
-        String(36), nullable=False, default="", comment="课程块ID", index=True
+        String(36), nullable=False, default="", comment="Shifu block ID", index=True
     )
     created_at = Column(
-        TIMESTAMP, nullable=False, default=func.now(), comment="创建时间"
+        TIMESTAMP, nullable=False, default=func.now(), comment="Creation time"
     )
     updated_at = Column(
         TIMESTAMP,
         nullable=False,
         default=func.now(),
         onupdate=func.now(),
-        comment="更新时间",
+        comment="Update time",
     )
