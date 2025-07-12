@@ -28,7 +28,7 @@ export default memo(function GeneralInput(props: UIBlockDTO) {
     const { data } = props
     const { t } = useTranslation();
     const generalInputSettings = data.properties as GeneralInputDTO
-    
+
     const onValueChange = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
         if (field === 'input_placeholder') {
             props.onPropertiesChange({
@@ -69,4 +69,4 @@ export default memo(function GeneralInput(props: UIBlockDTO) {
             </div>
         </div>
     )
-}, GeneralInputPropsEqual) 
+}, GeneralInputPropsEqual)

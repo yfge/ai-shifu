@@ -23,4 +23,4 @@ def handle_input_general_input(
         {"content": get_script_ui_label(app, script_info.script_ui_content)},
         script_info.lesson_id,
         script_info.script_id,
-    ) 
+    )

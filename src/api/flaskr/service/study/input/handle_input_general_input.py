@@ -6,7 +6,11 @@ from flaskr.api.llm import invoke_llm
 from flaskr.service.study.input_funcs import BreakException
 from flaskr.service.lesson.models import AILessonScript, AILesson
 from flaskr.service.order.models import AICourseLessonAttend
-from flaskr.service.study.const import INPUT_TYPE_GENERAL_INPUT, ROLE_STUDENT, ROLE_TEACHER
+from flaskr.service.study.const import (
+    INPUT_TYPE_GENERAL_INPUT,
+    ROLE_STUDENT,
+    ROLE_TEACHER,
+)
 from flaskr.service.study.plugin import register_input_handler
 from flaskr.service.study.utils import (
     extract_json,
@@ -18,7 +22,9 @@ from flaskr.service.study.utils import (
 )
 from flaskr.service.study.models import UserGeneralInformation
 from flaskr.dao import db
-from flaskr.service.study.ui.input_general_input import handle_input_general_input as handle_input_general_input_ui
+from flaskr.service.study.ui.input_general_input import (
+    handle_input_general_input as handle_input_general_input_ui,
+)
 from flaskr.service.user.models import User
 from flaskr.framework.plugin.plugin_manager import extensible_generic
 
@@ -28,7 +34,7 @@ def save_general_information(
     user_id: str,
     attend: AICourseLessonAttend,
     script_info: AILessonScript,
-    general_info: str
+    general_info: str,
 ):
     """保存用户的通用信息"""
     try:
@@ -39,7 +45,7 @@ def save_general_information(
             UserGeneralInformation.shifu_outline_id == script_info.lesson_id,
             UserGeneralInformation.shifu_block_id == script_info.script_id,
         ).first()
-        
+
         if existing:
             # 更新现有记录
             existing.general_information = general_info
@@ -54,7 +60,7 @@ def save_general_information(
                 shifu_block_id=script_info.script_id,
             )
             db.session.add(new_info)
-        
+
         db.session.flush()
         app.logger.info(f"保存用户通用信息成功: user_id={user_id}, info={general_info}")
     except Exception as e:
@@ -62,15 +68,25 @@ def save_general_information(
         db.session.rollback()
 
 
-def get_conversation_history(app: Flask, attend: AICourseLessonAttend, script_info: AILessonScript, limit: int = 10):
+def get_conversation_history(
+    app: Flask,
+    attend: AICourseLessonAttend,
+    script_info: AILessonScript,
+    limit: int = 10,
+):
     """获取最近的对话历史"""
     from flaskr.service.study.models import AICourseLessonAttendScript
-    
-    history = AICourseLessonAttendScript.query.filter(
-        AICourseLessonAttendScript.attend_id == attend.attend_id,
-        AICourseLessonAttendScript.script_id == script_info.script_id,
-    ).order_by(AICourseLessonAttendScript.created.desc()).limit(limit).all()
-    
+
+    history = (
+        AICourseLessonAttendScript.query.filter(
+            AICourseLessonAttendScript.attend_id == attend.attend_id,
+            AICourseLessonAttendScript.script_id == script_info.script_id,
+        )
+        .order_by(AICourseLessonAttendScript.created.desc())
+        .limit(limit)
+        .all()
+    )
+
     return list(reversed(history))  # 返回正序的历史记录
 
 
@@ -87,7 +103,7 @@ def handle_input_general_input(
     trace_args,
 ):
     model_setting = get_model_setting(app, script_info)
-    
+
     # 记录用户输入
     log_script = generation_attend(app, attend, script_info)
     log_script.script_content = input
@@ -99,10 +115,10 @@ def handle_input_general_input(
     )
     db.session.add(log_script)
     span = trace.span(name="general_input", input=input)
-    
+
     # 获取对话历史
     history = get_conversation_history(app, attend, script_info)
-    
+
     # 构建对话历史文本
     conversation_text = ""
     if len(history) >= 2:
@@ -117,7 +133,7 @@ def handle_input_general_input(
             conversation_text = f"AI: {history[0].script_content}\nUser: {input}"
         else:
             conversation_text = f"User: {input}"
-    
+
     # 构建提示词
     prompt_template = """请从如下用户与AI的对话中总结出关于用户的个性化信息
 如果没有任何个性化信息输出，请返回 json {"result":"原因","question":"继续追问用户得到正确的个性化信息"}
@@ -126,9 +142,9 @@ def handle_input_general_input(
 以下是对话记录：
 
 {}"""
-    
+
     prompt = prompt_template.format(conversation_text)
-    
+
     # 调用LLM分析
     resp = invoke_llm(
         app,
@@ -146,22 +162,22 @@ def handle_input_general_input(
         + script_info.script_name,
         **model_setting.model_args,
     )
-    
+
     response_text = ""
     for i in resp:
         current_content = i.result
         if isinstance(current_content, str):
             response_text += current_content
-    
+
     # 解析响应
     jsonObj = extract_json(app, response_text)
     result = jsonObj.get("result", "")
-    
+
     if result == "OK":
         # 保存个性化信息
         info = jsonObj.get("info", "")
         save_general_information(app, user_info.user_id, attend, script_info, info)
-        
+
         app.logger.info("个性化信息提取成功，继续下一个块")
         span.end()
         db.session.flush()
@@ -169,24 +185,24 @@ def handle_input_general_input(
     else:
         # 继续追问用户
         question = jsonObj.get("question", "请提供更多信息以便我更好地了解您的需求。")
-        
+
         # 返回追问内容给用户
         for text in question:
             yield make_script_dto(
                 "text", text, script_info.script_id, script_info.lesson_id
             )
             time.sleep(0.01)
-        
+
         # 记录AI的追问
         log_script = generation_attend(app, attend, script_info)
         log_script.script_content = question
         log_script.script_role = ROLE_TEACHER
         db.session.add(log_script)
-        
+
         span.end(output=response_text)
         trace_args["output"] = trace_args["output"] + "\r\n" + response_text
         trace.update(**trace_args)
-        
+
         # 继续等待用户输入，不执行下一个block
         yield make_script_dto(
             "general-input",
@@ -194,5 +210,5 @@ def handle_input_general_input(
             script_info.script_id,
             script_info.lesson_id,
         )
-        
-        db.session.flush() 
+
+        db.session.flush()

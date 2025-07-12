@@ -580,7 +580,9 @@ class GeneralInputDTO(BaseModel):
 
     def __init__(self, input_placeholder: dict[str, str], **kwargs):
         super().__init__(
-            input_placeholder=LabelDTO(lang=input_placeholder.get("lang", input_placeholder))
+            input_placeholder=LabelDTO(
+                lang=input_placeholder.get("lang", input_placeholder)
+            )
         )
 
     def __json__(self):
