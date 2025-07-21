@@ -39,6 +39,7 @@ from .plugin import handle_ui
 from flaskr.api.langfuse import MockClient
 from flaskr.util.uuid import generate_id
 from flaskr.service.user.models import User
+from flaskr.service.lesson.const import UI_TYPE_CONTENT
 
 
 def _get_lesson_tree_to_study_common(
@@ -541,6 +542,19 @@ def get_study_record(
         if last_script is None:
             ret.ui = []
             return ret
+        if last_script.script_ui_type == UI_TYPE_CONTENT:
+            last_script = (
+                AILessonScript.query.filter(
+                    AILessonScript.lesson_id == last_script.lesson_id,
+                    AILessonScript.script_index == last_script.script_index + 1,
+                    AILessonScript.status.in_(ai_course_status),
+                )
+                .order_by(AILessonScript.id.desc())
+                .first()
+            )
+        if last_script is None:
+            ret.ui = []
+            return ret
         last_lesson_id = last_script.lesson_id
         lesson_id = last_lesson_id
         last_attends = [i for i in attend_infos if i.lesson_id == last_lesson_id]
@@ -558,6 +572,7 @@ def get_study_record(
                 pass
         else:
             last_attend = last_attends[-1]
+
         uis = handle_ui(app, user_info, last_attend, last_script, "", MockClient(), {})
         app.logger.info("uis:{}".format(uis))
         if len(uis) > 0:
