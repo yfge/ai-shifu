@@ -588,7 +588,6 @@ def get_study_record(
             and last_script.script_ui_type == UI_TYPE_CONTENT
         ):
             app.logger.info("handle_input_continue")
-            print("handle_input_continue")
             ret.ui = handle_input_continue(
                 app, user_info, last_attend, None, "", MockClient(), {}
             )
