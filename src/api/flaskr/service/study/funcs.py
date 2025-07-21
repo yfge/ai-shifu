@@ -40,6 +40,8 @@ from flaskr.api.langfuse import MockClient
 from flaskr.util.uuid import generate_id
 from flaskr.service.user.models import User
 from flaskr.service.lesson.const import UI_TYPE_CONTENT
+from flaskr.service.study.const import ROLE_STUDENT
+from flaskr.service.study.ui.input_continue import handle_input_continue
 
 
 def _get_lesson_tree_to_study_common(
@@ -575,6 +577,10 @@ def get_study_record(
         app.logger.info("uis:{}".format(uis))
         if len(uis) > 0:
             ret.ui = uis[0]
+        if attend_scripts[-1].script_role == ROLE_STUDENT:
+            ret.ui = handle_input_continue(
+                app, user_info, last_attend, None, "", MockClient(), {}
+            )
         if len(uis) > 1:
             ret.ask_mode = uis[1].script_content.get("ask_mode", False)
             ret.ask_ui = uis[1]
