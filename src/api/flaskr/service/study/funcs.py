@@ -543,11 +543,26 @@ def get_study_record(
             ret.ui = []
             return ret
 
+        app.logger.info("last_script.script_type:{}".format(last_script.script_type))
+        app.logger.info(
+            "last_script.script_ui_type:{}".format(last_script.script_ui_type)
+        )
+        app.logger.info(
+            "last_script.script_type != SCRIPT_TYPE_ACTION:{}".format(
+                last_script.script_type != SCRIPT_TYPE_ACTION
+            )
+        )
+        app.logger.info(
+            "last_script.script_ui_type == UI_TYPE_CONTENT:{}".format(
+                last_script.script_ui_type == UI_TYPE_CONTENT
+            )
+        )
         if (
             last_script.script_type == SCRIPT_TYPE_ACTION
             and last_script.script_ui_type == UI_TYPE_CONTENT
         ):
-            print("get next script")
+        
+            app.logger.info("get next script")
             app.logger.info(
                 "last_script.script_ui_type:{}".format(last_script.script_ui_type)
             )
