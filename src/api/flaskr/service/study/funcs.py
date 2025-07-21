@@ -543,25 +543,11 @@ def get_study_record(
             ret.ui = []
             return ret
 
-        app.logger.info("last_script.script_type:{}".format(last_script.script_type))
-        app.logger.info(
-            "last_script.script_ui_type:{}".format(last_script.script_ui_type)
-        )
-        app.logger.info(
-            "last_script.script_type != SCRIPT_TYPE_ACTION:{}".format(
-                last_script.script_type != SCRIPT_TYPE_ACTION
-            )
-        )
-        app.logger.info(
-            "last_script.script_ui_type == UI_TYPE_CONTENT:{}".format(
-                last_script.script_ui_type == UI_TYPE_CONTENT
-            )
-        )
         if (
-            last_script.script_type != SCRIPT_TYPE_ACTION
-            or last_script.script_ui_type == UI_TYPE_CONTENT
+            last_script.script_type == SCRIPT_TYPE_ACTION
+            and last_script.script_ui_type == UI_TYPE_CONTENT
         ):
-            app.logger.info("get next script")
+            print("get next script")
             app.logger.info(
                 "last_script.script_ui_type:{}".format(last_script.script_ui_type)
             )
@@ -612,6 +598,7 @@ def get_study_record(
             and last_script.script_ui_type == UI_TYPE_CONTENT
         ):
             app.logger.info("handle_input_continue")
+            print("handle_input_continue")
             ret.ui = handle_input_continue(
                 app, user_info, last_attend, None, "", MockClient(), {}
             )
