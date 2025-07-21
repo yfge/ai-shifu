@@ -561,7 +561,7 @@ def get_study_record(
             last_script.script_type == SCRIPT_TYPE_ACTION
             and last_script.script_ui_type == UI_TYPE_CONTENT
         ):
-        
+
             app.logger.info("get next script")
             app.logger.info(
                 "last_script.script_ui_type:{}".format(last_script.script_ui_type)
