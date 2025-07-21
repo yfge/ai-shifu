@@ -109,6 +109,7 @@ def handle_input_branch(
         )
     msg = get_script_ui_label(app, script_info.script_ui_content)
     if not msg:
+        msg = _("COMMON.CONTINUE")
     btn = [
         {
             "label": msg,

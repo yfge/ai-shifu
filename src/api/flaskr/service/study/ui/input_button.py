@@ -31,7 +31,7 @@ def handle_input_button(
     # if is json
     msg = get_script_ui_label(app, msg)
     if not msg:
-
+        msg = _("COMMON.CONTINUE")
     btn = [
         {
             "label": msg,

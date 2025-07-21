@@ -22,11 +22,13 @@ def handle_input_continue(
     trace_args,
 ) -> ScriptDTO:
     msg = script_info.script_ui_content
-    display = bool(msg)  # Set display based on whether msg has content
-    if not msg:
-        msg = _("COMMON.CONTINUE")  # Assign default message if msg is empty
+    display = bool(
+        msg
+    )  # Set display based on whether msg has contentault message if msg is empty
 
     msg = get_script_ui_label(app, msg)
+    if not msg:
+        msg = _("COMMON.CONTINUE")
 
     btn = [
         {
