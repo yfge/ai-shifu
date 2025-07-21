@@ -458,7 +458,6 @@ def get_study_record(
         ai_course_status = [STATUS_PUBLISH]
         if preview_mode:
             ai_course_status.append(STATUS_DRAFT)
-
         lesson_info = (
             AILesson.query.filter(
                 AILesson.lesson_id == lesson_id,
@@ -572,12 +571,10 @@ def get_study_record(
                 pass
         else:
             last_attend = last_attends[-1]
-
         uis = handle_ui(app, user_info, last_attend, last_script, "", MockClient(), {})
         app.logger.info("uis:{}".format(uis))
         if len(uis) > 0:
             ret.ui = uis[0]
-
         if len(uis) > 1:
             ret.ask_mode = uis[1].script_content.get("ask_mode", False)
             ret.ask_ui = uis[1]
