@@ -24,9 +24,7 @@ def handle_input_checkcode(
 ) -> ScriptDTO:
     if check_phone_number(app, user_info, input):
         expires = send_sms_code_without_check(app, user_info, input)
-        msg = get_script_ui_label(app, script_info.script_ui_content)
-        if not msg or msg == "":
-            msg = _("COMMON.CHECKCODE")
+        if not msg:
         expires["content"] = msg
         return ScriptDTO(
             INPUT_TYPE_CHECKCODE,
