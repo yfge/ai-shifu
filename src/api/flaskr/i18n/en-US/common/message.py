@@ -1,3 +1,6 @@
 CONTINUE = "Continue"
 LOGIN = "Login"
 CHECKOUT = "Checkout"
+INPUT = "Input"
+CHECKCODE = "Checkcode"
+PHONE = "Phone"
