@@ -32,8 +32,6 @@ def upgrade():
 
         try:
             # close session and dispose engine before migrate
-            db.session.close()
-            db.engine.dispose()
 
             max_retries = 3
             for retry in range(max_retries):
@@ -47,9 +45,9 @@ def upgrade():
                     )
                     if retry < max_retries - 1:
                         print("Retrying in 5 seconds...")
-                        time.sleep(5)
                         db.session.close()
                         db.engine.dispose()
+                        time.sleep(5)
                     else:
                         print(
                             f"Failed to migrate shifu_bid {old_shifu_bid} after {max_retries} attempts"
