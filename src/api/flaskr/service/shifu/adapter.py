@@ -585,9 +585,7 @@ def generate_block_dto_from_model(
             BlockDTO(
                 bid=block_model.script_id,
                 block_content=OptionsDTO(
-                    result_variable_bid=(
-                        variable_bids[0] if variable_bids else ""
-                    ),
+                    result_variable_bid=(variable_bids[0] if variable_bids else ""),
                     options=[
                         {
                             "label": _get_lang_dict(content.get("label", "")),
