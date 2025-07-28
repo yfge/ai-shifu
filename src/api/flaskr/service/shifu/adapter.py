@@ -575,11 +575,11 @@ def generate_block_dto_from_model(
         )
     elif block_model.script_ui_type == UI_TYPE_SELECTION:
         if len(variable_bids) == 0:
-            variable_name = get_profiles(block_model.script_ui_profile)
+            variable_names = get_profiles(block_model.script_ui_profile)
             variable_bids = [
                 variable_definition.profile_id
                 for variable_definition in variable_definitions
-                if variable_definition.profile_key == variable_name
+                if variable_definition.profile_key in variable_names
             ]
         ret.append(
             BlockDTO(
