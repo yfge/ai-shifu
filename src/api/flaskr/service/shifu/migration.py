@@ -393,3 +393,15 @@ def migrate_shifu_draft_to_shifu_draft_v2(app, shifu_bid: str):
         db.session.add(shifu_log_published_struct)
         db.session.commit()
         plugin_manager.is_enabled = True
+
+        # 刷新数据库连接，避免连接超时
+        try:
+            db.session.close()
+            db.engine.dispose()
+            app.logger.info(
+                f"Database connection refreshed after migrating shifu_bid: {shifu_bid}"
+            )
+        except Exception as e:
+            app.logger.warning(
+                f"Warning: Error refreshing database connection for shifu_bid {shifu_bid}: {str(e)}"
+            )

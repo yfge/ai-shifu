@@ -25,7 +25,6 @@ def upgrade():
     for i, course_id in enumerate(old_shifu_bids):
         old_shifu_bid = course_id[0]
         old_course = AICourse.query.filter(AICourse.course_id == old_shifu_bid).first()
-
         print(
             f"migrate shifu draft to shifu draft v2, shifu_bid: {old_shifu_bid}, {old_course.course_name}, {i + 1}/{len(old_shifu_bids)}"
         )
@@ -56,6 +55,16 @@ def upgrade():
         except Exception as e:
             print(f"Critical error processing shifu_bid {old_shifu_bid}: {str(e)}")
             continue
+
+    print(
+        "All migrations completed, refreshing database connection for alembic version update..."
+    )
+    try:
+        db.session.close()
+        db.engine.dispose()
+        print("Database connection refreshed successfully")
+    except Exception as e:
+        print(f"Warning: Error refreshing database connection: {str(e)}")
 
 
 def downgrade():
