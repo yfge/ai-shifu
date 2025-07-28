@@ -586,7 +586,7 @@ def generate_block_dto_from_model(
                 bid=block_model.script_id,
                 block_content=OptionsDTO(
                     result_variable_bid=(
-                        variable_bids[0] if len(variable_bids) > 0 else ""
+                        variable_bids[0] if variable_bids else ""
                     ),
                     options=[
                         {
