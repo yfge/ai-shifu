@@ -18,10 +18,12 @@ def upgrade():
     from flaskr.service.shifu.migration import migrate_shifu_draft_to_shifu_draft_v2
     from flaskr.service.lesson.models import AICourse
     from flaskr.dao import db
+    from alembic import op
+    from sqlalchemy import text
     import time
 
     old_shifu_bids = AICourse.query.with_entities(AICourse.course_id).distinct().all()
-
+    connection = op.get_bind()
     for i, course_id in enumerate(old_shifu_bids):
         old_shifu_bid = course_id[0]
         old_course = AICourse.query.filter(AICourse.course_id == old_shifu_bid).first()
@@ -35,6 +37,7 @@ def upgrade():
             max_retries = 3
             for retry in range(max_retries):
                 try:
+                    connection.execute(text("SELECT now()"))
                     migrate_shifu_draft_to_shifu_draft_v2(current_app, old_shifu_bid)
                     print(f"Successfully migrated shifu_bid: {old_shifu_bid}")
                     break
@@ -62,6 +65,7 @@ def upgrade():
     try:
         db.session.close()
         db.engine.dispose()
+        connection.execute(text("SELECT now()"))
         print("Database connection refreshed successfully")
     except Exception as e:
         print(f"Warning: Error refreshing database connection: {str(e)}")
