@@ -5,10 +5,10 @@ from sqlalchemy import (
     TIMESTAMP,
     Text,
     Numeric,
-    BIGINT,
     SmallInteger,
     DateTime,
 )
+from sqlalchemy.dialects.mysql import BIGINT
 from sqlalchemy.sql import func
 from ...dao import db
 
