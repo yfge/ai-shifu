@@ -292,7 +292,7 @@ class DiscountRecord(db.Model):
 
 class BannerInfo(db.Model):
     __tablename__ = "order_banner_info"
-    id = Column(BIGINT, primary_key=True, autoincrement=True)
+    id = Column(BIGINT, primary_key=True, autoincrement=True, comment="Unique ID")
     banner_id = Column(
         String(36), nullable=False, default="", index=True, comment="Banner ID"
     )
