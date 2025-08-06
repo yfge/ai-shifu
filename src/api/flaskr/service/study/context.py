@@ -268,7 +268,7 @@ class RunScriptContext:
             if item.children:
                 for child in item.children:
                     q.put(child)
-        outline_item_info_db: list[tuple[bool, str]] = (
+        outline_item_info_db: list[tuple[str, bool]] = (
             db.session.query(
                 self._outline_model.outline_item_bid,
                 self._outline_model.hidden,
