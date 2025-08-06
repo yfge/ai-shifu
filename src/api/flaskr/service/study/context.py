@@ -1,3 +1,8 @@
+import queue
+import threading
+from typing import Generator, Union
+from enum import Enum
+from pydantic import BaseModel
 from flask import Flask
 from flaskr.dao import db
 from flaskr.service.shifu.shifu_struct_manager import ShifuOutlineItemDto, ShifuInfoDto
@@ -17,7 +22,6 @@ from flaskr.service.shifu.adapter import (
     generate_block_dto_from_model_internal,
     BlockDTO,
 )
-from typing import Generator, Union
 from langfuse.client import StatefulTraceClient
 from ...api.langfuse import langfuse_client as langfuse, MockClient
 from flaskr.service.common import raise_error
@@ -34,13 +38,10 @@ from flaskr.service.study.plugin import (
     handle_block_output,
     check_block_continue,
 )
-import queue
-from enum import Enum
+
 from flaskr.service.user.models import User
 from flaskr.service.order.consts import get_attend_status_values
 from flaskr.service.shifu.struct_utils import find_node_with_parents
-import threading
-from pydantic import BaseModel
 from flaskr.util import generate_id
 from flaskr.service.shifu.dtos import GotoDTO, GotoConditionDTO
 from flaskr.service.profile.funcs import get_user_variable_by_variable_id
