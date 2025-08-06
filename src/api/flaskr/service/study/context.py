@@ -308,7 +308,7 @@ class RunScriptContext:
                         # not sub node
                         current_node = item.children[index + 1]
                         if outline_item_hidden_map.get(current_node.bid, True):
-                            index = index + 1
+                            index += 1
                             continue
                         while (
                             current_node.children
