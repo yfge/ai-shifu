@@ -57,6 +57,10 @@ def get_course_info(app: Flask, course_id: str) -> AICourse:
 
 @register_schema_to_swagger
 class AICourseLessonAttendDTO:
+    """
+    AICourseLessonAttendDTO
+    """
+
     attend_id: str
     lesson_id: str
     course_id: str
@@ -85,6 +89,10 @@ class AICourseLessonAttendDTO:
 
 @register_schema_to_swagger
 class PayItemDto:
+    """
+    PayItemDto
+    """
+
     name: str
     price_name: str
     price: str
@@ -109,6 +117,10 @@ class PayItemDto:
 
 @register_schema_to_swagger
 class AICourseBuyRecordDTO:
+    """
+    AICourseBuyRecordDTO
+    """
+
     order_id: str
     user_id: str
     course_id: str
@@ -301,6 +313,10 @@ def init_buy_record(app: Flask, user_id: str, course_id: str, active_id: str = N
 
 @register_schema_to_swagger
 class BuyRecordDTO:
+    """
+    BuyRecordDTO
+    """
+
     order_id: str
     user_id: str  # 用户id
     price: str  # 价格
@@ -327,6 +343,9 @@ class BuyRecordDTO:
 def generate_charge(
     app: Flask, record_id: str, channel: str, client_ip: str
 ) -> BuyRecordDTO:
+    """
+    Generate charge
+    """
     with app.app_context():
         app.logger.info(
             "generate charge for record:{} channel:{}".format(record_id, channel)
@@ -457,6 +476,9 @@ def generate_charge(
 
 
 def success_buy_record_from_pingxx(app: Flask, charge_id: str, body: dict):
+    """
+    Success buy record from pingxx
+    """
     with app.app_context():
         pingxx_order = PingxxOrder.query.filter(
             PingxxOrder.charge_id == charge_id
@@ -550,6 +572,9 @@ def success_buy_record_from_pingxx(app: Flask, charge_id: str, body: dict):
 
 
 def success_buy_record(app: Flask, record_id: str):
+    """
+    Success buy record
+    """
     with app.app_context():
         app.logger.info('success buy record:"{}"'.format(record_id))
         buy_record = AICourseBuyRecord.query.filter(
@@ -598,6 +623,9 @@ def success_buy_record(app: Flask, record_id: str):
 def init_trial_lesson(
     app: Flask, user_id: str, course_id: str, preview_mode: bool = False
 ) -> list[AICourseLessonAttendDTO]:
+    """
+    Init trial lesson
+    """
     app.logger.info(
         "init trial lesson for user:{} course:{}".format(user_id, course_id)
     )
@@ -663,6 +691,9 @@ def init_trial_lesson(
 def init_trial_lesson_inner(
     app: Flask, user_id: str, course_id: str
 ) -> list[AICourseLessonAttendDTO]:
+    """
+    Init trial lesson inner
+    """
     app.logger.info(
         "init trial lesson for user:{} course:{}".format(user_id, course_id)
     )
@@ -700,6 +731,9 @@ def init_trial_lesson_inner(
 
 
 def query_raw_buy_record(app: Flask, user_id, course_id) -> AICourseBuyRecord:
+    """
+    Query raw buy record
+    """
     with app.app_context():
         buy_record = AICourseBuyRecord.query.filter(
             AICourseBuyRecord.course_id == course_id,
@@ -723,6 +757,9 @@ class DiscountInfo:
 def calculate_discount_value(
     app: Flask, price: str, active_records: list, discount_records: list
 ) -> DiscountInfo:
+    """
+    Calculate discount value
+    """
     discount_value = 0
     items = []
     if active_records is not None and len(active_records) > 0:
