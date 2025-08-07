@@ -1,3 +1,12 @@
+"""
+Shifu draft functions
+
+This module contains functions for managing shifu draft.
+
+Author: yfge
+Date: 2025-08-07
+"""
+
 from ...dao import db
 from datetime import datetime
 from .dtos import ShifuDto, ShifuDetailDto
@@ -19,6 +28,13 @@ from ..common.dtos import PageNationDTO
 
 
 def get_latest_shifu_draft(shifu_id: str) -> ShifuDraftShifu:
+    """
+    Get the latest shifu draft
+    Args:
+        shifu_id: Shifu ID
+    Returns:
+        ShifuDraftShifu: Shifu draft
+    """
     shifu_draft: ShifuDraftShifu = (
         ShifuDraftShifu.query.filter(
             ShifuDraftShifu.shifu_bid == shifu_id,
@@ -31,6 +47,13 @@ def get_latest_shifu_draft(shifu_id: str) -> ShifuDraftShifu:
 
 
 def return_shifu_draft_dto(shifu_draft: ShifuDraftShifu) -> ShifuDetailDto:
+    """
+    Return shifu draft dto
+    Args:
+        shifu_draft: Shifu draft
+    Returns:
+        ShifuDetailDto: Shifu detail dto
+    """
     return ShifuDetailDto(
         shifu_id=shifu_draft.shifu_bid,
         shifu_name=shifu_draft.title,
@@ -61,7 +84,21 @@ def create_shifu_draft(
     shifu_temperature: float = None,
     shifu_price: float = None,
 ):
-    """ """
+    """
+    Create a shifu draft
+    Args:
+        app: Flask application instance
+        user_id: User ID
+        shifu_name: Shifu name
+        shifu_description: Shifu description
+        shifu_image: Shifu image
+        shifu_keywords: Shifu keywords
+        shifu_model: Shifu model
+        shifu_temperature: Shifu temperature
+        shifu_price: Shifu price
+    Returns:
+        ShifuDto: Shifu dto
+    """
     with app.app_context():
         now_time = datetime.now()
 
@@ -123,6 +160,15 @@ def create_shifu_draft(
 
 
 def get_shifu_draft_info(app, user_id: str, shifu_id: str) -> ShifuDetailDto:
+    """
+    Get shifu draft info
+    Args:
+        app: Flask application instance
+        user_id: User ID
+        shifu_id: Shifu ID
+    Returns:
+        ShifuDetailDto: Shifu detail dto
+    """
     with app.app_context():
         shifu_draft = get_latest_shifu_draft(shifu_id)
         if not shifu_draft:
@@ -142,6 +188,22 @@ def save_shifu_draft_info(
     shifu_temperature: float,
     shifu_price: float,
 ):
+    """
+    Save shifu draft info
+    Args:
+        app: Flask application instance
+        user_id: User ID
+        shifu_id: Shifu ID
+        shifu_name: Shifu name
+        shifu_description: Shifu description
+        shifu_avatar: Shifu avatar
+        shifu_keywords: Shifu keywords
+        shifu_model: Shifu model
+        shifu_temperature: Shifu temperature
+        shifu_price: Shifu price
+    Returns:
+        ShifuDetailDto: Shifu detail dto
+    """
     with app.app_context():
         shifu_draft = get_latest_shifu_draft(shifu_id)
         if not shifu_draft:
@@ -191,6 +253,17 @@ def save_shifu_draft_info(
 def get_shifu_draft_list(
     app, user_id: str, page_index: int, page_size: int, is_favorite: bool
 ):
+    """
+    Get shifu draft list
+    Args:
+        app: Flask application instance
+        user_id: User ID
+        page_index: Page index
+        page_size: Page size
+        is_favorite: Is favorite
+    Returns:
+        PageNationDTO: Page nation dto
+    """
     with app.app_context():
         page_index = max(page_index, 1)
         page_size = max(page_size, 1)
@@ -269,6 +342,22 @@ def save_shifu_draft_detail(
     shifu_price: float,
     shifu_temperature: float,
 ):
+    """
+    Save shifu draft detail
+    Args:
+        app: Flask application instance
+        user_id: User ID
+        shifu_id: Shifu ID
+        shifu_name: Shifu name
+        shifu_description: Shifu description
+        shifu_avatar: Shifu avatar
+        shifu_keywords: Shifu keywords
+        shifu_model: Shifu model
+        shifu_price: Shifu price
+        shifu_temperature: Shifu temperature
+    Returns:
+        ShifuDetailDto: Shifu detail dto
+    """
     with app.app_context():
         shifu_draft = get_latest_shifu_draft(shifu_id)
         if shifu_draft:

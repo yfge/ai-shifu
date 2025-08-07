@@ -12,6 +12,13 @@ import re
 import time
 from .models import ShifuDraftShifu
 from ...service.resource.models import Resource
+from aliyunsdkcore.client import AcsClient
+from aliyunsdkcdn.request.v20180510.PushObjectCacheRequest import (
+    PushObjectCacheRequest,
+)
+from aliyunsdkcdn.request.v20180510.DescribeRefreshTasksRequest import (
+    DescribeRefreshTasksRequest,
+)
 
 
 def mark_favorite_shifu(app, user_id: str, shifu_id: str):
@@ -44,6 +51,17 @@ def mark_favorite_shifu(app, user_id: str, shifu_id: str):
 
 # unmark favorite shifu
 def unmark_favorite_shifu(app, user_id: str, shifu_id: str):
+    """
+    Unmark a shifu as favorite for a user.
+
+    Args:
+        app: Flask application instance
+        user_id: User ID
+        shifu_id: Shifu ID to unmark as favorite
+
+    Returns:
+        bool: True if successful
+    """
     with app.app_context():
         favorite_shifu = FavoriteScenario.query.filter_by(
             scenario_id=shifu_id, user_id=user_id
@@ -56,6 +74,18 @@ def unmark_favorite_shifu(app, user_id: str, shifu_id: str):
 
 
 def mark_or_unmark_favorite_shifu(app, user_id: str, shifu_id: str, is_favorite: bool):
+    """
+    Mark or unmark a shifu as favorite for a user.
+
+    Args:
+        app: Flask application instance
+        user_id: User ID
+        shifu_id: Shifu ID to mark or unmark as favorite
+        is_favorite: Whether to mark or unmark as favorite
+
+    Returns:
+        bool: True if successful
+    """
     if is_favorite:
         return mark_favorite_shifu(app, user_id, shifu_id)
     else:
@@ -63,6 +93,15 @@ def mark_or_unmark_favorite_shifu(app, user_id: str, shifu_id: str, is_favorite:
 
 
 def get_content_type(filename):
+    """
+    Get the content type of a file.
+
+    Args:
+        filename: The filename to get the content type of
+    Returns:
+        The content type of the file
+    """
+
     extension = filename.rsplit(".", 1)[1].lower()
     if extension in ["jpg", "jpeg"]:
         return "image/jpeg"
@@ -74,16 +113,20 @@ def get_content_type(filename):
 
 
 def _warm_up_cdn(app, url: str, ALI_API_ID: str, ALI_API_SECRET: str, endpoint: str):
+    """
+    Warm up a CDN URL.
+
+    Args:
+        app: Flask application instance
+        url: The URL to warm up
+        ALI_API_ID: The Alibaba Cloud API ID
+        ALI_API_SECRET: The Alibaba Cloud API Secret
+        endpoint: The Alibaba Cloud endpoint
+
+    Returns:
+        bool: True if successful
+    """
     try:
-        from aliyunsdkcore.client import AcsClient
-        from aliyunsdkcdn.request.v20180510.PushObjectCacheRequest import (
-            PushObjectCacheRequest,
-        )
-        from aliyunsdkcdn.request.v20180510.DescribeRefreshTasksRequest import (
-            DescribeRefreshTasksRequest,
-        )
-        import json
-        import requests
 
         file_id = url.split("/")[-1]
 
@@ -159,6 +202,18 @@ def _warm_up_cdn(app, url: str, ALI_API_ID: str, ALI_API_SECRET: str, endpoint: 
 
 
 def _upload_to_oss(app, file_content, file_id: str, content_type: str) -> str:
+    """
+    Upload a file to OSS.
+
+    Args:
+        app: Flask application instance
+        file_content: The content of the file
+        file_id: The ID of the file
+        content_type: The content type of the file
+
+    Returns:
+        str: The URL of the uploaded file
+    """
     endpoint = get_config("ALIBABA_CLOUD_OSS_COURSES_ENDPOINT")
     ALI_API_ID = get_config("ALIBABA_CLOUD_OSS_COURSES_ACCESS_KEY_ID", None)
     ALI_API_SECRET = get_config("ALIBABA_CLOUD_OSS_COURSES_ACCESS_KEY_SECRET", None)
@@ -191,6 +246,18 @@ def _upload_to_oss(app, file_content, file_id: str, content_type: str) -> str:
 
 
 def upload_file(app, user_id: str, resource_id: str, file) -> str:
+    """
+    Upload a file to OSS.
+
+    Args:
+        app: Flask application instance
+        user_id: User ID
+        resource_id: Resource ID
+        file: The file to upload
+
+    Returns:
+        str: The URL of the uploaded file
+    """
     with app.app_context():
         isUpdate = False
         if resource_id == "":
@@ -227,6 +294,17 @@ def upload_file(app, user_id: str, resource_id: str, file) -> str:
 
 
 def upload_url(app, user_id: str, url: str) -> str:
+    """
+    Upload a file from a URL to OSS.
+
+    Args:
+        app: Flask application instance
+        user_id: User ID
+        url: The URL of the file to upload
+
+    Returns:
+        str: The URL of the uploaded file
+    """
     with app.app_context():
         try:
             # Validate URL format
@@ -305,6 +383,18 @@ def shifu_permission_verification(
     shifu_id: str,
     auth_type: str,
 ):
+    """
+    Verify the permission of a user to a shifu.
+
+    Args:
+        app: Flask application instance
+        user_id: User ID
+        shifu_id: Shifu ID
+        auth_type: The type of permission to verify
+
+    Returns:
+        bool: True if the user has the permission
+    """
     with app.app_context():
         cache_key = (
             get_config("REDIS_KEY_PREFIX", "ai-shifu:")
@@ -352,7 +442,15 @@ def shifu_permission_verification(
 
 def get_video_info(app, user_id: str, url: str) -> dict:
     """
-    Obtain video information
+    Obtain video information from a URL.
+
+    Args:
+        app: Flask application instance
+        user_id: User ID
+        url: The URL of the video to get information from
+
+    Returns:
+        dict: The video information
     """
     with app.app_context():
         try:

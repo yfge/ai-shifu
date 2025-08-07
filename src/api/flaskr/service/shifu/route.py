@@ -1,3 +1,34 @@
+"""
+Shifu route
+
+This module contains route functions for shifu.
+use restful api to manage shifu.
+will be auto registered by flaskr.framework.plugin.inject.inject
+includes:
+    - get shifu list
+    - create shifu
+    - get shifu detail
+    - save shifu detail
+    - mark favorite shifu
+    - publish shifu
+    - preview shifu
+    - reorder outline tree
+    - create outline
+    - modify outline
+    - get outline info
+    - delete outline
+    - get outline tree
+    - get block list
+    - save blocks
+    - add block
+    - upload file
+    - upload url
+    - get video info
+
+Author: yfge
+Date: 2025-08-07
+"""
+
 from flask import Flask, request, current_app
 from .funcs import (
     mark_or_unmark_favorite_shifu,
@@ -45,10 +76,12 @@ class ShifuPermission(Enum):
     PUBLISH = "publish"
 
 
-# Shifu permission verification decorator
-# @ShifuTokenValidation(ShifuPermission.xxx)
-# If is_creator is true, only verify whether there is creator permission
 class ShifuTokenValidation:
+    """
+    Shifu token validation decorator
+    if is_creator is true, only verify creator permission and skip shifu-specific verification
+    """
+
     def __init__(
         self,
         permission: ShifuPermission = ShifuPermission.VIEW,
@@ -102,6 +135,9 @@ class ShifuTokenValidation:
 
 @inject
 def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
+    """
+    Register shifu routes
+    """
     app.logger.info(f"register shifu routes {path_prefix}")
 
     @app.route(path_prefix + "/shifus", methods=["GET"])

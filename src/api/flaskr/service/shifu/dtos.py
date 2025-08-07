@@ -1,5 +1,16 @@
+"""
+Shifu dtos
+
+This module contains dtos for shifu.
+
+Author: yfge
+Date: 2025-08-07
+"""
+
 from flaskr.common.swagger import register_schema_to_swagger
-from flaskr.service.shifu.models import ShifuDraftOutlineItem
+from flaskr.service.shifu.models import (
+    ShifuDraftOutlineItem,
+)
 from flaskr.service.profile.dtos import (
     TextProfileDto,
     SelectProfileDto,

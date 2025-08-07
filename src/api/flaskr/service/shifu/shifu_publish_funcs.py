@@ -1,3 +1,12 @@
+"""
+Shifu publish funcs
+
+This module contains functions for publishing shifu.
+
+Author: yfge
+Date: 2025-08-07
+"""
+
 from flaskr.service.shifu.shifu_draft_funcs import get_latest_shifu_draft
 from flaskr.service.common import raise_error
 from flaskr.dao import db
@@ -34,6 +43,9 @@ from flaskr.service.shifu.consts import (
 
 
 def preview_shifu_draft(app, user_id: str, shifu_id: str, variables: dict, skip: bool):
+    """
+    Preview shifu draft
+    """
     with app.app_context():
         shifu_draft = get_latest_shifu_draft(shifu_id)
         if not shifu_draft:

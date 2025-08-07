@@ -1,3 +1,19 @@
+"""
+Shifu adapter
+
+This module contains adapter functions for shifu.
+
+includes:
+    - convert html to markdown
+    - convert markdown to html
+    - convert outline to reorder outline item dto
+    - convert block dto to model
+    - convert model to block dto
+
+Author: yfge
+Date: 2025-08-07
+"""
+
 from flaskr.service.shifu.dtos import (
     BlockUpdateResultDto,
     ReorderOutlineItemDto,
@@ -14,11 +30,15 @@ from flaskr.service.shifu.dtos import (
     CheckCodeDTO,
     PhoneDTO,
 )
-from flaskr.service.profile.dtos import ProfileItemDefinition
 from flaskr.i18n import _
 from flask import current_app as app
 
-from flaskr.service.lesson.models import AILessonScript
+from flaskr.service.lesson.models import (
+    AILessonScript,
+)
+from flaskr.service.profile.dtos import (
+    ProfileItemDefinition,
+)
 from flaskr.service.lesson.const import (
     SCRIPT_TYPE_FIX,
     SCRIPT_TYPE_PROMPT,

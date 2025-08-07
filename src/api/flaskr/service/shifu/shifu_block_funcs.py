@@ -1,3 +1,12 @@
+"""
+Shifu block functions
+
+This module contains functions for managing shifu blocks.
+
+Author: yfge
+Date: 2025-08-07
+"""
+
 from flaskr.dao import db
 from flaskr.service.shifu.dtos import (
     SaveBlockListResultDto,
@@ -43,6 +52,15 @@ def __get_block_list_internal(outline_id: str) -> list[ShifuDraftBlock]:
 
 
 def get_block_list(app, user_id: str, outline_id: str) -> list[BlockDTO]:
+    """
+    Get block list
+    Args:
+        app: Flask application instance
+        user_id: User ID
+        outline_id: Outline ID
+    Returns:
+        list[BlockDTO]: Block list
+    """
     with app.app_context():
         app.logger.info(f"get block list: {outline_id}")
         blocks = __get_block_list_internal(outline_id)
@@ -56,6 +74,14 @@ def get_block_list(app, user_id: str, outline_id: str) -> list[BlockDTO]:
 
 
 def delete_block(app, user_id: str, outline_id: str, block_id: str):
+    """
+    Delete a block
+    Args:
+        app: Flask application instance
+        user_id: User ID
+        outline_id: Outline ID
+        block_id: Block ID
+    """
     with app.app_context():
         app.logger.info(f"delete block: {outline_id}, {block_id}")
         blocks = __get_block_list_internal(outline_id)
@@ -86,6 +112,14 @@ def delete_block(app, user_id: str, outline_id: str, block_id: str):
 
 
 def get_block(app, user_id: str, outline_id: str, block_id: str) -> BlockDTO:
+    """
+    Get a block
+    Args:
+        app: Flask application instance
+        user_id: User ID
+        outline_id: Outline ID
+        block_id: Block ID
+    """
     with app.app_context():
         app.logger.info(f"get block: {outline_id}, {block_id}")
 
@@ -95,6 +129,14 @@ def get_block(app, user_id: str, outline_id: str, block_id: str) -> BlockDTO:
 def save_shifu_block_list(
     app, user_id: str, outline_id: str, block_list: list[BlockDTO]
 ) -> SaveBlockListResultDto:
+    """
+    Save a block list
+    Args:
+        app: Flask application instance
+        user_id: User ID
+        outline_id: Outline ID
+        block_list: Block list
+    """
     with app.app_context():
         app.logger.info(f"save block list: {outline_id}, {block_list}")
         now_time = datetime.now()
@@ -215,6 +257,15 @@ def save_shifu_block_list(
 def add_block(
     app, user_id: str, outline_id: str, block: dict, block_index: int
 ) -> BlockDTO:
+    """
+    Add a block
+    Args:
+        app: Flask application instance
+        user_id: User ID
+        outline_id: Outline ID
+        block: Block
+        block_index: Block index
+    """
     with app.app_context():
         now_time = datetime.now()
         outline: ShifuDraftOutlineItem = (
@@ -278,10 +329,3 @@ def add_block(
         save_blocks_history(app, user_id, outline.shifu_bid, outline_id, blocks_history)
         db.session.commit()
         return generate_block_dto_from_model_internal(block_model)
-
-
-def delete_block_list(
-    app, user_id: str, outline_id: str, block_list: list[dict]
-) -> bool:
-    with app.app_context():
-        app.logger.info(f"delete block list: {outline_id}, {block_list}")

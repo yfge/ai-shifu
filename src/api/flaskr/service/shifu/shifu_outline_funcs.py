@@ -28,14 +28,6 @@ from .shifu_history_manager import (
 from datetime import datetime
 
 
-# get existing outline items
-# author: yfge
-# date: 2025-07-13
-# version: 1.0.0
-# description: this function is used to get existing outline items
-# usage:
-# 1. get existing outline items
-# 2. sort outline items by position
 def __get_existing_outline_items(shifu_bid: str) -> list[ShifuDraftOutlineItem]:
     sub_query = (
         db.session.query(db.func.max(ShifuDraftOutlineItem.id))
@@ -52,8 +44,15 @@ def __get_existing_outline_items(shifu_bid: str) -> list[ShifuDraftOutlineItem]:
     return sorted(outline_items, key=lambda x: (len(x.position), x.position))
 
 
-# build outline tree
 def build_outline_tree(app, shifu_bid: str) -> list[ShifuOutlineTreeNode]:
+    """
+    Build outline tree
+    Args:
+        app: Flask application instance
+        shifu_bid: Shifu bid
+    Returns:
+        list[ShifuOutlineTreeNode]: Outline tree
+    """
     outline_items = __get_existing_outline_items(shifu_bid)
     sorted_items = sorted(outline_items, key=lambda x: (len(x.position), x.position))
     outline_tree = []

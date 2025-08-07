@@ -39,6 +39,13 @@ from flaskr.service.shifu.utils import parse_shifu_res_bid
 
 
 def migrate_shifu_draft_to_shifu_draft_v2(app, shifu_bid: str):
+    """
+    Migrate a shifu draft to a shifu draft v2.
+
+    Args:
+        app: Flask application instance
+        shifu_bid: The ID of the shifu to migrate
+    """
     with app.app_context():
         app.logger.info(
             f"migrate shifu draft to shifu draft v2, shifu_bid: {shifu_bid}"
