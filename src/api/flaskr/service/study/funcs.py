@@ -420,23 +420,20 @@ def get_script_info(
     Get the script info
     """
     with app.app_context():
-
         block_model: Union[ShifuDraftBlock, ShifuPublishedBlock] = (
             ShifuDraftBlock if preview_mode else ShifuPublishedBlock
         )
-        outline_item: ShifuOutlineItemDto = get_outline_item_dto(
-            app, script_id, preview_mode
-        )
-        if not outline_item:
-            return None
-
         block_info = block_model.query.filter(
             block_model.block_bid == script_id,
             block_model.deleted == 0,
         ).first()
         if not block_info:
             return None
-
+        outline_item: ShifuOutlineItemDto = get_outline_item_dto(
+            app, block_info.outline_item_bid, preview_mode
+        )
+        if not outline_item:
+            return None
         return ScriptInfoDTO(
             block_info.position - 1,
             outline_item.title,
