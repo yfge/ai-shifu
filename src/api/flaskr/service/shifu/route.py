@@ -359,8 +359,8 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                 shifu_avatar,
                 shifu_keywords,
                 shifu_model,
-                shifu_price,
                 shifu_temperature,
+                shifu_price,
             )
         )
 
