@@ -1,4 +1,3 @@
-from flaskr.framework.plugin.plugin_manager import extension
 from .dtos import (
     ReorderOutlineItemDto,
     SimpleOutlineDto,
@@ -104,10 +103,7 @@ def get_outline_tree_dto(
 # 1. get outline tree
 # 2. return outline tree
 # 3. it's a plugin function to get outline tree of new shifu draft
-@extension("get_outline_tree")
-def get_outline_tree(
-    result, app, user_id: str, shifu_bid: str
-) -> list[SimpleOutlineDto]:
+def get_outline_tree(app, user_id: str, shifu_bid: str) -> list[SimpleOutlineDto]:
     """get outline tree"""
     app.logger.info(f"get outline tree, user_id: {user_id}, shifu_bid: {shifu_bid}")
     with app.app_context():
@@ -126,9 +122,7 @@ def get_outline_tree(
 # 2. add a child to the outline
 # 3. remove a child from the outline
 # 4. it's a plugin function to create outline of new shifu draft and parallel to create outline of old shifu draft
-@extension("create_outline")
 def create_outline(
-    result: SimpleOutlineDto,
     app,
     user_id: str,
     shifu_id: str,
@@ -144,10 +138,7 @@ def create_outline(
     with app.app_context():
         now_time = datetime.now()
         # generate new outline id
-        if result and result.bid:
-            outline_bid = result.bid
-        else:
-            outline_bid = generate_id(app)
+        outline_bid = generate_id(app)
 
         # validate name length
         if len(outline_name) > 100:
@@ -230,9 +221,7 @@ def create_outline(
 # 1. modify outline
 # 2. it's a plugin function to modify outline of new shifu draft
 #    and parallel to modify outline of old shifu draft
-@extension("modify_outline")
 def modify_outline(
-    result,
     app,
     user_id: str,
     shifu_id: str,
@@ -304,8 +293,7 @@ def modify_outline(
 # 1. delete outline
 # 2. it's a plugin function to delete outline of new shifu draft
 #    and parallel to delete outline of old shifu draft
-@extension("delete_outline")
-def delete_outline(result, app, user_id: str, shifu_id: str, outline_id: str):
+def delete_outline(app, user_id: str, shifu_id: str, outline_id: str):
     """delete outline"""
     with app.app_context():
         now_time = datetime.now()
@@ -381,9 +369,8 @@ def delete_outline(result, app, user_id: str, shifu_id: str, outline_id: str):
 # 1. reorder outline tree
 # 2. it's a plugin function to reorder outline tree of new shifu draft
 #    and parallel to reorder outline tree of old shifu draft
-@extension("reorder_outline_tree")
 def reorder_outline_tree(
-    result, app, user_id: str, shifu_id: str, outlines: list[ReorderOutlineItemDto]
+    app, user_id: str, shifu_id: str, outlines: list[ReorderOutlineItemDto]
 ):
     """reorder outline tree"""
     with app.app_context():
@@ -453,8 +440,7 @@ def reorder_outline_tree(
 # 1. get unit by id
 # 2. it's a plugin function to get unit by id of new shifu draft
 #    and parallel to get unit by id of old shifu draft
-@extension("get_unit_by_id")
-def get_unit_by_id(result, app, user_id: str, unit_id: str):
+def get_unit_by_id(app, user_id: str, unit_id: str):
     """get unit by id"""
     with app.app_context():
         unit: ShifuDraftOutlineItem = (
@@ -492,9 +478,7 @@ def get_unit_by_id(result, app, user_id: str, unit_id: str):
 # 1. modify unit
 # 2. it's a plugin function to modify unit of new shifu draft
 #    and parallel to modify unit of old shifu draft
-@extension("modify_unit")
 def modify_unit(
-    result,
     app,
     user_id: str,
     unit_id: str,
@@ -581,8 +565,7 @@ def modify_unit(
 # 1. delete unit
 # 2. it's a plugin function to delete unit of new shifu draft
 #    and parallel to delete unit of old shifu draft
-@extension("delete_unit")
-def delete_unit(result, app, user_id: str, unit_id: str):
+def delete_unit(app, user_id: str, unit_id: str):
     """delete unit"""
     with app.app_context():
         now_time = datetime.now()

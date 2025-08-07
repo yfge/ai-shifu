@@ -1,4 +1,3 @@
-from flaskr.framework.plugin.plugin_manager import extension
 from flaskr.dao import db
 from flaskr.service.shifu.dtos import (
     SaveBlockListResultDto,
@@ -44,8 +43,7 @@ def __get_block_list_internal(outline_id: str) -> list[ShifuDraftBlock]:
     return blocks
 
 
-@extension("get_block_list")
-def get_block_list(result, app, user_id: str, outline_id: str) -> list[BlockDTO]:
+def get_block_list(app, user_id: str, outline_id: str) -> list[BlockDTO]:
     with app.app_context():
         app.logger.info(f"get block list: {outline_id}")
         blocks = __get_block_list_internal(outline_id)
@@ -58,8 +56,7 @@ def get_block_list(result, app, user_id: str, outline_id: str) -> list[BlockDTO]
         return block_dtos
 
 
-@extension("delete_block")
-def delete_block(result, app, user_id: str, outline_id: str, block_id: str):
+def delete_block(app, user_id: str, outline_id: str, block_id: str):
     with app.app_context():
         app.logger.info(f"delete block: {outline_id}, {block_id}")
         blocks = __get_block_list_internal(outline_id)
@@ -89,17 +86,15 @@ def delete_block(result, app, user_id: str, outline_id: str, block_id: str):
         return True
 
 
-@extension("get_block")
-def get_block(result, app, user_id: str, outline_id: str, block_id: str) -> BlockDTO:
+def get_block(app, user_id: str, outline_id: str, block_id: str) -> BlockDTO:
     with app.app_context():
         app.logger.info(f"get block: {outline_id}, {block_id}")
 
         return None
 
 
-@extension("save_block_list")
 def save_shifu_block_list(
-    result, app, user_id: str, outline_id: str, block_list: list[BlockDTO]
+    app, user_id: str, outline_id: str, block_list: list[BlockDTO]
 ) -> SaveBlockListResultDto:
     with app.app_context():
         app.logger.info(f"save block list: {outline_id}, {block_list}")
@@ -218,9 +213,8 @@ def save_shifu_block_list(
         )
 
 
-@extension("add_block")
 def add_block(
-    result: BlockDTO, app, user_id: str, outline_id: str, block: dict, block_index: int
+    app, user_id: str, outline_id: str, block: dict, block_index: int
 ) -> BlockDTO:
     with app.app_context():
         now_time = datetime.now()
@@ -235,10 +229,7 @@ def add_block(
             raise_error("SHIFU.OUTLINE_NOT_FOUND")
         if outline.deleted == 1:
             raise_error("SHIFU.OUTLINE_NOT_FOUND")
-        if result is not None:
-            block_bid = result.bid
-        else:
-            block_bid = generate_id(app)
+        block_bid = generate_id(app)
         block_dto = convert_to_blockDTO(block)
         block_index = block_index + 1
         variable_definitions = get_profile_item_definition_list(app, outline.shifu_bid)
@@ -290,9 +281,8 @@ def add_block(
         return generate_block_dto_from_model_internal(block_model)
 
 
-@extension("delete_block_list")
 def delete_block_list(
-    result, app, user_id: str, outline_id: str, block_list: list[dict]
+    app, user_id: str, outline_id: str, block_list: list[dict]
 ) -> bool:
     with app.app_context():
         app.logger.info(f"delete block list: {outline_id}, {block_list}")

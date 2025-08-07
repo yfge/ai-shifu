@@ -1,4 +1,3 @@
-from flaskr.framework.plugin.plugin_manager import extension
 from flaskr.service.shifu.shifu_draft_funcs import get_latest_shifu_draft
 from flaskr.service.common import raise_error
 from flaskr.dao import db
@@ -34,8 +33,7 @@ from flaskr.service.shifu.consts import (
 )
 
 
-@extension("publish_shifu")
-def publish_shifu_draft(result, app, user_id: str, shifu_id: str):
+def publish_shifu_draft(app, user_id: str, shifu_id: str):
     with app.app_context():
         now_time = datetime.now()
         shifu_draft = get_latest_shifu_draft(shifu_id)

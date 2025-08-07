@@ -12,7 +12,6 @@ from .utils import (
     get_shifu_res_url_dict,
 )
 from .models import ShifuDraftShifu, AiCourseAuth
-from flaskr.framework.plugin.plugin_manager import extension
 from .shifu_history_manager import save_shifu_history
 from ..common.dtos import PageNationDTO
 
@@ -51,9 +50,7 @@ def return_shifu_draft_dto(shifu_draft: ShifuDraftShifu) -> ShifuDetailDto:
     )
 
 
-@extension("create_shifu")
 def create_shifu_draft(
-    result: ShifuDto,
     app,
     user_id: str,
     shifu_name: str,
@@ -67,10 +64,8 @@ def create_shifu_draft(
     """ """
     with app.app_context():
         now_time = datetime.now()
-        if result and result.bid:
-            shifu_id = result.bid
-        else:
-            shifu_id = generate_id(app)
+
+        shifu_id = generate_id(app)
 
         if not shifu_name:
             raise_error("SHIFU.SHIFU_NAME_REQUIRED")
@@ -127,9 +122,7 @@ def create_shifu_draft(
         )
 
 
-@extension("get_shifu_info")
-@extension("get_shifu_detail")
-def get_shifu_draft_info(result, app, user_id: str, shifu_id: str) -> ShifuDetailDto:
+def get_shifu_draft_info(app, user_id: str, shifu_id: str) -> ShifuDetailDto:
     with app.app_context():
         shifu_draft = get_latest_shifu_draft(shifu_id)
         if not shifu_draft:
@@ -137,10 +130,7 @@ def get_shifu_draft_info(result, app, user_id: str, shifu_id: str) -> ShifuDetai
         return return_shifu_draft_dto(shifu_draft)
 
 
-@extension("save_shifu_info")
-@extension("save_shifu_detail")
 def save_shifu_draft_info(
-    result,
     app,
     user_id: str,
     shifu_id: str,
@@ -198,9 +188,8 @@ def save_shifu_draft_info(
         return return_shifu_draft_dto(shifu_draft)
 
 
-@extension("get_shifu_list")
 def get_shifu_draft_list(
-    result, app, user_id: str, page_index: int, page_size: int, is_favorite: bool
+    app, user_id: str, page_index: int, page_size: int, is_favorite: bool
 ):
     with app.app_context():
         page_index = max(page_index, 1)
@@ -268,9 +257,7 @@ def get_shifu_draft_list(
         return PageNationDTO(page_index, page_size, total, shifu_dtos)
 
 
-@extension("save_shifu_detail")
 def save_shifu_draft_detail(
-    result,
     app,
     user_id: str,
     shifu_id: str,

@@ -5,7 +5,6 @@ from ..lesson.models import AICourse, AILesson, AILessonScript
 from ...util.uuid import generate_id
 from ...util.prompt_loader import load_prompt_template
 from .models import FavoriteScenario, AiCourseAuth
-from ..common.dtos import PageNationDTO
 from ...service.lesson.const import (
     STATUS_PUBLISH,
     STATUS_DRAFT,
@@ -39,127 +38,6 @@ import threading
 
 
 from flaskr.framework.plugin.plugin_manager import extensible
-
-
-def get_raw_shifu_list(
-    app, user_id: str, page_index: int, page_size: int
-) -> PageNationDTO:
-    try:
-        page_index = max(page_index, 1)
-        page_size = max(page_size, 1)
-        page_offset = (page_index - 1) * page_size
-
-        created_total = AICourse.query.filter(
-            AICourse.created_user_id == user_id
-        ).count()
-        shared_total = AiCourseAuth.query.filter(
-            AiCourseAuth.user_id == user_id,
-        ).count()
-        total = created_total + shared_total
-
-        created_subquery = (
-            db.session.query(db.func.max(AICourse.id))
-            .filter(
-                AICourse.created_user_id == user_id,
-                AICourse.status.in_([STATUS_PUBLISH, STATUS_DRAFT]),
-            )
-            .group_by(AICourse.course_id)
-        )
-
-        shared_course_ids = (
-            db.session.query(AiCourseAuth.course_id)
-            .filter(AiCourseAuth.user_id == user_id)
-            .subquery()
-        )
-
-        shared_subquery = (
-            db.session.query(db.func.max(AICourse.id))
-            .filter(
-                AICourse.course_id.in_(shared_course_ids),
-                AICourse.status.in_([STATUS_PUBLISH, STATUS_DRAFT]),
-            )
-            .group_by(AICourse.course_id)
-        )
-
-        union_subquery = created_subquery.union(shared_subquery).subquery()
-
-        courses = (
-            db.session.query(AICourse)
-            .filter(AICourse.id.in_(union_subquery))
-            .order_by(AICourse.id.desc())
-            .offset(page_offset)
-            .limit(page_size)
-            .all()
-        )
-
-        infos = [f"{c.course_id} + {c.course_name} + {c.status}\r\n" for c in courses]
-        app.logger.info(f"{infos}")
-        shifu_dtos = [
-            ShifuDto(
-                course.course_id,
-                course.course_name,
-                course.course_desc,
-                course.course_teacher_avatar,
-                course.status,
-                False,
-            )
-            for course in courses
-        ]
-        return PageNationDTO(page_index, page_size, total, shifu_dtos)
-    except Exception as e:
-        app.logger.error(f"get raw shifu list failed: {e}")
-        return PageNationDTO(0, 0, 0, [])
-
-
-def get_favorite_shifu_list(
-    app, user_id: str, page_index: int, page_size: int
-) -> PageNationDTO:
-    try:
-        page_index = max(page_index, 1)
-        page_size = max(page_size, 1)
-        page_offset = (page_index - 1) * page_size
-        total = FavoriteScenario.query.filter(
-            FavoriteScenario.user_id == user_id
-        ).count()
-        favorite_scenarios = (
-            FavoriteScenario.query.filter(FavoriteScenario.user_id == user_id)
-            .order_by(FavoriteScenario.id.desc())
-            .offset(page_offset)
-            .limit(page_size)
-            .all()
-        )
-        shifu_ids = [
-            favorite_scenario.scenario_id for favorite_scenario in favorite_scenarios
-        ]
-        courses = AICourse.query.filter(
-            AICourse.course_id.in_(shifu_ids),
-            AICourse.status.in_([STATUS_PUBLISH, STATUS_DRAFT]),
-        ).all()
-        shifu_dtos = [
-            ShifuDto(
-                course.course_id,
-                course.course_name,
-                course.course_desc,
-                course.course_teacher_avatar,
-                course.status,
-                True,
-            )
-            for course in courses
-        ]
-        return PageNationDTO(page_index, page_size, total, shifu_dtos)
-    except Exception as e:
-        app.logger.error(f"get favorite shifu list failed: {e}")
-        return PageNationDTO(0, 0, 0, [])
-
-
-@extensible
-def get_shifu_list(
-    app, user_id: str, page_index: int, page_size: int, is_favorite: bool
-) -> PageNationDTO:
-    if is_favorite:
-        return get_favorite_shifu_list(app, user_id, page_index, page_size)
-    else:
-        return get_raw_shifu_list(app, user_id, page_index, page_size)
 
 
 @extensible
