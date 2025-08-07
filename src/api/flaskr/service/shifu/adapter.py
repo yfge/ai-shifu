@@ -196,7 +196,6 @@ def convert_to_blockDTO(json_object: dict) -> BlockDTO:
     )
 
 
-
 def _get_lang_dict(lang: str) -> dict[str, str]:
 
     if isinstance(lang, dict):
@@ -788,14 +787,10 @@ def generate_block_dto_from_model_internal(
         bid=block_model.block_bid,
         block_content=CONTENT_TYPE[type](**json.loads(block_model.content)),
         variable_bids=(
-            block_model.variable_bids.split(",")
-            if block_model.variable_bids
-            else []
+            block_model.variable_bids.split(",") if block_model.variable_bids else []
         ),
         resource_bids=(
-            block_model.resource_bids.split(",")
-            if block_model.resource_bids
-            else []
+            block_model.resource_bids.split(",") if block_model.resource_bids else []
         ),
     )
     if convert_html:
