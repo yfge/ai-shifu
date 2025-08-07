@@ -19,17 +19,22 @@ from flaskr.service.shifu.shifu_draft_funcs import (
     get_shifu_draft_list,
     create_shifu_draft,
     get_shifu_draft_info,
+    save_shifu_draft_info,
 )
-from flaskr.service.shifu.shifu_draft_funcs import save_shifu_draft_info
 from flaskr.service.shifu.shifu_publish_funcs import publish_shifu_draft
-from flaskr.service.shifu.shifu_outline_funcs import reorder_outline_tree
-from flaskr.service.shifu.shifu_outline_funcs import create_outline
-from flaskr.service.shifu.shifu_outline_funcs import modify_unit
-from flaskr.service.shifu.shifu_outline_funcs import get_unit_by_id
-from flaskr.service.shifu.shifu_outline_funcs import delete_unit
-from flaskr.service.shifu.shifu_outline_funcs import get_outline_tree
-from flaskr.service.shifu.shifu_block_funcs import get_block_list, save_shifu_block_list
-from flaskr.service.shifu.shifu_block_funcs import add_block
+from flaskr.service.shifu.shifu_outline_funcs import (
+    reorder_outline_tree,
+    create_outline,
+    modify_unit,
+    get_unit_by_id,
+    delete_unit,
+    get_outline_tree,
+)
+from flaskr.service.shifu.shifu_block_funcs import (
+    get_block_list,
+    save_shifu_block_list,
+    add_block,
+)
 
 
 class ShifuPermission(Enum):
