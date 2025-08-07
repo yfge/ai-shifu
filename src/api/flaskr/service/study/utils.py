@@ -50,20 +50,20 @@ def generation_attend(
     if block_type is None:
         app.logger.error(f"Invalid block type: {block_dto.type}")
         block_type = 0
-    attendScript: AICourseLessonAttendScript = AICourseLessonAttendScript()
-    attendScript.attend_id = attend_id
-    attendScript.user_id = user_info.user_id
-    attendScript.lesson_id = outline_item_info.bid
-    attendScript.course_id = outline_item_info.shifu_bid
-    attendScript.script_id = block_dto.bid
-    attendScript.script_ui_type = block_type
-    attendScript.log_id = generate_id(app)
-    attendScript.status = 1
+    attend_script: AICourseLessonAttendScript = AICourseLessonAttendScript()
+    attend_script.attend_id = attend_id
+    attend_script.user_id = user_info.user_id
+    attend_script.lesson_id = outline_item_info.bid
+    attend_script.course_id = outline_item_info.shifu_bid
+    attend_script.script_id = block_dto.bid
+    attend_script.script_ui_type = block_type
+    attend_script.log_id = generate_id(app)
+    attend_script.status = 1
     if with_ui_conf:
-        attendScript.script_ui_conf = json.dumps(
+        attend_script.script_ui_conf = json.dumps(
             block_dto.block_content.__json__(), ensure_ascii=False
         )
-    return attendScript
+    return attend_script
 
 
 def check_phone_number(app, user_info: User, input):
