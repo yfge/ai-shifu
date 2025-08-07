@@ -14,8 +14,18 @@ from .models import ShifuDraftShifu
 from ...service.resource.models import Resource
 
 
-# mark favorite shifu
 def mark_favorite_shifu(app, user_id: str, shifu_id: str):
+    """
+    Mark a shifu as favorite for a user.
+
+    Args:
+        app: Flask application instance
+        user_id: User ID
+        shifu_id: Shifu ID to mark as favorite
+
+    Returns:
+        bool: True if successful
+    """
     with app.app_context():
         existing_favorite_shifu = FavoriteScenario.query.filter_by(
             scenario_id=shifu_id, user_id=user_id
