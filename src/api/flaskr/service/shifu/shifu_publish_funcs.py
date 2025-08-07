@@ -45,6 +45,12 @@ from flaskr.service.shifu.consts import (
 def preview_shifu_draft(app, user_id: str, shifu_id: str, variables: dict, skip: bool):
     """
     Preview shifu draft
+    Args:
+        app: Flask application instance
+        user_id: User ID
+        shifu_id: Shifu ID
+        variables: Variables
+        skip: Skip
     """
     with app.app_context():
         shifu_draft = get_latest_shifu_draft(shifu_id)
@@ -62,6 +68,19 @@ def preview_shifu_draft(app, user_id: str, shifu_id: str, variables: dict, skip:
 
 
 def publish_shifu_draft(app, user_id: str, shifu_id: str):
+    """
+    Publish shifu draft
+    will copy all draft data to published data
+    and save history to database
+    and run summary generation in background
+    and return published shifu url
+    Args:
+        app: Flask application instance
+        user_id: User ID
+        shifu_id: Shifu ID
+    Returns:
+        str: Shifu published URL
+    """
     with app.app_context():
         now_time = datetime.now()
         shifu_draft = get_latest_shifu_draft(shifu_id)
@@ -173,7 +192,12 @@ def publish_shifu_draft(app, user_id: str, shifu_id: str):
 
 
 def _run_summary_with_error_handling(app, shifu_id):
-    """Run shifu summary generation with error handling"""
+    """
+    Run shifu summary generation with error handling
+    Args:
+        app: Flask application instance
+        shifu_id: Shifu ID
+    """
     try:
         get_shifu_summary(app, shifu_id)
     except Exception as e:
@@ -183,6 +207,9 @@ def _run_summary_with_error_handling(app, shifu_id):
 def get_shifu_summary(app, shifu_id: str):
     """
     Obtain the shifu summary information
+    Args:
+        app: Flask application instance
+        shifu_id: Shifu ID
     """
     with app.app_context():
         shifu: ShifuPublishedShifu = (
@@ -232,12 +259,15 @@ def _generate_ask_prompts(
 ):
     """
     Generate ask_prompt for each section
-    :param app: Flask app
-    :param outline_tree: Outline tree
-    :param outline_ids: Section ID list
-    :param outline_summary_map: Summary mapping
-    :param outline_item_map: Outline item mapping
-    :param ask_prompt_template: Ask template
+    Args:
+        app: Flask application instance
+        shifu_info: Shifu info
+        outline_ids: Section ID list
+        outline_summary_map: Summary mapping
+        outline_item_map: Outline item mapping
+        ask_prompt_template: Ask template
+    Returns:
+        None
     """
     for chapter in shifu_info.outline_items:
         for section in chapter.children:
@@ -281,13 +311,15 @@ def _generate_summaries(
 ) -> dict[str, dict]:
     """
     Generate summaries for all sections
-    :param app: Flask app
-    :param outline_tree: Outline tree
-    :param all_blocks: All block data
-    :param outline_item_map: Outline item mapping
-    :param summary_prompt_template: Summary template
-    :param shifu: Course information
-    :return: Summary mapping
+    Args:
+        app: Flask application instance
+        outline_tree: Outline tree
+        all_blocks: All block data
+        outline_item_map: Outline item mapping
+        summary_prompt_template: Summary template
+        shifu: Course information
+    Returns:
+        Summary mapping
     """
     outline_summary_map = {}
 
@@ -346,9 +378,11 @@ def _get_shifu_data(app, shifu_id: str) -> tuple[
 ]:
     """
     Get shifu related data
-    :param app: Flask app
-    :param shifu_id: shifu ID
-    :return: (outline_tree, outline_ids, all_blocks, lesson_map)
+    Args:
+        app: Flask application instance
+        shifu_id: shifu ID
+    Returns:
+        (outline_tree, outline_ids, all_blocks, lesson_map)
     """
 
     outline_ids = []
@@ -387,6 +421,16 @@ def _get_shifu_data(app, shifu_id: str) -> tuple[
 def _make_ask_prompt(
     app, ask_prompt: str, learned_text: str, unlearned_text: str
 ) -> str:
+    """
+    Make ask prompt
+    Args:
+        app: Flask application instance
+        ask_prompt: Ask prompt
+        learned_text: Learned text
+        unlearned_text: Unlearned text
+    Returns:
+        Ask prompt
+    """
     result = ask_prompt.format(
         learned=("\n" + learned_text) if learned_text else "",
         unlearned=("\n" + unlearned_text) if unlearned_text else "",
@@ -417,12 +461,14 @@ def _get_all_publish_blocks(app, outline_ids: list[str]):
 def _get_summary(app, prompt, model_name, user_id=None, temperature=0.8):
     """
     Call the AI model to generate summary
-    :param app: Flask app
-    :param prompt: Prompt to be summarized
-    :param model_name: Model name to use
-    :param user_id: Optional, user ID
-    :param temperature: Optional, sampling temperature
-    :return: Summary text
+    Args:
+        app: Flask application instance
+        prompt: Prompt to be summarized
+        model_name: Model name to use
+        user_id: Optional, user ID
+        temperature: Optional, sampling temperature
+    Returns:
+        Summary text
     """
     # Create langfuse trace/span
     trace = langfuse_client.trace(
@@ -449,9 +495,11 @@ def _get_summary(app, prompt, model_name, user_id=None, temperature=0.8):
 def _build_summary_text(summaries: list[dict], is_learned: bool) -> str:
     """
     Build a summary text based on whether it's learned or unlearned
-    :param summaries: List of summary dictionaries
-    :param is_learned: Boolean indicating whether the summary is for learned or unlearned
-    :return: Built summary text
+    Args:
+        summaries: List of summary dictionaries
+        is_learned: Boolean indicating whether the summary is for learned or unlearned
+    Returns:
+        Built summary text
     """
     if not summaries:
         return ""

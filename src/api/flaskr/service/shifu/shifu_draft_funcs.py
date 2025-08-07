@@ -24,8 +24,6 @@ from .models import ShifuDraftShifu, AiCourseAuth
 from .shifu_history_manager import save_shifu_history
 from ..common.dtos import PageNationDTO
 
-# get latest shifu draft
-
 
 def get_latest_shifu_draft(shifu_id: str) -> ShifuDraftShifu:
     """

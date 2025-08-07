@@ -1,3 +1,13 @@
+"""
+Shifu migration
+
+This module contains functions for migrating shifu.
+
+
+Author: yfge
+Date: 2025-08-07
+"""
+
 from flaskr.service.lesson.models import AICourse
 from flaskr.service.lesson.const import STATUS_DRAFT, STATUS_PUBLISH
 from flaskr.service.shifu.utils import (
