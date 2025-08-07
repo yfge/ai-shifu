@@ -4,9 +4,8 @@ from flaskr.service.shifu.outline_funcs import (
     get_original_outline_tree,
     OutlineTreeNode,
 )
-from flaskr.service.shifu.block_funcs import (
+from flaskr.service.shifu.utils import (
     get_existing_blocks,
-    generate_block_dto_from_model,
 )
 from flaskr.framework.plugin.plugin_manager import plugin_manager
 from flaskr.service.shifu.models import (
@@ -27,8 +26,14 @@ from flaskr.service.lesson.const import (
     LESSON_TYPE_BRANCH_HIDDEN,
 )
 from flaskr.service.shifu.shifu_history_manager import HistoryItem
-from flaskr.service.profile.profile_manage import get_profile_item_definition_list
-from flaskr.service.shifu.adapter import BlockDTO, update_block_dto_to_model_internal
+from flaskr.service.profile.profile_manage import (
+    get_profile_item_definition_list,
+)
+from flaskr.service.shifu.adapter import (
+    BlockDTO,
+    update_block_dto_to_model_internal,
+    generate_block_dto_from_model,
+)
 from flaskr.service.shifu.shifu_history_manager import __save_shifu_history
 from flaskr.service.lesson.const import SCRIPT_TYPE_SYSTEM
 from flaskr.service.lesson.models import AILessonScript
