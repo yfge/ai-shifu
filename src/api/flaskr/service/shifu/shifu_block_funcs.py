@@ -11,12 +11,11 @@ from flaskr.service.shifu.adapter import (
 from flaskr.service.common import raise_error
 
 from .models import ShifuDraftOutlineItem, ShifuDraftBlock
-from flaskr.service.shifu.block_funcs import (
-    get_profile_item_definition_list,
-    check_text_with_risk_control,
-)
+from flaskr.service.check_risk.funcs import check_text_with_risk_control
 from flaskr.util import generate_id
-
+from flaskr.service.profile.profile_manage import (
+    get_profile_item_definition_list,
+)
 from .shifu_history_manager import (
     save_blocks_history,
     HistoryInfo,

@@ -1,11 +1,9 @@
 from flaskr.service.lesson.models import AICourse
 from flaskr.service.lesson.const import STATUS_DRAFT, STATUS_PUBLISH
-from flaskr.service.shifu.outline_funcs import (
-    get_original_outline_tree,
-    OutlineTreeNode,
-)
 from flaskr.service.shifu.utils import (
+    get_original_outline_tree,
     get_existing_blocks,
+    OutlineTreeNode,
 )
 from flaskr.framework.plugin.plugin_manager import plugin_manager
 from flaskr.service.shifu.models import (
