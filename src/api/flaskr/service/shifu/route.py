@@ -1,7 +1,6 @@
 from flask import Flask, request, current_app
 from .funcs import (
     mark_or_unmark_favorite_shifu,
-    preview_shifu,
     upload_file,
     upload_url,
     get_video_info,
@@ -21,7 +20,10 @@ from flaskr.service.shifu.shifu_draft_funcs import (
     get_shifu_draft_info,
     save_shifu_draft_info,
 )
-from flaskr.service.shifu.shifu_publish_funcs import publish_shifu_draft
+from flaskr.service.shifu.shifu_publish_funcs import (
+    publish_shifu_draft,
+    preview_shifu_draft,
+)
 from flaskr.service.shifu.shifu_outline_funcs import (
     reorder_outline_tree,
     create_outline,
@@ -454,7 +456,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         variables = request.get_json().get("variables")
         skip = request.get_json().get("skip", False)
         return make_common_response(
-            preview_shifu(app, user_id, shifu_bid, variables, skip)
+            preview_shifu_draft(app, user_id, shifu_bid, variables, skip)
         )
 
     @app.route(path_prefix + "/shifus/<shifu_bid>/outlines/reorder", methods=["PATCH"])

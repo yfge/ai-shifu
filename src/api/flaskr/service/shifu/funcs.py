@@ -366,22 +366,6 @@ def publish_shifu(app, user_id, shifu_id: str):
         raise_error("SHIFU.SHIFU_NOT_FOUND")
 
 
-@extensible
-def preview_shifu(app, user_id, shifu_id: str, variables: dict, skip: bool):
-    with app.app_context():
-        shifu = AICourse.query.filter(AICourse.course_id == shifu_id).first()
-        if shifu:
-            check_shifu_can_publish(app, shifu_id)
-            return (
-                get_config("WEB_URL", "UNCONFIGURED")
-                + "/c/"
-                + shifu.course_id
-                + "?preview=true"
-                + "&skip="
-                + str(skip).lower()
-            )
-
-
 def get_content_type(filename):
     extension = filename.rsplit(".", 1)[1].lower()
     if extension in ["jpg", "jpeg"]:

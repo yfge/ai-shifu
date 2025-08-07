@@ -33,6 +33,22 @@ from flaskr.service.shifu.consts import (
 )
 
 
+def preview_shifu_draft(app, user_id: str, shifu_id: str, variables: dict, skip: bool):
+    with app.app_context():
+        shifu_draft = get_latest_shifu_draft(shifu_id)
+        if not shifu_draft:
+            raise_error("SHIFU.SHIFU_NOT_FOUND")
+
+        return (
+            get_config("WEB_URL", "UNCONFIGURED")
+            + "/c/"
+            + shifu_id
+            + "?preview=true"
+            + "&skip="
+            + str(skip).lower()
+        )
+
+
 def publish_shifu_draft(app, user_id: str, shifu_id: str):
     with app.app_context():
         now_time = datetime.now()
