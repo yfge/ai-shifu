@@ -605,7 +605,7 @@ def check_login_block_dto(
     if (
         not block_dto.block_content.label
         or not block_dto.block_content.label.lang
-        or not block_dto.block_content.label.lang.strip()
+        or not "".join(list(block_dto.block_content.label.lang.values()))
     ):
         return BlockUpdateResultDto(None, _("SHIFU.LOGIN_LABEL_REQUIRED"))
     return BlockUpdateResultDto(None, None)
@@ -628,7 +628,7 @@ def check_payment_block_dto(
     if (
         not block_dto.block_content.label
         or not block_dto.block_content.label.lang
-        or not block_dto.block_content.label.lang.strip()
+        or not "".join(list(block_dto.block_content.label.lang.values()))
     ):
         return BlockUpdateResultDto(None, _("SHIFU.PAYMENT_LABEL_REQUIRED"))
     return BlockUpdateResultDto(None, None)
