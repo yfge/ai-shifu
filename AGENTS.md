@@ -141,7 +141,7 @@ The project follows strict conventions for database model definitions to ensure 
 
 - **Table Names**: Use format `[module]_[table_name]` (e.g., `shifu_draft_shifu`)
 - **Model Class Names**: Use PascalCase format `[TableName]` (e.g., `DraftShifu`)
-- **Business Key Names**: Use format `[table_name]_bid` (e.g., `shifu_bid`)
+- **Business Key Names**: Use format `[name]_bid` (e.g., `shifu_bid`)
 
 #### Required Fields and Structure
 
@@ -202,22 +202,23 @@ updated_user_bid = Column(
 
 **Single Status Field**
 ```python
+#olny for example
 status = Column(
     SmallInteger,
     nullable=False,
     default=0,
-    comment="Status: 0=active, 1=deleted",
+    comment="Status: 5101=default, 5102=disabled, 5103=enabled",
 )
 ```
 
 **Multiple Status Fields**
 ```python
-other_status = Column(
-    SmallInteger,
-    nullable=False,
-    default=0,
-    comment="Other status: 0=active, 1=deleted",
-)
+ask_enabled_status = Column(
+        SmallInteger,
+        nullable=False,
+        default=ASK_MODE_DEFAULT,
+        comment="Ask agent status: 5101=default, 5102=disabled, 5103=enabled",
+    )
 ```
 
 #### Column Order Standards
