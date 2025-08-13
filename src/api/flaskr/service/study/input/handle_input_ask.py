@@ -59,11 +59,11 @@ def _handle_input_ask(
     context = RunScriptContext.get_current_context(app)
     app.logger.info("follow_up_info:{}".format(follow_up_info.__json__()))
 
-    raw_ask_message_limit = app.config.get("ASK_MESSAGE_LIMIT", 10)
+    raw_ask_max_history_len = app.config.get("ASK_MAX_HISTORY_LEN", 10)
     try:
-        ask_message_limit = int(raw_ask_message_limit)
+        ask_max_history_len = int(raw_ask_max_history_len)
     except ValueError:
-        ask_message_limit = 10
+        ask_max_history_len = 10
 
     # Query historical conversation records, ordered by time
     history_scripts = (
@@ -71,7 +71,7 @@ def _handle_input_ask(
             AICourseLessonAttendScript.attend_id == attend_id,
         )
         .order_by(AICourseLessonAttendScript.id.desc())
-        .limit(ask_message_limit)
+        .limit(ask_max_history_len)
         .all()
     )
 
