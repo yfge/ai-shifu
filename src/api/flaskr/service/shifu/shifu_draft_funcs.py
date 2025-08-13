@@ -268,7 +268,8 @@ def get_shifu_draft_list(
         page_offset = (page_index - 1) * page_size
 
         created_total = DraftShifu.query.filter(
-            DraftShifu.created_user_bid == user_id
+            DraftShifu.created_user_bid == user_id,
+            DraftShifu.deleted == 0,
         ).count()
         shared_total = AiCourseAuth.query.filter(
             AiCourseAuth.user_id == user_id,
