@@ -139,9 +139,9 @@ The project follows strict conventions for database model definitions to ensure 
 
 #### Naming Conventions
 
-- **Table Names**: Use format `[module]_[table_name]` (e.g., `shifu_draft_shifu`)
-- **Model Class Names**: Use PascalCase format `[TableName]` (e.g., `DraftShifu`)
-- **Business Key Names**: Use format `[name]_bid` (e.g., `shifu_bid`)
+- **Table Names**: Use format `[module]_[table_names]` (e.g., `order_orders`)
+- **Model Class Names**: Use PascalCase format `[TableName]` (e.g., `Order`)
+- **Business Key Names**: Use format `[name]_bid` (e.g., `order_bid`)
 
 #### Required Fields and Structure
 
@@ -151,9 +151,13 @@ id = Column(BIGINT, primary_key=True, autoincrement=True)
 ```
 
 **2. Business Identifier**
-All tables must include a business identifier:
+All tables must include a business identifier and must be indexed:
 ```python
-shifu_bid = Column(String(32), nullable=False, default="", comment="Shifu business identifier")
+shifu_bid = Column(String(32),
+    nullable=False,
+    default="",
+    index=True,
+    comment="Shifu business identifier")
 ```
 - Type: `String(32)`
 - Must be indexed for performance
@@ -166,15 +170,21 @@ deleted = Column(
     SmallInteger,
     nullable=False,
     default=0,
+    index=True,
     comment="Deletion flag: 0=active, 1=deleted",
 )
 created_at = Column(
-    DateTime, nullable=False, default=func.now(), comment="Creation timestamp"
+    DateTime,
+    nullable=False,
+    default=func.now(),
+    server_default=func.now(),
+    comment="Creation timestamp"
 )
 updated_at = Column(
     DateTime,
     nullable=False,
     default=func.now(),
+    server_default=func.now(),
     comment="Last update timestamp",
     onupdate=func.now(),
 )
@@ -213,6 +223,7 @@ status = Column(
 
 **Multiple Status Fields**
 ```python
+# only for example
 ask_enabled_status = Column(
         SmallInteger,
         nullable=False,
@@ -228,11 +239,12 @@ Fields must follow this specific order:
 2. `[table_name]_bid` (business identifier)
 3. External business identifiers (foreign keys)
 4. Business columns
-5. `deleted`
-6. `created_at`
-7. `created_user_bid` (if applicable)
-8. `updated_at`
-9. `updated_user_bid` (if applicable)
+5. `status` (if applicable)
+6. `deleted`
+7. `created_at`
+8. `created_user_bid` (if applicable)
+9. `updated_at`
+10. `updated_user_bid` (if applicable)
 
 #### Foreign Key Relationships
 
@@ -268,7 +280,12 @@ class ShifuPublishedBlock(db.Model):
 
 #### Comment Standards
 
-- **Table Comments**: Place after `__tablename__`, using triple quotes format
+- **Table comments**: should be defined via SQLAlchemy so they are reflected in the DB and migrations:
+```python
+  class DraftShifu(db.Model):
+      __tablename__ = "shifu_draft_shifu"
+      __table_args__ = {"comment": "Draft shifu entities"}
+```
 - **Comment Capitalization**: First letter capitalized (e.g., "Shifu business identifier")
 - **Status Comments**: Must include value descriptions using format `Status: [value] = [description]`
 
