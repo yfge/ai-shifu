@@ -44,7 +44,7 @@ def __get_existing_outline_items(shifu_bid: str) -> list[DraftOutlineItem]:
     Args:
         shifu_bid: Shifu bid
     Returns:
-        list[ShifuDraftOutlineItem]: Outline items
+        list[DraftOutlineItem]: Outline items
     """
     sub_query = (
         db.session.query(db.func.max(DraftOutlineItem.id))

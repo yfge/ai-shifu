@@ -31,7 +31,7 @@ def get_latest_shifu_draft(shifu_id: str) -> DraftShifu:
     Args:
         shifu_id: Shifu ID
     Returns:
-        ShifuDraftShifu: Shifu draft
+        DraftShifu: Shifu draft
     """
     shifu_draft: DraftShifu = (
         DraftShifu.query.filter(
@@ -117,7 +117,7 @@ def create_shifu_draft(
         )
         if existing_shifu:
             raise_error("SHIFU.SHIFU_NAME_ALREADY_EXISTS")
-        # create a new ShifuDraftShifu object
+        # create a new DraftShifu object
         shifu_draft: DraftShifu = DraftShifu(
             shifu_bid=shifu_id,
             title=shifu_name,
