@@ -7,6 +7,9 @@ import logging
 import traceback
 import os
 
+# 全局数据库实例
+db = None
+
 
 def init_db(app: Flask):
     global db
