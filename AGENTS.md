@@ -17,6 +17,11 @@ The project follows a microservices architecture with 3 main components:
 ### Backend API (`src/api/`)
 
 - Built with Flask, SQLAlchemy, and MySQL
+- **Python Environment Requirements**:
+  - Python 3.11 is required
+  - If conda is available, use conda environment for Python 3.11
+  - If conda is not available, ensure current Python is upgraded to 3.11
+  - Use virtual environment `.venv` in `src/api/` directory (create if it doesn't exist)
 - Plugin-based architecture with hot reload support (`flaskr/framework/plugin/`)
 - Service layer organization with separate modules for different domains:
   - `service/shifu/`: Core AI conversation logic and outline management
@@ -38,6 +43,19 @@ The project follows a microservices architecture with 3 main components:
 
 ```bash
 cd src/api
+
+# Python Environment Setup
+# If conda is available:
+conda create -n ai-shifu python=3.11
+conda activate ai-shifu
+
+# If conda is not available, create .venv virtual environment:
+python3.11 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
 # Development server
 flask run
 # Database migrations
