@@ -1,7 +1,7 @@
 """feat: add new order and learn models
 
 Revision ID: c18b39622587
-Revises: 31f18de7e03e
+Revises: bd4a3ef686c3
 Create Date: 2025-08-16 05:45:57.531750
 
 """
@@ -12,7 +12,7 @@ from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
 revision = "c18b39622587"
-down_revision = "31f18de7e03e"
+down_revision = "bd4a3ef686c3"
 branch_labels = None
 depends_on = None
 
