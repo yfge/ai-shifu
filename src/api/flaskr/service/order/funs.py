@@ -401,7 +401,7 @@ def generate_charge(
             )
             qr_url = charge["credential"]["alipay_qr"]
         elif channel == "wx_pub":  # wxpay JSAPI
-            user = User.query.filter(User.user_id == buy_record.user_id).first()
+            user = User.query.filter(User.user_id == buy_record.user_bid).first()
             extra = dict({"open_id": user.user_open_id})
             charge = create_pingxx_order(
                 app,
@@ -487,7 +487,7 @@ def success_buy_record_from_pingxx(app: Flask, charge_id: str, body: dict):
                 app.logger.info(
                     'success buy record from pingxx charge:"{}"'.format(charge_id)
                 )
-                pingxx_order = PingxxOrder.query.filter(
+                pingxx_order: PingxxOrder = PingxxOrder.query.filter(
                     PingxxOrder.charge_id == charge_id
                 ).first()
                 if not pingxx_order:
@@ -497,8 +497,8 @@ def success_buy_record_from_pingxx(app: Flask, charge_id: str, body: dict):
                 pingxx_order.status = 1
                 pingxx_order.charge_object = json.dumps(body)
                 if pingxx_order:
-                    buy_record = Order.query.filter(
-                        Order.order_bid == pingxx_order.order_bid
+                    buy_record: Order = Order.query.filter(
+                        Order.order_bid == pingxx_order.order_bid,
                     ).first()
 
                     if buy_record and buy_record.status == ORDER_STATUS_TO_BE_PAID:
