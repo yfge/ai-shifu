@@ -49,7 +49,7 @@ cd src/api
 conda create -n ai-shifu python=3.11
 conda activate ai-shifu
 
-# If conda is not available, create .venv virtual environment:
+# create .venv virtual environment:
 python3.11 -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
