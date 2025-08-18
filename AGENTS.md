@@ -20,7 +20,7 @@ The project follows a microservices architecture with 3 main components:
 - **Python Environment Requirements**:
   - Python 3.11 is required
   - If conda is available, use conda environment for Python 3.11
-  - If conda is not available, ensure current Python is upgraded to 3.11
+  - If conda is not available, ensure Python 3.11 is installed
   - Use virtual environment `.venv` in `src/api/` directory (create if it doesn't exist)
 - Plugin-based architecture with hot reload support (`flaskr/framework/plugin/`)
 - Service layer organization with separate modules for different domains:
