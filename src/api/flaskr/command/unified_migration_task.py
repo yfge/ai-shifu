@@ -253,11 +253,19 @@ class UnifiedMigrationTask:
 
                 offset += self.config.batch_size
 
-                # Log progress
+                # Log progress with more detail
                 progress = min(100, (offset / total_count) * 100)
                 logger.info(
-                    f"Migration progress for {source_table}: {progress:.1f}% ({synced_count}/{total_count})"
+                    f"Migration progress for {source_table}: {progress:.1f}% ({synced_count}/{total_count}) - Batch {offset//self.config.batch_size + 1}"
                 )
+
+                # Also print for visibility during flask db upgrade
+                print(
+                    f"[MIGRATION] {source_table}: {progress:.1f}% ({synced_count}/{total_count})"
+                )
+                import sys
+
+                sys.stdout.flush()
 
             except Exception as e:
                 logger.error(
@@ -278,9 +286,12 @@ class UnifiedMigrationTask:
             errors=errors,
         )
 
-        logger.info(
-            f"Migration completed for {source_table}: {synced_count}/{total_count} records, {error_count} errors"
-        )
+        completion_message = f"Migration completed for {source_table}: {synced_count}/{total_count} records, {error_count} errors"
+        logger.info(completion_message)
+        print(f"[MIGRATION] ✅ {completion_message}")
+        import sys
+
+        sys.stdout.flush()
         return result
 
     async def _process_batch_async(
