@@ -24,7 +24,7 @@ import os
 from flaskr.command.unified_migration_task import (
     UnifiedMigrationTask,  #
     MigrationConfig,
-)  # noqa: E402
+)
 
 # Add the parent directory to Python path to import our migration task
 current_dir = os.path.dirname(os.path.abspath(__file__))
