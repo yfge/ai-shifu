@@ -223,7 +223,7 @@ class RunScriptContext:
             for item in parent_path:
                 if item.type == "outline":
                     attend_info = LearnProgressRecord.query.filter(
-                        LearnProgressRecord.outline_item_bid == item.id,
+                        LearnProgressRecord.outline_item_bid == item.bid,
                         LearnProgressRecord.user_bid == self._user_info.user_id,
                         LearnProgressRecord.status != LEARN_STATUS_RESET,
                     ).first()
