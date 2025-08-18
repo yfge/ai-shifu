@@ -233,7 +233,7 @@ def migrate_user_study_record(
         to_attend = [
             to_attend
             for to_attend in to_attends
-            if to_attend.lesson_id == from_attend.lesson_id
+            if to_attend.outline_item_bid == from_attend.outline_item_bid
         ]
         if len(to_attend) > 0:
             continue
