@@ -57,7 +57,6 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
 # Set environment
-
 export FLASK_APP=app.py
 
 # Development server
