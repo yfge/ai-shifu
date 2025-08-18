@@ -56,6 +56,10 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
+# Set environment
+
+export FLASK_APP=app.py
+
 # Development server
 flask run
 # Database migrations
