@@ -616,7 +616,10 @@ class UnifiedMigrationTask:
                     target_record.transaction_no == source_record.pingxx_transaction_no
                     and target_record.amount == source_record.amount
                 )
-            elif source_table in ["ai_lesson_attendscript", "ai_lesson_log_script"]:
+            elif source_table in [
+                "ai_course_lesson_attendscript",
+                "ai_course_lesson_attend",
+            ]:
                 # For study tables, verify basic bid mapping
                 return (
                     hasattr(target_record, "user_bid")
