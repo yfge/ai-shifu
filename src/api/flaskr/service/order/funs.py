@@ -280,9 +280,7 @@ def init_buy_record(app: Flask, user_id: str, course_id: str, active_id: str = N
                     )
                 )
         print("discount_value: ", discount_value)
-        buy_record.payable_price = decimal.Decimal(
-            buy_record.payable_price
-        ) - decimal.Decimal(discount_value)
+        buy_record.paid_price = buy_record.payable_price - discount_value
         db.session.merge(buy_record)
         db.session.commit()
         return AICourseBuyRecordDTO(
@@ -351,12 +349,12 @@ def generate_charge(
             return BuyRecordDTO(
                 buy_record.order_bid,
                 buy_record.user_bid,
-                buy_record.payable_price,
+                buy_record.paid_price,
                 channel,
                 "",
             )
             # raise_error("ORDER.ORDER_HAS_PAID")
-        amount = int(buy_record.payable_price * 100)
+        amount = int(buy_record.paid_price * 100)
         product_id = course.course_id
         subject = course.course_name
         body = course.course_name
@@ -368,7 +366,7 @@ def generate_charge(
             return BuyRecordDTO(
                 buy_record.order_bid,
                 buy_record.user_bid,
-                buy_record.payable_price,
+                buy_record.paid_price,
                 channel,
                 qr_url,
             )
@@ -458,7 +456,7 @@ def generate_charge(
         return BuyRecordDTO(
             buy_record.order_bid,
             buy_record.user_bid,
-            buy_record.payable_price,
+            buy_record.paid_price,
             channel,
             qr_url,
         )
@@ -671,14 +669,5 @@ def query_buy_record(app: Flask, record_id: str) -> AICourseBuyRecordDTO:
                 buy_record.payable_price - buy_record.paid_price,
                 item,
             )
-            """
-             return AICourseBuyRecordDTO(
-            buy_record.order_bid,
-            buy_record.user_bid,
-            buy_record.shifu_bid,
-            buy_record.payable_price,
-            buy_record.status,
-            discount_value,
-            price_items,
-        )"""
+
         raise_error("ORDER.ORDER_NOT_FOUND")
