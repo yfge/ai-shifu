@@ -242,13 +242,13 @@ def migrate_user_study_record(
     if len(migrate_attends) > 0:
         db.session.execute(
             text(
-                "update learn_outline_item_progress set user_id = '%s' where id in (%s)"
+                "update learn_progress_records set user_bid = '%s' where id in (%s)"
                 % (to_user_id, ",".join([str(attend.id) for attend in migrate_attends]))
             )
         )
         db.session.execute(
             text(
-                "update learn_outline_item_progress_script set user_id = '%s' where progress_record_bid in (%s)"
+                "update learn_generated_blocks set user_bid = '%s' where progress_record_bid in (%s)"
                 % (
                     to_user_id,
                     ",".join(
