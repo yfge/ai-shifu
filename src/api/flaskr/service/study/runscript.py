@@ -81,6 +81,7 @@ def run_script_inner(
                         Order.user_bid == user_id,
                         Order.shifu_bid == course_id,
                         Order.status == ORDER_STATUS_SUCCESS,
+                        Order.deleted == 0,
                     )
                     .order_by(Order.id.desc())
                     .first()

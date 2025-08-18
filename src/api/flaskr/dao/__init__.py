@@ -7,7 +7,7 @@ import logging
 import traceback
 import os
 
-# 全局数据库实例
+# create a global db object
 db = None
 
 

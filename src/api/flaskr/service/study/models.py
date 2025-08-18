@@ -143,7 +143,6 @@ class LearnGeneratedBlock(db.Model):
     position = Column(
         Integer, nullable=False, default=0, comment="Block position index"
     )
-    # ???????
     block_content_conf = Column(
         Text,
         nullable=False,
