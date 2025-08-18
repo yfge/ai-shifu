@@ -13,7 +13,7 @@ from flaskr.service.study.context import LLMSettings, RunScriptContext
 from flaskr.api.llm import invoke_llm
 from flaskr.dao import db
 from typing import Generator
-from flaskr.service.study.models import LearnBlockLog
+from flaskr.service.study.models import LearnGeneratedBlock
 
 
 @register_shifu_output_handler("content")
@@ -32,7 +32,7 @@ def handle_output_content(
     prompt = get_fmt_prompt(
         app, user_info.user_id, outline_item_info.shifu_bid, profile_tmplate=content
     )
-    log_script: LearnBlockLog = generation_attend(
+    log_script: LearnGeneratedBlock = generation_attend(
         app, user_info, attend_id, outline_item_info, block_dto
     )
     log_script.generated_content = prompt

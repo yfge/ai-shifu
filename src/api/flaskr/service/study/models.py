@@ -13,9 +13,9 @@ from ...dao import db
 from flaskr.service.order.consts import LEARN_STATUS_LOCKED
 
 
-class LearnOutlineItemProgress(db.Model):
+class LearnProgressRecord(db.Model):
     """
-    Learn outline item progress
+    Learn progress record
     """
 
     __tablename__ = "learn_progress_records"
@@ -87,9 +87,9 @@ class LearnOutlineItemProgress(db.Model):
     )
 
 
-class LearnBlockLog(db.Model):
+class LearnGeneratedBlock(db.Model):
     """
-    Learn Block Log
+    Learn generated block
     """
 
     __tablename__ = "learn_generated_blocks"

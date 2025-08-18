@@ -1,6 +1,6 @@
 from flask import Flask
 from flaskr.service.common.models import AppException
-from flaskr.service.study.models import LearnOutlineItemProgress
+from flaskr.service.study.models import LearnProgressRecord
 from flaskr.dao import db
 from flaskr.service.user.models import User
 from flaskr.service.study.output.ui_continue import make_continue_ui
@@ -16,7 +16,7 @@ from flaskr.service.study.output.handle_output_ask import _handle_output_ask
 def handle_ui(
     app: Flask,
     user_info: User,
-    attend: LearnOutlineItemProgress,
+    attend: LearnProgressRecord,
     outline_item_info: ShifuOutlineItemDto,
     block_dto: BlockDTO,
     input: str,

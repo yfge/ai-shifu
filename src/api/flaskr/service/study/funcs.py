@@ -24,8 +24,8 @@ from ...service.lesson.const import (
 from ...dao import db
 
 from flaskr.service.study.models import (
-    LearnOutlineItemProgress,
-    LearnBlockLog,
+    LearnProgressRecord,
+    LearnGeneratedBlock,
 )
 from .plugin import handle_ui
 from flaskr.api.langfuse import MockClient
@@ -120,7 +120,7 @@ def fill_attend_info(
                 q.put(child)
 
     for lesson in first_lessons:
-        attend_info: LearnOutlineItemProgress = LearnOutlineItemProgress(
+        attend_info: LearnProgressRecord = LearnProgressRecord(
             user_bid=user_id,
             shifu_bid=ret.course_id,
             outline_item_bid=lesson.lesson_id,
@@ -175,13 +175,13 @@ def get_lesson_tree_to_study_inner(
             lessons=[],
         )
 
-        attend_infos = LearnOutlineItemProgress.query.filter(
-            LearnOutlineItemProgress.user_bid == user_id,
-            LearnOutlineItemProgress.shifu_bid == course_id,
-            LearnOutlineItemProgress.status != LEARN_STATUS_RESET,
-            LearnOutlineItemProgress.outline_item_bid.in_(outline_ids),
+        attend_infos = LearnProgressRecord.query.filter(
+            LearnProgressRecord.user_bid == user_id,
+            LearnProgressRecord.shifu_bid == course_id,
+            LearnProgressRecord.status != LEARN_STATUS_RESET,
+            LearnProgressRecord.outline_item_bid.in_(outline_ids),
         ).all()
-        attend_map: dict[str, LearnOutlineItemProgress] = {
+        attend_map: dict[str, LearnProgressRecord] = {
             i.outline_item_bid: i for i in attend_infos
         }
         attend_status_values = get_learn_status_values()
@@ -311,24 +311,24 @@ def get_study_record(
         if not lesson_ids:
             return ret
         attend_infos = (
-            LearnOutlineItemProgress.query.filter(
-                LearnOutlineItemProgress.user_bid == user_id,
-                LearnOutlineItemProgress.outline_item_bid.in_(lesson_ids),
-                LearnOutlineItemProgress.shifu_bid == shifu_info.bid,
-                LearnOutlineItemProgress.status != LEARN_STATUS_RESET,
+            LearnProgressRecord.query.filter(
+                LearnProgressRecord.user_bid == user_id,
+                LearnProgressRecord.outline_item_bid.in_(lesson_ids),
+                LearnProgressRecord.shifu_bid == shifu_info.bid,
+                LearnProgressRecord.status != LEARN_STATUS_RESET,
             )
-            .order_by(LearnOutlineItemProgress.id)
+            .order_by(LearnProgressRecord.id)
             .all()
         )
         if not attend_infos:
             return ret
         attend_scripts = (
-            LearnBlockLog.query.filter(
-                LearnBlockLog.outline_item_bid.in_(lesson_ids),
-                LearnBlockLog.status == 1,
-                LearnBlockLog.user_bid == user_id,
+            LearnGeneratedBlock.query.filter(
+                LearnGeneratedBlock.outline_item_bid.in_(lesson_ids),
+                LearnGeneratedBlock.status == 1,
+                LearnGeneratedBlock.user_bid == user_id,
             )
-            .order_by(LearnBlockLog.id.asc())
+            .order_by(LearnGeneratedBlock.id.asc())
             .all()
         )
 
@@ -352,7 +352,7 @@ def get_study_record(
         ret.records = items
         last_block_id = attend_scripts[-1].generated_block_bid
         last_lesson_id = attend_scripts[-1].outline_item_bid
-        last_attend: LearnOutlineItemProgress = [
+        last_attend: LearnProgressRecord = [
             atend for atend in attend_infos if atend.outline_item_bid == last_lesson_id
         ][-1]
         last_outline_item = get_outline_item_dto(app, last_lesson_id, preview_mode)
@@ -487,16 +487,16 @@ def reset_user_study_info_by_lesson(
         while top.children and top.children[0].type == "outline":
             first_lesson_ids.add(top.children[0].bid)
             top = top.children[0]
-        LearnOutlineItemProgress.query.filter(
-            LearnOutlineItemProgress.user_bid == user_id,
-            LearnOutlineItemProgress.outline_item_bid.in_(lesson_ids),
-            LearnOutlineItemProgress.status != LEARN_STATUS_RESET,
-            LearnOutlineItemProgress.shifu_bid == struct.bid,
+        LearnProgressRecord.query.filter(
+            LearnProgressRecord.user_bid == user_id,
+            LearnProgressRecord.outline_item_bid.in_(lesson_ids),
+            LearnProgressRecord.status != LEARN_STATUS_RESET,
+            LearnProgressRecord.shifu_bid == struct.bid,
         ).update({"status": LEARN_STATUS_RESET})
 
         # insert the new attend info for the lessons that are available
         for lesson in lesson_ids:
-            attend_info = LearnOutlineItemProgress(
+            attend_info = LearnProgressRecord(
                 user_bid=user_id,
                 outline_item_bid=lesson,
                 shifu_bid=struct.bid,
@@ -509,9 +509,9 @@ def reset_user_study_info_by_lesson(
             else:
                 attend_info.status = LEARN_STATUS_LOCKED
             db.session.add(attend_info)
-        LearnBlockLog.query.filter(
-            LearnBlockLog.outline_item_bid.in_(lesson_ids),
-            LearnBlockLog.status == 1,
+        LearnGeneratedBlock.query.filter(
+            LearnGeneratedBlock.outline_item_bid.in_(lesson_ids),
+            LearnGeneratedBlock.status == 1,
         ).update({"status": 0})
         db.session.commit()
         return True
@@ -522,9 +522,9 @@ def set_script_content_operation(
     app: Flask, user_id: str, log_id: str, interaction_type: int
 ):
     with app.app_context():
-        script_info = LearnBlockLog.query.filter(
-            LearnBlockLog.generated_block_bid == log_id,
-            LearnBlockLog.user_bid == user_id,
+        script_info = LearnGeneratedBlock.query.filter(
+            LearnGeneratedBlock.generated_block_bid == log_id,
+            LearnGeneratedBlock.user_bid == user_id,
         ).first()
         if not script_info:
             return None

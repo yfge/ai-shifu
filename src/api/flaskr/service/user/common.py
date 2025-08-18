@@ -13,7 +13,7 @@ from flaskr.service.order.consts import LEARN_STATUS_RESET
 from flaskr.service.user.models import User
 from sqlalchemy import text
 from flaskr.api.sms.aliyun import send_sms_code_ali
-from flaskr.service.study.models import LearnOutlineItemProgress
+from flaskr.service.study.models import LearnProgressRecord
 from ..common.dtos import (
     USER_STATE_REGISTERED,
     USER_STATE_UNREGISTERED,
@@ -218,15 +218,15 @@ def migrate_user_study_record(
         + " to_user_id:"
         + to_user_id
     )
-    from_attends = LearnOutlineItemProgress.query.filter(
-        LearnOutlineItemProgress.user_bid == from_user_id,
-        LearnOutlineItemProgress.status != LEARN_STATUS_RESET,
-        LearnOutlineItemProgress.shifu_bid == course_id,
+    from_attends = LearnProgressRecord.query.filter(
+        LearnProgressRecord.user_bid == from_user_id,
+        LearnProgressRecord.status != LEARN_STATUS_RESET,
+        LearnProgressRecord.shifu_bid == course_id,
     ).all()
-    to_attends = LearnOutlineItemProgress.query.filter(
-        LearnOutlineItemProgress.user_bid == to_user_id,
-        LearnOutlineItemProgress.status != LEARN_STATUS_RESET,
-        LearnOutlineItemProgress.shifu_bid == course_id,
+    to_attends = LearnProgressRecord.query.filter(
+        LearnProgressRecord.user_bid == to_user_id,
+        LearnProgressRecord.status != LEARN_STATUS_RESET,
+        LearnProgressRecord.shifu_bid == course_id,
     ).all()
     migrate_attends = []
     for from_attend in from_attends:

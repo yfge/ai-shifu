@@ -2,7 +2,7 @@ import time
 
 from flask import Flask
 
-from flaskr.service.study.models import LearnBlockLog
+from flaskr.service.study.models import LearnGeneratedBlock
 from flaskr.api.llm import invoke_llm
 from flaskr.api.check import (
     check_text,
@@ -29,7 +29,7 @@ class BreakException(Exception):
 def check_text_with_llm_response(
     app: Flask,
     user_info: User,
-    log_script: LearnBlockLog,
+    log_script: LearnGeneratedBlock,
     input: str,
     span,
     outline_item_info: ShifuOutlineItemDto,

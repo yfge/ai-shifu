@@ -14,7 +14,7 @@ from flaskr.service.shifu.shifu_struct_manager import (
     ShifuOutlineItemDto,
     get_shifu_struct,
 )
-from flaskr.service.study.models import LearnOutlineItemProgress
+from flaskr.service.study.models import LearnProgressRecord
 from flaskr.service.order.consts import LEARN_STATUS_RESET
 from flaskr.service.study.plugin import SHIFU_OUTPUT_HANDLER_MAP
 
@@ -68,11 +68,11 @@ def _handle_output_goto(
                 is_paid=is_paid,
                 preview_mode=is_preview,
             )
-        attend = LearnOutlineItemProgress.query.filter(
-            LearnOutlineItemProgress.user_bid == user_info.user_id,
-            LearnOutlineItemProgress.shifu_bid == outline_item_info.shifu_bid,
-            LearnOutlineItemProgress.outline_item_bid == outline_item_info.bid,
-            LearnOutlineItemProgress.status != LEARN_STATUS_RESET,
+        attend = LearnProgressRecord.query.filter(
+            LearnProgressRecord.user_bid == user_info.user_id,
+            LearnProgressRecord.shifu_bid == outline_item_info.shifu_bid,
+            LearnProgressRecord.outline_item_bid == outline_item_info.bid,
+            LearnProgressRecord.status != LEARN_STATUS_RESET,
         ).first()
 
         run_script_info = run_script_context._get_run_script_info(attend)

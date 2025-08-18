@@ -15,7 +15,7 @@ from flaskr.service.shifu.models import (
     DraftShifu,
     PublishedShifu,
 )
-from flaskr.service.study.models import LearnOutlineItemProgress, LearnBlockLog
+from flaskr.service.study.models import LearnProgressRecord, LearnGeneratedBlock
 from flaskr.service.shifu.shifu_history_manager import HistoryItem
 from flaskr.service.shifu.shifu_struct_manager import get_outline_item_dto
 from flaskr.service.shifu.adapter import (
@@ -90,13 +90,13 @@ class _OutlineUpate:
 
 
 class RunScriptInfo:
-    attend: LearnOutlineItemProgress
+    attend: LearnProgressRecord
     outline_item_info: ShifuOutlineItemDto
     block_dto: BlockDTO
 
     def __init__(
         self,
-        attend: LearnOutlineItemProgress,
+        attend: LearnProgressRecord,
         outline_item_info: ShifuOutlineItemDto,
         block_dto: BlockDTO,
     ):
@@ -195,14 +195,14 @@ class RunScriptContext:
 
     def _get_current_attend(
         self, outline_item_info: ShifuOutlineItemDto
-    ) -> LearnOutlineItemProgress:
-        attend_info: LearnOutlineItemProgress = (
-            LearnOutlineItemProgress.query.filter(
-                LearnOutlineItemProgress.outline_item_bid == outline_item_info.bid,
-                LearnOutlineItemProgress.user_bid == self._user_info.user_id,
-                LearnOutlineItemProgress.status != LEARN_STATUS_RESET,
+    ) -> LearnProgressRecord:
+        attend_info: LearnProgressRecord = (
+            LearnProgressRecord.query.filter(
+                LearnProgressRecord.outline_item_bid == outline_item_info.bid,
+                LearnProgressRecord.user_bid == self._user_info.user_id,
+                LearnProgressRecord.status != LEARN_STATUS_RESET,
             )
-            .order_by(LearnOutlineItemProgress.id.desc())
+            .order_by(LearnProgressRecord.id.desc())
             .first()
         )
         if not attend_info:
@@ -222,15 +222,15 @@ class RunScriptContext:
             attend_info = None
             for item in parent_path:
                 if item.type == "outline":
-                    attend_info = LearnOutlineItemProgress.query.filter(
-                        LearnOutlineItemProgress.outline_item_bid == item.id,
-                        LearnOutlineItemProgress.user_bid == self._user_info.user_id,
-                        LearnOutlineItemProgress.status != LEARN_STATUS_RESET,
+                    attend_info = LearnProgressRecord.query.filter(
+                        LearnProgressRecord.outline_item_bid == item.id,
+                        LearnProgressRecord.user_bid == self._user_info.user_id,
+                        LearnProgressRecord.status != LEARN_STATUS_RESET,
                     ).first()
                     if attend_info:
 
                         continue
-                    attend_info = LearnOutlineItemProgress()
+                    attend_info = LearnProgressRecord()
                     attend_info.outline_item_bid = outline_item_info_db.outline_item_bid
                     attend_info.shifu_bid = outline_item_info_db.shifu_bid
                     attend_info.user_bid = self._user_info.user_id
@@ -506,7 +506,7 @@ class RunScriptContext:
         block_dto: BlockDTO,
         user_info: User,
         outline_item_info: ShifuOutlineItemDto,
-    ) -> LearnOutlineItemProgress:
+    ) -> LearnProgressRecord:
         goto: GotoDTO = block_dto.block_content
         variable_id = block_dto.variable_bids[0] if block_dto.variable_bids else ""
         if not variable_id:
@@ -525,17 +525,17 @@ class RunScriptContext:
         if not destination_condition:
             return None
 
-        goto_attend = LearnOutlineItemProgress.query.filter(
-            LearnOutlineItemProgress.user_bid == user_info.user_id,
-            LearnOutlineItemProgress.shifu_bid == outline_item_info.shifu_bid,
-            LearnOutlineItemProgress.outline_item_bid
+        goto_attend = LearnProgressRecord.query.filter(
+            LearnProgressRecord.user_bid == user_info.user_id,
+            LearnProgressRecord.shifu_bid == outline_item_info.shifu_bid,
+            LearnProgressRecord.outline_item_bid
             == destination_condition.destination_bid,
-            LearnOutlineItemProgress.status.notin_(
+            LearnProgressRecord.status.notin_(
                 [LEARN_STATUS_RESET, LEARN_STATUS_COMPLETED]
             ),
         ).first()
         if not goto_attend:
-            goto_attend = LearnOutlineItemProgress()
+            goto_attend = LearnProgressRecord()
             goto_attend.user_bid = user_info.user_id
             goto_attend.shifu_bid = outline_item_info.shifu_bid
             goto_attend.outline_item_bid = destination_condition.destination_bid
@@ -560,7 +560,7 @@ class RunScriptContext:
                     q.put(child)
         return outline_struct
 
-    def _get_run_script_info(self, attend: LearnOutlineItemProgress) -> RunScriptInfo:
+    def _get_run_script_info(self, attend: LearnProgressRecord) -> RunScriptInfo:
 
         outline_item_id = attend.outline_item_bid
         outline_item_info: ShifuOutlineItemDto = get_outline_item_dto(
@@ -615,11 +615,11 @@ class RunScriptContext:
         outline_item_info: ShifuOutlineItemDto = get_outline_item_dto(
             self.app, block_info.outline_item_bid, self._preview_mode
         )
-        attend = LearnOutlineItemProgress.query.filter(
-            LearnOutlineItemProgress.user_bid == self._user_info.user_id,
-            LearnOutlineItemProgress.shifu_bid == outline_item_info.shifu_bid,
-            LearnOutlineItemProgress.outline_item_bid == outline_item_info.bid,
-            LearnOutlineItemProgress.status != LEARN_STATUS_RESET,
+        attend = LearnProgressRecord.query.filter(
+            LearnProgressRecord.user_bid == self._user_info.user_id,
+            LearnProgressRecord.shifu_bid == outline_item_info.shifu_bid,
+            LearnProgressRecord.outline_item_bid == outline_item_info.bid,
+            LearnProgressRecord.status != LEARN_STATUS_RESET,
         ).first()
         return RunScriptInfo(
             attend=attend,
@@ -771,15 +771,15 @@ class RunScriptContext:
         run_script_info: RunScriptInfo = self._get_run_script_info_by_block_id(
             script_id
         )
-        LearnBlockLog.query.filter(
-            LearnBlockLog.progress_record_bid
+        LearnGeneratedBlock.query.filter(
+            LearnGeneratedBlock.progress_record_bid
             == run_script_info.attend.progress_record_bid,
-            LearnBlockLog.block_bid == script_id,
-            LearnBlockLog.role == ROLE_TEACHER,
-            LearnBlockLog.status == 1,
+            LearnGeneratedBlock.block_bid == script_id,
+            LearnGeneratedBlock.role == ROLE_TEACHER,
+            LearnGeneratedBlock.status == 1,
         ).update(
             {
-                LearnBlockLog.status: 0,
+                LearnGeneratedBlock.status: 0,
             }
         )
         res = handle_block_output(
