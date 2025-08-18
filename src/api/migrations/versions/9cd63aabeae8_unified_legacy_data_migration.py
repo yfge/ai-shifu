@@ -66,8 +66,9 @@ def upgrade():
     log_and_print("Starting unified legacy data migration...")
 
     # Get database URL from Alembic context
-    config = op.get_context().config
-    database_url = config.get_main_option("sqlalchemy.url")
+    from flask import current_app
+
+    database_url = current_app.config["SQLALCHEMY_DATABASE_URI"]
     log_and_print(f"Database URL: {database_url}")
 
     # Ensure PyMySQL driver
