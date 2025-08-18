@@ -103,7 +103,11 @@ def check_text_with_llm_response(
         db.session.add(log_script)
         db.session.flush()
         yield make_script_dto(
-            "text_end", "", log_script.block_bid, log_script.outline_item_bid
+            "text_end",
+            "",
+            log_script.block_bid,
+            log_script.outline_item_bid,
+            log_script.generated_block_bid,
         )
     else:
         app.logger.info(f"check_text_by_{res.provider} is None")

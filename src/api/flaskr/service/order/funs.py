@@ -566,6 +566,7 @@ def query_raw_buy_record(app: Flask, user_id, course_id) -> Order:
             Order.shifu_bid == course_id,
             Order.user_bid == user_id,
             Order.status != ORDER_STATUS_TIMEOUT,
+            Order.deleted == 0,
         ).first()
         if buy_record:
             return buy_record

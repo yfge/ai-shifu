@@ -350,7 +350,7 @@ def get_study_record(
         ]
         user_info = User.query.filter_by(user_id=user_id).first()
         ret.records = items
-        last_block_id = attend_scripts[-1].generated_block_bid
+        last_block_id = attend_scripts[-1].block_bid
         last_lesson_id = attend_scripts[-1].outline_item_bid
         last_attend: LearnProgressRecord = [
             atend for atend in attend_infos if atend.outline_item_bid == last_lesson_id
@@ -395,7 +395,7 @@ def get_study_record(
         lesson_id = last_lesson_id
 
         if (
-            attend_scripts[-1].generated_block_bid == last_block.block_bid
+            attend_scripts[-1].block_bid == last_block.block_bid
             and block_dto.type == BLOCK_TYPE_CONTENT
         ):
             ret.ui = _handle_output_continue(
@@ -512,6 +512,7 @@ def reset_user_study_info_by_lesson(
         LearnGeneratedBlock.query.filter(
             LearnGeneratedBlock.outline_item_bid.in_(lesson_ids),
             LearnGeneratedBlock.status == 1,
+            LearnGeneratedBlock.user_bid == user_id,
         ).update({"status": 0})
         db.session.commit()
         return True
