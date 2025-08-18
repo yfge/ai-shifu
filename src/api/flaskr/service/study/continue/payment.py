@@ -27,5 +27,5 @@ def _handle_continue_payment(
 
     if order is None:
         return False
-    app.logger.info(f"order: {order.record_id}")
+    app.logger.info(f"order: {order.order_bid}")
     return True
