@@ -117,17 +117,14 @@ def use_coupon_code(app: Flask, user_id, coupon_code, order_id):
         coupon_usage.user_bid = user_id
         coupon_usage.order_bid = order_id
         if coupon.discount_type == COUPON_TYPE_FIXED:
-            buy_record.payable_price = (
-                buy_record.payable_price + coupon_usage.value  # noqa W503
+            buy_record.paid_price = (
+                buy_record.paid_price - coupon_usage.value  # noqa W503
             )
         elif coupon.discount_type == COUPON_TYPE_PERCENT:
-            buy_record.payable_price = (
-                buy_record.payable_price
-                + buy_record.payable_price * coupon_usage.value  # noqa W503
+            buy_record.paid_price = (
+                buy_record.paid_price
+                - buy_record.payable_price * coupon_usage.value  # noqa W503
             )
-        if buy_record.payable_price >= buy_record.payable_price:
-            buy_record.payable_price = buy_record.payable_price
-        buy_record.paid_price = buy_record.payable_price - buy_record.payable_price
         if buy_record.paid_price < 0:
             buy_record.paid_price = 0
         buy_record.updated_at = now
@@ -136,7 +133,7 @@ def use_coupon_code(app: Flask, user_id, coupon_code, order_id):
             coupon.used_count = coupon.used_count + 1
         db.session.commit()
 
-        if buy_record.payable_price >= buy_record.payable_price:
+        if buy_record.paid_price == 0:
             return success_buy_record(app, buy_record.order_bid)
         else:
             send_feishu_coupon_code(
