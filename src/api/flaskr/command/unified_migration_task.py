@@ -256,7 +256,7 @@ class UnifiedMigrationTask:
                 # Log progress with more detail
                 progress = min(100, (offset / total_count) * 100)
                 logger.info(
-                    f"Migration progress for {source_table}: {progress:.1f}% ({synced_count}/{total_count}) - Batch {offset//self.config.batch_size + 1}"
+                    f"Migration progress for {source_table}: {progress:.1f}% ({synced_count}/{total_count}) - Batch {offset // self.config.batch_size + 1}"
                 )
 
                 # Also print for visibility during flask db upgrade
