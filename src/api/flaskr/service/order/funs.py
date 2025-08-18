@@ -439,7 +439,6 @@ def generate_charge(
         pingxxOrder.transaction_no = charge["transaction_no"]
         pingxxOrder.app_id = charge["app"]
         pingxxOrder.channel = charge["channel"]
-        pingxxOrder.id = charge["id"]
         pingxxOrder.channel = charge["channel"]
         pingxxOrder.amount = amount
         pingxxOrder.currency = charge["currency"]
