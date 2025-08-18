@@ -71,10 +71,6 @@ def upgrade():
     database_url = current_app.config["SQLALCHEMY_DATABASE_URI"]
     log_and_print(f"Database URL: {database_url}")
 
-    # Ensure PyMySQL driver
-    if database_url.startswith("mysql://"):
-        database_url = database_url.replace("mysql://", "mysql+pymysql://")
-
     # Create migration configuration
     migration_config = MigrationConfig(
         batch_size=1000,
