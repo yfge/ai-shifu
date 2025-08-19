@@ -29,16 +29,16 @@ def generate_coupon_strcode(app: Flask):
 def generate_coupon_code(
     app: Flask,
     user_id,
-    discount_value,
-    discount_filter,
-    discount_start,
-    discount_end,
-    discount_channel,
+    value,
+    filter,
+    start,
+    end,
+    channel,
     discount_type,
-    discount_apply_type,
-    discount_count=100,
-    discount_code=None,
-    discount_id=None,
+    usage_type,
+    total_count=100,
+    code=None,
+    coupon_bid=None,
     **args
 ):
     """
@@ -63,40 +63,40 @@ def generate_coupon_code(
         raise_error: If the discount code is not found or the discount is already used
     """
 
-    app.logger.info("discount_id:" + str(discount_id))
+    app.logger.info("coupon_bid:" + str(coupon_bid))
     app.logger.info("generate_discount_code:" + str(args))
     with app.app_context():
-        start = datetime.strptime(discount_start, "%Y-%m-%d %H:%M:%S")
-        end = datetime.strptime(discount_end, "%Y-%m-%d %H:%M:%S")
+        start = datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
+        end = datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
         if end < start:
             raise_error("COMMON.START_TIME_NOT_ALLOWED")
-        if discount_code is None:
-            discount_code = generate_coupon_strcode(app)
-        if discount_id is None or discount_id == "":
+        if code is None:
+            code = generate_coupon_strcode(app)
+        if coupon_bid is None or coupon_bid == "":
             coupon = Coupon()
             coupon.coupon_bid = generate_id(app)
         else:
-            coupon = Coupon.query.filter(Coupon.coupon_bid == discount_id).first()
-        coupon.code = discount_code
+            coupon = Coupon.query.filter(Coupon.coupon_bid == coupon_bid).first()
+        coupon.code = code
         coupon.discount_type = discount_type
-        coupon.usage_type = discount_apply_type
-        coupon.value = discount_value
-        coupon.total_count = discount_count
+        coupon.usage_type = usage_type
+        coupon.value = value
+        coupon.total_count = total_count
         coupon.start = start
         coupon.end = end
-        coupon.channel = discount_channel
-        coupon.filter = "{" + '"course_id":"' + discount_filter + '"' + "}"
+        coupon.channel = channel
+        coupon.filter = "{" + '"course_id":"' + filter + '"' + "}"
         coupon.created_user_bid = user_id
-        if discount_id is None or discount_id == "":
-            if discount_count <= 0:
+        if coupon_bid is None or coupon_bid == "":
+            if total_count <= 0:
                 raise_error("DISCOUNT.DISCOUNT_COUNT_NOT_ZERO")
             db.session.add(coupon)
         else:
             db.session.merge(coupon)
-        if (discount_id is None or discount_id == "") and str(
-            discount_apply_type
-        ) == str(COUPON_APPLY_TYPE_SPECIFIC):
-            for i in range(discount_count):
+        if (coupon_bid is None or coupon_bid == "") and str(usage_type) == str(
+            COUPON_APPLY_TYPE_SPECIFIC
+        ):
+            for i in range(total_count):
                 app.logger.info("generate_discount_code_by_rule")
                 record = CouponUsageModel()
                 record.coupon_usage_bid = generate_id(app)
