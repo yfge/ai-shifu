@@ -63,8 +63,6 @@ def generate_coupon_code(
         raise_error: If the discount code is not found or the discount is already used
     """
 
-    app.logger.info("coupon_bid:" + str(coupon_bid))
-    app.logger.info("generate_discount_code:" + str(args))
     with app.app_context():
         start = datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
         end = datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
@@ -97,7 +95,6 @@ def generate_coupon_code(
             COUPON_APPLY_TYPE_SPECIFIC
         ):
             for i in range(total_count):
-                app.logger.info("generate_discount_code_by_rule")
                 record = CouponUsageModel()
                 record.coupon_usage_bid = generate_id(app)
                 record.coupon_bid = coupon.coupon_bid
