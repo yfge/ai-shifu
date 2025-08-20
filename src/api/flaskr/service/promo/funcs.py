@@ -5,6 +5,7 @@ Promo functions
 from datetime import datetime
 import random
 import string
+import json
 
 from .models import Coupon, CouponUsage as CouponUsageModel
 from ...dao import db
@@ -83,7 +84,7 @@ def generate_coupon_code(
         coupon.start = start
         coupon.end = end
         coupon.channel = channel
-        coupon.filter = "{" + '"course_id":"' + filter + '"' + "}"
+        coupon.filter = json.dumps({"course_id": filter})
         coupon.created_user_bid = user_id
         if coupon_bid is None or coupon_bid == "":
             if total_count <= 0:
