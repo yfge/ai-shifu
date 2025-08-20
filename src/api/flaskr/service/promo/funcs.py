@@ -130,16 +130,16 @@ def generate_coupon_code_by_rule(app: Flask, discount_id):
             return None
         if discount_info.usage_type == COUPON_APPLY_TYPE_ALL:
             return None
-        discount_code = generate_coupon_strcode(app)
-        discountRecord: CouponUsageModel = CouponUsageModel()
-        discountRecord.coupon_usage_bid = generate_id(app)
-        discountRecord.coupon_bid = discount_info.coupon_bid
-        discountRecord.code = discount_code
-        discountRecord.discount_type = discount_info.discount_type
-        discountRecord.value = discount_info.value
-        discountRecord.status = COUPON_STATUS_ACTIVE
+        code = generate_coupon_strcode(app)
+        usage: CouponUsageModel = CouponUsageModel()
+        usage.coupon_usage_bid = generate_id(app)
+        usage.coupon_bid = discount_info.coupon_bid
+        usage.code = code
+        usage.discount_type = discount_info.discount_type
+        usage.value = discount_info.value
+        usage.status = COUPON_STATUS_ACTIVE
         discount_info.total_count = discount_info.total_count + 1
-        db.session.add(discountRecord)
+        db.session.add(usage)
         db.session.commit()
 
 
