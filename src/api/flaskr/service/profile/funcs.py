@@ -184,7 +184,7 @@ def save_user_profiles(
                 else PROFILE_TYPE_INPUT_TEXT
             )
             profile_id = profile_item.profile_id
-            app.logger.warning("profile_id:{}".format(profile_id))
+            app.logger.info("profile_id:{}".format(profile_id))
         else:
             profile_type = 1
             profile_id = ""

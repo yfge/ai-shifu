@@ -193,6 +193,7 @@ class ProfileOptionListDto:
         }
 
 
+@register_schema_to_swagger
 class ProfileToSave:
     key: str
     value: str
