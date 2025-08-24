@@ -52,7 +52,7 @@ def _handle_input_options(
                     break
 
             break
-    if len(profile_to_save) > 0:
+    if profile_to_save:
         save_user_profiles(
             app, user_info.user_id, outline_item_info.shifu_bid, profile_to_save
         )
