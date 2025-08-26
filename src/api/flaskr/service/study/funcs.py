@@ -340,7 +340,7 @@ def get_study_record(
                 ROLE_VALUES[i.role],
                 0,
                 i.generated_content,
-                i.generated_block_bid,
+                i.block_bid,
                 i.outline_item_bid if i.outline_item_bid in lesson_ids else lesson_id,
                 i.generated_block_bid,
                 i.liked,
