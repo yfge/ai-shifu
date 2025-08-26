@@ -322,7 +322,7 @@ def get_study_record(
         )
         if not attend_infos:
             return ret
-        attend_scripts = (
+        attend_scripts: list[LearnGeneratedBlock] = (
             LearnGeneratedBlock.query.filter(
                 LearnGeneratedBlock.outline_item_bid.in_(lesson_ids),
                 LearnGeneratedBlock.status == 1,
