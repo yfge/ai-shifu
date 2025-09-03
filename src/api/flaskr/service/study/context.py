@@ -675,6 +675,7 @@ class RunScriptContext:
                 block_dto=run_script_info.block_dto,
                 trace_args=self._trace_args,
                 trace=self._trace,
+                is_preview=self._preview_mode,
             )
             if run_script_info.block_dto.type == "content" or not continue_check:
                 res = handle_block_output(
@@ -685,6 +686,7 @@ class RunScriptContext:
                     block_dto=run_script_info.block_dto,
                     trace_args=self._trace_args,
                     trace=self._trace,
+                    is_preview=self._preview_mode,
                 )
                 if res:
                     yield from res
@@ -790,6 +792,7 @@ class RunScriptContext:
             block_dto=run_script_info.block_dto,
             trace_args=self._trace_args,
             trace=self._trace,
+            is_preview=self._preview_mode,
         )
         if res:
             yield from res
