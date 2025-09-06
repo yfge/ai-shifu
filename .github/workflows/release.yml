@@ -60,27 +60,6 @@ jobs:
             echo "Branch is protected, will need special handling"
           fi
 
-      - name: Sync cz.json version with git tags
-        run: |
-          echo "🔄 Syncing cz.json version with latest git tag..."
-          LATEST_TAG=$(git tag -l --sort=-version:refname | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+" | head -1)
-          if [ -n "$LATEST_TAG" ]; then
-            LATEST_VERSION=${LATEST_TAG#v}  # Remove 'v' prefix
-            echo "📋 Latest git tag version: $LATEST_VERSION"
-            # Update cz.json version
-            python -c "
-            import json
-            with open('cz.json', 'r') as f:
-                config = json.load(f)
-            config['commitizen']['version'] = '$LATEST_VERSION'
-            with open('cz.json', 'w') as f:
-                json.dump(config, f, indent=2)
-            "
-            echo "✅ Updated cz.json version to $LATEST_VERSION"
-          else
-            echo "⚠️ No semantic version tags found, keeping cz.json version as-is"
-          fi
-
       - name: Bump version automatically
         id: bump-version
         run: |
