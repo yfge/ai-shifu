@@ -172,7 +172,7 @@ jobs:
               echo "📋 Using latest git tag version: $VERSION"
             else
               # Fallback: try to get any semantic version tag
-              VERSION=$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "0.6.0")
+              VERSION=$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "1.0.0")
               echo "📋 Using fallback version: $VERSION"
             fi
           fi
