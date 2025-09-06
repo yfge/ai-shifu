@@ -1,4 +1,4 @@
-FROM node:20.16.0-alpine AS builder
+FROM node:20.11.1-alpine AS builder
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ COPY . .
 
 RUN npm run build  --ignore-scripts
 
-FROM node:20.16.0-alpine AS runner
+FROM node:20.11.1-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
