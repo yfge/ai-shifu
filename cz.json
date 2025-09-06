@@ -1,7 +1,7 @@
 {
   "commitizen": {
     "name": "cz_conventional_commits",
-    "tag_format": "v$major.$minor.$patch",
+    "tag_format": "v$version",
     "version": "0.6.0",
     "update_changelog_on_bump": true,
     "annotated_tag": true,
