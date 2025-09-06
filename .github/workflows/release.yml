@@ -140,10 +140,24 @@ jobs:
       - name: Get current version
         id: version
         run: |
-          VERSION=$(python -c "import json; print(json.load(open('cz.json'))['commitizen']['version'])")
+          if [ "${{ steps.bump-version.outputs.bump_needed }}" = "true" ]; then
+            # Use the new version from bump step
+            VERSION="${{ steps.bump-version.outputs.new_version }}"
+            echo "📋 Using new version from bump: $VERSION"
+          else
+            # Get latest version from git tags
+            LATEST_TAG=$(git tag -l --sort=-version:refname | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+" | head -1)
+            if [ -n "$LATEST_TAG" ]; then
+              VERSION=${LATEST_TAG#v}  # Remove 'v' prefix
+              echo "📋 Using latest git tag version: $VERSION"
+            else
+              # Fallback to cz.json if no tags found
+              VERSION=$(python -c "import json; print(json.load(open('cz.json'))['commitizen']['version'])")
+              echo "📋 Fallback to cz.json version: $VERSION"
+            fi
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=v$VERSION" >> $GITHUB_OUTPUT
-          echo "📋 Current version: $VERSION"
 
       - name: Create GitHub Release
         if: steps.bump-version.outputs.bump_needed == 'true'
