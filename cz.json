@@ -1,17 +1,13 @@
 {
   "commitizen": {
     "name": "cz_conventional_commits",
-    "tag_format": "v$version",
-    "version": "0.6.0",
+    "tag_format": "v$major.$minor.$patch",
+    "version_provider": "scm",
     "update_changelog_on_bump": true,
     "annotated_tag": true,
     "gpg_sign": false,
     "bump_message": "bump: version $current_version → $new_version",
     "major_version_zero": true,
-    "legacy_tag_formats": [
-      "v$major.$minor-beta",
-      "$major.$minor-beta"
-    ],
     "style": [
       ["qmark", "fg:#ff9d00 bold"],
       ["question", "bold"],
