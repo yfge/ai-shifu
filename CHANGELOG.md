@@ -1,0 +1,963 @@
+## v0.7.0 (2025-09-06)
+
+## v0.6.0 (2025-09-06)
+
+### Feat
+
+- implement pure SCM-based dynamic versioning system
+- enhance release workflow with robust error handling and improved tag format
+- enhance commitizen configuration with better styling and options
+- add legacy tag format compatibility for automated releases (#758)
+- add legacy tag format compatibility for automated releases
+- automated release workflow with enhanced Docker integration (#756)
+- implement automated release workflow with enhanced Docker integration
+- enhance Umami user identification with selected session data (#753)
+- add Umami identify() for user tracking (#751)
+- add AI disclaimer with internationalization support (#748)
+- add environment variable fallback with warnings for undefined config keys (#736)
+- remove RAG and tag modules completely (#719)
+- make Redis configuration optional (#727)
+- add default charset to mysql connection string (#722)
+- add history message limit setting when asking (#703)
+- remove password authentication system (#701)
+- remove circular progress bar from AskButton (#680)
+- add banner info to outlineitem tree (#675)
+- merge phone login and registration into unified flow (#659)
+- configurable login methods through environment variables (#657)
+- implement runtime environment configuration with dynamic API URLs
+- enhance error handling and user authentication flow
+- unify logo reference
+- add the user permission fields (#632)
+- user permission management (#623)
+- update ask UI text (#621)
+- add regenerate button (#614)
+- add the function of regenerating conversations
+- using AI-Shifu primary color in cook
+- add new outline unit types (#596)
+- Update the outline creation and modification functions to support new unit types
+- improve ask prompts
+- enable ask for new shifu (#586)
+- enhance import user functionality by adding nickname parameter (#599)
+- add mermaid diagram support (#592)
+- unified variables selection modal (#570)
+- improve variables selection experience (#556)
+- add height constraints to Editor component usage locations
+- update back button behavior to navigate to home
+- migrate all prompt editors to unified CMEditor component (#575)
+- add default option to model selection (#567)
+- update comparison logic to reduce data duplication (#562)
+- add temperature setting to Shifu settings dialog (#561)
+- add cross-chapter drag-drop sorting (#541)
+- improve experience of chapter drag-and-drop (#533)
+- Add an auto-save function to handle specific types of blocks (#555)
+- improve prompt for rejecting bad user input (#546)
+- update localization for empty state to 'none'
+- improve JSON prompt error message for clarity (#544)
+- more polite language
+- add system prompt to LLM call for variable extraction in TextInput (#539)
+- add empty check and JSON keyword validation for prompts to extract profiles in TextInput UI (#538)
+- log request body and response (#535)
+- show all shifus allowed accessing in cook (#528)
+- prevent auto-scrolling for Shifu content(#506)
+- add error handling logic and API response type support (#523)
+- update tcatalog 0601 (#522)
+- add agreement and privacy policy pages (#518)
+- add the general dump method for unit tests (#519)
+- update the style and layout of the language selection component (#516)
+- new chapter verification optimization has been added (#517)
+- reminder will be displayed only when the user operation component changes the content (#515)
+- upfile by url (#490)
+- massive editor improvements (#501)
+- add the record of user verification codes (#459)
+- add placeholder to button name option
+- remove default maxRows limit in TextareaAutosize
+- cook add preview (#481)
+- allow empty model in text input
+- allow empty button name
+- use react-textarea-autosize on prompt textarea
+- add default title for login/checkout button (#492)
+- show whole system prompt
+- allow flexible resizing in shifu editbox
+- add empty ui setting to cook (#480)
+- optimize the mobile input box (#456)
+- remove tags on learning progress bar (#442)
+- integrate i18n support using react-i18next (#433)
+- integrate i18n support using react-i18next
+- add virtual goods payment instruction (#440)
+- shifu editor permission verification (#436)
+- processing logic after the order timeout (#421)
+- Add sql log output in development mode (#431)
+- simplify 404 page by removing countdown and using direct navigation
+- update titleRow color to use main font color variable
+- restore login
+- change default teacher avatar to shifu logo
+- add like / dislike 20250319 (#295)
+- add import course command (#273)
+- remove default continue message (#265)
+- add new llm support (#252)
+- update document title, content, and keywords with API response (#248)
+- add sillcon api (#239)
+- v2.0 - new ask button, ask activity message, show pay promotion in lesson tree, refactor user menu, global help menu. (#235)
+- add site url conf (#231)
+- add 404 page (#227)
+- update generation name in langfuse (#222)
+- add offical link (#219)
+- add offical link (#218)
+- merge logo image (#217)
+- add feishu log handler (#198)
+- change api mode to request headers (#177)
+- add init course script (#146)
+- add color log support to api (#137)
+- add the default llm model setting (#135)
+- add get env api of express
+- add express server to support config
+- add a simple plugins  (#117)
+-  add plugins ci (#114)
+- add pm2
+- add pm2
+- Add Apache License 2.0 to LICENSE.txt
+- add log to check code and login
+- copy record content from tmp user to normal user
+- add ui type login
+- login ui support
+- i18n settings
+- update i18n support of user setting
+- add i18n to api
+- add log to check code and login
+- update login success message
+- copy record content from tmp user to normal user
+- add ui type login
+- login ui support
+- add log to check code and login
+- update login success message
+- copy record content from tmp user to normal user
+- add ui type login
+- login ui support
+- add ui type login
+- login ui support
+- add file
+- show memembersetting
+- pass course id to init order api
+- add course api
+- show memembersetting
+- pass course id to init order api
+- add course api
+- update avator to display
+- update payment background images
+- multi course support
+- update admin view
+- add sort to admin
+- add export api to admin
+- change slogan
+- change brand name
+- change the ask logic to new
+- update ask feature
+- update course flyer
+- use "ask" instead of "press"
+- Use user's config from `My Account` for `Chapter Setting` page, repleacing the fixed `doc_id` from config.yml
+- Interface updates and new implementations - /lesson/get_chatper_info - /lesson/delete_lesson - /lesson/update_ask_info
+- update admin view
+- add sort to admin
+- add export api to admin
+- change slogan
+- change brand name
+- change the ask logic to new
+- update ask feature
+- update course flyer
+- use "ask" instead of "press"
+- Use user's config from `My Account` for `Chapter Setting` page, repleacing the fixed `doc_id` from config.yml
+- followup ask
+- update delete lesson api
+- add feishu conf to api
+- Chapter Setting page adds management functionality for the test environment
+- add dedao
+- add dedao
+- 加入折扣码
+- update dicount view
+- add llm models
+- On the Follow-up Ask Prompt Builder page, it allows customization of chapter summary prompt templates, follow-up ask prompt templates, and model customization; as well as some error handling and user experience optimizations.
+- add key for list element
+- nickname input limit in user settings modal
+- The `Follow-up Ask Prompt Builder` page allows building follow-up ask prompt templates for all chapters and automatically saves them to the local SQLite database.
+- Add page `Follow-up Ask Prompt Builder`, Complete the function of generating chapter content summaries.
+- merge dev & update list query data
+- auto focus when login modal popup
+- 优化向上滚动的性能
+- 向上滚动一小段后，不进行自动滚动
+- Add qwen LLMs series support
+- add edun api
+- add edun check
+- Add deepseek and qwen LLMs series support
+- Add follow-up ask for page `Chapter Debugger`
+- 修复一些 warning 错误
+- 删除无用文件
+- Add `select default model` for page `Chapter Debugger`
+- Add `auto continue` for page `Chapter Debugger`
+- Add `user say` for page `Chapter Debugger`
+- remove empty log
+- 提交反馈功能修复
+- 支付优化变化慢，昵称修改不及时刷新
+- 支付优化变化慢，昵称修改不及时刷新
+- 提交反馈功能修复
+- remove empty log
+- Add `auto continue` for page `Chapter Debugger`
+- Add `user say` for page `Chapter Debugger`
+- Add `select default model` for page `Chapter Debugger`
+- 删除无用文件
+- 修复一些 warning 错误
+- add i18n conf
+- update feishu notify
+- 跳转到下一个章
+- 打印 require_tmp 入口日志
+- 增加调试日志
+- 打开调试工具
+- 修改 tdk
+- 使用券后关闭优惠券弹窗
+- 微信内复制，输入控件border颜色
+- 复制按钮的逻辑
+- 修复一些小bug
+- 点击重置后自动跳转章
+- Add Chapter funnel analysis in the `Event_Analysis` page.
+- Added analysis of the decline ratio between scripts in event analysis
+- Added page `Event Analysis`, currently providing script funnel analysis for trial chapters
+- 临时关掉重修
+- records 初始化逻辑
+- pc 支付页面切换
+- mobile init
+- 聊天界面主按钮高度不正确
+- 暂时隐藏重修按钮
+- 消息列表上下的遮挡问题
+- 微信支付内，不显示支付宝支付
+- 重修按钮样式
+- 重修文案
+- 重置埋点
+- 重置当前章节
+- add reset api
+- add reset api
+- 测试手机端支付
+- update user state
+- add get script info api
+- add pre-commit
+- 打点
+- add github action
+- coupon code 移动端
+- 调用微信支付
+- change to stream
+- 注册用户问题
+- 增加 appid 配置
+- wechatlogin
+- 修改inWechat判断
+- inWechat
+- try 微信获取openai
+- Update course info on payment page
+- 支持打开导航菜单
+- 尝试微信链接支付
+- 尝试显示支付链接
+- 打开新窗口支付
+- 选择支付渠道
+- 增加测试环境的编译
+- 加入活动
+- merge admin-adi to api
+- 尝试修改移动端目录页面
+- 弹出时才创建
+- 测试环境测试
+- 移动支付一部分ui
+- 加载白屏的问题
+- 支持埋点
+- 修改个人动态信息
+- 支付页面文字
+- 支付页面可关闭
+- tracking 框架
+- add admin user info
+- 动态配置修改
+- logo 修改
+- 基本用户数据更新
+- update profile
+- get profile 接口
+- 购买和章节跳转逻辑
+- 更新正学习记录的部分
+- 支付页面 Ui
+- 学习脚本接口加入redis锁
+- Added "Add Chapter" feature to the `Chapter Setting` page.
+- test pay modal
+- 支付逻辑
+- paymodal 逻辑
+- 增加 memo，提升性能
+- 修改一些依赖
+- remove empty lines
+- add test
+- 初步加入折扣码的逻辑
+- 订单相关加入部分错误处理
+- 增加order-query的返回说明
+- 设置时区 增加下单接口
+- 测试环境下可以使用user_id 作为token
+- 增支付相关接口
+- Completed the transformation of the Script_Debugger page
+- ping xx 支付相关
+- 支持 i18n
+- update docker ex.env
+- add cook dockerfile
+- add pingpp repo
+- Extract required variables from each script before execution, automatically check if they already have values, and prompt the user to enter any missing values to continue running
+- Add cache for load_scripts_from_bitable
+- Add start progress selector for `Chapter Debugger` page
+- Add cache for get_courses_by_user_from_sqlite and get_bitable_tables
+- Implement CRUD operations for courses in `My_Account` page
+- Add course and script table selector to `CodeSifu` page
+- 修改支付详情页面+添加channel参数
+- 加载白屏的问题
+- 支持埋点
+- 修改个人动态信息
+- 支付页面文字
+- 支付页面可关闭
+- tracking 框架
+- add admin user info
+- 动态配置修改
+- logo 修改
+- 基本用户数据更新
+- update profile
+- get profile 接口
+- 购买和章节跳转逻辑
+- 更新正学习记录的部分
+- 支付页面 Ui
+- 学习脚本接口加入redis锁
+- Added "Add Chapter" feature to the `Chapter Setting` page.
+- test pay modal
+- 支付逻辑
+- paymodal 逻辑
+- 增加 memo，提升性能
+- 修改一些依赖
+- remove empty lines
+- add test
+- 初步加入折扣码的逻辑
+- 订单相关加入部分错误处理
+- 增加order-query的返回说明
+- 设置时区 增加下单接口
+- 测试环境下可以使用user_id 作为token
+- 增支付相关接口
+- Completed the transformation of the Script_Debugger page
+- ping xx 支付相关
+- 支持 i18n
+- update docker ex.env
+- add cook dockerfile
+- add pingpp repo
+- Extract required variables from each script before execution, automatically check if they already have values, and prompt the user to enter any missing values to continue running
+- Add cache for load_scripts_from_bitable
+- 将admin-api 抽成独立服务
+- update sifu config
+- 新增批量更新正式剧本功能
+- 通过 API 更新正式环境剧本时可以修改 view_id（通过API取值暂时来自本地配置文件中的默认view_id）
+- 正式环境管理
+- 添加管理员登录功能，对除了 CodeSifu Demo 页面外的其他涉及管理功能的页面都添加了登录认证的要求。 feat: 添加 `My_Account` 页面，可以登出、修改密码、修改个人信息。
+- 通过输入框提取用户信息改为 JSON mode， 不再需要【输入成功标识】 feat: 加入对【后续交互】中 '输入 手机号' 和 '输入 验证码' 的兼容
+- 添加对 `智谱` 的支持 feat: 开发者模式下 URL查询参数新增支持指定 `model` `temperature`, 且可分别或组合使用 refactor: 更新模型列表，尽可能使用固定日期版本的模型，以寻求更好的确定性，支持列表详见（https://agiclass.feishu.cn/sheets/OBQrsl4TJhYeJKtOwkuclHkAnBd）
+- 新增剧本调试器页面，方便快速高效的调试单条剧本Prompt feat: 新增 默认【授课风格】选项，在各个开发工具中可用 feat: 添加 【QianFan 默认温度】和【OpenAI 默认温度】（千帆默认温度改为0.8） feat: 可以设定单条剧本的温度 feat: 新增非流式输出功能，可配合新开发者工具使用 fix: 修复当有 系统角色 时，定位启动位置错位的问题 fix: 修复指定单条剧本模型未生效的问题 fix: 修复更新st版本后 CodeSifu 界面左侧导航显示异常的问题
+- 开发者模式中 `默认用户Profile` 中新增 `默认AI工具` feat: 开发者模式的 `URL parameters 快捷调试` 中新增 `默认AI工具（ai_tools）` 和 `剧本文档（table）` 的支持，且 `progress` 升级支持有 `系统角色` 的文档。
+- 新增 `系统角色`, 兼容现有支持的所有模型。（`系统角色` 只能配置在剧本文档的第一行，需要指定 `剧本类型` 为 `系统角色`， 如模版内容中需要使用变量，依然需要在 `模版变量` 中进行配置）。 feat: 开发者模式中 `开始位置` 适配有 `系统角色` 的剧本，默认改为 `2`（对应飞书文档中显示的序号）, 如针对没有系统角色，可手动调整序号。 refactor: 加载剧本及系统角色的代码封装到 `load_scripts_and_system_role`
+- 章节剧本文档管理中添加 删除 功能
+- DEV_MODE 进度敲回车执行
+- 新增图片文件上传管理功能的页面 perf: 剧本类型（script_type）不填写的情况下，默认为 `固定剧本`; 后续交互（next_action）不填写的情况下，默认为 `无` perf: 按钮类型不再自定义，全部默认 primary & use_container_width
+- 支持没有变量的【Prompt】剧本类型 feat: 开发者模式支持在URL中使用 `progress` 查询参数直接进入某一步。同时支持查询参数中指定 `nickname`, `industry`, `occupation`，以便跳步调试时也能修改这些参数。
+- 新增图片类型
+- add temprature conf
+- 重构了input 和output 部分,整体代码更优雅一点
+- 更新配置文件形式,为以后开源进做准备
+- update lesson 接口
+- 增加删除课程的接口 ,修复输入错误时不返回input情况
+- add user login / profile update
+- buy order  tmp
+- update loop script
+- 增加脚本id
+- update get study record
+- add user info
+- 目录树
+- 课程列表图标布局
+- course list
+- split repo
+- 一些小弹窗
+- new chat ui 初始化
+- 更新交互
+- 移动端基础样式
+- 更新隐私协议
+- 修改 logo
+- 样式调整
+- image problem
+- 配置弹窗改为 ant design mobile
+- 日期选择器
+- 皮肤，设置浮窗位置调整
+- 点击进入用户协议
+- 用户页面页面制作
+- 浮窗收起时的效果
+- change avatar component
+- 测试环境一直显示目录
+- 加载时处理输入控件的 disabled 状态
+- 下一章切换逻辑
+- 支持登录和基础购买逻辑
+- 重构输入组件
+- 修改职业弹窗
+- 切换登录，刷新课程内容
+- 一些 UI 调整
+- 默认主页为newchat
+- 章完成后自动切换
+- 下一步支持章跳转
+- 修改baseurl
+- 左侧导航与页面交互
+- 通过第一章
+- 聊天页面消息列表加载
+- 添加 chatui
+- 初始化章id相关逻辑
+- daily
+- 登录到加载数据流程
+- 课程树接口逻辑
+- useLessonTree 逻辑
+- 登录逻辑
+- 发送验证码逻辑
+- api base_url
+- 当前位置 store
+- 登录界面UI
+
+### Fix
+
+- resolve SCM versioning issues and improve branch protection handling (#763)
+- resolve GitHub Actions workflow failures with pure SCM versioning (#762)
+- resolve SCM versioning and improve branch protection handling
+- resolve bumpversion issues and enhance commitizen configuration (#761)
+- add explicit tag push for SCM provider compatibility
+- update default fallback version from 0.6.0 to 1.0.0 in workflow
+- resolve GitHub Actions version detection failure
+- remove file modifications from workflow and maintain clean cz.json
+- sync cz.json version and add automatic version synchronization
+- resolve GitHub Actions workflow failures and simplify release process (#759)
+- pull request template
+- remove unnecessary Node.js setup from release workflow (#757)
+- resolve version inconsistency in commitizen configuration
+- pre-commit error
+- pre-commit-config
+- prevent multiple umami.identify() calls on user login (#754)
+- issue that clear use profile  (#752)
+- skip payment order creation in preview mode (#750)
+- content generation fails in preview mode (#749)
+- block reload fails due to incorrect data in GetStudyRecord API (#746)
+- correct get and update user profile functions (#744)
+- prevent generated_content from being set to empty string in chek_text_with_llm_response (#743)
+- prevent generated_content from being set to empty string in check_text_with_llm_response
+- set generated_content default empty string (#740)
+- failure in getting follow-up conf and saving ask message content (#737)
+- change get conf of feishu log and pingxx (#732)
+- **config**: ensure values are loaded from OS environment variables (#731)
+- get config
+- restore pingxx config (#729)
+- clean up migration files and improve auto-detection (#721)
+- correct file handler to use log_file variable (#713)
+- improve update-i18n script and fix translation key references (#712)
+- improve update-i18n script to detect all translation key patterns
+- change default login redirect from /c to /main in cook-web (#708)
+- fix missing i18n placeholders and optimize translation keys in CreateShifuDialog (#689)
+- cook dockerfile github action add retry
+- dockerfile fixed
+- error when invoking Dify API (#683)
+- issue of invoke dify api
+- auto-refresh token on login page when encountering token expiration (#674)
+- outline unlock fails because sibling is hidden (#679)
+- issue that chapter cannot be reset (#677)
+- prevent render failure when outline ends with a goto block (#676)
+- render fails when goto block is the last block of outlineitem
+- options fails to render correctly in some cases (#672)
+- upload file failure due to config read error (#671)
+- upload file fails
+- button fails to render correctly in some cases (#670)
+- render error of button
+- validate bilibili.com domain properly to prevent URL substring bypass (#669)
+- **migration**: resolve error during profile table migration (#667)
+- correct typo USER_STATE_UNTEGISTERED to USER_STATE_UNREGISTERED (#664)
+- add missing whitespace around arithmetic operator in migration file (#662)
+- migration error on phone-input or checkcode-input blocks (#658)
+- remove unused registerMethod variables (follow-up) (#660)
+- remove unused registerMethod variables
+- shifu list failed to render image correctly (#648)
+- rendor continue wrong in get study record (#643)
+- wrong logic of getting next script (#642)
+- check continue error
+- add default labels and null safety for UI components (#640)
+- generate wrong ui in loading new study record (#639)
+- build error after applying code formatting
+- add GitHub token authentication to Claude Code workflows
+- optimize authentication flow and resolve API request redundancy
+- resolve directory tree loading and infinite loop issues
+- correct spelling of useDisclosure and build error
+- ask is disabled at chapter end (#620)
+- broken user settings
+- optimize the regular expression for extracting variables (#613)
+- properly show architecture image in README
+- ask prompt replacement optimization (#608)
+- missing user variables in ask prompt (#605)
+- build failure in Cook web (#601)
+- build failure in Cook web
+- variables list of AI debug (#593)
+- more robust publishing (#598)
+- incorrect Shifu avatar displayed in study logs (#597)
+- display wrong shifu avatar in study logs
+- correct inline code render
+- remove duplicate copy to clipboard
+- issue where variable list does not update (#591)
+- failed to save TextInput settings when saving blocks (#590)
+- typo of log file path name (#580)
+- resolve ESLint warnings by replacing img tags with Next.js Image (#579)
+- remove unnecessary class from image container in ShifuSettingDialog
+- db migration error of create init course (#576)
+- unable to delete block/outline while publishing (#571)
+- broken default model selection
+- correct typo： avator->avatar,teach_avator->teacher_avatar(#565)
+- build error of wrong merge (#558)
+- ugly warp style of inline code in Markdown
+- get content prompt in text check respone (#553)
+- saving block fails when action properties are null (#552)
+- correct spelling of 'temperature' in AIModelDialog component
+- show AI debug output properly
+- outline icons and titles not aligned right
+- fill profiles in LLM prompt after content check fails (#545)
+- update capitalization for setting regular block text
+- typo for setting block types
+- skip empty check when adding a new block (#540)
+- update contact us link in GlobalInfoButton (#534)
+- prevent block from saving if content is empty (#537)
+- ignore SSE responses in logs (#536)
+- ignore sse response in log
+- profile model settings not applied as expected (#530)
+- remove auto-formatting prompt for exact user input (#531)
+- remove auto-formatting prompt for exact user profile
+- chapter info retrieval gets outdated data (#529)
+- update preview version manange (#509)
+- modify the removeBlock function to use the asynchronous save method (#513)
+- image url not be coverted to markdown (#503)
+- adjust margin for lists (#499)
+- auto save (#489)
+- unable to scroll to top in ChatUI (#485)
+- unable to scroll to top in chatui
+- update content display style to preserve whitespace
+- orders that have been successfully purchased cannot be regarded … (#482)
+- orders that have been successfully purchased cannot be regarded as overdue
+- issuse of ai
+- prompt clear when type change
+- input content clear when switch between ask and input
+- typos in Chinese strings by Google Jules (#478)
+- failed to change course owner when first user registered
+- update Nginx config to make Cook config API available
+- pull request template
+- regular expression repair (#471)
+- two errors when running api project on Windows (#467)
+- ensure user state is updated correctly (#462)
+- correct spelling of 'UNAVAILABLE' in status constants (#464)
+- remove duplicate extra column from PingxxOrder model (#461)
+- the scope of the find_active_id variable (#460)
+- after the order timeout, the discount for initiating the order again is still available (#455)
+- intercept api error code 9999 (#452)
+- get follow up info (#451)
+- error getting follow-up info when lesson is unavailable  (#448)
+- automatically save frequency corrections (#443)
+- refine text styling in catalog
+- migration version conflict due to multiple feature branches (#437)
+- correct Redis key prefix typos in configuration (#430)
+- correct typos in function names and logging messages in feishu.py
+- correct typo in variable name from SCRIPT_TYPE_PORMPT to SCRIPT_TYPE_PROMPT
+- correct typo in variable name from is_first_chatpter to is_first_chapter
+- delete chapter api error
+- version api
+- api error
+- add last script null check
+- add last script null check
+- check last script error of new course
+- login wechat error fisrt time
+- check last script error of new course
+- check last script error of new course
+- improve handling of empty messages in input button and continue UI (#371)
+- remove hardcoded continue
+- correct spelling of 'agreement' in multiple files (#340)
+- correct spelling of 'protocol' in multiple files
+- change Cook Qwen config key from 'DASHSCOPE*' to 'QWEN*' (#325)
+- failed to import demo shift due to model update (#315)
+- branch lesson jump not working as expected (#311)
+- user profile id is null (#307)
+- parent id sysnc error (#306)
+- deepseek do not work without base url (#298)
+- logo cannot be expanded after collapsing (#291)
+- select the reset chapter after chapter reset (#285)
+- auto geration next chapter (#286)
+- event tracking empty data due to yielded data (#275)
+- branch not working due to plugin system registration error (#274)
+- start fail when ernie no conf (#269)
+- resolve migration deadlock (#267)
+- load tree multiple times on page init (#266)
+- missing last message sent before login (#262)
+- throw error when extension generation returns None (#255)
+- autoselect current chapter when reload tree (#256)
+- reload lesson tree after lesson reset (#257)
+- set status to 'learn' after lesson reset (#259)
+- feishu notify error (#246)
+- wrong url to homepage (#243)
+- ask mode get error  (#240)
+- input (#238)
+- refresh lesson tree after login (#236)
+- study record error (#229)
+- auto update ordertime when query order (#214)
+- dev error (#211)
+- attend script run error (#210)
+- route info (#206)
+- course found error (#201)
+- auto attend info
+
+fix: lesson tree error
+
+feat: update get lesson study tree
+
+fix: lesson reset
+- attend error (#200)
+- remove setup log error
+
+chore: remove unuseful code
+- app crash when alibaba oss key is null or empty (#189)
+- app crash when alibaba oss key is null or empty
+
+fix: app crash when alibaba oss key is null or empty
+- The Image Uploader cannot auth (#185)
+- language using browser default (#179)
+- invoking yidun without user_id (#181)
+- pressing enter on login modal will run script (#182)
+- relogin missing profile (#180)
+- ask error when system is none (#178)
+- ask error when system is none (#175)
+- add login/register dialog and payment QR code simulation (#173)
+- reset unavailabe for all course (#172)
+- reset unavailabe for all course
+- run script error when course not purchased (#169)
+- follow ask input error (#158)
+- run study param missing (#159)
+- web build with debug (#160)
+- broken Docker instructions and misleading README (#156)
+- init order error of no courseid (#152)
+- modify the mobie when the checkcode error (#151)
+- modify the mobie when the checkcode error (#150)
+- add check text content error (#144)
+- merge display when test url and prod url are same (#143)
+- study run api conf (#142)
+- master verify code
+
+feat: add api errors
+
+fix: restore common error
+- remove the pages dir of next.js (#138)
+- study api base url error (#136)
+- remove the console log
+- sse base url error
+- eslint error
+- default lesson info
+- eslint
+- update the elsint config
+- serect
+- use default mysql pwd
+- disable checkout pr temp
+- update user info when use discount
+- add init sql of cook
+- cook image start
+- test work flow
+- cooks dockerfile
+- Resolve the issue where the Script Debugger fails to run
+- Resolve the issue where the Chapter Debugger fails to run, and the script loader cannot retrieve the `btn_label`
+- Fix the variable name for user input in Follow-up Ask Prompt.
+- yaml
+- pre-commit
+- pre-commit errors
+- pre-commit errors
+- Fix pre-commit issues.
+- language error
+- admin web error
+- copy profile default value to user
+- Fixed the issue where the original value was not used when modifying the birthday.
+- Change `sex` to `gender`, and fix birthday typo
+- Fix the issue where the title parameter in SettingBaseModal does not work properly.
+- update user info
+- update tree when langchanged
+- en-us error message
+- remove nouse log
+- i18n conf
+- i18n ,add i18n to study and profile
+- fill the profile to ask prompt
+- reset filter by course id
+- user info error
+- reset filter by course id
+- user info error
+- mobile error
+- input
+- wrap
+- online pay error
+- set default ask mode to default
+- Fixed the issue where new courses could not update chapters.
+- get course api error
+- lookup error
+- lookup error
+-  course api error
+-  course api error
+- update commit
+- set default ask mode to default
+- Fixed the issue where new courses could not update chapters.
+- get course api error
+- lookup error
+- lookup error
+-  course api error
+-  course api error
+- update commit
+- pre comment
+- update route
+- remove checklogin in app
+- scroll to bottom incorrectly
+- error
+- course found error
+- remove scrollbar on mobile
+- add course id to all lesson query
+- update aliyun
+- update deploy.yml to add pre-commit check
+- language of the action file
+- pre-commit set
+- pre-commit version error
+- commit actiions
+- dev in docker file error
+- placeholder text not show in ask input
+- ask button should be align middle
+- update docker-compose file
+- Fix the issue where it keeps automatically scrolling to the bottom, preventing viewing of the content above.
+- the log directory is automaticlly removed after a system reboot.
+- remove send email
+- lint code
+- version conflict between watchdog and streamlit
+- remove scrollbar on mobile
+- add course id to all lesson query
+- update aliyun
+- update deploy.yml to add pre-commit check
+- language of the action file
+- pre-commit set
+- pre-commit version error
+- commit actiions
+- dev in docker file error
+- placeholder text not show in ask input
+- ask button should be align middle
+- update docker-compose file
+- set askmode disable when genrating
+- 初步搞了一个追问
+- 初步搞了一个追问
+- Hide some course types that have not yet been activated to avoid confusion with the names.
+- empty order
+- Update requirements.txt to resolve issues with some features not functioning properly.
+- empty order
+- discount limit date and count
+- update discount count;
+- order should have only one discount
+- order should have only one discount
+- pay error
+- null of language && i18n error on page
+- The issue of exceptions when choosing to use certain historical entries during follow-up ask.
+- delete debug English content
+- prompt error
+- The issue of needing to click twice to start
+- merger bug!
+- retrieve lost function `count_lines`
+- `select_progress` not define in page `Chapter Debugger`
+- merge conflict
+- feedback
+- feedback model
+- feedback
+- retrieve lost function `count_lines`
+- `select_progress` not define in page `Chapter Debugger`
+- merger bug!
+- The issue of needing to click twice to start
+- next ui input
+- chapter update
+- skip first script of branch
+-  lesson id 的容错
+- add error log
+- update default model
+- 恢复重修功能
+- checkode error
+- user online bug
+- checkode error
+- user online bug
+- check code to update user state
+- check code to update user state
+- uuid bug
+- commit check
+- commit check
+- rename router functions
+- get study rfecorfd
+- get study record
+- study record
+- web bug
+- ui funcs
+- github workflow
+- docker file
+- openid bug
+- user open id  error
+- open id bug
+- 检测微信环境错误
+- 微信支付参数
+- 更新微信 code
+- ztdebug error
+- typo in site title
+- update user info api
+- wechat code
+- order funcs error
+- update scripts
+- merge conflict
+- bug
+- 数据一致性问题
+- token 过期后，无法加载课程的问题
+- 加强一致性验证
+- 学习记录的一致性
+- attend unlock logic
+- break exception
+- config bug
+- update user config
+- check code error
+- Bug with no variable values in system roles on the page `Chapter Debugger`
+- get token error
+-  reset 接口
+- paymodel
+- ping xx callback error
+- pingxx callback
+- Error when no data on the page `Chapter Setting`
+- 初步完成用户上传头像功能
+- log handler
+- log config
+- 移除无用的历史代码
+- order info schema
+- 请求付款接口
+- model manager
+- model manager
+- model manager
+- login bug in page `Script Debugger`
+- got the wrong system_role record id when update to Lark
+- forget update the check_template
+- docker run command
+- pingxx callback
+- Continuously starting new threads to re-output the same script content in page `Chapter Debugger`
+- login in page `My Account` will cause `TypeError: cannot unpack non-iterable bool object`
+- Crash when no courses found in page `Chapter Debugger`, and guide the user to create new ones.
+- Filter out invalid variables in the extract_variables function
+- token 过期后，无法加载课程的问题
+- 加强一致性验证
+- 学习记录的一致性
+- attend unlock logic
+- break exception
+- config bug
+- update user config
+- check code error
+- Bug with no variable values in system roles on the page `Chapter Debugger`
+- get token error
+-  reset 接口
+- paymodel
+- ping xx callback error
+- pingxx callback
+- Error when no data on the page `Chapter Setting`
+- 初步完成用户上传头像功能
+- log handler
+- log config
+- 移除无用的历史代码
+- order info schema
+- 请求付款接口
+- model manager
+- model manager
+- model manager
+- login bug in page `Script Debugger`
+- got the wrong system_role record id when update to Lark
+- forget update the check_template
+- docker run command
+- pingxx callback
+- Continuously starting new threads to re-output the same script content in page `Chapter Debugger`
+- login in page `My Account` will cause `TypeError: cannot unpack non-iterable bool object`
+- Crash when no courses found in page `Chapter Debugger`, and guide the user to create new ones.
+- Filter out invalid variables in the extract_variables function
+- 解决后续交互 为 【显示 付款码】 无法加载剧本的问题
+- 解决无法正常结束剧本
+- bug on test
+-  手机号检查
+- update lesson api
+- update
+- update
+- update
+- 增加reset接口
+- 课程容错
+- 移动端基础样式
+- 课程列表标题样式调整
+- 推出登录窗口无法关闭
+- 修复一些ui问题
+- 点击导航按钮时，可以关闭配置小弹窗
+- 切换章的时候，自动计算当前节的位置
+- confict filx
+
+### Refactor
+
+- replacing legacy buy/attend/script/discount models with new Order, OrderPingxx, LearnProgressRecord, LearnGeneratedBlock, Coupon, and CouponUsage (#700)
+- centralize environment variable management (#720)
+- unify user model architecture (#699)
+- remove obsolete code (#684)
+- migrate useUserStore and userProvider to store directory (#685)
+- convert i18n keys to camelCase and improve naming (#682)
+- clean up unused i18n translation keys in cook-web (#681)
+- new db models of shifu (#622)
+- optimize the MainButton component
+- refactor API configuration and integrate environment variables
+- unify Cook Web API request architecture across /main and /c routes
+- modernize user state management with testing infrastructure
+- migrate from useAuth to useUserStore for user state management
+- simply integrate the user systems of cook-web and web.
+- separate blocks and actions for better experience (#607)
+- improve type definitions about clipboard
+- refactor api to new framework (#589)
+- Remove the memo and lodash dependencies in the Editor compo… (#547)
+- Remove the memo and lodash dependencies in the Editor component to simplify the code structure
+- remove title from ScriptDTO in multiple UI handlers
+- reorganize .gitignore for clarity and structure (#319)
+- alibaba could settings (#140)
+- change yidun settings key and set content check to optional (#139)
+- Update nearly everything in .env.example
+- add load plugins to fe
+- remove  empty lines
+- remove  empty lines
+- remove  empty lines
+- add plugin dir
+- remove  empty lines
+- remove  empty lines
+- add plugin dir
+- Replace the auth_config.yml with auth_config.example.yml
+- Replace the auth_config.yml with auth_config.example.yml
+- Replace the auth_config.yml with auth_config.example.yml
+- Replace the auth_config.yml with auth_config.example.yml
+- Log management is unified into config_manager.
+- Clean up useless code
+- Rebuild the `Course` class using `sqlalchemy.orm`
+- Change the `Account Management` page language to English.
+- Adjust page order
+- Replace all Chinese with English
+- 格式化代码
+- change default LLM model
+- change default LLM model
+- 格式化代码
+- Refactor login authentication using contextmanager
+- Change to production environment
+- 迁移到新飞书主体
+- Rename `CodeSifu` page to `Chapter Debugger`
+- Extract all Lark related functions into lark.py
+- Add models directory, create Course class and related functions, and move chapter.py and script.py into the directory.
+- Extract get_authenticator() from the login() for more flexible use (to obtain both the authenticator object and config file object)
+- Change to production environment
+- 迁移到新飞书主体
+- `章节剧本文档管理` 列表改为可单行选择的模式，并将 `修改` 和 `删除` 功能改为选择某行后出现。 feat: 添加 登录成功后的 欢迎 toast
+- llm openai 模型和组织用配置文件管理
+- 修改文件命名
+
+### Perf
+
+- add completion start time to LangFuse generation save (#268)
+- merge master
+- style in page `Chapters Setting`
+- style in page `Chapters Setting`
+- Remove `ERNIE-Speed-8K` model option;  Change default to `ERNIE-4.0-8K-Preview-0518`; Set default temperature to `0.4` for all models.
+- 格式内容（script_format）不填写的情况下，默认为文本
