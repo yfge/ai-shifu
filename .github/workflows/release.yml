@@ -129,6 +129,8 @@ jobs:
               echo "✅ Commitizen tag created successfully"
             fi
 
+
+
             # Push tag explicitly (SCM provider doesn't create commits, so --follow-tags won't work)
             echo "🚀 Pushing tag v$NEW_VERSION to origin..."
             git push origin "v$NEW_VERSION"
