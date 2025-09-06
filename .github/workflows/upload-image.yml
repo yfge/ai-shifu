@@ -46,7 +46,7 @@ jobs:
         run: |
           # Extract version from release tag
           TAG_VERSION="${{ github.event.release.tag_name }}"
-          echo "TAG_VERSION=$TAG_VERSION" >> $GITHUB_ENV
+          echo "TAG_VERSION=\"$TAG_VERSION\"" >> $GITHUB_ENV
           echo "RELEASE_BUILD=true" >> $GITHUB_ENV
           echo "🏷️ Building with tag: $TAG_VERSION"
       - name: Login to Docker Hub
