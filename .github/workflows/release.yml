@@ -129,23 +129,13 @@ jobs:
               echo "✅ Commitizen tag created successfully"
             fi
 
-            # Push based on branch protection status with enhanced error handling
-            if [ "${{ steps.branch-protection.outputs.can_push_directly }}" = "true" ]; then
-              echo "🚀 Pushing directly to main branch..."
-              git push origin main --follow-tags
-            else
-              echo "🔒 Branch is protected, using alternative push strategy..."
-              # Try with different authentication methods
-              git push origin main --follow-tags || {
-                echo "⚠️ Standard push failed, trying with force-with-lease..."
-                git push origin main --follow-tags --force-with-lease || {
-                  echo "❌ All push attempts failed. This might be due to branch protection rules."
-                  echo "💡 Please check repository settings or use a Personal Access Token (PAT_TOKEN)."
-                  echo "💡 You can also temporarily disable branch protection for releases."
-                  exit 1
-                }
-              }
-            fi
+            # Push tag explicitly (SCM provider doesn't create commits, so --follow-tags won't work)
+            echo "🚀 Pushing tag v$NEW_VERSION to origin..."
+            git push origin "v$NEW_VERSION"
+
+            # Note: With SCM provider, commitizen only creates tags, no commits to push
+            # Tag has already been pushed explicitly above
+            echo "✅ Release tag v$NEW_VERSION pushed successfully"
           else
             echo "bump_needed=false" >> $GITHUB_OUTPUT
             echo "ℹ️ No version bump needed based on commit messages"
