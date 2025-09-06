@@ -75,7 +75,7 @@ jobs:
 
           echo "🏷️ Current tags:"
           git tag -l --sort=-version:refname | head -5
-          
+
           echo "🔍 Checking tag format compatibility:"
           LATEST_TAG=$(git tag -l --sort=-version:refname | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+" | head -1)
           if [ -n "$LATEST_TAG" ]; then
@@ -91,7 +91,7 @@ jobs:
           # Set environment variable to avoid interactive prompts
           export CI=true
           export COMMITIZEN_NO_PROMPT=1
-          
+
           # Try commitizen dry-run with error handling and non-interactive flags
           if DRY_RUN_OUTPUT=$(echo "Y" | cz bump --dry-run --yes 2>&1); then
             echo "🧪 Commitizen dry-run output:"
@@ -102,7 +102,7 @@ jobs:
             DRY_RUN_OUTPUT=$(echo "Y" | cz bump --dry-run --yes 2>&1 || true)
             echo "🧪 Commitizen dry-run output (with errors):"
             echo "$DRY_RUN_OUTPUT"
-            
+
             # If the issue is about no matching tag format, treat as first release
             if echo "$DRY_RUN_OUTPUT" | grep -q "No tag matching configuration"; then
               echo "🔄 No matching tag configuration found, treating as initial release scenario"
@@ -125,7 +125,7 @@ jobs:
             echo "📋 New version will be: $NEW_VERSION"
 
             # Generate changelog content
-            LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+            LAST_TAG=$(git tag -l --sort=-version:refname | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+" | head -1 || echo "")
             if [ -n "$LAST_TAG" ]; then
               CHANGELOG_CONTENT=$(cz changelog --start-rev=$LAST_TAG --unreleased-version=$NEW_VERSION --dry-run 2>/dev/null || echo "## Changes\n\nAutomated release based on conventional commits")
             else
@@ -147,8 +147,9 @@ jobs:
               if git tag -l | grep -q "^v$NEW_VERSION$"; then
                 echo "⚠️ Tag v$NEW_VERSION already exists, skipping tag creation"
               else
-                # Get previous version for commit message
-                PREV_VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
+                # Get previous version for commit message using improved tag selection
+                PREV_TAG=$(git tag -l --sort=-version:refname | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+" | head -1 || echo "v0.0.0")
+                PREV_VERSION=${PREV_TAG#v}  # Remove 'v' prefix
                 PREV_VERSION=${PREV_VERSION#v}  # Remove 'v' prefix if present
                 git tag "v$NEW_VERSION" -m "bump: version $PREV_VERSION → $NEW_VERSION"
                 echo "✅ Manual tag created: v$NEW_VERSION"
@@ -201,8 +202,8 @@ jobs:
               VERSION=${LATEST_TAG#v}  # Remove 'v' prefix
               echo "📋 Using latest git tag version: $VERSION"
             else
-              # Fallback: try to get any semantic version tag
-              VERSION=$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "1.0.0")
+              # Fallback: use default version
+              VERSION="1.0.0"
               echo "📋 Using fallback version: $VERSION"
             fi
           fi
