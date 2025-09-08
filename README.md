@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/logo_en.png" width=256></img>
+  <img src="http://githhub.com/ai-shifu/ai-shifu/assets/logo_en.png" width=256></img>
 <p><strong>Everything you see is tailored just for you</strong></p>
 
 English | [简体中文](README_ZH-CN.md)

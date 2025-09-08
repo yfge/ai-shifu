@@ -1,0 +1,47 @@
+{
+  "name": "ai-shifu-i18n-tests",
+  "version": "1.0.0",
+  "description": "Test suite for AI-Shifu internationalization system",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:scripts": "jest test_scripts.js",
+    "test:integration": "jest test_integration.js"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "@babel/core": "^7.20.0",
+    "@babel/preset-env": "^7.20.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "../scripts/**/*.js",
+      "!../scripts/node_modules/**",
+      "!**/node_modules/**"
+    ],
+    "coverageDirectory": "./coverage",
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ],
+    "testMatch": [
+      "**/*test*.js"
+    ],
+    "setupFilesAfterEnv": ["<rootDir>/setup.js"]
+  },
+  "babel": {
+    "presets": [
+      [
+        "@babel/preset-env",
+        {
+          "targets": {
+            "node": "current"
+          }
+        }
+      ]
+    ]
+  }
+}

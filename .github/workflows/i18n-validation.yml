@@ -1,0 +1,301 @@
+name: 🌍 Internationalization Validation
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'i18n/**'
+      - 'src/**/*.json'
+      - 'src/**/locales/**'
+      - 'src/**/i18n/**'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'i18n/**'
+      - 'src/**/*.json'
+      - 'src/**/locales/**'
+      - 'src/**/i18n/**'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  validate-translations:
+    name: 🔍 Validate Translation Files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            i18n/package-lock.json
+
+      - name: 📥 Install dependencies
+        working-directory: ./i18n
+        run: npm ci
+
+      - name: 🔍 Validate translation schema
+        working-directory: ./i18n
+        run: |
+          echo "🔍 Validating translation files..."
+          node scripts/validate.js
+
+      - name: 📊 Generate translation report
+        working-directory: ./i18n
+        run: |
+          echo "📊 Generating translation statistics..."
+          node -e "
+          const { extractAllTranslations } = require('./scripts/extract.js');
+          const translations = extractAllTranslations();
+
+          console.log('=== Translation Statistics ===');
+          for (const [lang, content] of Object.entries(translations)) {
+            const keyCount = JSON.stringify(content).split('\":').length - 1;
+            console.log(\`\${lang}: \${keyCount} translation keys\`);
+          }
+
+          const languages = Object.keys(translations);
+          if (languages.length > 1) {
+            const baseKeys = Object.keys(translations[languages[0]]);
+            let consistent = true;
+
+            for (let i = 1; i < languages.length; i++) {
+              const currentKeys = Object.keys(translations[languages[i]]);
+              if (baseKeys.length !== currentKeys.length) {
+                consistent = false;
+                break;
+              }
+            }
+
+            if (consistent) {
+              console.log('✅ All languages have consistent translation keys');
+            } else {
+              console.log('⚠️ Translation key inconsistencies detected');
+            }
+          }
+          "
+
+      - name: 🔄 Check synchronization
+        working-directory: ./i18n
+        run: |
+          echo "🔄 Checking if translations are synchronized..."
+
+          # Create temporary backup of current translations
+          cp -r locales locales.backup
+
+          # Re-extract and sync translations
+          node scripts/extract.js
+          node scripts/sync.js --force
+
+          # Check if any files changed
+          if ! diff -r locales locales.backup > /dev/null; then
+            echo "⚠️ Translation files are not synchronized with sources"
+            echo "Please run the following commands locally and commit the changes:"
+            echo "  cd i18n"
+            echo "  node scripts/extract.js"
+            echo "  node scripts/sync.js"
+            echo ""
+            echo "Changed files:"
+            diff -r locales locales.backup || true
+            exit 1
+          else
+            echo "✅ Translation files are synchronized"
+          fi
+
+          # Cleanup
+          rm -rf locales.backup
+
+  check-missing-translations:
+    name: 🔍 Check Missing Translations
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 🔍 Scan for hardcoded strings
+        run: |
+          echo "🔍 Scanning for potential hardcoded strings..."
+
+          # Check for Chinese characters in React components (potential untranslated strings)
+          echo "Checking for Chinese text in React components..."
+          if find src -name "*.tsx" -o -name "*.jsx" | xargs grep -l "[\u4e00-\u9fff]" > /tmp/chinese_files.txt 2>/dev/null; then
+            echo "⚠️ Found potential Chinese hardcoded strings in:"
+            cat /tmp/chinese_files.txt
+            echo ""
+            echo "Please use translation keys instead of hardcoded text."
+            # Don't fail the build for this, just warn
+          else
+            echo "✅ No Chinese hardcoded strings found in React components"
+          fi
+
+          # Check for direct string usage instead of translation functions
+          echo "Checking for potential missing translation usage..."
+          if find src -name "*.tsx" -o -name "*.jsx" | xargs grep -l "[\"\'][^\"\']*[\u4e00-\u9fff][^\"\']*[\"\']" > /tmp/direct_strings.txt 2>/dev/null; then
+            echo "⚠️ Found potential direct string usage (consider using t() function):"
+            head -10 /tmp/direct_strings.txt 2>/dev/null || true
+          else
+            echo "✅ No obvious direct string usage patterns found"
+          fi
+
+  frontend-compatibility:
+    name: 🎨 Frontend Compatibility Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 🔍 Check frontend i18n configurations
+        run: |
+          echo "🔍 Validating frontend i18n configurations..."
+
+          # Check if i18n config files exist and are properly formatted
+          for app in "web" "cook-web"; do
+            config_file="src/$app/src/i18n.ts"
+            if [ -f "$config_file" ]; then
+              echo "✅ Found i18n config for $app"
+
+              # Check if required imports are present
+              if grep -q "import.*i18next" "$config_file" && grep -q "initReactI18next" "$config_file"; then
+                echo "  ✅ Required imports present"
+              else
+                echo "  ❌ Missing required i18next imports"
+                exit 1
+              fi
+
+              # Check if configuration object is present
+              if grep -q "supportedLngs" "$config_file"; then
+                echo "  ✅ Standard configuration structure present"
+              else
+                echo "  ❌ Missing standard configuration structure"
+                exit 1
+              fi
+            else
+              echo "❌ Missing i18n config for $app at $config_file"
+              exit 1
+            fi
+          done
+
+          echo "✅ All frontend i18n configurations are valid"
+
+  backend-compatibility:
+    name: 🔧 Backend Compatibility Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 🔍 Check backend i18n system
+        run: |
+          echo "🔍 Validating backend i18n system..."
+
+          # Check if enhanced i18n module exists
+          i18n_file="src/api/flaskr/i18n/__init__.py"
+          if [ -f "$i18n_file" ]; then
+            echo "✅ Found backend i18n module"
+
+            # Check for JSON loading capability
+            if grep -q "load_translations_from_json" "$i18n_file"; then
+              echo "  ✅ JSON translation loading capability present"
+            else
+              echo "  ❌ Missing JSON translation loading capability"
+              exit 1
+            fi
+
+            # Check for enhanced translation function
+            if grep -q "def t(" "$i18n_file"; then
+              echo "  ✅ Enhanced translation function present"
+            else
+              echo "  ❌ Missing enhanced translation function"
+              exit 1
+            fi
+
+            # Check if JSON locales directory exists
+            if [ -d "src/api/flaskr/i18n/locales" ]; then
+              echo "  ✅ JSON locales directory exists"
+
+              # Count JSON files
+              json_count=$(find src/api/flaskr/i18n/locales -name "*.json" | wc -l)
+              echo "  📁 Found $json_count JSON translation files"
+
+              if [ "$json_count" -lt 2 ]; then
+                echo "  ⚠️ Expected at least 2 language files (en-US, zh-CN)"
+              fi
+            else
+              echo "  ⚠️ JSON locales directory not found, will use fallback system"
+            fi
+          else
+            echo "❌ Backend i18n module not found at $i18n_file"
+            exit 1
+          fi
+
+          echo "✅ Backend i18n system validation completed"
+
+  summary:
+    name: 📋 Validation Summary
+    runs-on: ubuntu-latest
+    needs: [validate-translations, check-missing-translations, frontend-compatibility, backend-compatibility]
+    if: always()
+
+    steps:
+      - name: 📋 Generate summary
+        run: |
+          echo "=== 🌍 AI-Shifu I18n Validation Summary ==="
+          echo ""
+
+          if [ "${{ needs.validate-translations.result }}" == "success" ]; then
+            echo "✅ Translation validation: PASSED"
+          else
+            echo "❌ Translation validation: FAILED"
+          fi
+
+          if [ "${{ needs.check-missing-translations.result }}" == "success" ]; then
+            echo "✅ Missing translation check: PASSED"
+          else
+            echo "⚠️ Missing translation check: WARNINGS"
+          fi
+
+          if [ "${{ needs.frontend-compatibility.result }}" == "success" ]; then
+            echo "✅ Frontend compatibility: PASSED"
+          else
+            echo "❌ Frontend compatibility: FAILED"
+          fi
+
+          if [ "${{ needs.backend-compatibility.result }}" == "success" ]; then
+            echo "✅ Backend compatibility: PASSED"
+          else
+            echo "❌ Backend compatibility: FAILED"
+          fi
+
+          echo ""
+          echo "For more details on the unified i18n system, see: i18n/README.md"
+
+      - name: ❌ Fail if critical checks failed
+        if: needs.validate-translations.result == 'failure' || needs.frontend-compatibility.result == 'failure' || needs.backend-compatibility.result == 'failure'
+        run: |
+          echo "❌ Critical i18n validation checks failed. Please review the errors above."
+          exit 1

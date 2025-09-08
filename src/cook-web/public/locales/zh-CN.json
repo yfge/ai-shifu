@@ -1,5 +1,10 @@
 {
   "langName": "中文",
+  "admin": {
+    "errors": {
+      "viewnotfound": "没有找到视图"
+    }
+  },
   "aiDebug": {
     "aiModuleContent": "AI模块内容",
     "collapse": "收起",
@@ -15,6 +20,11 @@
     "updateToShifu": "将内容更新回师傅",
     "userPrompt": "#用户提示词",
     "variable": "出现变量："
+  },
+  "api": {
+    "errors": {
+      "alibabacloudnotconfigured": "阿里云参数{config_var}未设置"
+    }
   },
   "auth": {
     "back": "返回",
@@ -75,6 +85,17 @@
     "verify": "验证",
     "yourEmail": "您的邮箱"
   },
+  "banner": {
+    "consts": {
+      "bannerpopupcanceltext": "再学学看",
+      "bannerpopupconfirmtext": "立即解锁",
+      "bannerpopupcontent": "立即获得无限追问等诸多权益，让学习从容无忧",
+      "bannerpopuptitle": "在此随时解锁全部内容",
+      "bannertitle": "解锁全部",
+      "lessonbannercontent": "共 {chapter_count} 章 {lesson_count} 节，为您专属定制",
+      "lessonbannertitle": "立即解锁 全部内容"
+    }
+  },
   "button": {
     "buttonText": "按钮文案",
     "complete": "完成",
@@ -113,6 +134,7 @@
     "trialChapter": "试用章节"
   },
   "chat": {
+    "aiDisclaimer": "内容由 AI 在人类指导下生成",
     "ask": "追问",
     "askContent": "对刚学的内容有什么问题？",
     "chatInputPlaceholder": "请输入内容",
@@ -124,6 +146,11 @@
     "startAutoSkip": "开启自动跳过",
     "stopAutoSkip": "停止自动跳过"
   },
+  "check": {
+    "errors": {
+      "checkriskcontrolreject": "输入内容不合规, 请检查！"
+    }
+  },
   "cmEditor": {
     "image": "图片",
     "inputSlashToInsertContent": "输入\"/\"快速插入内容",
@@ -132,7 +159,9 @@
   },
   "common": {
     "all": "全部",
+    "backToHome": "返回首页",
     "cancel": "取消",
+    "collapseExpand": "折叠/展开",
     "companyAddress": "北京朝阳区望京东煌大厦19层163室",
     "companyName": "北京潺潺山木科技有限公司",
     "confirm": "确认",
@@ -150,17 +179,46 @@
     "inputBilibiliUrl": "请输入B站视频链接",
     "inputValidBilibiliUrl": "请输入有效的B站视频链接",
     "logout": "退出",
+    "message": {
+      "checkcode": "验证码",
+      "checkout": "去支付",
+      "continue": "继续",
+      "input": "输入",
+      "login": "登录",
+      "phone": "手机号"
+    },
     "networkError": "网络错误,请稍后重试",
     "noMoreShifus": "没有更多师傅了",
     "noShifus": "暂无师傅",
     "ok": "确定",
     "pleaseSet": "请设置",
     "pleaseTryAgainLater": "请稍后重试",
+    "redirectInSeconds": "将在 {{seconds}} 秒后返回首页",
     "retry": "重试",
     "run": "运行",
     "selectModel": "选择模型",
     "settings": "设置",
     "shifu": "师傅",
+    "shortcut": {
+      "key": {
+        "/": "/",
+        "a": "A",
+        "b": "B",
+        "c": "C",
+        "cmd": "⌘",
+        "ctrl": "Ctrl",
+        "d": "D",
+        "e": "E",
+        "enter": "回车",
+        "shift": "Shift",
+        "space": "空格"
+      },
+      "title": {
+        "ask": "追问",
+        "continue": "继续（无需用户输入或选择时）",
+        "shortcut": "显示快捷方式"
+      }
+    },
     "submitFailed": "提交失败",
     "unknownError": "未知错误",
     "useImage": "使用图片",
@@ -168,6 +226,15 @@
     "videoTitle": "视频名称",
     "videoTitlePlaceholder": "请输入视频名称",
     "waitingForCompletion": "敬请期待"
+  },
+  "course": {
+    "errors": {
+      "coursenotfound": "没有找到课程",
+      "coursenotpurchased": "课程未购买,请先购买课程",
+      "lessoncannotbereset": "课程不能重置",
+      "lessonnotfound": "没有找到课程",
+      "lessonnotfoundincourse": "没有找到课程"
+    }
   },
   "createShifuDialog": {
     "create": "创建",
@@ -181,14 +248,47 @@
     "nameRequired": "师傅名称不能为空",
     "title": "创建新师傅"
   },
+  "discount": {
+    "errors": {
+      "discountalreadyexpired": "兑换码已过期",
+      "discountalreadyused": "兑换码已使用",
+      "discountcountnotzero": "兑换码数量必须大于0",
+      "discountexpired": "兑换码已过期",
+      "discountlimit": "兑换码数量限制",
+      "discountlimitexceeded": "兑换码使用次数已达到上限",
+      "discountnotapply": "兑换码不适用该课程",
+      "discountnotfound": "兑换码不存在",
+      "discountnotstart": "兑换码未开始",
+      "orderdiscountalreadyused": "订单已使用兑换码"
+    }
+  },
+  "error": {
+    "pageNotFound": "找不到这个师傅了"
+  },
   "errors": {
     "noPermission": "您当前没有权限访问此内容"
   },
   "feedback": {
+    "feedbackContactEmpty": "联系方式不能为空",
+    "feedbackContent": "反馈内容",
+    "feedbackContentEmpty": "反馈内容不能为空",
+    "feedbackFail": "反馈失败",
     "feedbackPlaceholder": "请输入反馈内容",
     "feedbackSubmit": "提交",
     "feedbackSuccess": "反馈成功，感谢您的反馈",
     "feedbackTitle": "反馈"
+  },
+  "file": {
+    "errors": {
+      "filesizeexceed": "文件大小超过限制",
+      "filetypenotsupport": "不支持的文件类型",
+      "fileuploaderror": "文件上传失败",
+      "videobilibiliapierror": "B站API返回错误",
+      "videobilibiliapirequestfailed": "请求B站API失败",
+      "videogetinfoerror": "获取视频信息时发生错误",
+      "videoinvalidbilibililink": "无效的B站视频链接",
+      "videounsupportedvideosite": "暂不支持该视频网站"
+    }
   },
   "fileUploader": {
     "checkImageUrl": "上传失败，请检查图片地址是否正确",
@@ -215,6 +315,11 @@
     "selectVariable": "变量选择"
   },
   "groupon": {
+    "grouponInputMsg": "请输入兑换码",
+    "grouponModify": "修改兑换码 >",
+    "grouponPlaceholder": "请输入兑换码",
+    "grouponTitle": "兑换码",
+    "grouponUse": "其他支付方式",
     "inputMessage": "请输入兑换码",
     "modify": "修改兑换码 >",
     "placeholder": "请输入兑换码",
@@ -242,10 +347,30 @@
     "inputPlaceholder": "输入框提示"
   },
   "lesson": {
+    "errors": {
+      "coursenotfound": "课程不存在",
+      "hasnotlesson": "没有配置任何课程"
+    },
+    "lessonStatus": {
+      "completed": "已完成",
+      "learning": "正在学",
+      "locked": "未解锁",
+      "notStart": "未开始",
+      "prepareLearning": "可学习"
+    },
     "reset": {
       "confirmContent": "重修会清空当前学习数据。确定重修？",
       "confirmTitle": "确认重修",
+      "resetConfirmContent": "重修会清空当前学习数据。确定重修？",
+      "resetConfirmTitle": "确认重修",
+      "resetTitle": "重修",
       "title": "重修"
+    }
+  },
+  "llm": {
+    "errors": {
+      "modelnotsupported": "模型 {model} 不支持",
+      "nodefaultllm": "没有配置默认的大模型"
     }
   },
   "menus": {
@@ -262,8 +387,13 @@
     "filing": "备案",
     "gongan": "京公网安备11010502055644号",
     "icp": "京ICP备2024076754号-2",
+    "memberSetting": "会员管理",
     "privacyPolicy": "隐私政策",
+    "settings": "设置",
     "shortcut": "快捷键",
+    "skin": "皮肤",
+    "theChapter": "章",
+    "theLesson": "节",
     "userAgreement": "服务协议"
   },
   "option": {
@@ -275,6 +405,18 @@
     "title": "标题",
     "value": "值",
     "variable": "变量"
+  },
+  "order": {
+    "errors": {
+      "orderalreadyexists": "订单已经存在",
+      "orderhaspaid": "订单已经支付",
+      "ordernotfound": "没有找到订单",
+      "orderpayerror": "订单支付失败",
+      "orderpayexpired": "订单支付过期",
+      "orderpaynotfound": "没有找到支付订单",
+      "orderrefunderror": "订单退款失败",
+      "orderstatuserror": "订单状态错误"
+    }
   },
   "outlineSelector": {
     "selectChapter": "选择章节"
@@ -290,10 +432,16 @@
     "setting": "设置"
   },
   "pay": {
+    "errors": {
+      "paychannelnotsupport": "不支持的支付渠道"
+    },
     "modelServiceAgreement": "模型服务协议",
+    "payChannel": "支付方式",
     "payChannelAlipay": "支付宝",
     "payChannelWechat": "微信",
+    "payModalTitle": "购买",
     "paySuccess": "支付成功",
+    "protocolDesc": "购买即表示已阅读并同意以下协议",
     "userPrivacyPolicy": "用户隐私协议",
     "virtualProductDesc": "说明：",
     "virtualProductPoint1": "1. 购买即表示已阅读并同意{{modelServiceAgreement}}和{{userPrivacyPolicy}}。",
@@ -308,6 +456,29 @@
     "startPreview": "开始预览",
     "title": "预览",
     "view": "去查看"
+  },
+  "profile": {
+    "const": {
+      "aitools": "编程工具",
+      "avatar": "头像",
+      "birth": "生日",
+      "industry": "行业",
+      "language": "语言",
+      "nickname": "昵称",
+      "occupation": "职业",
+      "profilescopesystem": "系统变量",
+      "profilescopeuser": "自定义变量",
+      "profiletypeoption": "选项",
+      "profiletypetext": "文本",
+      "programming": "编程能力",
+      "sex": "性别",
+      "sexfemale": "女性",
+      "sexmale": "男性",
+      "sexsecret": "保密",
+      "style": "授课风格",
+      "userbackground": "背景",
+      "useros": "用户操作系统"
+    }
   },
   "profileSelectModal": {
     "add": "添加",
@@ -381,7 +552,8 @@
     "birthPlaceholder": "请选择生日",
     "dialogTitle": {
       "selectBirthday": "选择生日",
-      "selectGender": "选择性别"
+      "selectGender": "选择性别",
+      "selectSex": "选择性别"
     },
     "gender": "性别",
     "genderPlaceholder": "请选择性别",
@@ -390,12 +562,58 @@
     "nicknamePersonal": "昵称（同时作为个人基本信息）",
     "nicknamePlaceholder": "请输入昵称",
     "personalInfo": "个性化设置",
-    "settingTitle": "个人信息"
+    "settingTite": "个人信息",
+    "settingTitle": "个人信息",
+    "sex": "性别",
+    "sexPlaceholder": "请选择性别"
   },
   "shifu": {
     "aiBlock": "AI模块",
     "debug": "调试",
     "delete": "删除",
+    "error": {
+      "buttonkeyrequired": "按钮key不能为空",
+      "buttonlabelrequired": "按钮名称不能为空",
+      "buttonnamerequired": "按钮名称不能为空",
+      "gotoconditionsrequired": "跳转条件不能为空",
+      "gotovariablebidsrequired": "跳转变量不能为空",
+      "inputkeyrequired": "输入变量名不能为空",
+      "inputnamerequired": "输入名称不能为空",
+      "inputplaceholderrequired": "输入提示不能为空",
+      "invalidblockcontenttype": "无效的块内容类型",
+      "invalidblocktype": "无效的块类型",
+      "invalidblockuitype": "无效的块UI类型",
+      "invalidoutlinetype": "无效的大纲类型",
+      "loginlabelrequired": "登录提示不能为空",
+      "optionkeyrequired": "选项key不能为空",
+      "optionlabelrequired": "选项标签不能为空",
+      "optionnamerequired": "选项名称不能为空",
+      "optionsrequired": "选项不能为空",
+      "optionsvariablebidsrequired": "选项变量不能为空",
+      "optionvaluerequired": "选项值不能为空",
+      "outlinenotfound": "大纲不存在",
+      "paymentlabelrequired": "支付提示不能为空",
+      "profileidsnotcorrect": "变量数量不正确",
+      "profilekeyrequired": "选项key不能为空",
+      "profilenotfound": "选项变量不存在",
+      "profiletypenotmatch": "选项变量类型不匹配",
+      "promptrequired": "提示词不能为空",
+      "resultvariablebidsrequired": "结果变量不能为空",
+      "shifublockdescriptiontoolong": "师傅块描述不能超过500个字符",
+      "shifublockdescriptiontooshort": "师傅块描述不能少于10个字符",
+      "shifublocknametoolong": "师傅块名称不能超过20个字符",
+      "shifuchapterdescriptiontoolong": "师傅章节描述不能超过500个字符",
+      "shifuchapterdescriptiontooshort": "师傅章节描述不能少于10个字符",
+      "shifuchapternametoolong": "师傅章节名称不能超过20个字符",
+      "shifudescriptionrequired": "请输入师傅描述",
+      "shifudescriptiontoolong": "师傅描述不能超过500个字符",
+      "shifudescriptiontooshort": "师傅描述不能少于10个字符",
+      "shifunamealreadyexists": "同名师傅已存在",
+      "shifunamerequired": "请输入师傅名称",
+      "shifunametoolong": "师傅名称不能超过20个字符",
+      "textinputpromptrequired": "输入提示不能为空",
+      "textinputpromptvariablerequired": "输入提示中必须包含变量"
+    },
     "newChapter": "添加章",
     "regularBlock": "固定模块",
     "setAsAiBlock": "设为AI模块",
@@ -459,8 +677,34 @@
       "secret": "保密"
     },
     "login": "登录",
+    "loginFeedback": "提交反馈",
     "loginMainButton": "登录/注册",
+    "loginTitle": "登录",
     "logout": "退出登录",
-    "notLogin": "未登录"
+    "message": {
+      "emailverificationsubject": "AI-Shifu: 您的验证码"
+    },
+    "msgAgreement": "服务协议",
+    "msgAnd": "&",
+    "msgCheckCode": "图形验证码",
+    "msgHaveRead": "我已阅读并同意",
+    "msgLoginProblem": "登录遇到问题",
+    "msgLoginSuccess": "登录成功",
+    "msgPhonePlaceHolder": "请输入手机号",
+    "msgPrivacyPolicy": "隐私政策",
+    "msgResendCode": "重新发送",
+    "msgToAgree": "请勾选同意协议",
+    "msgToCheckAgreement": "请勾选同意协议",
+    "msgToInputCode": "请输入4位短信验证码",
+    "msgToInputCode4": "请输入4位验证码",
+    "msgToInputPhone": "请输入11位手机号",
+    "msgToInputPwd": "请输入密码",
+    "mstPhoneReg": "手机号格式不正确",
+    "notLogin": "未登录",
+    "sex": {
+      "female": "女性",
+      "male": "男性",
+      "secret": "保密"
+    }
   }
 }

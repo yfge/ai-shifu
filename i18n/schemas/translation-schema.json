@@ -1,0 +1,227 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ai-shifu.com/schemas/translation-schema.json",
+  "title": "AI-Shifu Translation Schema",
+  "description": "Schema for validating AI-Shifu translation files",
+  "type": "object",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^[a-z][a-zA-Z0-9]*$": {
+      "$ref": "#/$defs/translationModule"
+    }
+  },
+  "$defs": {
+    "translationModule": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[a-z][a-zA-Z0-9]*$": {
+          "oneOf": [
+            { "$ref": "#/$defs/translationValue" },
+            { "$ref": "#/$defs/translationGroup" }
+          ]
+        }
+      }
+    },
+    "translationGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[a-z][a-zA-Z0-9]*$": {
+          "oneOf": [
+            { "$ref": "#/$defs/translationValue" },
+            { "$ref": "#/$defs/translationGroup" }
+          ]
+        }
+      }
+    },
+    "translationValue": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^\\n\\r]*$",
+      "description": "Translation text value. Can contain interpolation variables in {{variable}} format"
+    }
+  },
+  "properties": {
+    "admin": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Administrative interface translations"
+    },
+    "api": {
+      "$ref": "#/$defs/translationModule",
+      "description": "API error messages and responses"
+    },
+    "auth": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Authentication and authorization related translations"
+    },
+    "banner": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Banner and promotional content translations"
+    },
+    "button": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Button text and actions"
+    },
+    "c": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Customer-facing interface translations"
+    },
+    "chat": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Chat interface and messaging"
+    },
+    "chapterSetting": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Chapter configuration and settings"
+    },
+    "cmEditor": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Content management editor"
+    },
+    "common": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Common UI elements and shared translations"
+    },
+    "course": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Course management and display"
+    },
+    "createShifuDialog": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Create Shifu dialog interface"
+    },
+    "discount": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Discount and promotion management"
+    },
+    "error": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Error messages and handling"
+    },
+    "errors": {
+      "$ref": "#/$defs/translationModule",
+      "description": "System error messages"
+    },
+    "feedback": {
+      "$ref": "#/$defs/translationModule",
+      "description": "User feedback and support"
+    },
+    "file": {
+      "$ref": "#/$defs/translationModule",
+      "description": "File upload and management"
+    },
+    "fileUploader": {
+      "$ref": "#/$defs/translationModule",
+      "description": "File upload interface"
+    },
+    "goto": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Navigation and routing"
+    },
+    "groupon": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Group purchase and coupons"
+    },
+    "header": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Page header and navigation"
+    },
+    "inlineInput": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Inline input components"
+    },
+    "input": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Form input elements"
+    },
+    "lesson": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Lesson content and management"
+    },
+    "llm": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Large Language Model integration"
+    },
+    "menus": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Menu navigation and options"
+    },
+    "navigation": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Site navigation elements"
+    },
+    "option": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Option selection components"
+    },
+    "order": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Order processing and management"
+    },
+    "outlineSelector": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Content outline selection"
+    },
+    "outlineTree": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Content outline tree navigation"
+    },
+    "pay": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Payment processing and checkout"
+    },
+    "preview": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Content preview functionality"
+    },
+    "profile": {
+      "$ref": "#/$defs/translationModule",
+      "description": "User profile management"
+    },
+    "profiles": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Profile selection and management"
+    },
+    "profilesManage": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Profile management interface"
+    },
+    "profileSelectModal": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Profile selection modal"
+    },
+    "renderBlock": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Content rendering blocks"
+    },
+    "renderUi": {
+      "$ref": "#/$defs/translationModule",
+      "description": "UI rendering components"
+    },
+    "settings": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Application settings and preferences"
+    },
+    "shifu": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Shifu (AI teacher) related content"
+    },
+    "shifuSetting": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Shifu configuration and settings"
+    },
+    "social": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Social features and sharing"
+    },
+    "textInput": {
+      "$ref": "#/$defs/translationModule",
+      "description": "Text input components"
+    },
+    "user": {
+      "$ref": "#/$defs/translationModule",
+      "description": "User account and authentication"
+    }
+  }
+}
