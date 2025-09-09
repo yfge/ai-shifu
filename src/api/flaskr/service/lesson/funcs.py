@@ -595,6 +595,7 @@ def update_lesson_info(
 def get_course_info(
     app: Flask, course_id: str, preview_mode: bool = False
 ) -> AICourseDTO:
+    app.logger.info(f"get_course_info: {course_id}, {preview_mode}")
     with app.app_context():
         shifu_info: Union[DraftShifu, PublishedShifu] = None
         if preview_mode:
