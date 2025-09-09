@@ -56,11 +56,11 @@ jobs:
 
           if [ -n "$PREV_TAG" ]; then
             echo "📋 Previous tag: $PREV_TAG"
-            # Generate changelog between previous tag and current tag
-            CHANGELOG_CONTENT=$(cz changelog --start-rev=$PREV_TAG --end-rev=${{ steps.version.outputs.tag }} --dry-run 2>/dev/null || echo "## Changes\n\nAutomated release based on conventional commits")
+            # Generate incremental changelog (works better with commitizen)
+            CHANGELOG_CONTENT=$(cz changelog --incremental --dry-run 2>/dev/null | sed -n '/## Unreleased/,/## v[0-9]/p' | sed '$d' | sed '/^$/d' || echo "## Changes\n\nAutomated release based on conventional commits")
           else
             echo "📋 No previous tag found, generating full changelog"
-            CHANGELOG_CONTENT=$(cz changelog --unreleased-version=${{ steps.version.outputs.version }} --dry-run 2>/dev/null || echo "## Changes\n\nInitial automated release")
+            CHANGELOG_CONTENT=$(cz changelog --incremental --dry-run 2>/dev/null || echo "## Changes\n\nInitial automated release")
           fi
 
           # Store changelog content
