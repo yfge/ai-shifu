@@ -30,6 +30,7 @@ from .shifu_history_manager import (
     HistoryInfo,
 )
 from datetime import datetime
+from flaskr.service.shifu.markdown_flow_adapter import convert_block_to_markdown_flow
 
 
 def __get_block_list_internal(outline_id: str) -> list[DraftBlock]:
@@ -153,14 +154,22 @@ def save_shifu_block_list(
             raise_error("SHIFU.OUTLINE_NOT_FOUND")
         blocks = __get_block_list_internal(outline_id)
         variable_definitions = get_profile_item_definition_list(app, outline.shifu_bid)
+        variable_map = {
+            variable_definition.profile_id: variable_definition.profile_key
+            for variable_definition in variable_definitions
+        }
         position = 1
         error_messages = {}
         save_block_ids = []
         save_block_models = []
         blocks_history = []
         is_changed = False
+        markdown_flow_content = ""
         for block in block_list:
             block_dto = convert_to_blockDTO(block)
+            markdown_flow_content += "\n" + convert_block_to_markdown_flow(
+                block_dto, variable_map
+            )
             block_model = next(
                 (b for b in blocks if b.block_bid == block_dto.bid), None
             )
