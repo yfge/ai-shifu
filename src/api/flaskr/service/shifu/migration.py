@@ -46,6 +46,11 @@ from flaskr.service.shifu.shifu_history_manager import __save_shifu_history
 from flaskr.service.lesson.const import SCRIPT_TYPE_SYSTEM
 from flaskr.service.lesson.models import AILessonScript
 from flaskr.service.shifu.utils import parse_shifu_res_bid
+from flaskr.service.shifu.shifu_struct_manager import get_shifu_struct
+from flaskr.service.shifu.markdown_flow_adapter import convert_block_to_markdown_flow
+from flaskr.service.shifu.shifu_block_funcs import (
+    generate_block_dto_from_model_internal,
+)
 
 
 def migrate_shifu_draft_to_shifu_draft_v2(app, shifu_bid: str):
@@ -423,3 +428,118 @@ def migrate_shifu_draft_to_shifu_draft_v2(app, shifu_bid: str):
             app.logger.warning(
                 f"Warning: Error refreshing database connection for shifu_bid {shifu_bid}: {str(e)}"
             )
+
+
+def migrate_shifu_to_markdown_content(app, shifu_bid: str):
+    """
+    Migrate a shifu to markdown content
+
+    Args:
+        app: Flask application instance
+        shifu_bid: The ID of the shifu to migrate
+    """
+    with app.app_context():
+        app.logger.info(f"migrate shifu to markdown content, shifu_bid: {shifu_bid}")
+        plugin_manager.is_enabled = False
+        # migrate to draft shifu
+        db.session.begin()
+        draft_shifu: DraftShifu = (
+            DraftShifu.query.filter(DraftShifu.shifu_bid == shifu_bid)
+            .order_by(DraftShifu.id.desc())
+            .first()
+        )
+        if not draft_shifu:
+            app.logger.info(f"no draft shifu, shifu_bid: {shifu_bid}")
+            return
+
+        variable_definitions = get_profile_item_definition_list(app, shifu_bid)
+        variable_map = {
+            variable_definition.profile_id: variable_definition.profile_key
+            for variable_definition in variable_definitions
+        }
+
+        def migrate_outline(node: HistoryItem, is_preview: bool):
+            if node.type == "outline":
+                if node.children and len(node.children) > 0:
+                    app.logger.info(
+                        f"migrate outline: {node.bid} {node.children[0].type}"
+                    )
+                    if node.children[0].type == "block":
+                        if is_preview:
+                            outline = (
+                                DraftOutlineItem.query.filter(
+                                    DraftOutlineItem.outline_item_bid == node.bid,
+                                    DraftOutlineItem.deleted == 0,
+                                )
+                                .order_by(DraftOutlineItem.id.desc())
+                                .first()
+                            )
+                        else:
+                            outline = (
+                                PublishedOutlineItem.query.filter(
+                                    PublishedOutlineItem.outline_item_bid == node.bid,
+                                    PublishedOutlineItem.deleted == 0,
+                                )
+                                .order_by(PublishedOutlineItem.id.desc())
+                                .first()
+                            )
+                        block_bids = [c.bid for c in node.children]
+                        if is_preview:
+                            block_list = (
+                                DraftBlock.query.filter(
+                                    DraftBlock.block_bid.in_(block_bids),
+                                    DraftBlock.deleted == 0,
+                                )
+                                .order_by(DraftBlock.position.asc())
+                                .all()
+                            )
+                        else:
+                            block_list = (
+                                PublishedBlock.query.filter(
+                                    PublishedBlock.block_bid.in_(block_bids),
+                                    PublishedBlock.deleted == 0,
+                                )
+                                .order_by(PublishedBlock.position.asc())
+                                .all()
+                            )
+                        markdown_flow_content = ""
+                        for child_node in node.children:
+                            block = next(
+                                (
+                                    b
+                                    for b in block_list
+                                    if b.block_bid == child_node.bid
+                                ),
+                                None,
+                            )
+                            if not block:
+                                app.logger.error(
+                                    f"block not found, block_bid: {child_node.bid}"
+                                )
+                                continue
+                            block_dto = generate_block_dto_from_model_internal(
+                                block, convert_html=False
+                            )
+                            markdown_flow_content += (
+                                "\n"
+                                + convert_block_to_markdown_flow(
+                                    block_dto, variable_map
+                                )
+                            )
+                        outline.content = markdown_flow_content
+                        db.session.flush()
+                    if node.children[0].type == "outline":
+                        for child in node.children:
+                            migrate_outline(child, is_preview)
+
+        draft_outline_tree_v1 = get_shifu_struct(app, shifu_bid, True)
+        for node in draft_outline_tree_v1.children:
+            app.logger.info(f"migrate outline: {node.bid} {node.type}")
+            migrate_outline(node, True)
+        published_outline_tree_v1 = get_shifu_struct(app, shifu_bid, False)
+        for node in published_outline_tree_v1.children:
+            app.logger.info(f"migrate outline: {node.bid} {node.type}")
+            migrate_outline(node, False)
+
+        db.session.commit()
+        plugin_manager.is_enabled = True
