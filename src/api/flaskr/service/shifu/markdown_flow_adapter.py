@@ -10,6 +10,7 @@ from flaskr.service.shifu.dtos import (
     GotoDTO,
     CheckCodeDTO,
     PhoneDTO,
+    ButtonDTO,
 )
 from flaskr.service.shifu.consts import (
     BLOCK_TYPE_CONTENT,
@@ -21,6 +22,7 @@ from flaskr.service.shifu.consts import (
     BLOCK_TYPE_LOGIN,
     BLOCK_TYPE_PHONE,
     BLOCK_TYPE_CHECKCODE,
+    BLOCK_TYPE_BUTTON,
 )
 from flaskr.service.common import raise_error
 
@@ -38,7 +40,10 @@ def __convert_to_markdown_flow_action(label: LabelDTO, action: str) -> str:
     """
     Convert to markdown flow action
     """
-    return f"?[{__get_label_markdown_flow(label)}//{action}]"
+    if action:
+        return f"?[{__get_label_markdown_flow(label)}//{action}]"
+    else:
+        return f"?[{__get_label_markdown_flow(label)}]"
 
 
 def __convert_login_to_markdown_flow(
@@ -96,7 +101,7 @@ def __convert_input_to_markdown_flow(
     """
     Convert input to markdown flow
     """
-    variable_name = variable_map.get(input.result_variable_bid, "")
+    variable_name = variable_map.get(input.result_variable_bids[0], "")
     placeholder = __get_label_markdown_flow(input.placeholder)
     # Input should return action format, not variable format
     return f"?[%{{{{{variable_name}}}}}...{placeholder}]"
@@ -126,6 +131,12 @@ def __convert_content_to_markdown_flow(
         content_text = ""
     else:
         content_text = content.content
+        # Remove empty lines (replace multiple consecutive newlines with single newline)
+        import re
+
+        content_text = re.sub(r"\n\s*\n+", "\n\n", content_text)
+        # Remove leading and trailing whitespace
+        content_text = content_text.strip()
 
     if content.llm_enabled:
         return content_text
@@ -173,6 +184,15 @@ def __convert_checkcode_to_markdown_flow(
         return __convert_to_markdown_flow_action(label_dto, "checkcode")
 
 
+def __convert_button_to_markdown_flow(
+    button: ButtonDTO, variable_map: dict[str, str]
+) -> str:
+    """
+    Convert button to markdown flow
+    """
+    return __convert_to_markdown_flow_action(button.label, None)
+
+
 def convert_block_to_markdown_flow(
     block: BlockDTO, variable_map: dict[str, str]
 ) -> str:
@@ -197,6 +217,7 @@ def convert_block_to_markdown_flow(
         BLOCK_TYPE_LOGIN: __convert_login_to_markdown_flow,
         BLOCK_TYPE_PHONE: __convert_phone_to_markdown_flow,
         BLOCK_TYPE_CHECKCODE: __convert_checkcode_to_markdown_flow,
+        BLOCK_TYPE_BUTTON: __convert_button_to_markdown_flow,
     }
 
     convert_func = convert_func_map.get(block_type, None)
