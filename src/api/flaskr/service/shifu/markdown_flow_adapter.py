@@ -25,6 +25,7 @@ from flaskr.service.shifu.consts import (
     BLOCK_TYPE_BUTTON,
 )
 from flaskr.service.common import raise_error
+from flaskr.service.shifu.adapter import html_2_markdown
 
 
 def __get_label_markdown_flow(label: LabelDTO) -> str:
@@ -130,7 +131,7 @@ def __convert_content_to_markdown_flow(
     if content.content is None:
         content_text = ""
     else:
-        content_text = content.content
+        content_text = html_2_markdown(content.content, [])
         # Remove empty lines (replace multiple consecutive newlines with single newline)
         import re
 
@@ -224,6 +225,4 @@ def convert_block_to_markdown_flow(
     if convert_func is None:
         raise_error(f"Invalid block type: {block_type}")
     ret = convert_func(block.block_content, variable_map)
-
-    print(ret)
     return ret
