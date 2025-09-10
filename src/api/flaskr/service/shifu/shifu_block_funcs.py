@@ -253,6 +253,7 @@ def save_shifu_block_list(
             save_blocks_history(
                 app, user_id, outline.shifu_bid, outline_id, blocks_history
             )
+        outline.content = markdown_flow_content
         db.session.commit()
         return SaveBlockListResultDto(
             [
