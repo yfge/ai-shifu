@@ -533,13 +533,18 @@ def migrate_shifu_to_markdown_content(app, shifu_bid: str):
                             migrate_outline(child, is_preview)
 
         draft_outline_tree_v1 = get_shifu_struct(app, shifu_bid, True)
-        for node in draft_outline_tree_v1.children:
-            app.logger.info(f"migrate outline: {node.bid} {node.type}")
-            migrate_outline(node, True)
-        published_outline_tree_v1 = get_shifu_struct(app, shifu_bid, False)
-        for node in published_outline_tree_v1.children:
-            app.logger.info(f"migrate outline: {node.bid} {node.type}")
-            migrate_outline(node, False)
+        if draft_outline_tree_v1:
+            for node in draft_outline_tree_v1.children:
+                app.logger.info(f"migrate outline: {node.bid} {node.type}")
+                migrate_outline(node, True)
+        try:
+            published_outline_tree_v1 = get_shifu_struct(app, shifu_bid, False)
+            if published_outline_tree_v1:
+                for node in published_outline_tree_v1.children:
+                    app.logger.info(f"migrate outline: {node.bid} {node.type}")
+                    migrate_outline(node, False)
+        except Exception as e:
+            app.logger.error(f"Failed to migrate published outline: {e}")
 
         db.session.commit()
         plugin_manager.is_enabled = True
