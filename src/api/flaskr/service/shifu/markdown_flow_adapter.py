@@ -30,16 +30,16 @@ from flaskr.service.shifu.adapter import html_2_markdown
 
 def __get_label_markdown_flow(label: LabelDTO) -> str:
     """
-    Get label markdown flow
+    Get the label to display in markdownflow
     """
     if hasattr(label, "lang") and label.lang:
         return label.lang.get("zh-CN", "")
     return ""
 
 
-def __convert_to_markdown_flow_action(label: LabelDTO, action: str) -> str:
+def __convert_to_markdown_button(label: LabelDTO, action: str) -> str:
     """
-    Convert to markdown flow action
+    Convert the label to markdownflow format
     """
     if action:
         return f"?[{__get_label_markdown_flow(label)}//{action}]"
@@ -47,7 +47,7 @@ def __convert_to_markdown_flow_action(label: LabelDTO, action: str) -> str:
         return f"?[{__get_label_markdown_flow(label)}]"
 
 
-def __convert_login_to_markdown_flow(
+def __convert_login_to_markdownflow(
     login: LoginDTO, variable_map: dict[str, str]
 ) -> str:
     """
@@ -58,10 +58,10 @@ def __convert_login_to_markdown_flow(
         label_dto = LabelDTO(lang=login.label)
     else:
         label_dto = login.label
-    return __convert_to_markdown_flow_action(label_dto, "login")
+    return __convert_to_markdown_button(label_dto, "login")
 
 
-def __convert_payment_to_markdown_flow(
+def __convert_payment_to_markdownflow(
     payment: PaymentDTO, variable_map: dict[str, str]
 ) -> str:
     """
@@ -72,10 +72,10 @@ def __convert_payment_to_markdown_flow(
         label_dto = LabelDTO(lang=payment.label)
     else:
         label_dto = payment.label
-    return __convert_to_markdown_flow_action(label_dto, "payment")
+    return __convert_to_markdown_button(label_dto, "pay")
 
 
-def __convert_options_to_markdown_flow(
+def __convert_options_to_markdownflow(
     options: OptionsDTO, variable_map: dict[str, str]
 ) -> str:
     """
@@ -96,7 +96,7 @@ def __convert_options_to_markdown_flow(
     return f"?[%{{{{{variable_name}}}}}{options_str}]"
 
 
-def __convert_input_to_markdown_flow(
+def __convert_input_to_markdownflow(
     input: InputDTO, variable_map: dict[str, str]
 ) -> str:
     """
@@ -111,21 +111,21 @@ def __convert_input_to_markdown_flow(
     return f"?[%{{{{{variable_name}}}}}...{placeholder}]"
 
 
-def __convert_break_to_markdown_flow(
+def __convert_break_to_markdownflow(
     break_dto: BreakDTO, variable_map: dict[str, str]
 ) -> str:
     """
     Convert break to markdown flow
     """
     if hasattr(break_dto, "label") and break_dto.label:
-        return __convert_to_markdown_flow_action(break_dto.label, "break")
+        return __convert_to_markdown_button(break_dto.label, "break")
     else:
         # Create a default label for break
         label_dto = LabelDTO(lang={"zh-CN": "休息"})
-        return __convert_to_markdown_flow_action(label_dto, "break")
+        return __convert_to_markdown_button(label_dto, "break")
 
 
-def __convert_content_to_markdown_flow(
+def __convert_content_to_markdownflow(
     content: ContentDTO, variable_map: dict[str, str]
 ) -> str:
     """
@@ -148,60 +148,58 @@ def __convert_content_to_markdown_flow(
         return f"==={content_text}==="
 
 
-def __convert_goto_to_markdown_flow(goto: GotoDTO, variable_map: dict[str, str]) -> str:
+def __convert_goto_to_markdownflow(goto: GotoDTO, variable_map: dict[str, str]) -> str:
     """
     Convert goto to markdown flow
     """
     if hasattr(goto, "label") and goto.label:
-        return __convert_to_markdown_flow_action(goto.label, "goto")
+        return __convert_to_markdown_button(goto.label, "goto")
     else:
         # Create a default label for goto
         label_dto = LabelDTO(lang={"zh-CN": "跳转"})
-        return __convert_to_markdown_flow_action(label_dto, "goto")
+        return __convert_to_markdown_button(label_dto, "goto")
 
 
-def __convert_phone_to_markdown_flow(
+def __convert_phone_to_markdownflow(
     phone: PhoneDTO, variable_map: dict[str, str]
 ) -> str:
     """
-    Convert phone to markdown flow
+    Convert phone input to markdownflow
     """
     if hasattr(phone, "label") and phone.label:
-        return __convert_to_markdown_flow_action(phone.label, "phone")
+        return __convert_to_markdown_button(phone.label, "phone")
     else:
         # Create a default label for phone
         label_dto = LabelDTO(lang={"zh-CN": "手机验证"})
-        return __convert_to_markdown_flow_action(label_dto, "phone")
+        return __convert_to_markdown_button(label_dto, "phone")
 
 
-def __convert_checkcode_to_markdown_flow(
+def __convert_checkcode_to_markdownflow(
     checkcode: CheckCodeDTO, variable_map: dict[str, str]
 ) -> str:
     """
-    Convert checkcode to markdown flow
+    Convert checkcode to markdownflow
     """
     if hasattr(checkcode, "label") and checkcode.label:
-        return __convert_to_markdown_flow_action(checkcode.label, "checkcode")
+        return __convert_to_markdown_button(checkcode.label, "checkcode")
     else:
         # Create a default label for checkcode
         label_dto = LabelDTO(lang={"zh-CN": "验证码"})
-        return __convert_to_markdown_flow_action(label_dto, "checkcode")
+        return __convert_to_markdown_button(label_dto, "checkcode")
 
 
-def __convert_button_to_markdown_flow(
+def __convert_button_to_markdownflow(
     button: ButtonDTO, variable_map: dict[str, str]
 ) -> str:
     """
-    Convert button to markdown flow
+    Convert button to markdownflow
     """
-    return __convert_to_markdown_flow_action(button.label, None)
+    return __convert_to_markdown_button(button.label, None)
 
 
-def convert_block_to_markdown_flow(
-    block: BlockDTO, variable_map: dict[str, str]
-) -> str:
+def convert_block_to_markdownflow(block: BlockDTO, variable_map: dict[str, str]) -> str:
     """
-    Convert block to markdown flow
+    Convert block to markdownflow
     """
     # Determine block type from content if not present
     if hasattr(block, "type") and block.type:
@@ -212,16 +210,16 @@ def convert_block_to_markdown_flow(
         block_type = content_class.replace("DTO", "").lower()
 
     convert_func_map = {
-        BLOCK_TYPE_CONTENT: __convert_content_to_markdown_flow,
-        BLOCK_TYPE_BREAK: __convert_break_to_markdown_flow,
-        BLOCK_TYPE_INPUT: __convert_input_to_markdown_flow,
-        BLOCK_TYPE_OPTIONS: __convert_options_to_markdown_flow,
-        BLOCK_TYPE_GOTO: __convert_goto_to_markdown_flow,
-        BLOCK_TYPE_PAYMENT: __convert_payment_to_markdown_flow,
-        BLOCK_TYPE_LOGIN: __convert_login_to_markdown_flow,
-        BLOCK_TYPE_PHONE: __convert_phone_to_markdown_flow,
-        BLOCK_TYPE_CHECKCODE: __convert_checkcode_to_markdown_flow,
-        BLOCK_TYPE_BUTTON: __convert_button_to_markdown_flow,
+        BLOCK_TYPE_CONTENT: __convert_content_to_markdownflow,
+        BLOCK_TYPE_BREAK: __convert_break_to_markdownflow,
+        BLOCK_TYPE_INPUT: __convert_input_to_markdownflow,
+        BLOCK_TYPE_OPTIONS: __convert_options_to_markdownflow,
+        BLOCK_TYPE_GOTO: __convert_goto_to_markdownflow,
+        BLOCK_TYPE_PAYMENT: __convert_payment_to_markdownflow,
+        BLOCK_TYPE_LOGIN: __convert_login_to_markdownflow,
+        BLOCK_TYPE_PHONE: __convert_phone_to_markdownflow,
+        BLOCK_TYPE_CHECKCODE: __convert_checkcode_to_markdownflow,
+        BLOCK_TYPE_BUTTON: __convert_button_to_markdownflow,
     }
 
     convert_func = convert_func_map.get(block_type, None)

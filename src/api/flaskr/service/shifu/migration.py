@@ -430,7 +430,7 @@ def migrate_shifu_draft_to_shifu_draft_v2(app, shifu_bid: str):
             )
 
 
-def migrate_shifu_to_markdown_content(app, shifu_bid: str):
+def migrate_shifu_to_markdownflow_content(app, shifu_bid: str):
     """
     Migrate a shifu to markdown content
 
