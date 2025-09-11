@@ -216,9 +216,9 @@ jobs:
             echo "#### Quick Start Commands" >> $GITHUB_STEP_SUMMARY
             echo '```bash' >> $GITHUB_STEP_SUMMARY
             echo '# Pull all images' >> $GITHUB_STEP_SUMMARY
-            echo 'docker pull ${{ secrets.DOCKERHUB_USER || ''aishifu'' }}/ai-shifu-api:${{ needs.validate-release.outputs.tag }}' >> $GITHUB_STEP_SUMMARY
-            echo 'docker pull ${{ secrets.DOCKERHUB_USER || ''aishifu'' }}/ai-shifu-web:${{ needs.validate-release.outputs.tag }}' >> $GITHUB_STEP_SUMMARY
-            echo 'docker pull ${{ secrets.DOCKERHUB_USER || ''aishifu'' }}/ai-shifu-cook-web:${{ needs.validate-release.outputs.tag }}' >> $GITHUB_STEP_SUMMARY
+            echo 'docker pull ${{ secrets.DOCKERHUB_USER || "aishifu" }}/ai-shifu-api:${{ needs.validate-release.outputs.tag }}' >> $GITHUB_STEP_SUMMARY
+            echo 'docker pull ${{ secrets.DOCKERHUB_USER || "aishifu" }}/ai-shifu-web:${{ needs.validate-release.outputs.tag }}' >> $GITHUB_STEP_SUMMARY
+            echo 'docker pull ${{ secrets.DOCKERHUB_USER || "aishifu" }}/ai-shifu-cook-web:${{ needs.validate-release.outputs.tag }}' >> $GITHUB_STEP_SUMMARY
             echo '' >> $GITHUB_STEP_SUMMARY
             echo '# Start with Docker Compose (production-ready)' >> $GITHUB_STEP_SUMMARY
             echo 'cd docker' >> $GITHUB_STEP_SUMMARY
