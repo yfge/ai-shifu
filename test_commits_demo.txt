@@ -1,0 +1,11 @@
+AI-Shifu Test Commits Demo File
+================================
+
+This file is used for testing the changelog generation functionality.
+Each commit will modify this file to simulate real development activity.
+
+Initial content - ready for testing!
+
+Commit #1: feat - introduce AI response streaming
+Timestamp: Thu Sep 11 16:12:34 CST 2025
+Random data: 2867
