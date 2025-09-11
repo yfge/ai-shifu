@@ -102,7 +102,10 @@ def __convert_input_to_markdown_flow(
     """
     Convert input to markdown flow
     """
-    variable_name = variable_map.get(input.result_variable_bids[0], "")
+    if len(input.result_variable_bids) == 0:
+        variable_name = "unknown"
+    else:
+        variable_name = variable_map.get(input.result_variable_bids[0], "")
     placeholder = __get_label_markdown_flow(input.placeholder)
     # Input should return action format, not variable format
     return f"?[%{{{{{variable_name}}}}}...{placeholder}]"
