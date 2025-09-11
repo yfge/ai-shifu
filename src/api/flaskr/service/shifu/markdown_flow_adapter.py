@@ -38,7 +38,7 @@ def __get_label_markdown_flow(label: LabelDTO) -> str:
     return ""
 
 
-def __convert_to_markdown_button(label: LabelDTO, action: str) -> str:
+def __convert_to_markdown_button(label: LabelDTO, action: None | str) -> str:
     """
     Convert the label to markdownflow format
     """
@@ -224,6 +224,6 @@ def convert_block_to_markdownflow(block: BlockDTO, variable_map: dict[str, str])
 
     convert_func = convert_func_map.get(block_type, None)
     if convert_func is None:
-        raise_error(f"Invalid block type: {block_type}")
+        raise_error(f"Invalid block type: {block_type} for block: {block.bid}")
     ret = convert_func(block.block_content, variable_map)
     return ret
