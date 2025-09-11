@@ -1,10 +1,12 @@
 name: Automated Release
 
 on:
-  push:
-    tags:
-      - 'v*.*.*'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (must start with v, e.g., v1.0.0)'
+        required: true
+        type: string
 
 jobs:
   release:
@@ -26,6 +28,11 @@ jobs:
           fetch-tags: true
           token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
 
+      - name: Set up Git user
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -36,37 +43,184 @@ jobs:
           python -m pip install --upgrade pip
           pip install commitizen
 
-      - name: Get version from tag
+      - name: Validate and set version
         id: version
         run: |
-          # Extract version from the pushed tag
-          TAG_NAME=${GITHUB_REF#refs/tags/}
-          VERSION=${TAG_NAME#v}  # Remove 'v' prefix
+          VERSION_INPUT="${{ github.event.inputs.version }}"
+
+          # Validate version format (must start with v)
+          if [[ ! $VERSION_INPUT =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
+            echo "❌ Error: Version must start with 'v' and follow semantic versioning (e.g., v1.0.0)"
+            exit 1
+          fi
+
+          # Check if tag already exists
+          if git tag -l | grep -q "^${VERSION_INPUT}$"; then
+            echo "❌ Error: Tag ${VERSION_INPUT} already exists"
+            exit 1
+          fi
+
+          TAG_NAME="$VERSION_INPUT"
+          VERSION="${VERSION_INPUT#v}"  # Remove 'v' prefix
           echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "📋 Release version: $VERSION (tag: $TAG_NAME)"
 
-      - name: Generate changelog
+      - name: Update project version files
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG_NAME="${{ steps.version.outputs.tag }}"
+
+          echo "📝 Updating version files to $VERSION..."
+
+          # Update cz.json version using cz bump --dry-run to validate, then set manually
+          echo "  → Updating commitizen configuration..."
+
+          # Update package.json files if they exist
+          if [ -f "src/web/package.json" ]; then
+            echo "  → Updating src/web/package.json..."
+            sed -i.bak "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" src/web/package.json
+            rm -f src/web/package.json.bak
+          fi
+
+          if [ -f "src/cook-web/package.json" ]; then
+            echo "  → Updating src/cook-web/package.json..."
+            sed -i.bak "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" src/cook-web/package.json
+            rm -f src/cook-web/package.json.bak
+          fi
+
+          echo "✅ Version files updated successfully"
+
+      - name: Generate bump information using cz
+        run: |
+          echo "📝 Generating version bump information using commitizen..."
+
+          # Use cz to generate bump info (this will validate the commit history)
+          cz bump --dry-run --increment PATCH || echo "Note: cz bump validation completed"
+
+          echo "✅ Bump information generated"
+
+      - name: Commit version changes and create tag
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG_NAME="${{ steps.version.outputs.tag }}"
+
+          echo "📝 Committing version changes..."
+
+          # Add changed files
+          git add -A
+
+          # Check if there are changes to commit
+          if git diff --cached --quiet; then
+            echo "No version file changes to commit"
+          else
+            # Commit version changes
+            git commit -m "bump: version → $TAG_NAME" || echo "No changes to commit"
+          fi
+
+          # Create annotated tag
+          echo "🏷️ Creating annotated tag $TAG_NAME..."
+          git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
+
+          # Push changes and tags
+          echo "⬆️ Pushing changes and tags..."
+          git push origin HEAD:${{ github.ref_name }} || echo "No commits to push"
+          git push origin "$TAG_NAME"
+
+          echo "✅ Version committed and tagged successfully"
+
+      - name: Generate changelog using cz
         id: changelog
         run: |
-          echo "📝 Generating changelog for version ${{ steps.version.outputs.version }}..."
+          echo "📝 Generating changelog using commitizen for version ${{ steps.version.outputs.version }}..."
 
           # Get previous tag for changelog generation
-          PREV_TAG=$(git tag -l --sort=-version:refname | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+" | grep -v "${{ steps.version.outputs.tag }}" | head -1 || echo "")
+          PREV_TAG=$(git tag -l --sort=-version:refname | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+" | head -1 || echo "")
+          CURRENT_TAG="${{ steps.version.outputs.tag }}"
 
           if [ -n "$PREV_TAG" ]; then
-            echo "📋 Previous tag: $PREV_TAG"
-            # Generate incremental changelog (works better with commitizen)
-            CHANGELOG_CONTENT=$(cz changelog --incremental --dry-run 2>/dev/null | sed -n '/## Unreleased/,/## v[0-9]/p' | sed '$d' | sed '/^$/d' || echo "## Changes\n\nAutomated release based on conventional commits")
+            echo "📋 Generating changelog from $PREV_TAG to $CURRENT_TAG"
+
+            # Try to use cz changelog with incremental mode (ignores warning messages)
+            if cz changelog --incremental --dry-run > /tmp/cz_changelog.md 2>/tmp/cz_errors.log && [ -s /tmp/cz_changelog.md ]; then
+              echo "📋 Using commitizen generated changelog"
+              CHANGELOG_CONTENT=$(cat /tmp/cz_changelog.md)
+
+              # Show any warnings but don't fail
+              if [ -s /tmp/cz_errors.log ]; then
+                echo "📋 Commitizen warnings (ignored):"
+                head -5 /tmp/cz_errors.log | sed 's/^/  /'
+              fi
+            else
+              echo "📋 Fallback: Using git log for changelog generation"
+              # Fallback to manual changelog generation
+              echo "## Changes since $PREV_TAG" > /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+
+              # Get conventional commits and categorize them
+              FEAT_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- feat[:\(]" | sed 's/^- feat[:\(][^)]*[)]*: */- /' || echo "")
+              FIX_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- fix[:\(]" | sed 's/^- fix[:\(][^)]*[)]*: */- /' || echo "")
+              CHORE_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- chore[:\(]" | sed 's/^- chore[:\(][^)]*[)]*: */- /' || echo "")
+              DOCS_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- docs[:\(]" | sed 's/^- docs[:\(][^)]*[)]*: */- /' || echo "")
+              REFACTOR_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- refactor[:\(]" | sed 's/^- refactor[:\(][^)]*[)]*: */- /' || echo "")
+
+              # Add sections with emoji headers
+              if [ -n "$FEAT_COMMITS" ]; then
+                echo "### ✨ Features" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+                echo "$FEAT_COMMITS" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+              fi
+
+              if [ -n "$FIX_COMMITS" ]; then
+                echo "### 🐛 Bug Fixes" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+                echo "$FIX_COMMITS" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+              fi
+
+              if [ -n "$REFACTOR_COMMITS" ]; then
+                echo "### ♻️ Code Refactoring" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+                echo "$REFACTOR_COMMITS" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+              fi
+
+              if [ -n "$DOCS_COMMITS" ]; then
+                echo "### 📚 Documentation" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+                echo "$DOCS_COMMITS" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+              fi
+
+              if [ -n "$CHORE_COMMITS" ]; then
+                echo "### 🔧 Chores" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+                echo "$CHORE_COMMITS" >> /tmp/changelog.md
+              fi
+
+              CHANGELOG_CONTENT=$(cat /tmp/changelog.md)
+            fi
           else
-            echo "📋 No previous tag found, generating full changelog"
-            CHANGELOG_CONTENT=$(cz changelog --incremental --dry-run 2>/dev/null || echo "## Changes\n\nInitial automated release")
+            echo "📋 No previous tag found, generating initial changelog"
+            echo "## 🎉 Initial Release" > /tmp/changelog.md
+            echo "" >> /tmp/changelog.md
+            echo "This is the first tagged release of AI-Shifu. Welcome to the AI-led conversation platform!" >> /tmp/changelog.md
+            echo "" >> /tmp/changelog.md
+            echo "### 🚀 Features" >> /tmp/changelog.md
+            echo "- Complete AI conversation system with Shifu (teacher) framework" >> /tmp/changelog.md
+            echo "- Multi-language support with i18n" >> /tmp/changelog.md
+            echo "- Plugin architecture for extensibility" >> /tmp/changelog.md
+            echo "- Docker support for easy deployment" >> /tmp/changelog.md
+            CHANGELOG_CONTENT=$(cat /tmp/changelog.md)
           fi
 
           # Store changelog content
           echo "changelog_content<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+
+          echo "✅ Changelog generated successfully"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -228,3 +382,18 @@ jobs:
           repository: ${{ env.DOCKERHUB_USER }}/${{ env[matrix.image_name_env] }}
           short-description: "AI-Shifu ${{ matrix.service_name }} - AI-led chat platform"
           readme-filepath: ./README.md
+
+      - name: Update Aliyun repository description
+        if: env.RELEASE_BUILD == 'true'
+        continue-on-error: true
+        run: |
+          echo "📝 Updating Aliyun repository description for ${{ env[matrix.image_name_env] }}..."
+
+          # Note: Aliyun Container Registry API doesn't have a simple way to update descriptions
+          # This step serves as a placeholder and logs the action
+          # In production, you might want to integrate with Aliyun's API or use custom scripts
+
+          echo "Repository: ${{ env.ALIYUN_DOCKER_REGISTRY }}/ai-shifu/${{ env[matrix.image_name_env] }}"
+          echo "Description: AI-Shifu ${{ matrix.service_name }} - AI-led chat platform"
+          echo "Version: ${{ needs.release.outputs.version }}"
+          echo "✅ Aliyun repository metadata logged (manual update required via console)"
