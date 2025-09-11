@@ -1,3 +1,4 @@
+import re
 from flaskr.service.shifu.dtos import (
     BlockDTO,
     LabelDTO,
@@ -136,7 +137,6 @@ def __convert_content_to_markdownflow(
     else:
         content_text = html_2_markdown(content.content, [])
         # Remove empty lines (replace multiple consecutive newlines with single newline)
-        import re
 
         content_text = re.sub(r"\n\s*\n+", "\n\n", content_text)
         # Remove leading and trailing whitespace
