@@ -89,6 +89,15 @@ jobs:
             rm -f src/cook-web/package.json.bak
           fi
 
+          # Update Docker Compose production file
+          if [ -f "docker/docker-compose.prod.yml" ]; then
+            echo "  → Updating docker/docker-compose.prod.yml..."
+            sed -i.bak "s|aishifu/ai-shifu-api:v[0-9][^[:space:]]*|aishifu/ai-shifu-api:$TAG_NAME|g" docker/docker-compose.prod.yml
+            sed -i.bak "s|aishifu/ai-shifu-web:v[0-9][^[:space:]]*|aishifu/ai-shifu-web:$TAG_NAME|g" docker/docker-compose.prod.yml
+            sed -i.bak "s|aishifu/ai-shifu-cook-web:v[0-9][^[:space:]]*|aishifu/ai-shifu-cook-web:$TAG_NAME|g" docker/docker-compose.prod.yml
+            rm -f docker/docker-compose.prod.yml.bak
+          fi
+
           echo "✅ Version files updated successfully"
 
       - name: Generate bump information using cz
@@ -225,16 +234,44 @@ jobs:
               CHANGELOG_CONTENT=$(cat /tmp/changelog.md)
             fi
           else
-            echo "📋 No previous tag found, generating initial changelog"
+            echo "📋 No previous tag found, generating initial changelog from README"
             echo "## 🎉 Initial Release" > /tmp/changelog.md
             echo "" >> /tmp/changelog.md
             echo "This is the first tagged release of AI-Shifu. Welcome to the AI-led conversation platform!" >> /tmp/changelog.md
             echo "" >> /tmp/changelog.md
-            echo "### 🚀 Features" >> /tmp/changelog.md
-            echo "- Complete AI conversation system with Shifu (teacher) framework" >> /tmp/changelog.md
-            echo "- Multi-language support with i18n" >> /tmp/changelog.md
-            echo "- Plugin architecture for extensibility" >> /tmp/changelog.md
-            echo "- Docker support for easy deployment" >> /tmp/changelog.md
+
+            # Include README.md content for initial release
+            if [ -f "README.md" ]; then
+              echo "📋 Including README.md content in initial release"
+
+              # Extract project description (lines after logo until Features section)
+              echo "## About AI-Shifu" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+              sed -n '/^AI-Shifu serves/,/^# Features/p' README.md | sed '$ d' >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+
+              # Extract Features section
+              sed -n '/^# Features/,/^# Roadmap/p' README.md | sed '$ d' >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+
+              # Extract Roadmap section
+              sed -n '/^# Roadmap/,/^# Using/p' README.md | sed '$ d' >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+
+              echo "## 🚀 Quick Start" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+              echo "Please refer to our [Installation Manual](INSTALL_MANUAL.md) and [Development Guide](AGENTS.md) for detailed setup instructions." >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+            else
+              # Fallback if README.md is not found
+              echo "### 🚀 Features" >> /tmp/changelog.md
+              echo "- Complete AI conversation system with Shifu (teacher) framework" >> /tmp/changelog.md
+              echo "- Multi-language support with i18n" >> /tmp/changelog.md
+              echo "- Plugin architecture for extensibility" >> /tmp/changelog.md
+              echo "- Docker support for easy deployment" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+            fi
+
             CHANGELOG_CONTENT=$(cat /tmp/changelog.md)
           fi
 
