@@ -133,66 +133,111 @@ jobs:
           if [ -n "$PREV_TAG" ]; then
             echo "📋 Generating changelog from $PREV_TAG to $CURRENT_TAG"
 
-            # Try to use cz changelog with specific tag range
-            if cz changelog --start-rev "$PREV_TAG" --dry-run > /tmp/cz_changelog.md 2>/tmp/cz_errors.log && [ -s /tmp/cz_changelog.md ]; then
-              echo "📋 Using commitizen generated changelog with tag range"
-              CHANGELOG_CONTENT=$(cat /tmp/cz_changelog.md)
+            # Always use manual git log approach for more reliable incremental changelogs
+            # commitizen --start-rev sometimes includes too much history
+            echo "📋 Using git log for reliable incremental changelog generation"
 
-              # Show any warnings but don't fail
-              if [ -s /tmp/cz_errors.log ]; then
-                echo "📋 Commitizen warnings (ignored):"
-                head -5 /tmp/cz_errors.log | sed 's/^/  /'
-              fi
-            else
-              echo "📋 Fallback: Using git log for changelog generation"
-              # Fallback to manual changelog generation
-              echo "## Changes since $PREV_TAG" > /tmp/changelog.md
+            # Generate incremental changelog
+            echo "## Changes since $PREV_TAG" > /tmp/changelog.md
+            echo "" >> /tmp/changelog.md
+
+            # Get conventional commits and categorize them
+            FEAT_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- feat[:\(]" | sed 's/^- feat[:\(][^)]*[)]*: */- /' || echo "")
+            FIX_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- fix[:\(]" | sed 's/^- fix[:\(][^)]*[)]*: */- /' || echo "")
+            CHORE_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- chore[:\(]" | sed 's/^- chore[:\(][^)]*[)]*: */- /' || echo "")
+            DOCS_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- docs[:\(]" | sed 's/^- docs[:\(][^)]*[)]*: */- /' || echo "")
+            REFACTOR_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- refactor[:\(]" | sed 's/^- refactor[:\(][^)]*[)]*: */- /' || echo "")
+            TEST_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- test[:\(]" | sed 's/^- test[:\(][^)]*[)]*: */- /' || echo "")
+            PERF_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- perf[:\(]" | sed 's/^- perf[:\(][^)]*[)]*: */- /' || echo "")
+            STYLE_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- style[:\(]" | sed 's/^- style[:\(][^)]*[)]*: */- /' || echo "")
+            CI_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- ci[:\(]" | sed 's/^- ci[:\(][^)]*[)]*: */- /' || echo "")
+            BUILD_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- build[:\(]" | sed 's/^- build[:\(][^)]*[)]*: */- /' || echo "")
+
+            # Add sections with emoji headers
+            if [ -n "$FEAT_COMMITS" ]; then
+              echo "### ✨ Features" >> /tmp/changelog.md
               echo "" >> /tmp/changelog.md
-
-              # Get conventional commits and categorize them
-              FEAT_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- feat[:\(]" | sed 's/^- feat[:\(][^)]*[)]*: */- /' || echo "")
-              FIX_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- fix[:\(]" | sed 's/^- fix[:\(][^)]*[)]*: */- /' || echo "")
-              CHORE_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- chore[:\(]" | sed 's/^- chore[:\(][^)]*[)]*: */- /' || echo "")
-              DOCS_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- docs[:\(]" | sed 's/^- docs[:\(][^)]*[)]*: */- /' || echo "")
-              REFACTOR_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- refactor[:\(]" | sed 's/^- refactor[:\(][^)]*[)]*: */- /' || echo "")
-
-              # Add sections with emoji headers
-              if [ -n "$FEAT_COMMITS" ]; then
-                echo "### ✨ Features" >> /tmp/changelog.md
-                echo "" >> /tmp/changelog.md
-                echo "$FEAT_COMMITS" >> /tmp/changelog.md
-                echo "" >> /tmp/changelog.md
-              fi
-
-              if [ -n "$FIX_COMMITS" ]; then
-                echo "### 🐛 Bug Fixes" >> /tmp/changelog.md
-                echo "" >> /tmp/changelog.md
-                echo "$FIX_COMMITS" >> /tmp/changelog.md
-                echo "" >> /tmp/changelog.md
-              fi
-
-              if [ -n "$REFACTOR_COMMITS" ]; then
-                echo "### ♻️ Code Refactoring" >> /tmp/changelog.md
-                echo "" >> /tmp/changelog.md
-                echo "$REFACTOR_COMMITS" >> /tmp/changelog.md
-                echo "" >> /tmp/changelog.md
-              fi
-
-              if [ -n "$DOCS_COMMITS" ]; then
-                echo "### 📚 Documentation" >> /tmp/changelog.md
-                echo "" >> /tmp/changelog.md
-                echo "$DOCS_COMMITS" >> /tmp/changelog.md
-                echo "" >> /tmp/changelog.md
-              fi
-
-              if [ -n "$CHORE_COMMITS" ]; then
-                echo "### 🔧 Chores" >> /tmp/changelog.md
-                echo "" >> /tmp/changelog.md
-                echo "$CHORE_COMMITS" >> /tmp/changelog.md
-              fi
-
-              CHANGELOG_CONTENT=$(cat /tmp/changelog.md)
+              echo "$FEAT_COMMITS" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
             fi
+
+            if [ -n "$FIX_COMMITS" ]; then
+              echo "### 🐛 Bug Fixes" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+              echo "$FIX_COMMITS" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+            fi
+
+            if [ -n "$REFACTOR_COMMITS" ]; then
+              echo "### ♻️ Code Refactoring" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+              echo "$REFACTOR_COMMITS" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+            fi
+
+            if [ -n "$DOCS_COMMITS" ]; then
+              echo "### 📚 Documentation" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+              echo "$DOCS_COMMITS" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+            fi
+
+            if [ -n "$PERF_COMMITS" ]; then
+              echo "### ⚡ Performance Improvements" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+              echo "$PERF_COMMITS" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+            fi
+
+            if [ -n "$TEST_COMMITS" ]; then
+              echo "### 🧪 Tests" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+              echo "$TEST_COMMITS" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+            fi
+
+            if [ -n "$BUILD_COMMITS" ]; then
+              echo "### 📦 Build System" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+              echo "$BUILD_COMMITS" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+            fi
+
+            if [ -n "$CI_COMMITS" ]; then
+              echo "### 👷 CI/CD" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+              echo "$CI_COMMITS" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+            fi
+
+            if [ -n "$CHORE_COMMITS" ]; then
+              echo "### 🔧 Chores" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+              echo "$CHORE_COMMITS" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+            fi
+
+            if [ -n "$STYLE_COMMITS" ]; then
+              echo "### 💎 Style" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+              echo "$STYLE_COMMITS" >> /tmp/changelog.md
+            fi
+
+            # If no categorized commits found, add a note
+            if [ -z "$FEAT_COMMITS" ] && [ -z "$FIX_COMMITS" ] && [ -z "$REFACTOR_COMMITS" ] && [ -z "$DOCS_COMMITS" ] && [ -z "$PERF_COMMITS" ] && [ -z "$TEST_COMMITS" ] && [ -z "$BUILD_COMMITS" ] && [ -z "$CI_COMMITS" ] && [ -z "$CHORE_COMMITS" ] && [ -z "$STYLE_COMMITS" ]; then
+              echo "### 📝 Other Changes" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+              # Get all commits that don't match conventional commit format
+              OTHER_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -v -E "^- (feat|fix|docs|style|refactor|perf|test|build|ci|chore)[:\(]" || echo "")
+              if [ -n "$OTHER_COMMITS" ]; then
+                echo "$OTHER_COMMITS" >> /tmp/changelog.md
+              else
+                echo "- Minor updates and improvements" >> /tmp/changelog.md
+              fi
+              echo "" >> /tmp/changelog.md
+            fi
+
+            CHANGELOG_CONTENT=$(cat /tmp/changelog.md)
           else
             echo "📋 No previous tag found, generating initial changelog from README"
             echo "## 🎉 Initial Release" > /tmp/changelog.md
@@ -258,18 +303,23 @@ jobs:
             ## 🚀 Deployment
 
             ### Docker Images
+
+            The following Docker images are available for this release:
+
             ```bash
-            # API Server
+            # API Server (Flask Backend)
             docker pull ${{ secrets.DOCKERHUB_USER || 'aishifu' }}/ai-shifu-api:${{ steps.version.outputs.version }}
 
-            # Web Application
+            # Web Application (React Frontend)
             docker pull ${{ secrets.DOCKERHUB_USER || 'aishifu' }}/ai-shifu-web:${{ steps.version.outputs.version }}
 
-            # Cook Web (CMS)
+            # Cook Web (Next.js CMS)
             docker pull ${{ secrets.DOCKERHUB_USER || 'aishifu' }}/ai-shifu-cook-web:${{ steps.version.outputs.version }}
             ```
 
             ### Quick Start
+
+            **Option 1: Production Deployment**
             ```bash
             # Clone the repository
             git clone https://github.com/ai-shifu/ai-shifu.git
@@ -278,18 +328,76 @@ jobs:
             # Checkout this release
             git checkout ${{ steps.version.outputs.tag }}
 
-            # Start with Docker
+            # Start with production configuration
+            cd docker
+            docker compose -f docker-compose.prod.yml up -d
+            ```
+
+            **Option 2: Development Setup**
+            ```bash
+            # Clone and setup for development
+            git clone https://github.com/ai-shifu/ai-shifu.git
+            cd ai-shifu
+            git checkout ${{ steps.version.outputs.tag }}
+
+            # Start development environment
             cd docker
             docker compose up -d
             ```
 
+            ### System Requirements
+
+            - **Docker**: 20.10.0 or later
+            - **Docker Compose**: 2.0.0 or later
+            - **Memory**: Minimum 4GB RAM recommended
+            - **Storage**: At least 2GB free space
+
+            ## 🔧 Configuration
+
+            ### Environment Variables
+
+            Key configuration options (see `.env.example` files for complete list):
+
+            - `DATABASE_URL`: MySQL connection string
+            - `REDIS_URL`: Redis connection string (optional)
+            - `LLM_API_KEY`: Your AI service API key
+            - `JWT_SECRET_KEY`: Secret key for authentication
+
+            ### Ports
+
+            - **Web App**: `http://localhost:8080`
+            - **Cook Web (CMS)**: `http://localhost:8081`
+            - **API**: `http://localhost:5000`
+
             ## 📖 Documentation
-            - [Installation Manual](INSTALL_MANUAL.md)
-            - [Contributing Guide](CONTRIBUTING.md)
-            - [Development Guide](AGENTS.md)
+
+            - 📚 [Release Process Guide](docs/RELEASE_PROCESS.md)
+            - 🛠️ [Development Guide (AGENTS.md)](AGENTS.md)
+            - 🐳 [Docker Setup](docker/README.md)
+            - 🔧 [Environment Setup](docs/ENVIRONMENT_SETUP.md)
+
+            ## 🆕 Migration Notes
+
+            ${{ steps.prev_tag.outputs.prev_tag && format('### Upgrading from {0}', steps.prev_tag.outputs.prev_tag) || '### First Installation' }}
+
+            ${{ steps.prev_tag.outputs.prev_tag && '1. Stop your current services
+            2. Backup your database (recommended)
+            3. Pull the new images
+            4. Update your docker-compose.prod.yml (if needed)
+            5. Start the services' || '1. Follow the Quick Start guide above
+            2. Configure your environment variables
+            3. Start the services and enjoy AI-Shifu!' }}
+
+            ## 🆘 Support
+
+            - 🐛 [Report Issues](https://github.com/ai-shifu/ai-shifu/issues)
+            - 💬 [Discussions](https://github.com/ai-shifu/ai-shifu/discussions)
+            - 📧 [Contact Support](mailto:support@ai-shifu.com)
 
             ---
             🤖 Generated with [Claude Code](https://claude.ai/code)
+
+            Co-Authored-By: Claude <noreply@anthropic.com>
           draft: true
           prerelease: false
           make_latest: false
