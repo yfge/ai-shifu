@@ -1,0 +1,336 @@
+name: Prepare Release Draft
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (must start with v, e.g., v1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+      changelog: ${{ steps.changelog.outputs.changelog_content }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Set up Git user
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install commitizen
+
+      - name: Validate and set version
+        id: version
+        run: |
+          VERSION_INPUT="${{ github.event.inputs.version }}"
+
+          # Validate version format (must start with v)
+          if [[ ! $VERSION_INPUT =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
+            echo "❌ Error: Version must start with 'v' and follow semantic versioning (e.g., v1.0.0)"
+            exit 1
+          fi
+
+          # Check if tag already exists
+          if git tag -l | grep -q "^${VERSION_INPUT}$"; then
+            echo "❌ Error: Tag ${VERSION_INPUT} already exists"
+            exit 1
+          fi
+
+          TAG_NAME="$VERSION_INPUT"
+          VERSION="${VERSION_INPUT#v}"  # Remove 'v' prefix
+          echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📋 Preparing release version: $VERSION (tag: $TAG_NAME)"
+
+      - name: Update project version files
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG_NAME="${{ steps.version.outputs.tag }}"
+
+          echo "📝 Updating version files to $VERSION..."
+
+          # Update package.json files if they exist
+          if [ -f "src/web/package.json" ]; then
+            echo "  → Updating src/web/package.json..."
+            sed -i.bak "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" src/web/package.json
+            rm -f src/web/package.json.bak
+          fi
+
+          if [ -f "src/cook-web/package.json" ]; then
+            echo "  → Updating src/cook-web/package.json..."
+            sed -i.bak "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" src/cook-web/package.json
+            rm -f src/cook-web/package.json.bak
+          fi
+
+          # Update Docker Compose production file
+          if [ -f "docker/docker-compose.prod.yml" ]; then
+            echo "  → Updating docker/docker-compose.prod.yml..."
+            sed -i.bak "s|aishifu/ai-shifu-api:v[0-9][^[:space:]]*|aishifu/ai-shifu-api:$TAG_NAME|g" docker/docker-compose.prod.yml
+            sed -i.bak "s|aishifu/ai-shifu-web:v[0-9][^[:space:]]*|aishifu/ai-shifu-web:$TAG_NAME|g" docker/docker-compose.prod.yml
+            sed -i.bak "s|aishifu/ai-shifu-cook-web:v[0-9][^[:space:]]*|aishifu/ai-shifu-cook-web:$TAG_NAME|g" docker/docker-compose.prod.yml
+            rm -f docker/docker-compose.prod.yml.bak
+          fi
+
+          echo "✅ Version files updated successfully"
+
+      - name: Get previous tag for changelog
+        id: prev_tag
+        run: |
+          echo "📝 Getting previous tag for changelog generation..."
+
+          # Ensure all tags are fetched
+          git fetch --tags --force
+
+          # List all tags for debugging
+          echo "📋 All available tags:"
+          git tag -l --sort=-version:refname | head -10
+
+          # Get the latest existing tag before we create the new one
+          PREV_TAG=$(git tag -l --sort=-version:refname | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$" | head -1 || echo "")
+
+          echo "prev_tag=$PREV_TAG" >> $GITHUB_OUTPUT
+          if [ -n "$PREV_TAG" ]; then
+            echo "📋 Previous tag found: $PREV_TAG"
+            echo "📋 Will generate changelog from $PREV_TAG to ${{ steps.version.outputs.tag }}"
+          else
+            echo "📋 No previous tag found - this will be the initial release"
+          fi
+
+      - name: Generate changelog using cz
+        id: changelog
+        run: |
+          echo "📝 Generating changelog using commitizen for version ${{ steps.version.outputs.version }}..."
+
+          # Use the previous tag we got before creating the new tag
+          PREV_TAG="${{ steps.prev_tag.outputs.prev_tag }}"
+          CURRENT_TAG="${{ steps.version.outputs.tag }}"
+
+          if [ -n "$PREV_TAG" ]; then
+            echo "📋 Generating changelog from $PREV_TAG to $CURRENT_TAG"
+
+            # Try to use cz changelog with specific tag range
+            if cz changelog --start-rev "$PREV_TAG" --dry-run > /tmp/cz_changelog.md 2>/tmp/cz_errors.log && [ -s /tmp/cz_changelog.md ]; then
+              echo "📋 Using commitizen generated changelog with tag range"
+              CHANGELOG_CONTENT=$(cat /tmp/cz_changelog.md)
+
+              # Show any warnings but don't fail
+              if [ -s /tmp/cz_errors.log ]; then
+                echo "📋 Commitizen warnings (ignored):"
+                head -5 /tmp/cz_errors.log | sed 's/^/  /'
+              fi
+            else
+              echo "📋 Fallback: Using git log for changelog generation"
+              # Fallback to manual changelog generation
+              echo "## Changes since $PREV_TAG" > /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+
+              # Get conventional commits and categorize them
+              FEAT_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- feat[:\(]" | sed 's/^- feat[:\(][^)]*[)]*: */- /' || echo "")
+              FIX_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- fix[:\(]" | sed 's/^- fix[:\(][^)]*[)]*: */- /' || echo "")
+              CHORE_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- chore[:\(]" | sed 's/^- chore[:\(][^)]*[)]*: */- /' || echo "")
+              DOCS_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- docs[:\(]" | sed 's/^- docs[:\(][^)]*[)]*: */- /' || echo "")
+              REFACTOR_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- refactor[:\(]" | sed 's/^- refactor[:\(][^)]*[)]*: */- /' || echo "")
+
+              # Add sections with emoji headers
+              if [ -n "$FEAT_COMMITS" ]; then
+                echo "### ✨ Features" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+                echo "$FEAT_COMMITS" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+              fi
+
+              if [ -n "$FIX_COMMITS" ]; then
+                echo "### 🐛 Bug Fixes" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+                echo "$FIX_COMMITS" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+              fi
+
+              if [ -n "$REFACTOR_COMMITS" ]; then
+                echo "### ♻️ Code Refactoring" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+                echo "$REFACTOR_COMMITS" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+              fi
+
+              if [ -n "$DOCS_COMMITS" ]; then
+                echo "### 📚 Documentation" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+                echo "$DOCS_COMMITS" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+              fi
+
+              if [ -n "$CHORE_COMMITS" ]; then
+                echo "### 🔧 Chores" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+                echo "$CHORE_COMMITS" >> /tmp/changelog.md
+              fi
+
+              CHANGELOG_CONTENT=$(cat /tmp/changelog.md)
+            fi
+          else
+            echo "📋 No previous tag found, generating initial changelog from README"
+            echo "## 🎉 Initial Release" > /tmp/changelog.md
+            echo "" >> /tmp/changelog.md
+            echo "This is the first tagged release of AI-Shifu. Welcome to the AI-led conversation platform!" >> /tmp/changelog.md
+            echo "" >> /tmp/changelog.md
+
+            # Include README.md content for initial release
+            if [ -f "README.md" ]; then
+              echo "📋 Including README.md content in initial release"
+
+              # Extract project description (lines after logo until Features section)
+              echo "## About AI-Shifu" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+              sed -n '/^AI-Shifu serves/,/^# Features/p' README.md | sed '$ d' >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+
+              # Extract Features section
+              sed -n '/^# Features/,/^# Roadmap/p' README.md | sed '$ d' >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+
+              # Extract Roadmap section
+              sed -n '/^# Roadmap/,/^# Using/p' README.md | sed '$ d' >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+
+              echo "## 🚀 Quick Start" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+              echo "Please refer to our [Installation Manual](INSTALL_MANUAL.md) and [Development Guide](AGENTS.md) for detailed setup instructions." >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+            else
+              # Fallback if README.md is not found
+              echo "### 🚀 Features" >> /tmp/changelog.md
+              echo "- Complete AI conversation system with Shifu (teacher) framework" >> /tmp/changelog.md
+              echo "- Multi-language support with i18n" >> /tmp/changelog.md
+              echo "- Plugin architecture for extensibility" >> /tmp/changelog.md
+              echo "- Docker support for easy deployment" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+            fi
+
+            CHANGELOG_CONTENT=$(cat /tmp/changelog.md)
+          fi
+
+          # Store changelog content
+          echo "changelog_content<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          echo "✅ Changelog generated successfully"
+
+      - name: Create GitHub Release Draft
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.tag }}
+          body: |
+            # AI-Shifu Release ${{ steps.version.outputs.tag }} (DRAFT)
+
+            > ⚠️ **This is a draft release** - The actual release will be published after approval.
+
+            ${{ steps.changelog.outputs.changelog_content }}
+
+            ## 🚀 Deployment
+
+            ### Docker Images
+            ```bash
+            # API Server
+            docker pull ${{ secrets.DOCKERHUB_USER || 'aishifu' }}/ai-shifu-api:${{ steps.version.outputs.version }}
+
+            # Web Application
+            docker pull ${{ secrets.DOCKERHUB_USER || 'aishifu' }}/ai-shifu-web:${{ steps.version.outputs.version }}
+
+            # Cook Web (CMS)
+            docker pull ${{ secrets.DOCKERHUB_USER || 'aishifu' }}/ai-shifu-cook-web:${{ steps.version.outputs.version }}
+            ```
+
+            ### Quick Start
+            ```bash
+            # Clone the repository
+            git clone https://github.com/ai-shifu/ai-shifu.git
+            cd ai-shifu
+
+            # Checkout this release
+            git checkout ${{ steps.version.outputs.tag }}
+
+            # Start with Docker
+            cd docker
+            docker compose up -d
+            ```
+
+            ## 📖 Documentation
+            - [Installation Manual](INSTALL_MANUAL.md)
+            - [Contributing Guide](CONTRIBUTING.md)
+            - [Development Guide](AGENTS.md)
+
+            ---
+            🤖 Generated with [Claude Code](https://claude.ai/code)
+          draft: true
+          prerelease: false
+          make_latest: false
+
+      - name: Commit version changes (without tag)
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG_NAME="${{ steps.version.outputs.tag }}"
+
+          echo "📝 Committing version changes..."
+
+          # Add changed files
+          git add -A
+
+          # Check if there are changes to commit
+          if git diff --cached --quiet; then
+            echo "No version file changes to commit"
+          else
+            # Commit version changes (but don't create tag yet)
+            git commit -m "chore: prepare release $TAG_NAME" || echo "No changes to commit"
+
+            # Push changes to the branch (but no tag yet)
+            git push origin HEAD:${{ github.ref_name }} || echo "No commits to push"
+
+            echo "✅ Version changes committed and pushed"
+          fi
+
+      - name: Summary
+        run: |
+          echo "## 📋 Release Preparation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Draft Release Created**: ${{ steps.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Review the draft release and changelog" >> $GITHUB_STEP_SUMMARY
+          echo "2. Run the **Publish Release** workflow to complete the release" >> $GITHUB_STEP_SUMMARY
+          echo "3. Docker images and deployment will happen automatically after publishing" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Release Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag**: ${{ steps.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Previous Tag**: ${{ steps.prev_tag.outputs.prev_tag || 'None (Initial Release)' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[View Draft Release](https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }})" >> $GITHUB_STEP_SUMMARY

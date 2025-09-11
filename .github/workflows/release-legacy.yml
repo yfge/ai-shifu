@@ -1,4 +1,12 @@
-name: Automated Release
+name: Legacy Release (DEPRECATED)
+
+# ⚠️ DEPRECATED: This workflow has been replaced by the new three-stage release process
+# Please use the new workflows instead:
+# 1. prepare-release.yml - Creates release draft
+# 2. publish-release.yml - Publishes release with approval
+# 3. build-on-release.yml - Builds and deploys automatically
+#
+# This legacy workflow is kept for reference but should not be used for new releases.
 
 on:
   workflow_dispatch:
