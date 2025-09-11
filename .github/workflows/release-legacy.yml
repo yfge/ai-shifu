@@ -1,0 +1,467 @@
+name: Legacy Release (DEPRECATED)
+
+# ⚠️ DEPRECATED: This workflow has been replaced by the new three-stage release process
+# Please use the new workflows instead:
+# 1. prepare-release.yml - Creates release draft
+# 2. publish-release.yml - Publishes release with approval
+# 3. build-on-release.yml - Builds and deploys automatically
+#
+# This legacy workflow is kept for reference but should not be used for new releases.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (must start with v, e.g., v1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Set up Git user
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install commitizen
+
+      - name: Validate and set version
+        id: version
+        run: |
+          VERSION_INPUT="${{ github.event.inputs.version }}"
+
+          # Validate version format (must start with v)
+          if [[ ! $VERSION_INPUT =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
+            echo "❌ Error: Version must start with 'v' and follow semantic versioning (e.g., v1.0.0)"
+            exit 1
+          fi
+
+          # Check if tag already exists
+          if git tag -l | grep -q "^${VERSION_INPUT}$"; then
+            echo "❌ Error: Tag ${VERSION_INPUT} already exists"
+            exit 1
+          fi
+
+          TAG_NAME="$VERSION_INPUT"
+          VERSION="${VERSION_INPUT#v}"  # Remove 'v' prefix
+          echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📋 Release version: $VERSION (tag: $TAG_NAME)"
+
+      - name: Update project version files
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG_NAME="${{ steps.version.outputs.tag }}"
+
+          echo "📝 Updating version files to $VERSION..."
+
+          # Update cz.json version using cz bump --dry-run to validate, then set manually
+          echo "  → Updating commitizen configuration..."
+
+          # Update package.json files if they exist
+          if [ -f "src/web/package.json" ]; then
+            echo "  → Updating src/web/package.json..."
+            sed -i.bak "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" src/web/package.json
+            rm -f src/web/package.json.bak
+          fi
+
+          if [ -f "src/cook-web/package.json" ]; then
+            echo "  → Updating src/cook-web/package.json..."
+            sed -i.bak "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" src/cook-web/package.json
+            rm -f src/cook-web/package.json.bak
+          fi
+
+          # Update Docker Compose production file
+          if [ -f "docker/docker-compose.prod.yml" ]; then
+            echo "  → Updating docker/docker-compose.prod.yml..."
+            sed -i.bak "s|aishifu/ai-shifu-api:v[0-9][^[:space:]]*|aishifu/ai-shifu-api:$TAG_NAME|g" docker/docker-compose.prod.yml
+            sed -i.bak "s|aishifu/ai-shifu-web:v[0-9][^[:space:]]*|aishifu/ai-shifu-web:$TAG_NAME|g" docker/docker-compose.prod.yml
+            sed -i.bak "s|aishifu/ai-shifu-cook-web:v[0-9][^[:space:]]*|aishifu/ai-shifu-cook-web:$TAG_NAME|g" docker/docker-compose.prod.yml
+            rm -f docker/docker-compose.prod.yml.bak
+          fi
+
+          echo "✅ Version files updated successfully"
+
+      - name: Generate bump information using cz
+        run: |
+          echo "📝 Generating version bump information using commitizen..."
+
+          # Use cz to generate bump info (this will validate the commit history)
+          cz bump --dry-run --increment PATCH || echo "Note: cz bump validation completed"
+
+          echo "✅ Bump information generated"
+
+      - name: Get previous tag for changelog
+        id: prev_tag
+        run: |
+          echo "📝 Getting previous tag for changelog generation..."
+
+          # Ensure all tags are fetched
+          git fetch --tags --force
+
+          # List all tags for debugging
+          echo "📋 All available tags:"
+          git tag -l --sort=-version:refname | head -10
+
+          # Get the latest existing tag before we create the new one
+          PREV_TAG=$(git tag -l --sort=-version:refname | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$" | head -1 || echo "")
+
+          echo "prev_tag=$PREV_TAG" >> $GITHUB_OUTPUT
+          if [ -n "$PREV_TAG" ]; then
+            echo "📋 Previous tag found: $PREV_TAG"
+            echo "📋 Will generate changelog from $PREV_TAG to ${{ steps.version.outputs.tag }}"
+          else
+            echo "📋 No previous tag found - this will be the initial release"
+          fi
+
+      - name: Commit version changes and create tag
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG_NAME="${{ steps.version.outputs.tag }}"
+
+          echo "📝 Committing version changes..."
+
+          # Add changed files
+          git add -A
+
+          # Check if there are changes to commit
+          if git diff --cached --quiet; then
+            echo "No version file changes to commit"
+          else
+            # Commit version changes
+            git commit -m "bump: version → $TAG_NAME" || echo "No changes to commit"
+          fi
+
+          # Create annotated tag
+          echo "🏷️ Creating annotated tag $TAG_NAME..."
+          git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
+
+          # Push changes and tags
+          echo "⬆️ Pushing changes and tags..."
+          git push origin HEAD:${{ github.ref_name }} || echo "No commits to push"
+          git push origin "$TAG_NAME"
+
+          echo "✅ Version committed and tagged successfully"
+
+      - name: Generate changelog using cz
+        id: changelog
+        run: |
+          echo "📝 Generating changelog using commitizen for version ${{ steps.version.outputs.version }}..."
+
+          # Use the previous tag we got before creating the new tag
+          PREV_TAG="${{ steps.prev_tag.outputs.prev_tag }}"
+          CURRENT_TAG="${{ steps.version.outputs.tag }}"
+
+          if [ -n "$PREV_TAG" ]; then
+            echo "📋 Generating changelog from $PREV_TAG to $CURRENT_TAG"
+
+            # Try to use cz changelog with specific tag range
+            if cz changelog --start-rev "$PREV_TAG" --dry-run > /tmp/cz_changelog.md 2>/tmp/cz_errors.log && [ -s /tmp/cz_changelog.md ]; then
+              echo "📋 Using commitizen generated changelog with tag range"
+              CHANGELOG_CONTENT=$(cat /tmp/cz_changelog.md)
+
+              # Show any warnings but don't fail
+              if [ -s /tmp/cz_errors.log ]; then
+                echo "📋 Commitizen warnings (ignored):"
+                head -5 /tmp/cz_errors.log | sed 's/^/  /'
+              fi
+            else
+              echo "📋 Fallback: Using git log for changelog generation"
+              # Fallback to manual changelog generation
+              echo "## Changes since $PREV_TAG" > /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+
+              # Get conventional commits and categorize them
+              FEAT_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- feat[:\(]" | sed 's/^- feat[:\(][^)]*[)]*: */- /' || echo "")
+              FIX_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- fix[:\(]" | sed 's/^- fix[:\(][^)]*[)]*: */- /' || echo "")
+              CHORE_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- chore[:\(]" | sed 's/^- chore[:\(][^)]*[)]*: */- /' || echo "")
+              DOCS_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- docs[:\(]" | sed 's/^- docs[:\(][^)]*[)]*: */- /' || echo "")
+              REFACTOR_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- refactor[:\(]" | sed 's/^- refactor[:\(][^)]*[)]*: */- /' || echo "")
+
+              # Add sections with emoji headers
+              if [ -n "$FEAT_COMMITS" ]; then
+                echo "### ✨ Features" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+                echo "$FEAT_COMMITS" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+              fi
+
+              if [ -n "$FIX_COMMITS" ]; then
+                echo "### 🐛 Bug Fixes" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+                echo "$FIX_COMMITS" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+              fi
+
+              if [ -n "$REFACTOR_COMMITS" ]; then
+                echo "### ♻️ Code Refactoring" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+                echo "$REFACTOR_COMMITS" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+              fi
+
+              if [ -n "$DOCS_COMMITS" ]; then
+                echo "### 📚 Documentation" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+                echo "$DOCS_COMMITS" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+              fi
+
+              if [ -n "$CHORE_COMMITS" ]; then
+                echo "### 🔧 Chores" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+                echo "$CHORE_COMMITS" >> /tmp/changelog.md
+              fi
+
+              CHANGELOG_CONTENT=$(cat /tmp/changelog.md)
+            fi
+          else
+            echo "📋 No previous tag found, generating initial changelog from README"
+            echo "## 🎉 Initial Release" > /tmp/changelog.md
+            echo "" >> /tmp/changelog.md
+            echo "This is the first tagged release of AI-Shifu. Welcome to the AI-led conversation platform!" >> /tmp/changelog.md
+            echo "" >> /tmp/changelog.md
+
+            # Include README.md content for initial release
+            if [ -f "README.md" ]; then
+              echo "📋 Including README.md content in initial release"
+
+              # Extract project description (lines after logo until Features section)
+              echo "## About AI-Shifu" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+              sed -n '/^AI-Shifu serves/,/^# Features/p' README.md | sed '$ d' >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+
+              # Extract Features section
+              sed -n '/^# Features/,/^# Roadmap/p' README.md | sed '$ d' >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+
+              # Extract Roadmap section
+              sed -n '/^# Roadmap/,/^# Using/p' README.md | sed '$ d' >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+
+              echo "## 🚀 Quick Start" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+              echo "Please refer to our [Installation Manual](INSTALL_MANUAL.md) and [Development Guide](AGENTS.md) for detailed setup instructions." >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+            else
+              # Fallback if README.md is not found
+              echo "### 🚀 Features" >> /tmp/changelog.md
+              echo "- Complete AI conversation system with Shifu (teacher) framework" >> /tmp/changelog.md
+              echo "- Multi-language support with i18n" >> /tmp/changelog.md
+              echo "- Plugin architecture for extensibility" >> /tmp/changelog.md
+              echo "- Docker support for easy deployment" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+            fi
+
+            CHANGELOG_CONTENT=$(cat /tmp/changelog.md)
+          fi
+
+          # Store changelog content
+          echo "changelog_content<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          echo "✅ Changelog generated successfully"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.tag }}
+          body: |
+            # AI-Shifu Release ${{ steps.version.outputs.tag }}
+
+            ${{ steps.changelog.outputs.changelog_content }}
+
+            ## 🚀 Deployment
+
+            ### Docker Images
+            ```bash
+            # API Server
+            docker pull ${{ secrets.DOCKERHUB_USER || 'aishifu' }}/ai-shifu-api:${{ steps.version.outputs.version }}
+
+            # Web Application
+            docker pull ${{ secrets.DOCKERHUB_USER || 'aishifu' }}/ai-shifu-web:${{ steps.version.outputs.version }}
+
+            # Cook Web (CMS)
+            docker pull ${{ secrets.DOCKERHUB_USER || 'aishifu' }}/ai-shifu-cook-web:${{ steps.version.outputs.version }}
+            ```
+
+            ### Quick Start
+            ```bash
+            # Clone the repository
+            git clone https://github.com/ai-shifu/ai-shifu.git
+            cd ai-shifu
+
+            # Checkout this release
+            git checkout ${{ steps.version.outputs.tag }}
+
+            # Start with Docker
+            cd docker
+            docker compose up -d
+            ```
+
+            ## 📖 Documentation
+            - [Installation Manual](INSTALL_MANUAL.md)
+            - [Contributing Guide](CONTRIBUTING.md)
+            - [Development Guide](AGENTS.md)
+
+            ---
+            🤖 Generated with [Claude Code](https://claude.ai/code)
+          draft: false
+          prerelease: false
+          make_latest: true
+
+  build-docker:
+    name: Build & Push Docker (${{ matrix.service_name }})
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service_name: "build-api"
+            image_name_env: "AI_SHIFU_API_IMAGE_NAME"
+            context: "src/api"
+          - service_name: "build-web"
+            image_name_env: "AI_SHIFU_WEB_IMAGE_NAME"
+            context: "src/web"
+          - service_name: "build-cook-web"
+            image_name_env: "AI_SHIFU_COOK_WEB_IMAGE_NAME"
+            context: "src/cook-web"
+
+    env:
+      DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      ALIYUN_DOCKER_REGISTRY: ${{ vars.ALIYUN_DOCKER_REGISTRY || 'registry.cn-beijing.aliyuncs.com' }}
+      ALIYUN_DOCKER_USERNAME: ${{ secrets.ALIYUN_USER }}
+      ALIYUN_DOCKER_PASSWORD: ${{ secrets.ALIYUN_TOKEN }}
+      AI_SHIFU_WEB_IMAGE_NAME: ${{ vars.AI_SHIFU_WEB_IMAGE_NAME || 'ai-shifu-web' }}
+      AI_SHIFU_API_IMAGE_NAME: ${{ vars.AI_SHIFU_API_IMAGE_NAME || 'ai-shifu-api' }}
+      AI_SHIFU_COOK_WEB_IMAGE_NAME: ${{ vars.AI_SHIFU_COOK_WEB_IMAGE_NAME || 'ai-shifu-cook-web' }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set Tag Version
+        run: |
+          TAG_VERSION="${{ needs.release.outputs.tag }}"
+          echo "TAG_VERSION=$TAG_VERSION" >> $GITHUB_ENV
+          echo "RELEASE_BUILD=true" >> $GITHUB_ENV
+          echo "🏷️ Building with tag: $TAG_VERSION"
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USER }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+
+      - name: Login to Aliyun Docker Registry
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.ALIYUN_DOCKER_USERNAME }}
+          password: ${{ env.ALIYUN_DOCKER_PASSWORD }}
+          registry: ${{ env.ALIYUN_DOCKER_REGISTRY }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.DOCKERHUB_USER }}/${{ env[matrix.image_name_env] }}
+            ${{ env.ALIYUN_DOCKER_REGISTRY }}/ai-shifu/${{ env[matrix.image_name_env] }}
+          labels: |
+            org.opencontainers.image.title=AI-Shifu ${{ matrix.service_name }}
+            org.opencontainers.image.description=AI-led chat platform - ${{ matrix.service_name }} service
+            org.opencontainers.image.vendor=AI-Shifu Team
+            org.opencontainers.image.licenses=Apache-2.0 WITH Commercial-Use-Conditions
+            org.opencontainers.image.source=https://github.com/ai-shifu/ai-shifu
+            org.opencontainers.image.documentation=https://github.com/ai-shifu/ai-shifu/blob/main/README.md
+            org.opencontainers.image.url=https://github.com/ai-shifu/ai-shifu
+            org.opencontainers.image.version=${{ env.TAG_VERSION }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            ai-shifu.license-file=https://github.com/ai-shifu/ai-shifu/blob/main/LICENSE.txt
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ env.TAG_VERSION }},enable=${{ env.RELEASE_BUILD == 'true' }}
+
+      - name: Build Docker image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: "${{ matrix.context }}"
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            TAG_VERSION=${{ env.TAG_VERSION }}
+
+      - name: Update Docker Hub repository description
+        if: env.RELEASE_BUILD == 'true'
+        continue-on-error: true
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ env.DOCKERHUB_USER }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+          repository: ${{ env.DOCKERHUB_USER }}/${{ env[matrix.image_name_env] }}
+          short-description: "AI-Shifu ${{ matrix.service_name }} - AI-led chat platform"
+          readme-filepath: ./README.md
+
+      - name: Update Aliyun repository description
+        if: env.RELEASE_BUILD == 'true'
+        continue-on-error: true
+        run: |
+          echo "📝 Updating Aliyun repository description for ${{ env[matrix.image_name_env] }}..."
+
+          # Note: Aliyun Container Registry API doesn't have a simple way to update descriptions
+          # This step serves as a placeholder and logs the action
+          # In production, you might want to integrate with Aliyun's API or use custom scripts
+
+          echo "Repository: ${{ env.ALIYUN_DOCKER_REGISTRY }}/ai-shifu/${{ env[matrix.image_name_env] }}"
+          echo "Description: AI-Shifu ${{ matrix.service_name }} - AI-led chat platform"
+          echo "Version: ${{ needs.release.outputs.version }}"
+          echo "✅ Aliyun repository metadata logged (manual update required via console)"
