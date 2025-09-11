@@ -30,7 +30,7 @@ from .shifu_history_manager import (
     HistoryInfo,
 )
 from datetime import datetime
-from flaskr.service.shifu.markdown_flow_adapter import convert_block_to_markdown_flow
+from flaskr.service.shifu.markdown_flow_adapter import convert_block_to_markdownflow
 
 
 def __get_block_list_internal(outline_id: str) -> list[DraftBlock]:
@@ -167,9 +167,12 @@ def save_shifu_block_list(
         markdown_flow_content = ""
         for block in block_list:
             block_dto = convert_to_blockDTO(block)
-            markdown_flow_content += "\n" + convert_block_to_markdown_flow(
-                block_dto, variable_map
-            )
+            try:
+                markdown_flow_content += "\n" + convert_block_to_markdownflow(
+                    block_dto, variable_map
+                )
+            except Exception as e:
+                app.logger.error(f"Failed to convert block to markdownflow: {e}")
             block_model = next(
                 (b for b in blocks if b.block_bid == block_dto.bid), None
             )
