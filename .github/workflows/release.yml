@@ -100,6 +100,21 @@ jobs:
 
           echo "✅ Bump information generated"
 
+      - name: Get previous tag for changelog
+        id: prev_tag
+        run: |
+          echo "📝 Getting previous tag for changelog generation..."
+
+          # Get the latest existing tag before we create the new one
+          PREV_TAG=$(git tag -l --sort=-version:refname | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+" | head -1 || echo "")
+
+          echo "prev_tag=$PREV_TAG" >> $GITHUB_OUTPUT
+          if [ -n "$PREV_TAG" ]; then
+            echo "📋 Previous tag found: $PREV_TAG"
+          else
+            echo "📋 No previous tag found - this will be the initial release"
+          fi
+
       - name: Commit version changes and create tag
         run: |
           VERSION="${{ steps.version.outputs.version }}"
@@ -134,8 +149,8 @@ jobs:
         run: |
           echo "📝 Generating changelog using commitizen for version ${{ steps.version.outputs.version }}..."
 
-          # Get previous tag for changelog generation
-          PREV_TAG=$(git tag -l --sort=-version:refname | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+" | head -1 || echo "")
+          # Use the previous tag we got before creating the new tag
+          PREV_TAG="${{ steps.prev_tag.outputs.prev_tag }}"
           CURRENT_TAG="${{ steps.version.outputs.tag }}"
 
           if [ -n "$PREV_TAG" ]; then
