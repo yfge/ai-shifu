@@ -546,8 +546,10 @@ def migrate_shifu_to_markdownflow_content(app, shifu_bid: str):
                 for node in published_outline_tree_v1.children:
                     app.logger.info(f"migrate outline: {node.bid} {node.type}")
                     migrate_outline(node, False)
-        except Exception as e:
-            app.logger.error(f"Failed to migrate published outline: {e}")
+        except Exception:
+            app.logger.exception(
+                f"Failed to migrate published outline for shifu_bid: {shifu_bid}"
+            )
 
         db.session.commit()
         plugin_manager.is_enabled = True
