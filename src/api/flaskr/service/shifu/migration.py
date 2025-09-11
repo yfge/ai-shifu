@@ -483,6 +483,11 @@ def migrate_shifu_to_markdownflow_content(app, shifu_bid: str):
                                 .order_by(PublishedOutlineItem.id.desc())
                                 .first()
                             )
+                        if not outline:
+                            app.logger.error(
+                                f"outline not found, outline_item_bid: {node.bid}"
+                            )
+                            return
                         block_bids = [c.bid for c in node.children]
                         if is_preview:
                             block_list = (
