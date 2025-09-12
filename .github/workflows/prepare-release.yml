@@ -294,99 +294,9 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           name: Release ${{ steps.version.outputs.tag }}
           body: |
-            # AI-Shifu Release ${{ steps.version.outputs.tag }} (DRAFT)
-
-            > ⚠️ **This is a draft release** - The actual release will be published after approval.
+            # AI-Shifu Release ${{ steps.version.outputs.tag }}
 
             ${{ steps.changelog.outputs.changelog_content }}
-
-            ## 🚀 Deployment
-
-            ### Docker Images
-
-            The following Docker images are available for this release:
-
-            ```bash
-            # API Server (Flask Backend)
-            docker pull ${{ secrets.DOCKERHUB_USER || 'aishifu' }}/ai-shifu-api:${{ steps.version.outputs.version }}
-
-            # Web Application (React Frontend)
-            docker pull ${{ secrets.DOCKERHUB_USER || 'aishifu' }}/ai-shifu-web:${{ steps.version.outputs.version }}
-
-            # Cook Web (Next.js CMS)
-            docker pull ${{ secrets.DOCKERHUB_USER || 'aishifu' }}/ai-shifu-cook-web:${{ steps.version.outputs.version }}
-            ```
-
-            ### Quick Start
-
-            **Option 1: Production Deployment**
-            ```bash
-            # Clone the repository
-            git clone https://github.com/ai-shifu/ai-shifu.git
-            cd ai-shifu
-
-            # Checkout this release
-            git checkout ${{ steps.version.outputs.tag }}
-
-            # Start with production configuration
-            cd docker
-            docker compose -f docker-compose.prod.yml up -d
-            ```
-
-            **Option 2: Development Setup**
-            ```bash
-            # Clone and setup for development
-            git clone https://github.com/ai-shifu/ai-shifu.git
-            cd ai-shifu
-            git checkout ${{ steps.version.outputs.tag }}
-
-            # Start development environment
-            cd docker
-            docker compose up -d
-            ```
-
-            ### System Requirements
-
-            - **Docker**: 20.10.0 or later
-            - **Docker Compose**: 2.0.0 or later
-            - **Memory**: Minimum 4GB RAM recommended
-            - **Storage**: At least 2GB free space
-
-            ## 🔧 Configuration
-
-            ### Environment Variables
-
-            Key configuration options (see `.env.example` files for complete list):
-
-            - `DATABASE_URL`: MySQL connection string
-            - `REDIS_URL`: Redis connection string (optional)
-            - `LLM_API_KEY`: Your AI service API key
-            - `JWT_SECRET_KEY`: Secret key for authentication
-
-            ### Ports
-
-            - **Web App**: `http://localhost:8080`
-            - **Cook Web (CMS)**: `http://localhost:8081`
-            - **API**: `http://localhost:5000`
-
-            ## 📖 Documentation
-
-            - 📚 [Release Process Guide](docs/RELEASE_PROCESS.md)
-            - 🛠️ [Development Guide (AGENTS.md)](AGENTS.md)
-            - 🐳 [Docker Setup](docker/README.md)
-            - 🔧 [Environment Setup](docs/ENVIRONMENT_SETUP.md)
-
-            ## 🆕 Migration Notes
-
-            ${{ steps.prev_tag.outputs.prev_tag && format('### Upgrading from {0}', steps.prev_tag.outputs.prev_tag) || '### First Installation' }}
-
-            ${{ steps.prev_tag.outputs.prev_tag && '1. Stop your current services
-            2. Backup your database (recommended)
-            3. Pull the new images
-            4. Update your docker-compose.prod.yml (if needed)
-            5. Start the services' || '1. Follow the Quick Start guide above
-            2. Configure your environment variables
-            3. Start the services and enjoy AI-Shifu!' }}
 
             ## 🆘 Support
 
@@ -394,10 +304,6 @@ jobs:
             - 💬 [Discussions](https://github.com/ai-shifu/ai-shifu/discussions)
             - 📧 [Contact Support](mailto:support@ai-shifu.com)
 
-            ---
-            🤖 Generated with [Claude Code](https://claude.ai/code)
-
-            Co-Authored-By: Claude <noreply@anthropic.com>
           draft: true
           prerelease: false
           make_latest: false
@@ -417,7 +323,7 @@ jobs:
             echo "No version file changes to commit"
           else
             # Commit version changes (but don't create tag yet)
-            git commit -m "chore: prepare release $TAG_NAME" || echo "No changes to commit"
+            git commit -m "chore: flow to $TAG_NAME" || echo "No changes to commit"
 
             # Push changes to the branch (but no tag yet)
             git push origin HEAD:${{ github.ref_name }} || echo "No commits to push"
