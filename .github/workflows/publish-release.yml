@@ -41,9 +41,10 @@ jobs:
           fi
 
           # Check if there's a draft release for this tag
-          RELEASE_INFO=$(gh api repos/${{ github.repository }}/releases/tags/"$TAG_INPUT" --jq '{id: .id, draft: .draft, name: .name}' 2>/dev/null || echo "null")
+          # Note: Draft releases may not have Git tags yet, so we search by tag_name in releases list
+          RELEASE_INFO=$(gh api repos/${{ github.repository }}/releases --jq ".[] | select(.tag_name == \"$TAG_INPUT\") | {id: .id, draft: .draft, name: .name}" 2>/dev/null || echo "null")
 
-          if [ "$RELEASE_INFO" = "null" ]; then
+          if [ "$RELEASE_INFO" = "null" ] || [ -z "$RELEASE_INFO" ]; then
             echo "❌ Error: No release found for tag $TAG_INPUT. Please run 'Prepare Release Draft' first."
             exit 1
           fi
