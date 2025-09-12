@@ -34,15 +34,56 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Set up Python
+      - name: Set up Python for commitizen
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.11'  # Stable version for commitizen
 
-      - name: Install Python dependencies
+      - name: Install commitizen
         run: |
           python -m pip install --upgrade pip
           pip install commitizen
+
+      - name: Verify project setup
+        run: |
+          echo "🔍 Detecting project structure..."
+
+          # Check for different project types
+          PROJECT_TYPES=()
+
+          if find . -name "package.json" -not -path "./node_modules/*" | grep -q .; then
+            PROJECT_TYPES+=("Node.js/npm")
+          fi
+
+          if find . -name "pyproject.toml" | grep -q .; then
+            PROJECT_TYPES+=("Python/pyproject.toml")
+          fi
+
+          if [ -f "setup.py" ]; then
+            PROJECT_TYPES+=("Python/setup.py")
+          fi
+
+          if find . -name "Cargo.toml" | grep -q .; then
+            PROJECT_TYPES+=("Rust/Cargo")
+          fi
+
+          if find . -name "composer.json" | grep -q .; then
+            PROJECT_TYPES+=("PHP/Composer")
+          fi
+
+          if [ ${#PROJECT_TYPES[@]} -eq 0 ]; then
+            echo "⚠️  No standard project files detected - will use generic version file handling"
+          else
+            echo "✅ Detected project types:"
+            printf "   - %s\n" "${PROJECT_TYPES[@]}"
+          fi
+
+          # Check for commitizen config
+          if [ -f "cz.json" ] || [ -f ".cz.json" ] || [ -f "pyproject.toml" ] || [ -f ".cz.toml" ]; then
+            echo "✅ Commitizen configuration found"
+          else
+            echo "⚠️  No commitizen config found - will use default conventional commits"
+          fi
 
       - name: Validate and set version
         id: version
@@ -72,31 +113,111 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           TAG_NAME="${{ steps.version.outputs.tag }}"
 
-          echo "📝 Updating version files to $VERSION..."
+          echo "📝 Auto-detecting project type and updating version files to $VERSION..."
 
-          # Update package.json files if they exist
-          if [ -f "src/web/package.json" ]; then
-            echo "  → Updating src/web/package.json..."
-            sed -i.bak "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" src/web/package.json
-            rm -f src/web/package.json.bak
+          # Function to update JSON version field
+          update_json_version() {
+            local file="$1"
+            echo "  → Updating $file..."
+            sed -i.bak "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" "$file"
+            rm -f "$file.bak"
+          }
+
+          # Function to update TOML version field
+          update_toml_version() {
+            local file="$1"
+            echo "  → Updating $file..."
+            sed -i.bak "s/^version = \"[^\"]*\"/version = \"$VERSION\"/" "$file"
+            rm -f "$file.bak"
+          }
+
+          # Function to update Python __version__ or VERSION
+          update_python_version() {
+            local file="$1"
+            echo "  → Updating $file..."
+            sed -i.bak -E "s/__version__ = ['\"]([^'\"]*)['\"]/__version__ = '$VERSION'/" "$file"
+            sed -i.bak -E "s/VERSION = ['\"]([^'\"]*)['\"]//VERSION = '$VERSION'/" "$file"
+            rm -f "$file.bak"
+          }
+
+          UPDATED_FILES=()
+
+          # 1. Node.js/npm projects - Look for package.json files
+          echo "🔍 Scanning for Node.js/npm projects..."
+          find . -name "package.json" -not -path "./node_modules/*" -not -path "./.git/*" | while read -r file; do
+            if [ -f "$file" ]; then
+              update_json_version "$file"
+              UPDATED_FILES+=("$file")
+            fi
+          done
+
+          # 2. Python pyproject.toml projects
+          echo "🔍 Scanning for Python pyproject.toml projects..."
+          find . -name "pyproject.toml" -not -path "./.git/*" | while read -r file; do
+            if [ -f "$file" ] && grep -q "version.*=" "$file"; then
+              update_toml_version "$file"
+              UPDATED_FILES+=("$file")
+            fi
+          done
+
+          # 3. Python setup.py projects
+          echo "🔍 Scanning for Python setup.py projects..."
+          if [ -f "setup.py" ]; then
+            # Update version in setup.py (common patterns)
+            echo "  → Updating setup.py..."
+            sed -i.bak -E "s/version=['\"]([^'\"]*)['\"],/version='$VERSION',/" setup.py
+            sed -i.bak -E "s/version = ['\"]([^'\"]*)['\"],/version = '$VERSION',/" setup.py
+            rm -f setup.py.bak
+            UPDATED_FILES+=("setup.py")
           fi
 
-          if [ -f "src/cook-web/package.json" ]; then
-            echo "  → Updating src/cook-web/package.json..."
-            sed -i.bak "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" src/cook-web/package.json
-            rm -f src/cook-web/package.json.bak
-          fi
+          # 4. Python __init__.py version files
+          echo "🔍 Scanning for Python __init__.py version files..."
+          find . -name "__init__.py" -not -path "./.git/*" | while read -r file; do
+            if grep -q "__version__\|VERSION" "$file" 2>/dev/null; then
+              update_python_version "$file"
+              UPDATED_FILES+=("$file")
+            fi
+          done
 
-          # Update Docker Compose production file
-          if [ -f "docker/docker-compose.prod.yml" ]; then
-            echo "  → Updating docker/docker-compose.prod.yml..."
-            sed -i.bak "s|aishifu/ai-shifu-api:v[0-9][^[:space:]]*|aishifu/ai-shifu-api:$TAG_NAME|g" docker/docker-compose.prod.yml
-            sed -i.bak "s|aishifu/ai-shifu-web:v[0-9][^[:space:]]*|aishifu/ai-shifu-web:$TAG_NAME|g" docker/docker-compose.prod.yml
-            sed -i.bak "s|aishifu/ai-shifu-cook-web:v[0-9][^[:space:]]*|aishifu/ai-shifu-cook-web:$TAG_NAME|g" docker/docker-compose.prod.yml
-            rm -f docker/docker-compose.prod.yml.bak
-          fi
+          # 5. Cargo.toml for Rust projects
+          echo "🔍 Scanning for Rust Cargo.toml projects..."
+          find . -name "Cargo.toml" -not -path "./.git/*" | while read -r file; do
+            if [ -f "$file" ]; then
+              update_toml_version "$file"
+              UPDATED_FILES+=("$file")
+            fi
+          done
 
-          echo "✅ Version files updated successfully"
+          # 6. Docker Compose files (project-specific, should be customized)
+          echo "🔍 Scanning for Docker Compose files..."
+          find . -name "docker-compose*.yml" -o -name "docker-compose*.yaml" | while read -r file; do
+            if [ -f "$file" ]; then
+              echo "  → Updating Docker image tags in $file..."
+              # Generic pattern - update any image tags that look like versions
+              sed -i.bak -E "s|image: ([^:]+):v[0-9]+\.[0-9]+\.[0-9]+[^[:space:]]*|image: \1:$TAG_NAME|g" "$file"
+              rm -f "$file.bak"
+              UPDATED_FILES+=("$file")
+            fi
+          done
+
+          # 7. Version files (VERSION, version.txt, etc.)
+          echo "🔍 Scanning for version files..."
+          for version_file in VERSION version.txt .version; do
+            if [ -f "$version_file" ]; then
+              echo "  → Updating $version_file..."
+              echo "$VERSION" > "$version_file"
+              UPDATED_FILES+=("$version_file")
+            fi
+          done
+
+          # Summary
+          if [ ${#UPDATED_FILES[@]} -eq 0 ]; then
+            echo "⚠️ No version files found to update. This might be expected for some project types."
+          else
+            echo "✅ Updated version files:"
+            printf "   - %s\n" "${UPDATED_FILES[@]}"
+          fi
 
       - name: Get previous tag for changelog
         id: prev_tag
@@ -197,41 +318,45 @@ jobs:
               CHANGELOG_CONTENT=$(cat /tmp/changelog.md)
             fi
           else
-            echo "📋 No previous tag found, generating initial changelog from README"
+            echo "📋 No previous tag found, generating initial changelog"
             echo "## 🎉 Initial Release" > /tmp/changelog.md
             echo "" >> /tmp/changelog.md
-            echo "This is the first tagged release of AI-Shifu. Welcome to the AI-led conversation platform!" >> /tmp/changelog.md
+
+            # Get repository name for personalized message
+            REPO_NAME="${{ github.event.repository.name }}"
+            echo "This is the first tagged release of **${REPO_NAME}**. Thank you for your interest in this project!" >> /tmp/changelog.md
             echo "" >> /tmp/changelog.md
 
-            # Include README.md content for initial release
+            # Try to extract key information from README.md
             if [ -f "README.md" ]; then
-              echo "📋 Including README.md content in initial release"
+              echo "📋 Extracting project information from README.md"
 
-              # Extract project description (lines after logo until Features section)
-              echo "## About AI-Shifu" >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-              sed -n '/^AI-Shifu serves/,/^# Features/p' README.md | sed '$ d' >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
+              # Try to extract description (first paragraph after title)
+              DESCRIPTION=$(sed -n '2,10p' README.md | grep -v "^#" | grep -v "^\s*$" | head -3 | tr '\n' ' ')
+              if [ -n "$DESCRIPTION" ]; then
+                echo "## About" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+                echo "$DESCRIPTION" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+              fi
 
-              # Extract Features section
-              sed -n '/^# Features/,/^# Roadmap/p' README.md | sed '$ d' >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-
-              # Extract Roadmap section
-              sed -n '/^# Roadmap/,/^# Using/p' README.md | sed '$ d' >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-
-              echo "## 🚀 Quick Start" >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-              echo "Please refer to our [Installation Manual](INSTALL_MANUAL.md) and [Development Guide](AGENTS.md) for detailed setup instructions." >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
+              # Try to extract Features/Installation/Usage sections
+              for section in "Features" "Installation" "Usage" "Getting Started" "Quick Start"; do
+                if grep -q "^# $section" README.md; then
+                  sed -n "/^# $section/,/^# /p" README.md | sed '$ d' >> /tmp/changelog.md
+                  echo "" >> /tmp/changelog.md
+                  break
+                fi
+              done
             else
-              # Fallback if README.md is not found
-              echo "### 🚀 Features" >> /tmp/changelog.md
-              echo "- Complete AI conversation system with Shifu (teacher) framework" >> /tmp/changelog.md
-              echo "- Multi-language support with i18n" >> /tmp/changelog.md
-              echo "- Plugin architecture for extensibility" >> /tmp/changelog.md
-              echo "- Docker support for easy deployment" >> /tmp/changelog.md
+              # Generic fallback
+              echo "## About" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+              echo "This project follows semantic versioning and conventional commits for reliable releases." >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+              echo "## Getting Started" >> /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
+              echo "Please check the README.md file for installation and usage instructions." >> /tmp/changelog.md
               echo "" >> /tmp/changelog.md
             fi
 
@@ -252,15 +377,37 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           name: Release ${{ steps.version.outputs.tag }}
           body: |
-            # AI-Shifu Release ${{ steps.version.outputs.tag }}
+            # Release ${{ steps.version.outputs.tag }}
 
             ${{ steps.changelog.outputs.changelog_content }}
 
+            ## 📦 Installation
+
+            **Package Managers:**
+            ```bash
+            # npm (if Node.js project)
+            npm install ${{ github.repository }}@${{ steps.version.outputs.tag }}
+
+            # pip (if Python project)
+            pip install ${{ github.event.repository.name }}==${{ steps.version.outputs.version }}
+
+            # From source
+            git clone ${{ github.event.repository.clone_url }}
+            cd ${{ github.event.repository.name }}
+            git checkout ${{ steps.version.outputs.tag }}
+            ```
+
+            ## 📖 Documentation
+
+            - 📚 [README](README.md)
+            - 🔧 [Contributing Guidelines](CONTRIBUTING.md)
+            - 📋 [Changelog](CHANGELOG.md)
+
             ## 🆘 Support
 
-            - 🐛 [Report Issues](https://github.com/ai-shifu/ai-shifu/issues)
-            - 💬 [Discussions](https://github.com/ai-shifu/ai-shifu/discussions)
-            - 📧 [Contact Support](mailto:support@ai-shifu.com)
+            - 🐛 [Report Issues](${{ github.event.repository.html_url }}/issues)
+            - 💬 [Discussions](${{ github.event.repository.html_url }}/discussions)
+            - ⭐ [Give us a star](${{ github.event.repository.html_url }}) if this project helped you!
 
           draft: true
           prerelease: false
