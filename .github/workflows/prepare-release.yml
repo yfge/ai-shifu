@@ -131,113 +131,71 @@ jobs:
           CURRENT_TAG="${{ steps.version.outputs.tag }}"
 
           if [ -n "$PREV_TAG" ]; then
-            echo "📋 Generating changelog from $PREV_TAG to $CURRENT_TAG"
+            echo "📋 Generating changelog from $PREV_TAG to HEAD using commitizen"
 
-            # Always use manual git log approach for more reliable incremental changelogs
-            # commitizen --start-rev sometimes includes too much history
-            echo "📋 Using git log for reliable incremental changelog generation"
+            # Try using commitizen first
+            if cz changelog --dry-run --start-rev "$PREV_TAG" > /tmp/cz_changelog.md 2>/dev/null && [ -s /tmp/cz_changelog.md ]; then
+              echo "✅ Successfully generated changelog using commitizen"
+              CHANGELOG_CONTENT=$(cat /tmp/cz_changelog.md)
+            else
+              echo "⚠️ Commitizen failed, falling back to manual git log parsing"
 
-            # Generate incremental changelog
-            echo "## Changes since $PREV_TAG" > /tmp/changelog.md
-            echo "" >> /tmp/changelog.md
+              # Fallback to manual parsing (original logic)
+              echo "## Changes since $PREV_TAG" > /tmp/changelog.md
+              echo "" >> /tmp/changelog.md
 
-            # Get conventional commits and categorize them
-            FEAT_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- feat[:\(]" | sed 's/^- feat[:\(][^)]*[)]*: */- /' || echo "")
-            FIX_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- fix[:\(]" | sed 's/^- fix[:\(][^)]*[)]*: */- /' || echo "")
-            CHORE_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- chore[:\(]" | sed 's/^- chore[:\(][^)]*[)]*: */- /' || echo "")
-            DOCS_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- docs[:\(]" | sed 's/^- docs[:\(][^)]*[)]*: */- /' || echo "")
-            REFACTOR_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- refactor[:\(]" | sed 's/^- refactor[:\(][^)]*[)]*: */- /' || echo "")
-            TEST_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- test[:\(]" | sed 's/^- test[:\(][^)]*[)]*: */- /' || echo "")
-            PERF_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- perf[:\(]" | sed 's/^- perf[:\(][^)]*[)]*: */- /' || echo "")
-            STYLE_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- style[:\(]" | sed 's/^- style[:\(][^)]*[)]*: */- /' || echo "")
-            CI_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- ci[:\(]" | sed 's/^- ci[:\(][^)]*[)]*: */- /' || echo "")
-            BUILD_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- build[:\(]" | sed 's/^- build[:\(][^)]*[)]*: */- /' || echo "")
+              # Get conventional commits and categorize them
+              FEAT_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- feat[:\(]" | sed 's/^- feat[:\(][^)]*[)]*: */- /' || echo "")
+              FIX_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- fix[:\(]" | sed 's/^- fix[:\(][^)]*[)]*: */- /' || echo "")
+              CHORE_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- chore[:\(]" | sed 's/^- chore[:\(][^)]*[)]*: */- /' || echo "")
+              DOCS_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- docs[:\(]" | sed 's/^- docs[:\(][^)]*[)]*: */- /' || echo "")
+              REFACTOR_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -E "^- refactor[:\(]" | sed 's/^- refactor[:\(][^)]*[)]*: */- /' || echo "")
 
-            # Add sections with emoji headers
-            if [ -n "$FEAT_COMMITS" ]; then
-              echo "### ✨ Features" >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-              echo "$FEAT_COMMITS" >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-            fi
-
-            if [ -n "$FIX_COMMITS" ]; then
-              echo "### 🐛 Bug Fixes" >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-              echo "$FIX_COMMITS" >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-            fi
-
-            if [ -n "$REFACTOR_COMMITS" ]; then
-              echo "### ♻️ Code Refactoring" >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-              echo "$REFACTOR_COMMITS" >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-            fi
-
-            if [ -n "$DOCS_COMMITS" ]; then
-              echo "### 📚 Documentation" >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-              echo "$DOCS_COMMITS" >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-            fi
-
-            if [ -n "$PERF_COMMITS" ]; then
-              echo "### ⚡ Performance Improvements" >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-              echo "$PERF_COMMITS" >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-            fi
-
-            if [ -n "$TEST_COMMITS" ]; then
-              echo "### 🧪 Tests" >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-              echo "$TEST_COMMITS" >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-            fi
-
-            if [ -n "$BUILD_COMMITS" ]; then
-              echo "### 📦 Build System" >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-              echo "$BUILD_COMMITS" >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-            fi
-
-            if [ -n "$CI_COMMITS" ]; then
-              echo "### 👷 CI/CD" >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-              echo "$CI_COMMITS" >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-            fi
-
-            if [ -n "$CHORE_COMMITS" ]; then
-              echo "### 🔧 Chores" >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-              echo "$CHORE_COMMITS" >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-            fi
-
-            if [ -n "$STYLE_COMMITS" ]; then
-              echo "### 💎 Style" >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-              echo "$STYLE_COMMITS" >> /tmp/changelog.md
-            fi
-
-            # If no categorized commits found, add a note
-            if [ -z "$FEAT_COMMITS" ] && [ -z "$FIX_COMMITS" ] && [ -z "$REFACTOR_COMMITS" ] && [ -z "$DOCS_COMMITS" ] && [ -z "$PERF_COMMITS" ] && [ -z "$TEST_COMMITS" ] && [ -z "$BUILD_COMMITS" ] && [ -z "$CI_COMMITS" ] && [ -z "$CHORE_COMMITS" ] && [ -z "$STYLE_COMMITS" ]; then
-              echo "### 📝 Other Changes" >> /tmp/changelog.md
-              echo "" >> /tmp/changelog.md
-              # Get all commits that don't match conventional commit format
-              OTHER_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -v -E "^- (feat|fix|docs|style|refactor|perf|test|build|ci|chore)[:\(]" || echo "")
-              if [ -n "$OTHER_COMMITS" ]; then
-                echo "$OTHER_COMMITS" >> /tmp/changelog.md
-              else
-                echo "- Minor updates and improvements" >> /tmp/changelog.md
+              # Add sections with emoji headers (abbreviated for space)
+              if [ -n "$FEAT_COMMITS" ]; then
+                echo "### ✨ Features" >> /tmp/changelog.md
+                echo "$FEAT_COMMITS" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
               fi
-              echo "" >> /tmp/changelog.md
-            fi
 
-            CHANGELOG_CONTENT=$(cat /tmp/changelog.md)
+              if [ -n "$FIX_COMMITS" ]; then
+                echo "### 🐛 Bug Fixes" >> /tmp/changelog.md
+                echo "$FIX_COMMITS" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+              fi
+
+              if [ -n "$REFACTOR_COMMITS" ]; then
+                echo "### ♻️ Code Refactoring" >> /tmp/changelog.md
+                echo "$REFACTOR_COMMITS" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+              fi
+
+              if [ -n "$DOCS_COMMITS" ]; then
+                echo "### 📚 Documentation" >> /tmp/changelog.md
+                echo "$DOCS_COMMITS" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+              fi
+
+              if [ -n "$CHORE_COMMITS" ]; then
+                echo "### 🔧 Chores" >> /tmp/changelog.md
+                echo "$CHORE_COMMITS" >> /tmp/changelog.md
+                echo "" >> /tmp/changelog.md
+              fi
+
+              # If no categorized commits found, add a note
+              if [ -z "$FEAT_COMMITS" ] && [ -z "$FIX_COMMITS" ] && [ -z "$REFACTOR_COMMITS" ] && [ -z "$DOCS_COMMITS" ] && [ -z "$CHORE_COMMITS" ]; then
+                echo "### 📝 Other Changes" >> /tmp/changelog.md
+                OTHER_COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD | grep -v -E "^- (feat|fix|docs|style|refactor|perf|test|build|ci|chore)[:\(]" || echo "")
+                if [ -n "$OTHER_COMMITS" ]; then
+                  echo "$OTHER_COMMITS" >> /tmp/changelog.md
+                else
+                  echo "- Minor updates and improvements" >> /tmp/changelog.md
+                fi
+                echo "" >> /tmp/changelog.md
+              fi
+
+              CHANGELOG_CONTENT=$(cat /tmp/changelog.md)
+            fi
           else
             echo "📋 No previous tag found, generating initial changelog from README"
             echo "## 🎉 Initial Release" > /tmp/changelog.md
