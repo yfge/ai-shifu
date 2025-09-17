@@ -76,20 +76,30 @@ class OutlineItemUpdateDTO(BaseModel):
     outline_bid: str = Field(..., description="outline item id", required=False)
     title: str = Field(..., description="outline item name", required=False)
     status: LearnStatus = Field(..., description="outline item status", required=False)
+    has_children: bool = Field(
+        ..., description="outline item has children", required=False
+    )
 
     def __init__(
         self,
         outline_bid: str,
         title: str,
         status: LearnStatus,
+        has_children: bool,
     ):
-        super().__init__(outline_bid=outline_bid, title=title, status=status)
+        super().__init__(
+            outline_bid=outline_bid,
+            title=title,
+            status=status,
+            has_children=has_children,
+        )
 
     def __json__(self):
         return {
             "outline_bid": self.outline_bid,
             "title": self.title,
             "status": self.status.value,
+            "has_children": self.has_children,
         }
 
 
