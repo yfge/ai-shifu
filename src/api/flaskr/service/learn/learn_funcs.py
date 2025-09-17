@@ -2,7 +2,8 @@ from flask import Flask
 from flaskr.service.learn.learn_dtos import (
     LearnShifuInfoDTO,
     LearnOutlineItemInfoDTO,
-    LearnProgressRecordDTO,
+    LearnRecordDTO,
+    LearnStatus,
 )
 from flaskr.service.shifu.models import (
     DraftShifu,
@@ -19,11 +20,22 @@ from flaskr.service.shifu.shifu_history_manager import HistoryItem
 from flaskr.service.order.models import Order
 from flaskr.service.order.consts import (
     ORDER_STATUS_SUCCESS,
-    LEARN_STATUS_RESET,
     LEARN_STATUS_LOCKED,
+    LEARN_STATUS_NOT_STARTED,
+    LEARN_STATUS_IN_PROGRESS,
+    LEARN_STATUS_COMPLETED,
+    LEARN_STATUS_RESET,
 )
 import queue
 from flaskr.dao import db
+from flaskr.service.lesson.const import LESSON_TYPE_NORMAL
+
+STATUS_MAP = {
+    LEARN_STATUS_LOCKED: LearnStatus.LOCKED,
+    LEARN_STATUS_NOT_STARTED: LearnStatus.NOT_STARTED,
+    LEARN_STATUS_IN_PROGRESS: LearnStatus.IN_PROGRESS,
+    LEARN_STATUS_COMPLETED: LearnStatus.COMPLETED,
+}
 
 
 def get_shifu_info(app: Flask, shifu_bid: str, preview_mode: bool) -> LearnShifuInfoDTO:
@@ -123,7 +135,7 @@ def get_outline_item_tree(
 
         def build_outline_item_tree(item: HistoryItem):
             outline_item: DraftOutlineItem | PublishedOutlineItem = next(
-                (i for i in outline_items_dbs if i.id == item.bid), None
+                (i for i in outline_items_dbs if i.id == item.id), None
             )
             if not outline_item:
                 return None
@@ -131,14 +143,19 @@ def get_outline_item_tree(
                 outline_item.outline_item_bid, None
             )
             if not progress_record:
-                status = LEARN_STATUS_LOCKED
+                if is_paid:
+                    status = LEARN_STATUS_NOT_STARTED
+                elif outline_item.type == LESSON_TYPE_NORMAL:
+                    status = LEARN_STATUS_LOCKED
+                else:
+                    status = LEARN_STATUS_NOT_STARTED
             else:
                 status = progress_record.status
             outline_item_info = LearnOutlineItemInfoDTO(
                 bid=outline_item.outline_item_bid,
                 position=outline_item.position,
                 title=outline_item.title,
-                status=status,
+                status=STATUS_MAP.get(status, LearnStatus.LOCKED),
                 children=[],
             )
             if item.children:
@@ -154,7 +171,7 @@ def get_outline_item_tree(
 
 def get_learn_record(
     app: Flask, shifu_bid: str, user_bid: str, preview_mode: bool
-) -> list[LearnProgressRecordDTO]:
+) -> list[LearnRecordDTO]:
     with app.app_context():
         pass
 
