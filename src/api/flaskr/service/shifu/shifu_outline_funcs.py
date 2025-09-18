@@ -506,7 +506,7 @@ def get_unit_by_id(app, user_id: str, unit_id: str):
             description=unit.title,
             index=unit.position,
             type=unit_type,
-            system_prompt=markdown_2_html(unit.llm_system_prompt, []),
+            system_prompt=markdown_2_html(unit.llm_system_prompt if unit.llm_system_prompt is not None else "", []),
             is_hidden=is_hidden,
         )
 
