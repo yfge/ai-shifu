@@ -211,12 +211,18 @@ def get_learn_record(
             0: LikeStatus.NONE,
         }
         for generated_block in generated_blocks:
+            block_type = BLOCK_TYPE_MAP.get(generated_block.type, BlockType.CONTENT)
             records.append(
                 GeneratedBlockDTO(
                     generated_block.generated_block_bid,
-                    generated_block.generated_content,
+                    generated_block.generated_content
+                    if block_type == BlockType.CONTENT
+                    else generated_block.block_content_conf,
                     LIKE_STATUS_MAP.get(generated_block.liked, LikeStatus.NONE),
-                    BLOCK_TYPE_MAP.get(generated_block.type, BlockType.CONTENT),
+                    block_type,
+                    generated_block.generated_content
+                    if block_type == BlockType.INTERACTION
+                    else "",
                 )
             )
         return LearnRecordDTO(
