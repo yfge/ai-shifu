@@ -598,7 +598,7 @@ def modify_unit(
             description=unit_description or "",
             type=unit_type,
             index=int(existing_unit.position),
-            system_prompt=markdown_2_html(existing_unit.llm_system_prompt, []),
+            system_prompt=markdown_2_html(existing_unit.llm_system_prompt or "", []),
             is_hidden=unit_is_hidden,
         )
 
