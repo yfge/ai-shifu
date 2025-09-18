@@ -257,10 +257,13 @@ def handle_reaction(
         ).first()
         if not generated_block:
             raise_error("LEARN.GENERATED_BLOCK_NOT_FOUND")
-
+        if action not in ["like", "dislike", "none"]:
+            raise_error("LEARN.INVALID_ACTION")
         if action == "like":
             generated_block.liked = 1
         if action == "dislike":
             generated_block.liked = -1
+        if action == "none":
+            generated_block.liked = 0
         db.session.commit()
         return True
