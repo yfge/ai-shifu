@@ -135,6 +135,7 @@ class RunScriptInfo:
 
 class RUNLLMProvider(LLMProvider):
     app: Flask
+    system_prompt: str
     llm_settings: LLMSettings
     trace: StatefulTraceClient
     trace_args: dict
@@ -142,11 +143,13 @@ class RUNLLMProvider(LLMProvider):
     def __init__(
         self,
         app: Flask,
+        system_prompt: str,
         llm_settings: LLMSettings,
         trace: StatefulTraceClient,
         trace_args: dict,
     ):
         self.app = app
+        self.system_prompt = system_prompt
         self.llm_settings = llm_settings
         self.trace = trace
         self.trace_args = trace_args
@@ -160,19 +163,12 @@ class RUNLLMProvider(LLMProvider):
         last_message = messages[-1]
         prompt = last_message.get("content", "")
 
-        # Check if there's a system message
-        system_message = None
-        for msg in messages:
-            if msg.get("role") == "system":
-                system_message = msg.get("content", "")
-                break
-
         res = invoke_llm(
             self.app,
             self.trace_args.get("user_id", ""),
             self.trace,
             message=prompt,
-            system=system_message,
+            system=self.system_prompt,
             model=self.llm_settings.model,
             stream=False,
             generation_name="run_llm",
@@ -193,20 +189,16 @@ class RUNLLMProvider(LLMProvider):
         # Get the last message content
         last_message = messages[-1]
         prompt = last_message.get("content", "")
+        system_prompt = self.system_prompt
 
         # Check if there's a system message
-        system_message = None
-        for msg in messages:
-            if msg.get("role") == "system":
-                system_message = msg.get("content", "")
-                break
 
         res = invoke_llm(
             self.app,
             self.trace_args["user_id"],
             self.trace,
             message=prompt,
-            system=system_message,
+            system=system_prompt,
             model=self.llm_settings.model,
             stream=True,
             generation_name="run_llm",
@@ -687,10 +679,11 @@ class RunScriptContextV2:
                 db.session.flush()
             return
         llm_settings = self.get_llm_settings(run_script_info.outline_bid)
+        system_prompt = self.get_system_prompt(run_script_info.outline_bid)
         mdflow = MarkdownFlow(
             run_script_info.mdflow,
             llm_provider=RUNLLMProvider(
-                app, llm_settings, self._trace, self._trace_args
+                app, system_prompt, llm_settings, self._trace, self._trace_args
             ),
         )
         block_list = mdflow.get_all_blocks()
@@ -1038,8 +1031,8 @@ class RunScriptContextV2:
     def has_next(self) -> bool:
         return self._can_continue
 
-    def get_system_prompt(self, outline_item_info: ShifuOutlineItemDto) -> str:
-        path = find_node_with_parents(self._struct, outline_item_info.bid)
+    def get_system_prompt(self, outline_item_bid: str) -> str:
+        path = find_node_with_parents(self._struct, outline_item_bid)
         path = list(reversed(path))
         outline_ids = [item.id for item in path if item.type == "outline"]
         shifu_ids = [item.id for item in path if item.type == "shifu"]
