@@ -1,7 +1,7 @@
 """add_content_to_outlineitem
 
 Revision ID: c10b5c691b59
-Revises: d2c6607d312a
+Revises: f0ebb5447ad0
 Create Date: 2025-09-08 06:36:39.731208
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = "c10b5c691b59"
-down_revision = "d2c6607d312a"
+down_revision = "f0ebb5447ad0"
 branch_labels = None
 depends_on = None
 
