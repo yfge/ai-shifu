@@ -641,6 +641,7 @@ class RunScriptContext:
             self.app.logger.info(
                 f"current_attend: {self._current_attend.progress_record_bid} {self._current_attend.block_position}"
             )
+            self._trace_args["session_id"] = self._current_attend.progress_record_bid
             outline_updates = self._get_next_outline_item()
             if len(outline_updates) > 0:
                 yield from self._render_outline_updates(
