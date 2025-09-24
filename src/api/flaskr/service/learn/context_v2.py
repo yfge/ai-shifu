@@ -66,6 +66,7 @@ from flaskr.service.profile.profile_manage import (
     ProfileItemDefinition,
 )
 from flaskr.service.learn.learn_dtos import VariableUpdateDTO
+from flaskr.service.learn.check_text import check_text_with_llm_response
 
 context_local = threading.local()
 
@@ -799,6 +800,24 @@ class RunScriptContextV2:
             generated_block.generated_content = self._input
             generated_block.role = ROLE_STUDENT
             db.session.flush()
+            res = check_text_with_llm_response(
+                app,
+                self._user_info,
+                generated_block,
+                self._input,
+                self._trace,
+            )
+            if res is not None:
+                for i in res:
+                    yield RunMarkdownFlowDTO(
+                        outline_bid=run_script_info.outline_bid,
+                        generated_block_bid=generated_block.generated_block_bid,
+                        type=GeneratedType.CONTENT,
+                        content=i,
+                    )
+                self._can_continue = False
+                db.session.flush()
+                return
             if not parsed_interaction.get("variable"):
                 self._can_continue = True
                 self._run_type = RunType.OUTPUT
