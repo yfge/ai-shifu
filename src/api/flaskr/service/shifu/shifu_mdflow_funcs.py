@@ -11,9 +11,13 @@ def get_shifu_mdflow(app: Flask, shifu_bid: str, outline_bid: str) -> str:
     Get shifu mdflow
     """
     with app.app_context():
-        outline_item = DraftOutlineItem.query.filter(
-            DraftOutlineItem.outline_item_bid == outline_bid
-        ).first()
+        outline_item = (
+            DraftOutlineItem.query.filter(
+                DraftOutlineItem.outline_item_bid == outline_bid
+            )
+            .order_by(DraftOutlineItem.id.desc())
+            .first()
+        )
         if not outline_item:
             raise_error("SHIFU.OUTLINE_ITEM_NOT_FOUND")
         return outline_item.content

@@ -40,6 +40,7 @@ import queue
 from flaskr.dao import db
 from flaskr.service.lesson.const import LESSON_TYPE_NORMAL
 from flaskr.service.shifu.consts import (
+    BLOCK_TYPE_MDASK_VALUE,
     BLOCK_TYPE_MDCONTENT_VALUE,
     BLOCK_TYPE_MDINTERACTION_VALUE,
     BLOCK_TYPE_MDERRORMESSAGE_VALUE,
@@ -246,7 +247,7 @@ def get_learn_record(
                 LearnGeneratedBlock.deleted == 0,
                 LearnGeneratedBlock.status == 1,
             )
-            .order_by(LearnGeneratedBlock.id.asc())
+            .order_by(LearnGeneratedBlock.position.asc(), LearnGeneratedBlock.id.asc())
             .all()
         )
         records: list[GeneratedBlockDTO] = []
@@ -255,6 +256,7 @@ def get_learn_record(
             BLOCK_TYPE_MDCONTENT_VALUE: BlockType.CONTENT,
             BLOCK_TYPE_MDINTERACTION_VALUE: BlockType.INTERACTION,
             BLOCK_TYPE_MDERRORMESSAGE_VALUE: BlockType.ERROR_MESSAGE,
+            BLOCK_TYPE_MDASK_VALUE: BlockType.ASK,
         }
         LIKE_STATUS_MAP = {
             1: LikeStatus.LIKE,
