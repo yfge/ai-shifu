@@ -127,6 +127,9 @@ def register_user_handler(app: Flask, path_prefix: str) -> Flask:
                     language:
                         type: string
                         description: language
+                    avatar:
+                        type: string
+                        description: avatar
         responses:
             200:
                 description: update success
@@ -147,8 +150,9 @@ def register_user_handler(app: Flask, path_prefix: str) -> Flask:
         name = request.get_json().get("name", "")
         mobile = request.get_json().get("mobile", None)
         language = request.get_json().get("language", None)
+        avatar = request.get_json().get("avatar", None)
         return make_common_response(
-            update_user_info(app, request.user, name, email, mobile, language)
+            update_user_info(app, request.user, name, email, mobile, language, avatar)
         )
 
     @app.route(path_prefix + "/require_tmp", methods=["POST"])
