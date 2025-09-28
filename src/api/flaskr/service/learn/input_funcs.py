@@ -36,6 +36,7 @@ def check_text_with_llm_response(
     block_dto: BlockDTO,
     attend_id: str,
     fmt_prompt: str,
+    last_position: int = -1,
 ):
     res = check_text(app, log_script.generated_block_bid, input, user_info.user_id)
     span.event(name="check_text", input=input, output=res)
@@ -100,6 +101,7 @@ def check_text_with_llm_response(
         )
         log_script.generated_content = response_text
         log_script.role = ROLE_TEACHER
+        log_script.position = last_position
         db.session.add(log_script)
         db.session.flush()
         yield make_script_dto(

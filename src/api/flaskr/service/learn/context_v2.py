@@ -207,6 +207,7 @@ class RunScriptContextV2:
     _input_type: str
     _input: str
     _can_continue: bool
+    _last_position: int
 
     def __init__(
         self,
@@ -218,6 +219,7 @@ class RunScriptContextV2:
         is_paid: bool,
         preview_mode: bool,
     ):
+        self._last_position = -1
         self.app = app
         self._struct = struct
         self._outline_item_info = outline_item_info
@@ -652,6 +654,9 @@ class RunScriptContextV2:
         block_list = mdflow.get_all_blocks()
 
         if self._input_type == "ask":
+            if self._last_position == -1:
+                self._last_position = run_script_info.block_position
+
             res = _handle_input_ask(
                 app,
                 self._user_info,
@@ -662,6 +667,7 @@ class RunScriptContextV2:
                 self._trace_args,
                 self._trace,
                 self._preview_mode,
+                self._last_position,
             )
             if res:
                 for i in res:
@@ -1100,20 +1106,23 @@ class RunScriptContextV2:
         ).first()
         self._can_continue = False
         if generated_block:
-            LearnGeneratedBlock.query.filter(
-                LearnGeneratedBlock.progress_record_bid
-                == generated_block.progress_record_bid,
-                LearnGeneratedBlock.outline_item_bid
-                == generated_block.outline_item_bid,
-                LearnGeneratedBlock.user_bid == self._user_info.user_id,
-                LearnGeneratedBlock.id > generated_block.id,
-            ).update(
-                {
-                    LearnGeneratedBlock.status: 0,
-                }
-            )
-            self._current_attend.block_position = generated_block.position
-            self._current_attend.status = LEARN_STATUS_IN_PROGRESS
-            db.session.flush()
+            if self._input_type != "ask":
+                LearnGeneratedBlock.query.filter(
+                    LearnGeneratedBlock.progress_record_bid
+                    == generated_block.progress_record_bid,
+                    LearnGeneratedBlock.outline_item_bid
+                    == generated_block.outline_item_bid,
+                    LearnGeneratedBlock.user_bid == self._user_info.user_id,
+                    LearnGeneratedBlock.id > generated_block.id,
+                ).update(
+                    {
+                        LearnGeneratedBlock.status: 0,
+                    }
+                )
+                self._current_attend.block_position = generated_block.position
+                self._current_attend.status = LEARN_STATUS_IN_PROGRESS
+                db.session.flush()
+            else:
+                self._last_position = generated_block.position
         yield from self.run(app)
         return
