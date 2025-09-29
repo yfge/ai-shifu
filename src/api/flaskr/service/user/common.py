@@ -134,7 +134,6 @@ def update_user_info(
                 user_avatar=dbuser.user_avatar,
                 is_admin=dbuser.is_admin,
                 is_creator=dbuser.is_creator,
-                avatar=dbuser.user_avatar,
             )
         else:
             raise_error("USER.USER_NOT_FOUND")
