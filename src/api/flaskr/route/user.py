@@ -147,7 +147,7 @@ def register_user_handler(app: Flask, path_prefix: str) -> Flask:
                                     $ref: "#/components/schemas/UserInfo"
         """
         email = request.get_json().get("email", None)
-        name = request.get_json().get("name", "")
+        name = request.get_json().get("name", None)
         mobile = request.get_json().get("mobile", None)
         language = request.get_json().get("language", None)
         avatar = request.get_json().get("avatar", None)

@@ -109,7 +109,8 @@ def update_user_info(
                 )
             )
             dbuser = User.query.filter_by(user_id=user.user_id).first()
-            dbuser.name = name
+            if name is not None:
+                dbuser.name = name
             if email is not None:
                 dbuser.email = email
             if mobile is not None:
