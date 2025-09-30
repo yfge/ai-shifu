@@ -74,11 +74,7 @@ def check_text_with_llm_response(
             model=llm_settings.model,
             json=False,
             stream=True,
-            generation_name="check_text_reject_"
-            + block_position
-            + "_"
-            + "_"
-            + str(outline_item_bid),
+            generation_name="check_text_reject_" + str(log_script.generated_block_bid),
             **{"temperature": llm_settings.temperature},
         )
         response_text = ""
