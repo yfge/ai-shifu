@@ -389,8 +389,8 @@ def register_user_handler(app: Flask, path_prefix: str) -> Flask:
 
         """
         course_id = request.args.get("course_id", None)
-        if not course_id:
-            raise_param_error("course_id")
+        # if not course_id:
+        #     raise_param_error("course_id")
         return make_common_response(
             get_user_profile_labels(app, request.user.user_id, course_id)
         )
