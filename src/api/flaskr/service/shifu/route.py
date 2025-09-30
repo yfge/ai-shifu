@@ -905,8 +905,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         """
         run mdflow
         """
-        user_id = request.user.user_id
-        return make_common_response(get_shifu_mdflow(app, user_id, outline_bid))
+        return make_common_response("TODO")
 
     @app.route(path_prefix + "/shifus/<shifu_bid>/outlines", methods=["GET"])
     @ShifuTokenValidation(ShifuPermission.VIEW)
