@@ -904,8 +904,11 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
     def run_mdflow_api(shifu_bid: str, outline_bid: str):
         """
         run mdflow
+
+        Raises:
+            NotImplementedError: This API endpoint is not yet implemented
         """
-        return make_common_response("TODO")
+        raise NotImplementedError("MDFlow run API is not yet implemented")
 
     @app.route(path_prefix + "/shifus/<shifu_bid>/outlines", methods=["GET"])
     @ShifuTokenValidation(ShifuPermission.VIEW)
