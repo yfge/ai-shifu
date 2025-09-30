@@ -876,6 +876,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
             - name: outline_bid
               type: string
               required: true
+
         responses:
             200:
                 description: parse mdflow success
@@ -893,11 +894,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                                     type: object
                                     $ref: "#/components/schemas/MdflowDTOParseResult"
         """
-        user_id = request.user.user_id
-
-        return make_common_response(
-            parse_shifu_mdflow(app, user_id, shifu_bid, outline_bid)
-        )
+        return make_common_response(parse_shifu_mdflow(app, shifu_bid, outline_bid))
 
     @app.route(
         path_prefix + "/shifus/<shifu_bid>/outlines/<outline_bid>/mdflow/run",

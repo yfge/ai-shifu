@@ -45,13 +45,22 @@ def save_shifu_mdflow(
 
 
 def parse_shifu_mdflow(
-    app: Flask, shifu_bid: str, outline_bid: str, content: str
+    app: Flask, shifu_bid: str, outline_bid: str
 ) -> MdflowDTOParseResult:
     """
     Parse shifu mdflow
     """
     with app.app_context():
-        markdown_flow = MarkdownFlow(content)
+        outline_item = (
+            DraftOutlineItem.query.filter(
+                DraftOutlineItem.outline_item_bid == outline_bid
+            )
+            .order_by(DraftOutlineItem.id.desc())
+            .first()
+        )
+        if not outline_item:
+            raise_error("SHIFU.OUTLINE_ITEM_NOT_FOUND")
+        markdown_flow = MarkdownFlow(outline_item.content)
         markdown_flow.parse()
         varibales = markdown_flow.extract_variables()
         blocks = markdown_flow.get_all_blocks()
