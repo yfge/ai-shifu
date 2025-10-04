@@ -6,7 +6,6 @@ from flaskr.service.learn.const import ROLE_STUDENT, ROLE_TEACHER
 from flaskr.service.learn.models import LearnGeneratedBlock
 from flaskr.framework.plugin.plugin_manager import extensible_generic
 from flaskr.service.learn.utils import (
-    make_script_dto,
     get_fmt_prompt,
     get_follow_up_info_v2,
 )
@@ -214,12 +213,11 @@ def handle_input_ask(
         if isinstance(current_content, str):
             response_text += current_content
             # Return each text fragment in real-time
-            yield make_script_dto(
-                "text",
-                i.result,
-                log_script.block_bid,
-                log_script.outline_item_bid,
-                log_script.generated_block_bid,
+            yield RunMarkdownFlowDTO(
+                outline_bid=outline_item_info.bid,
+                generated_block_bid=log_script.generated_block_bid,
+                type=GeneratedType.CONTENT,
+                content=i.result,
             )
 
     # Log AI response to database
@@ -245,10 +243,9 @@ def handle_input_ask(
     db.session.flush()
 
     # Return end marker
-    yield make_script_dto(
-        "text_end",
-        "",
-        log_script.block_bid,
-        log_script.outline_item_bid,
-        log_script.generated_block_bid,
+    yield RunMarkdownFlowDTO(
+        outline_bid=outline_item_info.bid,
+        generated_block_bid=log_script.generated_block_bid,
+        type=GeneratedType.BREAK,
+        content="",
     )
