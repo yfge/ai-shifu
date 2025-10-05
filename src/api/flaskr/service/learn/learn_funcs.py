@@ -44,6 +44,7 @@ from flaskr.service.shifu.consts import (
     BLOCK_TYPE_MDCONTENT_VALUE,
     BLOCK_TYPE_MDINTERACTION_VALUE,
     BLOCK_TYPE_MDERRORMESSAGE_VALUE,
+    BLOCK_TYPE_MDANSWER_VALUE,
 )
 
 STATUS_MAP = {
@@ -261,6 +262,7 @@ def get_learn_record(
             BLOCK_TYPE_MDINTERACTION_VALUE: BlockType.INTERACTION,
             BLOCK_TYPE_MDERRORMESSAGE_VALUE: BlockType.ERROR_MESSAGE,
             BLOCK_TYPE_MDASK_VALUE: BlockType.ASK,
+            BLOCK_TYPE_MDANSWER_VALUE: BlockType.ANSWER,
         }
         LIKE_STATUS_MAP = {
             1: LikeStatus.LIKE,

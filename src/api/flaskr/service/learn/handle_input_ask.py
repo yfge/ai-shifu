@@ -17,7 +17,10 @@ from flaskr.service.user.models import User
 from flaskr.service.shifu.shifu_struct_manager import ShifuOutlineItemDto
 from langfuse.client import StatefulTraceClient
 from flaskr.service.learn.utils_v2 import init_generated_block
-from flaskr.service.shifu.consts import BLOCK_TYPE_MDASK_VALUE
+from flaskr.service.shifu.consts import (
+    BLOCK_TYPE_MDASK_VALUE,
+    BLOCK_TYPE_MDANSWER_VALUE,
+)
 from flaskr.service.learn.learn_dtos import RunMarkdownFlowDTO, GeneratedType
 from flaskr.service.learn.llmsetting import LLMSettings
 
@@ -227,7 +230,7 @@ def handle_input_ask(
         outline_item_bid=outline_item_info.bid,
         progress_record_bid=attend_id,
         user_bid=user_info.user_id,
-        block_type=BLOCK_TYPE_MDASK_VALUE,
+        block_type=BLOCK_TYPE_MDANSWER_VALUE,
         mdflow=response_text,
         block_index=outline_item_info.position,
     )
