@@ -28,4 +28,4 @@ VALID_INTERACTION_TYPES = {
 }
 
 
-CONTEXT_INTERACTION_NEXT = "_sys_next_chatper"
+CONTEXT_INTERACTION_NEXT = "_sys_next_chapter"
