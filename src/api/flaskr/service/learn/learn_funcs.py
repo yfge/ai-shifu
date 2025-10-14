@@ -56,7 +56,7 @@ from flaskr.service.shifu.consts import (
     BLOCK_TYPE_PHONE_VALUE,
     BLOCK_TYPE_CHECKCODE_VALUE,
 )
-from flaskr.service.learn.const import CONTEXT_INTERACTION_NEXT
+from flaskr.service.learn.const import CONTEXT_INTERACTION_NEXT, ROLE_TEACHER
 from flaskr.service.shifu.models import DraftBlock, PublishedBlock
 from typing import Union
 from flaskr.service.profile.profile_manage import get_profile_item_definition_list
@@ -304,6 +304,11 @@ def get_learn_record(
             .order_by(LearnGeneratedBlock.position.asc(), LearnGeneratedBlock.id.asc())
             .all()
         )
+
+        sorted_generated_blocks = sorted(
+            generated_blocks,
+            key=lambda x: (0, x.position, x.id) if x.position > 0 else (1, 0, x.id),
+        )
         records: list[GeneratedBlockDTO] = []
         interaction = ""
         BLOCK_TYPE_MAP = {
@@ -328,20 +333,30 @@ def get_learn_record(
             -1: LikeStatus.DISLIKE,
             0: LikeStatus.NONE,
         }
-        block_ids = [generated_block.block_bid for generated_block in generated_blocks]
+        block_ids = [
+            generated_block.block_bid for generated_block in sorted_generated_blocks
+        ]
         blocks = block_model.query.filter(
             block_model.block_bid.in_(block_ids), block_model.deleted == 0
         ).all()
         block_map: dict[str, Union[DraftBlock, PublishedBlock]] = {
             i.block_bid: i for i in blocks
         }
-        for generated_block in generated_blocks:
+        for generated_block in sorted_generated_blocks:
             block_type = BLOCK_TYPE_MAP.get(generated_block.type, BlockType.CONTENT)
+            if block_type == BlockType.ASK and generated_block.role == ROLE_TEACHER:
+                block_type = BlockType.ANSWER
 
             record = GeneratedBlockDTO(
                 generated_block.generated_block_bid,
                 generated_block.generated_content
-                if block_type in (BlockType.CONTENT, BlockType.ERROR_MESSAGE)
+                if block_type
+                in (
+                    BlockType.CONTENT,
+                    BlockType.ERROR_MESSAGE,
+                    BlockType.ASK,
+                    BlockType.ANSWER,
+                )
                 else get_mdflow(
                     app,
                     generated_block.block_content_conf,
