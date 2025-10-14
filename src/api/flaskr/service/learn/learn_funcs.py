@@ -250,7 +250,6 @@ def get_mdflow(
     variable_map: dict[str, str],
 ) -> str:
     # if mdflow is not json, return mdflow
-    app.logger.error(f"get_mdflow mdflow: {mdflow}")
     if not mdflow.startswith("{"):
         return mdflow
     # if mdflow is json, parse it
@@ -408,9 +407,6 @@ def reset_learn_record(
     app: Flask, shifu_bid: str, outline_bid: str, user_bid: str
 ) -> bool:
     with app.app_context():
-        app.logger.error(
-            f"reset_learn_record shifu_bid: {shifu_bid}, outline_bid: {outline_bid}, user_bid: {user_bid}"
-        )
         progress_records = LearnProgressRecord.query.filter(
             LearnProgressRecord.user_bid == user_bid,
             LearnProgressRecord.shifu_bid == shifu_bid,
@@ -418,11 +414,9 @@ def reset_learn_record(
             LearnProgressRecord.deleted == 0,
             LearnProgressRecord.status != LEARN_STATUS_RESET,
         ).all()
-        count = len(progress_records)
         for progress_record in progress_records:
             progress_record.status = LEARN_STATUS_RESET
 
-        app.logger.error(f"reset_learn_record count: {count}")
         db.session.commit()
         return True
 
