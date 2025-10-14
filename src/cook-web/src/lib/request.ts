@@ -160,6 +160,7 @@ export class Request {
         url,
         config,
       );
+      console.log('interceptFetch', fullUrl, mergedConfig);
       const response = await fetch(fullUrl, mergedConfig);
 
       if (!response.ok) {

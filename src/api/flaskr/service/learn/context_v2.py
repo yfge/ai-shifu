@@ -1117,14 +1117,17 @@ class RunScriptContextV2:
         self._can_continue = False
         if generated_block:
             if self._input_type != "ask":
+                app.logger.error(
+                    f"reload generated_block: {generated_block.id},block_position: {generated_block.position}"
+                )
                 LearnGeneratedBlock.query.filter(
                     LearnGeneratedBlock.progress_record_bid
                     == generated_block.progress_record_bid,
                     LearnGeneratedBlock.outline_item_bid
                     == generated_block.outline_item_bid,
                     LearnGeneratedBlock.user_bid == self._user_info.user_id,
-                    LearnGeneratedBlock.id >= generated_block.id,
-                    LearnGeneratedBlock.position >= generated_block.position,
+                    LearnGeneratedBlock.id > generated_block.id,
+                    LearnGeneratedBlock.position > generated_block.position,
                 ).update(
                     {
                         LearnGeneratedBlock.status: 0,
