@@ -18,6 +18,5 @@ export const getScriptInfo = async (scriptId: string) => {
 
 export const resetChapter = async ({ chapterId: outline_bid }) => {
   const { courseId: shifu_bid } = useEnvStore.getState();
-  console.log('resetChapter', shifu_bid, outline_bid);
   return request.delete(`/api/learn/shifu/${shifu_bid}/records/${outline_bid}`);
 };
