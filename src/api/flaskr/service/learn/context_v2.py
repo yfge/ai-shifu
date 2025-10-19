@@ -292,7 +292,7 @@ class RunScriptContextV2:
                 raise_error("module.backend.lesson.lessonNotFoundInCourse")
             if outline_item_info_db.type == LESSON_TYPE_NORMAL:
                 if (not self._is_paid) and (not self._preview_mode):
-                    raise_error("module.backend.order.courseNotPaid")
+                    raise_error("server.order.courseNotPaid")
             parent_path = find_node_with_parents(self._struct, outline_bid)
             attend_info = None
             for item in parent_path:
@@ -1045,7 +1045,7 @@ class RunScriptContextV2:
                 outline_bid=self._outline_item_info.bid,
                 generated_block_bid="",
                 type=GeneratedType.INTERACTION,
-                content=_("module.backend.order.checkout") + "//_sys_pay",
+                content=_("server.order.checkout") + "//_sys_pay",
             )
 
     def has_next(self) -> bool:
