@@ -26,10 +26,10 @@ const Header = () => {
     // actions.publishScenario();
     await actions.saveBlocks(currentShifu?.bid || '');
     alert.showAlert({
-      confirmText: t('header.confirm'),
-      cancelText: t('header.cancel'),
-      title: t('header.confirmPublish'),
-      description: t('header.confirmPublishDescription'),
+      confirmText: t('component.header.confirm'),
+      cancelText: t('component.header.cancel'),
+      title: t('component.header.confirmPublish'),
+      description: t('component.header.confirmPublishDescription'),
       async onConfirm() {
         setPublishing(true);
         const reuslt = await api.publishShifu({
@@ -37,12 +37,12 @@ const Header = () => {
         });
         setPublishing(false);
         alert.showAlert({
-          title: t('header.publishSuccess'),
-          confirmText: t('header.goToView'),
-          cancelText: t('header.close'),
+          title: t('component.header.publishSuccess'),
+          confirmText: t('component.header.goToView'),
+          cancelText: t('component.header.close'),
           description: (
             <div className='flex flex-col space-y-2'>
-              <span>{t('header.publishSuccessDescription')}</span>
+              <span>{t('component.header.publishSuccessDescription')}</span>
               <a
                 href={reuslt}
                 target='_blank'
@@ -116,7 +116,7 @@ const Header = () => {
                 key={lastSaveTime.getTime()}
                 className='bg-gray-100 rounded px-2 py-1 text-xs text-gray-500 transform transition-all duration-300 ease-in-out translate-x-0 opacity-100 animate-slide-in'
               >
-                {t('header.saved')} {lastSaveTime?.toLocaleString()}
+                {t('component.header.saved')} {lastSaveTime?.toLocaleString()}
               </div>
             )}
           </div>
@@ -137,7 +137,7 @@ const Header = () => {
         >
           {publishing && <Loading className='h-4 w-4 mr-1' />}
           {!publishing && <TrendingUp />}
-          {t('header.publish')}
+          {t('component.header.publish')}
         </Button>
       </div>
     </div>

@@ -106,9 +106,9 @@ const MinimalTreeItemComponent = React.forwardRef<
   const onNodeChange = async (value: string) => {
     if (!value || value.trim() === '') {
       alert.showAlert({
-        title: t('outlineTree.nameRequired'),
+        title: t('component.outlineTree.nameRequired'),
         description: '',
-        confirmText: t('common.confirm'),
+        confirmText: t('common.core.confirm'),
         onConfirm() {
           actions.removeOutline({
             parent_bid: props.item.parentId,
@@ -232,7 +232,7 @@ const MinimalTreeItemComponent = React.forwardRef<
                   >
                     <DropdownMenuItem onClick={editNode}>
                       <Edit className='mr-2 h-4 w-4' />
-                      <span>{t('outlineTree.edit')}</span>
+                      <span>{t('component.outlineTree.edit')}</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={e => {
@@ -241,7 +241,7 @@ const MinimalTreeItemComponent = React.forwardRef<
                       }}
                     >
                       <SlidersHorizontal className='mr-2 h-4 w-4' />
-                      <span>{t('outlineTree.setting')}</span>
+                      <span>{t('component.outlineTree.setting')}</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
@@ -249,7 +249,7 @@ const MinimalTreeItemComponent = React.forwardRef<
                       className='text-destructive'
                     >
                       <Trash2 className='mr-2 h-4 w-4' />
-                      <span>{t('outlineTree.delete')}</span>
+                      <span>{t('component.outlineTree.delete')}</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -292,7 +292,7 @@ const MinimalTreeItemComponent = React.forwardRef<
                     >
                       <DropdownMenuItem onClick={editNode}>
                         <Edit className='mr-2 h-4 w-4' />
-                        <span>{t('outlineTree.edit')}</span>
+                        <span>{t('component.outlineTree.edit')}</span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
@@ -300,7 +300,7 @@ const MinimalTreeItemComponent = React.forwardRef<
                         className='text-destructive'
                       >
                         <Trash2 className='mr-2 h-4 w-4' />
-                        <span>{t('outlineTree.delete')}</span>
+                        <span>{t('component.outlineTree.delete')}</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -345,16 +345,18 @@ const MinimalTreeItemComponent = React.forwardRef<
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {t('outlineTree.confirmDelete')}
+              {t('component.outlineTree.confirmDelete')}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {t('outlineTree.confirmDeleteDescription')}
+              {t('component.outlineTree.confirmDeleteDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('outlineTree.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>
+              {t('component.outlineTree.cancel')}
+            </AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmDelete}>
-              {t('outlineTree.confirm')}
+              {t('component.outlineTree.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

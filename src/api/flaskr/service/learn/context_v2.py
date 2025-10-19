@@ -289,10 +289,10 @@ class RunScriptContextV2:
                 ).first()
             )
             if not outline_item_info_db:
-                raise_error("LESSON.LESSON_NOT_FOUND_IN_COURSE")
+                raise_error("module.backend.lesson.lessonNotFoundInCourse")
             if outline_item_info_db.type == LESSON_TYPE_NORMAL:
                 if (not self._is_paid) and (not self._preview_mode):
-                    raise_error("ORDER.COURSE_NOT_PAID")
+                    raise_error("module.backend.order.courseNotPaid")
             parent_path = find_node_with_parents(self._struct, outline_bid)
             attend_info = None
             for item in parent_path:
@@ -603,7 +603,7 @@ class RunScriptContextV2:
             LearnGeneratedBlock.deleted == 0,
         ).first()
         if not generate_block:
-            raise_error("LESSON.LESSON_NOT_FOUND_IN_COURSE")
+            raise_error("module.backend.lesson.lessonNotFoundInCourse")
         outline_item_info: OutlineItemDtoWithMdflow = get_outline_item_dto_with_mdflow(
             self.app, generate_block.outline_item_bid, self._preview_mode
         )
@@ -1045,7 +1045,7 @@ class RunScriptContextV2:
                 outline_bid=self._outline_item_info.bid,
                 generated_block_bid="",
                 type=GeneratedType.INTERACTION,
-                content=_("ORDER.CHECKOUT") + "//_sys_pay",
+                content=_("module.backend.order.checkout") + "//_sys_pay",
             )
 
     def has_next(self) -> bool:

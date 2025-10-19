@@ -33,12 +33,12 @@ const PreviewSettingsModal = () => {
     });
     setOpen(false);
     showAlert({
-      title: t('preview.title'),
-      confirmText: t('preview.view'),
-      cancelText: t('preview.close'),
+      title: t('module.preview.title'),
+      confirmText: t('module.preview.view'),
+      cancelText: t('module.preview.close'),
       description: (
         <div className='flex flex-col space-y-2'>
-          {t('preview.link')}：
+          {t('module.preview.link')}：
           <a
             href={result}
             target='_blank'
@@ -64,19 +64,19 @@ const PreviewSettingsModal = () => {
           size='sm'
           className='h-8 px-2 text-xs font-normal'
         >
-          <PlayIcon /> {t('preview.preview')}
+          <PlayIcon /> {t('module.preview.preview')}
         </Button>
       </DialogTrigger>
       <DialogContent className='sm:max-w-md'>
         <DialogHeader>
           <DialogTitle className='text-center text-xl font-medium'>
-            {t('preview.previewSettings')}
+            {t('module.preview.previewSettings')}
           </DialogTitle>
         </DialogHeader>
 
         <div>
           <div className='flex items-center justify-end space-x-2 mt-4'>
-            <span className='text-sm'>{t('preview.autoSkip')}</span>
+            <span className='text-sm'>{t('module.preview.autoSkip')}</span>
             <Switch
               checked={autoSkipEmptyFields}
               onCheckedChange={setAutoSkipEmptyFields}
@@ -89,7 +89,7 @@ const PreviewSettingsModal = () => {
             className='w-full bg-primary hover:bg-primary-lighter'
             onClick={handleStartPreview}
           >
-            {t('preview.startPreview')}
+            {t('module.preview.startPreview')}
           </Button>
         </DialogFooter>
       </DialogContent>

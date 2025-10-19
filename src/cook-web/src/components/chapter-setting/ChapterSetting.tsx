@@ -89,7 +89,7 @@ const ChapterSettingsDialog = ({
       >
         <DialogHeader>
           <DialogTitle className='text-lg font-medium'>
-            {t('chapterSetting.title')}
+            {t('module.chapterSetting.title')}
           </DialogTitle>
         </DialogHeader>
         {loading && (
@@ -101,7 +101,7 @@ const ChapterSettingsDialog = ({
           <div className='space-y-6 py-4'>
             <div className='flex items-center space-x-4'>
               <div className='w-24 text-sm'>
-                {t('chapterSetting.chapterType')}
+                {t('module.chapterSetting.chapterType')}
               </div>
               <RadioGroup
                 value={chapterType}
@@ -114,7 +114,7 @@ const ChapterSettingsDialog = ({
                     id='formal'
                   />
                   <Label htmlFor='formal'>
-                    {t('chapterSetting.formalChapter')}
+                    {t('module.chapterSetting.formalChapter')}
                   </Label>
                 </div>
                 <div className='flex items-center space-x-2'>
@@ -123,7 +123,7 @@ const ChapterSettingsDialog = ({
                     id='trial'
                   />
                   <Label htmlFor='trial'>
-                    {t('chapterSetting.trialChapter')}
+                    {t('module.chapterSetting.trialChapter')}
                   </Label>
                 </div>
               </RadioGroup>
@@ -131,7 +131,7 @@ const ChapterSettingsDialog = ({
 
             <div className='flex space-x-4'>
               <div className='w-24 text-sm mt-2'>
-                {t('chapterSetting.systemPrompt')}
+                {t('module.chapterSetting.systemPrompt')}
               </div>
               <div className='w-full rounded-md border bg-background px-1 py-1'>
                 <div
@@ -151,7 +151,9 @@ const ChapterSettingsDialog = ({
             </div>
 
             <div className='flex items-center space-x-4'>
-              <div className='w-24 text-sm'>{t('chapterSetting.isHidden')}</div>
+              <div className='w-24 text-sm'>
+                {t('module.chapterSetting.isHidden')}
+              </div>
               <div className='flex items-center space-x-2'>
                 <Checkbox
                   id='hideChapter'
@@ -159,7 +161,7 @@ const ChapterSettingsDialog = ({
                   onCheckedChange={setHideChapter as any}
                 />
                 <Label htmlFor='hideChapter'>
-                  {t('chapterSetting.hideChapter')}
+                  {t('module.chapterSetting.hideChapter')}
                 </Label>
               </div>
             </div>
@@ -170,13 +172,13 @@ const ChapterSettingsDialog = ({
             variant='outline'
             onClick={() => onOpenChange?.(false)}
           >
-            {t('common.cancel')}
+            {t('common.core.cancel')}
           </Button>
           <Button
             disabled={loading}
             onClick={onConfirm}
           >
-            {t('common.confirm')}
+            {t('common.core.confirm')}
           </Button>
         </div>
       </DialogContent>
