@@ -126,7 +126,8 @@
   ,
   "pnpm": {
     "overrides": {
-      "path-to-regexp": "0.1.12"
+      "path-to-regexp": "0.1.12",
+      "on-headers": "^1.1.0"
     }
   }
 }
