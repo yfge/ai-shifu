@@ -128,7 +128,8 @@
     "overrides": {
       "path-to-regexp": "0.1.12",
       "on-headers": "^1.1.0",
-      "prismjs": "^1.30.0"
+      "prismjs": "^1.30.0",
+      "nanoid": "^3.3.11"
     }
   }
 }
