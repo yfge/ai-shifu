@@ -130,7 +130,8 @@
       "on-headers": "^1.1.0",
       "prismjs": "^1.30.0",
       "nanoid": "^3.3.11",
-      "dompurify": "^3.2.6"
+      "dompurify": "^3.2.6",
+      "jsondiffpatch": "^0.7.2"
     }
   }
 }
