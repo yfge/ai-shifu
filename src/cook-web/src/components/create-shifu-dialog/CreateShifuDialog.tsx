@@ -104,6 +104,7 @@ export const CreateShifuDialog = ({
                         'component.createShifuDialog.namePlaceholder',
                       )}
                       {...field}
+                      maxLength={20}
                     />
                   </FormControl>
                   <FormMessage />
@@ -129,6 +130,7 @@ export const CreateShifuDialog = ({
                         'component.createShifuDialog.descriptionPlaceholder',
                       )}
                       {...field}
+                      maxLength={300}
                     />
                   </FormControl>
                   <FormMessage />
