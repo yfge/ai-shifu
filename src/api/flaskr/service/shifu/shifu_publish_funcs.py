@@ -230,7 +230,12 @@ def get_shifu_summary(app, shifu_id: str):
 
         # Generate summaries
         outline_summary_map = _generate_summaries(
-            app, outline_tree, all_blocks, outline_item_map, summary_prompt_template, shifu
+            app,
+            outline_tree,
+            all_blocks,
+            outline_item_map,
+            summary_prompt_template,
+            shifu,
         )
 
         # Generate ask_prompt
