@@ -224,13 +224,18 @@ def get_shifu_summary(app, shifu_id: str):
         ask_prompt_template = load_prompt_template("ask")
 
         # Get course data
-        outline_tree, outline_ids, all_blocks, lesson_map = _get_shifu_data(
+        outline_tree, outline_ids, all_blocks, outline_item_map = _get_shifu_data(
             app, shifu_id
         )
 
         # Generate summaries
         outline_summary_map = _generate_summaries(
-            app, outline_tree, all_blocks, lesson_map, summary_prompt_template, shifu
+            app,
+            outline_tree,
+            all_blocks,
+            outline_item_map,
+            summary_prompt_template,
+            shifu,
         )
 
         # Generate ask_prompt
@@ -239,7 +244,7 @@ def get_shifu_summary(app, shifu_id: str):
             outline_tree,
             outline_ids,
             outline_summary_map,
-            lesson_map,
+            outline_item_map,
             ask_prompt_template,
         )
         shifu.ask_enabled_status = ASK_MODE_ENABLE
@@ -382,7 +387,7 @@ def _get_shifu_data(
         app: Flask application instance
         shifu_id: shifu ID
     Returns:
-        (outline_tree, outline_ids, all_blocks, lesson_map)
+        (outline_tree, outline_ids, all_blocks, outline_item_map)
     """
 
     outline_ids = []
