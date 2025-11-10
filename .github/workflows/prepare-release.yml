@@ -377,24 +377,20 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           name: Release ${{ steps.version.outputs.tag }}
           body: |
-            # Release ${{ steps.version.outputs.tag }}
 
             ${{ steps.changelog.outputs.changelog_content }}
 
             ## 📦 Installation
 
-            **Package Managers:**
             ```bash
-            # npm (if Node.js project)
-            npm install ${{ github.repository }}@${{ steps.version.outputs.tag }}
-
-            # pip (if Python project)
-            pip install ${{ github.event.repository.name }}==${{ steps.version.outputs.version }}
-
             # From source
             git clone ${{ github.event.repository.clone_url }}
             cd ${{ github.event.repository.name }}
             git checkout ${{ steps.version.outputs.tag }}
+            cd ai-shifu/docker
+            cp .env.example.full .env
+            # Fill in your LLM API key in the .env configuration file.
+            docker compose -f docker-compose.latest.yml up -d
             ```
 
             ## 📖 Documentation
