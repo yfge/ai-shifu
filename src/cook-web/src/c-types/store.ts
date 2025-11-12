@@ -2,6 +2,7 @@ import { UserInfo } from './index';
 
 export interface EnvStoreState {
   courseId: string;
+  defaultLlmModel: string;
   appId: string;
   alwaysShowLessonTree: string;
   umamiWebsiteId: string;
@@ -11,8 +12,9 @@ export interface EnvStoreState {
   logoHorizontal: string;
   logoVertical: string;
   enableWxcode: string;
-  siteUrl: string;
+  homeUrl: string;
   updateCourseId: (courseId: string) => Promise<void>;
+  updateDefaultLlmModel: (model: string) => Promise<void>;
   updateAppId: (appId: string) => Promise<void>;
   updateAlwaysShowLessonTree: (value: string) => Promise<void>;
   updateUmamiWebsiteId: (id: string) => Promise<void>;
@@ -22,7 +24,7 @@ export interface EnvStoreState {
   updateLogoHorizontal: (logo: string) => Promise<void>;
   updateLogoVertical: (logo: string) => Promise<void>;
   updateEnableWxcode: (value: string) => Promise<void>;
-  updateSiteUrl: (url: string) => Promise<void>;
+  updateHomeUrl: (url: string) => Promise<void>;
 }
 
 export interface SystemStoreState {
@@ -54,6 +56,22 @@ export interface CourseStoreState {
   updateResetedChapterId: (id: string) => void;
   updateResetedLessonId: (id: string) => void;
   resetChapter: (id: string) => Promise<void>;
+  payModalOpen: boolean;
+  payModalState: {
+    type: string;
+    payload: Record<string, any>;
+  };
+  openPayModal: (options?: {
+    type?: string;
+    payload?: Record<string, any>;
+  }) => void;
+  closePayModal: () => void;
+  setPayModalState: (state?: {
+    type?: string;
+    payload?: Record<string, any>;
+  }) => void;
+  payModalResult: 'ok' | 'cancel' | null;
+  setPayModalResult: (result: 'ok' | 'cancel' | null) => void;
 }
 
 export interface UserStoreState {

@@ -39,7 +39,6 @@ import {
 
 import { useUserStore } from '@/store';
 import { fixMarkdown, fixMarkdownStream } from '@/c-utils/markdownUtils';
-import PayModal from '../Pay/PayModal';
 // TODO: FIXME
 // import LoginModal from '../Login/LoginModal';
 import { useDisclosure } from '@/c-common/hooks/useDisclosure';
@@ -47,7 +46,6 @@ import { useDisclosure } from '@/c-common/hooks/useDisclosure';
 import { tokenTool } from '@/c-service/storeUtil';
 import MarkdownBubble from './ChatMessage/MarkdownBubble';
 import { useTracking, EVENT_NAMES } from '@/c-common/hooks/useTracking';
-import PayModalM from '../Pay/PayModalM';
 // import { useTranslation } from 'react-i18next';
 import { useEnvStore } from '@/c-store/envStore';
 import { shifu } from '@/c-service/Shifu';
@@ -263,22 +261,22 @@ export const ChatComponents = forwardRef<any, any>(
       })),
     );
 
-    const {
-      open: payModalOpen,
-      onOpen: onPayModalOpen,
-      onClose: onPayModalClose,
-    } = useDisclosure();
+    const { openPayModal, payModalResult } = useCourseStore(
+      useShallow(state => ({
+        openPayModal: state.openPayModal,
+        payModalResult: state.payModalResult,
+      })),
+    );
+
+    const onPayModalOpen = useCallback(() => {
+      openPayModal();
+    }, [openPayModal]);
 
     const {
       // open: loginModalOpen,
       onOpen: onLoginModalOpen,
       // onClose: onLoginModalClose,
     } = useDisclosure();
-
-    const _onPayModalClose = useCallback(() => {
-      onPayModalClose();
-      setInputDisabled(false);
-    }, [onPayModalClose]);
 
     // const _onLoginModalClose = useCallback(() => {
     //   onLoginModalClose();
@@ -370,7 +368,7 @@ export const ChatComponents = forwardRef<any, any>(
               RESP_EVENT_TYPE.REQUIRE_LOGIN,
             ].includes(response.type)
           ) {
-            trackTrailProgress(scriptId);
+            trackTrailProgress(courseId, scriptId);
           }
 
           try {
@@ -530,8 +528,8 @@ export const ChatComponents = forwardRef<any, any>(
                 visible: content.visible,
               });
             }
-          } catch (e) {
-            console.log(e);
+          } catch {
+            // swallow SSE parse errors
           }
         });
       },
@@ -784,6 +782,16 @@ export const ChatComponents = forwardRef<any, any>(
       refreshUserInfo();
     }, [handleSend, onPurchased, refreshUserInfo]);
 
+    useEffect(() => {
+      if (payModalResult === 'ok') {
+        onPayModalOk();
+        setInputDisabled(false);
+      }
+      if (payModalResult === 'cancel') {
+        setInputDisabled(false);
+      }
+    }, [onPayModalOk, payModalResult]);
+
     const [interactionTypes, setInteractionTypes] = useState({});
 
     const renderMessageContentOperation = useCallback(
@@ -949,7 +957,7 @@ export const ChatComponents = forwardRef<any, any>(
 
     // const onLogin = useCallback(async () => {
     //   await refreshUserInfo();
-    //   handleSend(INTERACTION_OUTPUT_TYPE.LOGIN, false, t('chat.loginSuccess'));
+    //   handleSend(INTERACTION_OUTPUT_TYPE.LOGIN, false, t('module.chat.loginSuccess'));
     // }, [handleSend, refreshUserInfo, t]);
 
     useEffect(() => {
@@ -1028,24 +1036,6 @@ export const ChatComponents = forwardRef<any, any>(
             onSizeChange={onChatInteractionAreaSizeChange}
           />
         )}
-        {payModalOpen &&
-          (mobileStyle ? (
-            <PayModalM
-              open={payModalOpen}
-              onCancel={_onPayModalClose}
-              onOk={onPayModalOk}
-              type={''}
-              payload={{}}
-            />
-          ) : (
-            <PayModal
-              open={payModalOpen}
-              onCancel={_onPayModalClose}
-              onOk={onPayModalOk}
-              type={''}
-              payload={{}}
-            />
-          ))}
         {/* TODO: FIXME */}
         {/* {loginModalOpen && (
           <LoginModal

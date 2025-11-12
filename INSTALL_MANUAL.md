@@ -4,23 +4,21 @@
 
 ### Architecture Overview
 
-AI-Shifu consists of three main components:
+AI-Shifu consists of two main components:
 
 ```bash
 src/
 ├── api/          # Backend API service (Flask/Python)
-├── web/          # User frontend (React)
 └── cook-web/     # Script editor frontend (Next.js)
 ```
 
 - **api**: Backend API service built with Flask
-- **web**: User-facing frontend application built with React
 - **cook-web**: Script editor for creating and managing courses, built with Next.js
 
 ### Required Tools and Services
 
 - **Python 3.11+** for backend API
-- **Node.js 18+** for frontend applications
+- **Node.js 22.16.0** for frontend applications
 - **MySQL 8.0+** for database storage
 - **Redis** for caching and session management
 - **Docker & Docker Compose** (recommended for easy deployment)
@@ -55,15 +53,13 @@ cd ai-shifu
 
 ### Step 2: Set Up Environment Variables
 
-Choose and copy the appropriate environment template:
+Copy the full environment template (already aligned with the Docker defaults):
 
 ```bash
-# For minimal setup (only required variables):
-cp docker/.env.example.minimal docker/.env
-
-# OR for full configuration with all options:
 cp docker/.env.example.full docker/.env
 ```
+
+For Docker-based workflows the only mandatory edit is to add at least one LLM provider key (for example `OPENAI_API_KEY`, `ERNIE_API_KEY`, `GLM_API_KEY`, etc.). All other variables already have safe defaults that match the bundled MySQL/Redis services.
 
 ### Step 3: Configure Environment Variables
 
@@ -88,14 +84,8 @@ These variables are essential for the application to run:
 
 #### Configuration Reference
 
-- **Minimal Configuration**: See `docker/.env.example.minimal`
-  - Contains only the 3 required variables plus LLM configuration
-  - Best for quick setup and testing
-
-- **Full Configuration**: See `docker/.env.example.full`
-  - Contains all 106+ available configuration options
-  - Includes detailed descriptions and examples
-  - Organized by categories: Database, Redis, Auth, LLM, etc.
+- `docker/.env.example.full`: canonical template that lists every environment variable with defaults, descriptions, and grouping (Database, Redis, Auth, LLM, etc.). Copy it to `.env` and edit in place.
+- **Docker reminder**: the only required change for containerized installs is to set at least one LLM API key (e.g., OpenAI, ERNIE, GLM). Update database/Redis URLs only if you are not using the bundled services.
 
 #### Important Notes
 
@@ -104,11 +94,30 @@ These variables are essential for the application to run:
 - For production deployments, use environment-specific configurations
 - Refer to the example files for detailed explanations of each variable
 
-### Step 4: Manual Installation (Development)
+### Step 4: Build Latest Docker Images & Start the Stack
+
+1. Ensure `docker/.env` contains at least one LLM API key.
+2. Build the backend and frontend images tagged as `:latest` from the repo root:
+
+```bash
+docker build -t aishifu/ai-shifu-api:latest -f src/api/Dockerfile .
+docker build -t aishifu/ai-shifu-cook-web:latest -f src/cook-web/Dockerfile .
+```
+
+3. Start the containers with the compose bundle that tracks the `:latest` tags:
+
+```bash
+cd docker
+docker compose -f docker-compose.latest.yml up -d
+```
+
+`docker-compose.latest.yml` always uses the most recent images (from Docker Hub or your own local builds). Use `docker-compose.yml` instead if you need pinned release tags for reproducible environments.
+
+### Step 5: Manual Installation (Development)
 
 This section covers manual installation for development purposes or when you need more control over the setup.
 
-#### Step 4.1: Set Up Database Services
+#### Step 5.1: Set Up Database Services
 
 Start MySQL and Redis services on your local machine or use Docker:
 
@@ -118,7 +127,7 @@ docker run -d --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=ai-shifu -e MYSQL
 docker run -d --name redis -p 6379:6379 redis:latest
 ```
 
-#### Step 4.2: Configure Environment for Local Development
+#### Step 5.2: Configure Environment for Local Development
 
 Update your `.env` file for local development:
 
@@ -130,7 +139,7 @@ SQLALCHEMY_DATABASE_URI="mysql://root:ai-shifu@localhost:3306/ai-shifu"
 REACT_APP_BASEURL="http://localhost:5800"
 ```
 
-#### Step 4.3: Start Backend API
+#### Step 5.3: Start Backend API
 
 ```bash
 cd src/api
@@ -147,23 +156,7 @@ flask db upgrade
 gunicorn -w 4 -b 0.0.0.0:5800 'app:app' --timeout 300 --log-level debug
 ```
 
-#### Step 4.4: Start User Frontend
-
-```bash
-cd src/web
-# Copy the environment configuration from docker directory
-cp ../../docker/.env .env
-
-# Install Node.js dependencies
-npm install  # or use pnpm install
-
-# Start development server
-npm run start:dev
-```
-
-The user frontend will be available at `http://localhost:3000`.
-
-#### Step 4.5: Start Script Editor Frontend
+#### Step 5.4: Start Cook Web Frontend & CMS
 
 ```bash
 cd src/cook-web
@@ -177,7 +170,7 @@ npm install  # or use pnpm install
 npm run dev
 ```
 
-The script editor will be available at `http://localhost:3001`.
+Cook Web (which now serves both the learner experience and authoring console) will be available at `http://localhost:3000`.
 
 ## Troubleshooting
 
@@ -198,7 +191,7 @@ The script editor will be available at `http://localhost:3001`.
    - Ensure the model name matches your provider
 
 4. **Frontend Build Failures**
-   - Ensure Node.js version is 18+
+   - Ensure Node.js version is 22.16.0
    - Clear node_modules and reinstall: `rm -rf node_modules && npm install`
    - Check for environment variable issues
 

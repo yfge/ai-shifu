@@ -1,4 +1,4 @@
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useState, useContext } from 'react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 
@@ -7,6 +7,7 @@ import { useCourseStore } from '@/c-store/useCourseStore';
 
 import { useTracking, EVENT_NAMES } from '@/c-common/hooks/useTracking';
 import { shifu } from '@/c-service/Shifu';
+import { AppContext } from '../AppContext';
 
 import { Button } from '@/components/ui/Button';
 import {
@@ -28,6 +29,7 @@ export const ResetChapterButton = ({
 }) => {
   const { t } = useTranslation();
   const { trackEvent } = useTracking();
+  const { mobileStyle } = useContext(AppContext);
 
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -42,8 +44,8 @@ export const ResetChapterButton = ({
     async e => {
       setShowConfirm(true);
       // Modal.confirm({
-      //   title: t('lesson.reset.confirmTitle'),
-      //   content: t('lesson.reset.confirmContent'),
+      //   title: t('module.lesson.reset.confirmTitle'),
+      //   content: t('module.lesson.reset.confirmContent'),
       //   onOk: async () => {
       //     await resetChapter(chapterId);
       //     updateLessonId(lessonId);
@@ -70,16 +72,18 @@ export const ResetChapterButton = ({
   );
 
   async function handleConfirm() {
-    await resetChapter(chapterId);
+    await resetChapter(lessonId);
     updateLessonId(lessonId);
 
     shifu.resetTools.resetChapter({
       chapter_id: chapterId,
+      lesson_id: lessonId,
       chapter_name: chapterName,
     });
 
     trackEvent(EVENT_NAMES.RESET_CHAPTER_CONFIRM, {
       chapter_id: chapterId,
+      lesson_id: lessonId,
       chapter_name: chapterName,
     });
 
@@ -92,10 +96,15 @@ export const ResetChapterButton = ({
     <>
       <Button
         size='sm'
-        className={cn(className, 'size-max', 'px-2', 'rounded-full')}
+        className={cn(
+          className,
+          'size-max px-2 rounded-full',
+          mobileStyle &&
+            'bg-white text-primary border border-primary shadow-none hover:bg-white hover:text-primary focus-visible:shadow-none',
+        )}
         onClick={onButtonClick}
       >
-        {t('lesson.reset.title')}
+        {t('module.lesson.reset.title')}
       </Button>
       <Dialog
         open={showConfirm}
@@ -103,13 +112,13 @@ export const ResetChapterButton = ({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('lesson.reset.confirmTitle')}</DialogTitle>
+            <DialogTitle>{t('module.lesson.reset.confirmTitle')}</DialogTitle>
             <DialogDescription>
-              {t('lesson.reset.confirmContent')}
+              {t('module.lesson.reset.confirmContent')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button onClick={handleConfirm}>{t('common.ok')}</Button>
+            <Button onClick={handleConfirm}>{t('common.core.ok')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

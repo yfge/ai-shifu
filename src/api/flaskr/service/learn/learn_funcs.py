@@ -1,4 +1,3 @@
-from decimal import Decimal
 from markdown_flow import (
     InteractionParser,
 )
@@ -13,6 +12,8 @@ from flaskr.service.learn.learn_dtos import (
     LikeStatus,
     LearnOutlineItemsWithBannerInfoDTO,
     LearnBannerInfoDTO,
+    OutlineType,
+    GeneratedInfoDTO,
 )
 from flaskr.service.shifu.models import (
     DraftShifu,
@@ -38,7 +39,6 @@ from flaskr.service.order.consts import (
 )
 import queue
 from flaskr.dao import db
-from flaskr.service.lesson.const import LESSON_TYPE_NORMAL
 from flaskr.service.shifu.consts import (
     BLOCK_TYPE_MDASK_VALUE,
     BLOCK_TYPE_MDCONTENT_VALUE,
@@ -56,13 +56,13 @@ from flaskr.service.shifu.consts import (
     BLOCK_TYPE_PHONE_VALUE,
     BLOCK_TYPE_CHECKCODE_VALUE,
 )
-from flaskr.service.learn.const import CONTEXT_INTERACTION_NEXT, ROLE_TEACHER
-from flaskr.service.shifu.models import DraftBlock, PublishedBlock
-from typing import Union
-from flaskr.service.profile.profile_manage import get_profile_item_definition_list
-from flaskr.service.shifu.block_to_mdflow_adapter import convert_block_to_mdflow
-from flaskr.service.shifu.dtos import BlockDTO
-from flaskr.service.shifu.adapter import generate_block_dto_from_model_internal
+from flaskr.service.learn.const import ROLE_TEACHER, CONTEXT_INTERACTION_NEXT
+from flaskr.service.shifu.consts import (
+    UNIT_TYPE_VALUE_TRIAL,
+    UNIT_TYPE_VALUE_NORMAL,
+    UNIT_TYPE_VALUE_GUEST,
+)
+from flaskr.util import generate_id
 
 STATUS_MAP = {
     LEARN_STATUS_LOCKED: LearnStatus.LOCKED,
@@ -81,7 +81,7 @@ def get_shifu_info(app: Flask, shifu_bid: str, preview_mode: bool) -> LearnShifu
             .first()
         )
         if not shifu:
-            raise_error("SHIFU.SHIFU_NOT_FOUND")
+            raise_error("server.shifu.shifuNotFound")
         return LearnShifuInfoDTO(
             bid=shifu.shifu_bid,
             title=shifu.title,
@@ -96,6 +96,11 @@ def get_outline_item_tree(
     app: Flask, shifu_bid: str, user_bid: str, preview_mode: bool
 ) -> LearnOutlineItemsWithBannerInfoDTO:
     with app.app_context():
+        outline_type_map = {
+            UNIT_TYPE_VALUE_TRIAL: OutlineType.TRIAL,
+            UNIT_TYPE_VALUE_NORMAL: OutlineType.NORMAL,
+            UNIT_TYPE_VALUE_GUEST: OutlineType.GUEST,
+        }
         is_paid = preview_mode
         if preview_mode:
             outline_item_model = DraftOutlineItem
@@ -114,23 +119,20 @@ def get_outline_item_tree(
                 .first()
             )
             if not shifu:
-                raise_error("SHIFU.SHIFU_NOT_FOUND")
-            if shifu.price == 0:
-                is_paid = True
-            else:
-                buy_record = (
-                    Order.query.filter(
-                        Order.user_bid == user_bid,
-                        Order.shifu_bid == shifu_bid,
-                        Order.status == ORDER_STATUS_SUCCESS,
-                    )
-                    .order_by(Order.id.desc())
-                    .first()
+                raise_error("server.shifu.shifuNotFound")
+            buy_record = (
+                Order.query.filter(
+                    Order.user_bid == user_bid,
+                    Order.shifu_bid == shifu_bid,
+                    Order.status == ORDER_STATUS_SUCCESS,
                 )
-                if not buy_record:
-                    is_paid = False
-                else:
-                    is_paid = True
+                .order_by(Order.id.desc())
+                .first()
+            )
+            if not buy_record:
+                is_paid = False
+            else:
+                is_paid = True
         struct = (
             struct_model.query.filter(
                 struct_model.shifu_bid == shifu_bid, struct_model.deleted == 0
@@ -139,7 +141,7 @@ def get_outline_item_tree(
             .first()
         )
         if not struct:
-            raise_error("SHIFU.SHIFU_STRUCT_NOT_FOUND")
+            raise_error("server.shifu.shifuStructNotFound")
         struct = HistoryItem.from_json(struct.struct)
         outline_items: list[HistoryItem] = []
         q = queue.Queue()
@@ -178,19 +180,18 @@ def get_outline_item_tree(
                 outline_item.outline_item_bid, None
             )
             if not progress_record:
-                if is_paid:
-                    status = LEARN_STATUS_NOT_STARTED
-                elif outline_item.type == LESSON_TYPE_NORMAL:
-                    status = LEARN_STATUS_LOCKED
-                else:
-                    status = LEARN_STATUS_NOT_STARTED
+                status = LEARN_STATUS_NOT_STARTED
             else:
                 status = progress_record.status
+                if status == LEARN_STATUS_LOCKED:
+                    status = LEARN_STATUS_NOT_STARTED
             outline_item_info = LearnOutlineItemInfoDTO(
                 bid=outline_item.outline_item_bid,
                 position=outline_item.position,
                 title=outline_item.title,
-                status=STATUS_MAP.get(status, LearnStatus.LOCKED),
+                status=STATUS_MAP.get(status, LearnStatus.NOT_STARTED),
+                type=outline_type_map.get(outline_item.type, OutlineType.NORMAL),
+                is_paid=is_paid,
                 children=[],
             )
             if item.children:
@@ -219,23 +220,14 @@ def get_outline_item_tree(
                 banner_info=banner_info_dto,
                 outline_items=outline_items,
             )
-        is_paid = shifu.price == Decimal(0)
-        if not is_paid:
-            buy_record = Order.query.filter(
-                Order.user_bid == user_bid,
-                Order.shifu_bid == shifu_bid,
-                Order.status == ORDER_STATUS_SUCCESS,
-            ).first()
-            is_paid = buy_record and buy_record.status == ORDER_STATUS_SUCCESS
-
         if not is_paid:
             if add_banner:
                 banner_info_dto = LearnBannerInfoDTO(
-                    title=_("BANNER.BANNER_TITLE"),
-                    pop_up_title=_("BANNER.BANNER_POP_UP_TITLE"),
-                    pop_up_content=_("BANNER.BANNER_POP_UP_CONTENT"),
-                    pop_up_confirm_text=_("BANNER.BANNER_POP_UP_CONFIRM_TEXT"),
-                    pop_up_cancel_text=_("BANNER.BANNER_POP_UP_CANCEL_TEXT"),
+                    title=_("server.banner.bannerTitle"),
+                    pop_up_title=_("server.banner.bannerPopUpTitle"),
+                    pop_up_content=_("server.banner.bannerPopUpContent"),
+                    pop_up_confirm_text=_("server.banner.bannerPopUpConfirmText"),
+                    pop_up_cancel_text=_("server.banner.bannerPopUpCancelText"),
                 )
         return LearnOutlineItemsWithBannerInfoDTO(
             banner_info=banner_info_dto,
@@ -243,41 +235,10 @@ def get_outline_item_tree(
         )
 
 
-def get_mdflow(
-    app: Flask,
-    mdflow: str,
-    block: Union[DraftBlock, PublishedBlock],
-    variable_map: dict[str, str],
-) -> str:
-    # if mdflow is not json, return mdflow
-    if not mdflow.startswith("{"):
-        return mdflow
-    # if mdflow is json, parse it
-    try:
-        if not block:
-            return mdflow
-        block_dto: BlockDTO = generate_block_dto_from_model_internal(
-            block, convert_html=True
-        )
-        mdflow = convert_block_to_mdflow(block_dto, variable_map)
-        return mdflow
-
-    except Exception:
-        return mdflow
-
-
 def get_learn_record(
     app: Flask, shifu_bid: str, outline_bid: str, user_bid: str, preview_mode: bool
 ) -> LearnRecordDTO:
     with app.app_context():
-        block_model: Union[DraftBlock, PublishedBlock] = (
-            DraftBlock if preview_mode else PublishedBlock
-        )
-        variable_definitions = get_profile_item_definition_list(app, shifu_bid)
-        variable_map = {
-            variable_definition.profile_id: variable_definition.profile_key
-            for variable_definition in variable_definitions
-        }
         progress_record = LearnProgressRecord.query.filter(
             LearnProgressRecord.user_bid == user_bid,
             LearnProgressRecord.shifu_bid == shifu_bid,
@@ -290,6 +251,7 @@ def get_learn_record(
                 records=[],
                 interaction="",
             )
+        app.logger.info(f"progress_record: {progress_record.progress_record_bid}")
         generated_blocks: list[LearnGeneratedBlock] = (
             LearnGeneratedBlock.query.filter(
                 LearnGeneratedBlock.user_bid == user_bid,
@@ -304,10 +266,6 @@ def get_learn_record(
             .all()
         )
 
-        sorted_generated_blocks = sorted(
-            generated_blocks,
-            key=lambda x: (0, x.position, x.id) if x.position >= 0 else (1, 0, x.id),
-        )
         records: list[GeneratedBlockDTO] = []
         interaction = ""
         BLOCK_TYPE_MAP = {
@@ -332,16 +290,7 @@ def get_learn_record(
             -1: LikeStatus.DISLIKE,
             0: LikeStatus.NONE,
         }
-        block_ids = [
-            generated_block.block_bid for generated_block in sorted_generated_blocks
-        ]
-        blocks = block_model.query.filter(
-            block_model.block_bid.in_(block_ids), block_model.deleted == 0
-        ).all()
-        block_map: dict[str, Union[DraftBlock, PublishedBlock]] = {
-            i.block_bid: i for i in blocks
-        }
-        for generated_block in sorted_generated_blocks:
+        for generated_block in generated_blocks:
             block_type = BLOCK_TYPE_MAP.get(generated_block.type, BlockType.CONTENT)
             if block_type == BlockType.ASK and generated_block.role == ROLE_TEACHER:
                 block_type = BlockType.ANSWER
@@ -356,12 +305,7 @@ def get_learn_record(
                     BlockType.ASK,
                     BlockType.ANSWER,
                 )
-                else get_mdflow(
-                    app,
-                    generated_block.block_content_conf,
-                    block_map.get(generated_block.block_bid, None),
-                    variable_map,
-                ),
+                else generated_block.block_content_conf,
                 LIKE_STATUS_MAP.get(generated_block.liked, LikeStatus.NONE),
                 block_type,
                 generated_block.generated_content
@@ -384,14 +328,21 @@ def get_learn_record(
                         if button.get("value") == "_sys_login":
                             if bool(request.user.mobile):
                                 records.remove(last_record)
-        if progress_record.status == LEARN_STATUS_COMPLETED and interaction == "":
-            interaction = (
-                "?[" + _("LEARN.NEXT_CHAPTER") + "//" + CONTEXT_INTERACTION_NEXT + "]"
-            )
+        has_next_chapter_button = any(
+            record.block_type == BlockType.INTERACTION
+            and CONTEXT_INTERACTION_NEXT in record.content
+            for record in records
+        )
+        if (
+            progress_record.status == LEARN_STATUS_COMPLETED
+            and not has_next_chapter_button
+        ):
+            button_label = _("server.learn.nextChapterButton")
+            fallback_content = f"?[{button_label}//{CONTEXT_INTERACTION_NEXT}]"
             records.append(
                 GeneratedBlockDTO(
-                    "next",
-                    interaction,
+                    generate_id(app),
+                    fallback_content,
                     LikeStatus.NONE,
                     BlockType.INTERACTION,
                     "",
@@ -433,9 +384,9 @@ def handle_reaction(
             LearnGeneratedBlock.status == 1,
         ).first()
         if not generated_block:
-            raise_error("LEARN.GENERATED_BLOCK_NOT_FOUND")
+            raise_error("server.learn.generatedBlockNotFound")
         if action not in ["like", "dislike", "none"]:
-            raise_error("LEARN.INVALID_ACTION")
+            raise_error("server.learn.invalidAction")
         if action == "like":
             generated_block.liked = 1
         if action == "dislike":
@@ -444,3 +395,55 @@ def handle_reaction(
             generated_block.liked = 0
         db.session.commit()
         return True
+
+
+def get_generated_content(
+    app: Flask,
+    shifu_bid: str,
+    generated_block_bid: str,
+    user_bid: str,
+    preview_mode: bool,
+) -> GeneratedInfoDTO:
+    with app.app_context():
+        generated_block = LearnGeneratedBlock.query.filter(
+            LearnGeneratedBlock.user_bid == user_bid,
+            LearnGeneratedBlock.shifu_bid == shifu_bid,
+            LearnGeneratedBlock.generated_block_bid == generated_block_bid,
+            LearnGeneratedBlock.deleted == 0,
+            LearnGeneratedBlock.status == 1,
+        ).first()
+        if not generated_block:
+            return GeneratedInfoDTO(
+                position=0,
+                outline_name="",
+                is_trial_lesson=False,
+            )
+        if preview_mode:
+            outline_item = (
+                DraftOutlineItem.query.filter(
+                    DraftOutlineItem.outline_item_bid
+                    == generated_block.outline_item_bid,
+                    DraftOutlineItem.deleted == 0,
+                )
+                .order_by(DraftOutlineItem.position.asc())
+                .first()
+            )
+        else:
+            outline_item = (
+                PublishedOutlineItem.query.filter(
+                    PublishedOutlineItem.outline_item_bid
+                    == generated_block.outline_item_bid,
+                    PublishedOutlineItem.deleted == 0,
+                )
+                .order_by(PublishedOutlineItem.position.asc())
+                .first()
+            )
+        outline_title = outline_item.title if outline_item else ""
+        is_trial_lesson = (
+            outline_item.type == UNIT_TYPE_VALUE_TRIAL if outline_item else False
+        )
+        return GeneratedInfoDTO(
+            position=generated_block.position,
+            outline_name=outline_title,
+            is_trial_lesson=is_trial_lesson,
+        )

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { LikeStatus } from '@/c-api/studyV2';
@@ -94,7 +94,7 @@ export default function InteractionBlock({
       shifu_bid,
       generated_block_bid,
       action,
-    }).catch(e => {
+    }).catch(() => {
       // errors handled by request layer toast; ignore here
     });
   };
@@ -132,6 +132,8 @@ export default function InteractionBlock({
     onRefresh?.(generated_block_bid);
   };
 
+  const canHover = !(disabled || readonly);
+
   return (
     <div className={cn(['interaction-block'], className)}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -153,7 +155,7 @@ export default function InteractionBlock({
             width={14}
             height={14}
           />
-          <span>{t('chat.ask')}</span>
+          <span>{t('module.chat.ask')}</span>
         </button>
         <button
           type='button'
@@ -162,10 +164,17 @@ export default function InteractionBlock({
           style={refreshBtnStyle}
           disabled={disabled || readonly}
           onClick={handleRefreshClick}
+          className={cn(canHover && 'group')}
         >
           <RefreshCcw
             size={14}
-            className={cn('text-gray-400', 'w-5', 'h-5')}
+            className={cn(
+              'text-gray-400',
+              'w-5',
+              'h-5',
+              'transition-colors',
+              'duration-200',
+            )}
           />
         </button>
         <button
@@ -176,13 +185,16 @@ export default function InteractionBlock({
           onClick={onLike}
           title='Like'
           style={likeBtnStyle}
+          className={cn(canHover && 'group')}
         >
           <ThumbsUp
             size={14}
             className={cn(
-              isLike ? 'text-blue-500' : 'text-gray-400',
               'w-5',
               'h-5',
+              'transition-colors',
+              'duration-200',
+              isLike ? 'text-primary' : 'text-gray-400',
             )}
           />
         </button>
@@ -195,13 +207,16 @@ export default function InteractionBlock({
           onClick={onDislike}
           title='Dislike'
           style={dislikeBtnStyle}
+          className={cn(canHover && 'group')}
         >
           <ThumbsDown
             size={14}
             className={cn(
-              isDislike ? 'text-blue-500' : 'text-gray-400',
               'w-5',
               'h-5',
+              'transition-colors',
+              'duration-200',
+              isDislike ? 'text-primary' : 'text-gray-400',
             )}
           />
         </button>
@@ -213,9 +228,9 @@ export default function InteractionBlock({
       >
         <DialogContent className='sm:max-w-md'>
           <DialogHeader>
-            <DialogTitle>{t('chat.regenerateConfirmTitle')}</DialogTitle>
+            <DialogTitle>{t('module.chat.regenerateConfirmTitle')}</DialogTitle>
             <DialogDescription>
-              {t('chat.regenerateConfirmDescription')}
+              {t('module.chat.regenerateConfirmDescription')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className='flex gap-2 sm:gap-2'>
@@ -224,14 +239,14 @@ export default function InteractionBlock({
               onClick={() => setShowRegenerateDialog(false)}
               className='px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50'
             >
-              {t('common.cancel')}
+              {t('common.core.cancel')}
             </button>
             <button
               type='button'
               onClick={handleConfirmRegenerate}
               className='px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary-lighter'
             >
-              {t('common.ok')}
+              {t('common.core.ok')}
             </button>
           </DialogFooter>
         </DialogContent>

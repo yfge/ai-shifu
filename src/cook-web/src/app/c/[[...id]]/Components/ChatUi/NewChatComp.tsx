@@ -17,13 +17,10 @@ import { AppContext } from '../AppContext';
 import { useChatComponentsScroll } from './ChatComponents/useChatComponentsScroll';
 import useAutoScroll from './useAutoScroll';
 import { useTracking } from '@/c-common/hooks/useTracking';
-import { useDisclosure } from '@/c-common/hooks/useDisclosure';
 import { useEnvStore } from '@/c-store/envStore';
 import { useUserStore } from '@/store';
+import { useCourseStore } from '@/c-store/useCourseStore';
 import { toast } from '@/hooks/useToast';
-import PayModal from '../Pay/PayModal';
-import PayModalM from '../Pay/PayModalM';
-import { PREVIEW_MODE } from '@/c-api/studyV2';
 import InteractionBlock from './InteractionBlock';
 import useChatLogicHook, {
   ChatContentItem,
@@ -43,14 +40,14 @@ export const NewChatComponents = ({
   chapterUpdate,
   updateSelectedLesson,
   getNextLessonId,
-  preview_mode = PREVIEW_MODE.NORMAL,
+  previewMode = false,
 }) => {
   const { trackEvent, trackTrailProgress } = useTracking();
   const { t } = useTranslation();
   const chatBoxBottomRef = useRef<HTMLDivElement | null>(null);
   const showOutputInProgressToast = useCallback(() => {
     toast({
-      title: t('chat.outputInProgress'),
+      title: t('module.chat.outputInProgress'),
     });
   }, [t]);
 
@@ -74,16 +71,23 @@ export const NewChatComponents = ({
     threshold: 120,
   });
 
-  const {
-    open: payModalOpen,
-    onOpen: onPayModalOpen,
-    onClose: onPayModalClose,
-  } = useDisclosure();
+  const { openPayModal, payModalResult } = useCourseStore(
+    useShallow(state => ({
+      openPayModal: state.openPayModal,
+      payModalResult: state.payModalResult,
+    })),
+  );
 
-  const onPayModalOk = () => {
-    onPurchased?.();
-    refreshUserInfo();
-  };
+  const onPayModalOpen = useCallback(() => {
+    openPayModal();
+  }, [openPayModal]);
+
+  useEffect(() => {
+    if (payModalResult === 'ok') {
+      onPurchased?.();
+      refreshUserInfo();
+    }
+  }, [onPurchased, payModalResult, refreshUserInfo]);
 
   const [mobileInteraction, setMobileInteraction] = useState({
     open: false,
@@ -93,32 +97,26 @@ export const NewChatComponents = ({
   });
   const [longPressedBlockBid, setLongPressedBlockBid] = useState<string>('');
 
-  const {
-    items,
-    isLoading,
-    onSend,
-    onRefresh,
-    onTypeFinished,
-    toggleAskExpanded,
-  } = useChatLogicHook({
-    onGoChapter,
-    shifuBid,
-    outlineBid: lessonId,
-    lessonId,
-    chapterId,
-    previewMode: preview_mode,
-    trackEvent,
-    chatBoxBottomRef,
-    trackTrailProgress,
-    lessonUpdate,
-    chapterUpdate,
-    updateSelectedLesson,
-    getNextLessonId,
-    scrollToLesson,
-    scrollToBottom,
-    showOutputInProgressToast,
-    onPayModalOpen,
-  });
+  const { items, isLoading, onSend, onRefresh, toggleAskExpanded } =
+    useChatLogicHook({
+      onGoChapter,
+      shifuBid,
+      outlineBid: lessonId,
+      lessonId,
+      chapterId,
+      previewMode,
+      trackEvent,
+      chatBoxBottomRef,
+      trackTrailProgress,
+      lessonUpdate,
+      chapterUpdate,
+      updateSelectedLesson,
+      getNextLessonId,
+      scrollToLesson,
+      scrollToBottom,
+      showOutputInProgressToast,
+      onPayModalOpen,
+    });
 
   const handleLongPress = useCallback(
     (event: any, currentBlock: ChatContentItem) => {
@@ -196,9 +194,8 @@ export const NewChatComponents = ({
     [toggleAskExpanded],
   );
 
-  // Memoize onSend and onTypeFinished to prevent new function references
+  // Memoize onSend to prevent new function references
   const memoizedOnSend = useCallback(onSend, [onSend]);
-  const memoizedOnTypeFinished = useCallback(onTypeFinished, [onTypeFinished]);
 
   return (
     <div
@@ -222,7 +219,7 @@ export const NewChatComponents = ({
                 isExpanded={item.isAskExpanded}
                 shifu_bid={shifuBid}
                 outline_bid={lessonId}
-                preview_mode={preview_mode}
+                preview_mode={previewMode}
                 generated_block_bid={item.parent_block_bid || ''}
                 onToggleAskExpanded={toggleAskExpanded}
                 key={`${idx}-ask`}
@@ -257,9 +254,9 @@ export const NewChatComponents = ({
                 item={item}
                 mobileStyle={mobileStyle}
                 blockBid={item.generated_block_bid}
+                confirmButtonText={t('module.renderUi.core.confirm')}
                 onClickCustomButtonAfterContent={handleClickAskButton}
                 onSend={memoizedOnSend}
-                onTypeFinished={memoizedOnTypeFinished}
                 onLongPress={handleLongPress}
               />
             </div>
@@ -286,24 +283,6 @@ export const NewChatComponents = ({
           onRefresh={onRefresh}
         />
       )}
-      {payModalOpen &&
-        (mobileStyle ? (
-          <PayModalM
-            open={payModalOpen}
-            onCancel={onPayModalClose}
-            onOk={onPayModalOk}
-            type={''}
-            payload={{}}
-          />
-        ) : (
-          <PayModal
-            open={payModalOpen}
-            onCancel={onPayModalClose}
-            onOk={onPayModalOk}
-            type={''}
-            payload={{}}
-          />
-        ))}
     </div>
   );
 };

@@ -1,10 +1,12 @@
 import queue
 import threading
-import asyncio
-import inspect
-from typing import Generator, Union, AsyncGenerator
+from typing import Generator, Union
 from enum import Enum
-from flaskr.service.learn.const import ROLE_STUDENT, ROLE_TEACHER
+from flaskr.service.learn.const import (
+    ROLE_STUDENT,
+    ROLE_TEACHER,
+    CONTEXT_INTERACTION_NEXT,
+)
 from flaskr.service.shifu.consts import (
     BLOCK_TYPE_MDINTERACTION_VALUE,
     BLOCK_TYPE_MDCONTENT_VALUE,
@@ -26,8 +28,6 @@ from flaskr.service.shifu.shifu_struct_manager import (
     get_outline_item_dto_with_mdflow,
 )
 from flaskr.service.shifu.models import (
-    DraftBlock,
-    PublishedBlock,
     DraftOutlineItem,
     PublishedOutlineItem,
     DraftShifu,
@@ -45,9 +45,12 @@ from flaskr.service.order.consts import (
     LEARN_STATUS_NOT_STARTED,
     LEARN_STATUS_LOCKED,
 )
-from flaskr.service.lesson.const import LESSON_TYPE_NORMAL
+from flaskr.service.shifu.consts import (
+    UNIT_TYPE_VALUE_TRIAL,
+    UNIT_TYPE_VALUE_NORMAL,
+)
 
-from flaskr.service.user.models import User
+from flaskr.service.user.repository import UserAggregate
 from flaskr.service.shifu.struct_utils import find_node_with_parents
 from flaskr.util import generate_id
 from flaskr.service.profile.funcs import get_user_profiles
@@ -70,6 +73,7 @@ from flaskr.service.learn.llmsetting import LLMSettings
 from flaskr.service.learn.utils_v2 import init_generated_block
 from flaskr.service.learn.exceptions import PaidException
 from flaskr.i18n import _
+from flaskr.service.user.exceptions import UserNotLoginException
 
 context_local = threading.local()
 
@@ -100,7 +104,6 @@ class RunScriptInfo:
 
 class RUNLLMProvider(LLMProvider):
     app: Flask
-    system_prompt: str
     llm_settings: LLMSettings
     trace: StatefulTraceClient
     trace_args: dict
@@ -108,36 +111,46 @@ class RUNLLMProvider(LLMProvider):
     def __init__(
         self,
         app: Flask,
-        system_prompt: str,
         llm_settings: LLMSettings,
         trace: StatefulTraceClient,
         trace_args: dict,
     ):
         self.app = app
-        self.system_prompt = system_prompt
         self.llm_settings = llm_settings
         self.trace = trace
         self.trace_args = trace_args
 
-    async def complete(self, messages: list[dict[str, str]]) -> str:
+    def complete(
+        self,
+        messages: list[dict[str, str]],
+        model: str | None = None,
+        temperature: float | None = None,
+    ) -> str:
         # Extract the last message content as the main prompt
         if not messages:
             raise ValueError("No messages provided")
 
         # Get the last message content
+        system_prompt = messages[0].get("content", "")
         last_message = messages[-1]
         prompt = last_message.get("content", "")
+
+        # Use provided model/temperature or fall back to settings
+        actual_model = model or self.llm_settings.model
+        actual_temperature = (
+            temperature if temperature is not None else self.llm_settings.temperature
+        )
 
         res = invoke_llm(
             self.app,
             self.trace_args.get("user_id", ""),
             self.trace,
             message=prompt,
-            system=self.system_prompt,
-            model=self.llm_settings.model,
+            system=system_prompt,
+            model=actual_model,
             stream=False,
             generation_name="run_llm",
-            temperature=self.llm_settings.temperature,
+            temperature=actual_temperature,
         )
         # Collect all stream responses and concatenate the results
         content_parts = []
@@ -146,32 +159,49 @@ class RUNLLMProvider(LLMProvider):
                 content_parts.append(response.result)
         return "".join(content_parts)
 
-    async def stream(self, messages: list[dict[str, str]]) -> AsyncGenerator[str, None]:
+    def stream(
+        self,
+        messages: list[dict[str, str]],
+        model: str | None = None,
+        temperature: float | None = None,
+    ) -> Generator[str, None, None]:
         # Extract the last message content as the main prompt
         if not messages:
             raise ValueError("No messages provided")
 
+        system_prompt = messages[0].get("content", "")
         # Get the last message content
         last_message = messages[-1]
         prompt = last_message.get("content", "")
-        system_prompt = self.system_prompt
+
+        # Use provided model/temperature or fall back to settings
+        actual_model = model or self.llm_settings.model
+        actual_temperature = (
+            temperature if temperature is not None else self.llm_settings.temperature
+        )
 
         # Check if there's a system message
-
+        self.app.logger.info("stream invoke_llm begin")
         res = invoke_llm(
             self.app,
             self.trace_args["user_id"],
             self.trace,
             message=prompt,
             system=system_prompt,
-            model=self.llm_settings.model,
+            model=actual_model,
             stream=True,
             generation_name="run_llm",
-            temperature=self.llm_settings.temperature,
+            temperature=actual_temperature,
         )
+        self.app.logger.info(f"stream invoke_llm res: {res}")
+        first_result = False
         for i in res:
             if i.result:
+                if not first_result:
+                    first_result = True
+                    self.app.logger.info(f"stream first result: {i.result}")
                 yield i.result
+        self.app.logger.info("stream invoke_llm end")
 
 
 class RunScriptContextV2:
@@ -179,22 +209,11 @@ class RunScriptContextV2:
     attend_id: str
     is_paid: bool
 
-    def _collect_async_generator(self, async_gen):
-        """Helper method to collect results from an async generator"""
-
-        async def _collect():
-            results = []
-            async for item in async_gen:
-                results.append(item)
-            return results
-
-        return asyncio.run(_collect())
-
     preview_mode: bool
     _q: queue.Queue
     _outline_item_info: ShifuOutlineItemDto
     _struct: HistoryItem
-    _user_info: User
+    _user_info: UserAggregate
     _is_paid: bool
     _preview_mode: bool
     _shifu_ids: list[str]
@@ -202,7 +221,6 @@ class RunScriptContextV2:
     _app: Flask
     _shifu_model: Union[DraftShifu, PublishedShifu]
     _outline_model: Union[DraftOutlineItem, PublishedOutlineItem]
-    _block_model: Union[DraftBlock, PublishedBlock]
     _trace_args: dict
     _shifu_info: ShifuInfoDto
     _trace: Union[StatefulTraceClient, MockClient]
@@ -217,7 +235,7 @@ class RunScriptContextV2:
         shifu_info: ShifuInfoDto,
         struct: HistoryItem,
         outline_item_info: ShifuOutlineItemDto,
-        user_info: User,
+        user_info: UserAggregate,
         is_paid: bool,
         preview_mode: bool,
     ):
@@ -229,7 +247,6 @@ class RunScriptContextV2:
         self._is_paid = is_paid
         self._preview_mode = preview_mode
         self._shifu_info = shifu_info
-
         self.shifu_ids = []
         self.outline_item_ids = []
         self.current_outline_item = None
@@ -238,11 +255,9 @@ class RunScriptContextV2:
 
         if preview_mode:
             self._outline_model = DraftOutlineItem
-            self._block_model = DraftBlock
             self._shifu_model = DraftShifu
         else:
             self._outline_model = PublishedOutlineItem
-            self._block_model = PublishedBlock
             self._shifu_model = PublishedShifu
         # get current attend
         self._q = queue.Queue()
@@ -255,15 +270,13 @@ class RunScriptContextV2:
             if item.children:
                 for child in item.children:
                     self._q.put(child)
-        self._current_attend = self._get_current_attend(self._outline_item_info.bid)
+        self._current_attend = None
         self._trace_args = {}
         self._trace_args["user_id"] = user_info.user_id
-        self._trace_args["session_id"] = self._current_attend.progress_record_bid
         self._trace_args["input"] = ""
         self._trace_args["name"] = self._outline_item_info.title
         self._trace = langfuse.trace(**self._trace_args)
         self._trace_args["output"] = ""
-
         context_local.current_context = self
 
     @staticmethod
@@ -286,13 +299,19 @@ class RunScriptContextV2:
             outline_item_info_db: Union[DraftOutlineItem, PublishedOutlineItem] = (
                 self._outline_model.query.filter(
                     self._outline_model.outline_item_bid == outline_bid,
-                ).first()
+                    self._outline_model.deleted == 0,
+                )
+                .order_by(self._outline_model.id.desc())
+                .first()
             )
             if not outline_item_info_db:
-                raise_error("LESSON.LESSON_NOT_FOUND_IN_COURSE")
-            if outline_item_info_db.type == LESSON_TYPE_NORMAL:
+                raise_error("server.shifu.lessonNotFoundInCourse")
+            if outline_item_info_db.type == UNIT_TYPE_VALUE_NORMAL:
                 if (not self._is_paid) and (not self._preview_mode):
-                    raise_error("ORDER.COURSE_NOT_PAID")
+                    raise PaidException()
+            elif outline_item_info_db.type == UNIT_TYPE_VALUE_TRIAL:
+                if not self._user_info.mobile:
+                    raise UserNotLoginException()
             parent_path = find_node_with_parents(self._struct, outline_bid)
             attend_info = None
             for item in parent_path:
@@ -452,8 +471,9 @@ class RunScriptContextV2:
                             )
                         )
 
-        if self._current_attend.block_position >= len(
-            self._current_outline_item.children
+        if self._current_attend.block_position >= max(
+            len(self._current_outline_item.children),
+            self._current_outline_item.child_count,
         ):
             _mark_sub_node_completed(self._current_outline_item, res)
         if self._current_attend.status == LEARN_STATUS_NOT_STARTED:
@@ -551,13 +571,73 @@ class RunScriptContextV2:
                     content=update,
                 )
 
+    def _emit_next_chapter_interaction(
+        self,
+        progress_record: LearnProgressRecord,
+    ) -> Generator[RunMarkdownFlowDTO, None, None]:
+        """
+        Persist and emit the standardized `_sys_next_chapter` interaction when a lesson
+        completes so the frontend can advance automatically.
+        """
+        if not progress_record or not self._outline_item_info:
+            return
+
+        button_label = _("server.learn.nextChapterButton")
+        button_md = f"?[{button_label}//{CONTEXT_INTERACTION_NEXT}]"
+        existing_block = (
+            LearnGeneratedBlock.query.filter(
+                LearnGeneratedBlock.progress_record_bid
+                == progress_record.progress_record_bid,
+                LearnGeneratedBlock.outline_item_bid
+                == progress_record.outline_item_bid,
+                LearnGeneratedBlock.user_bid == self._user_info.user_id,
+                LearnGeneratedBlock.type == BLOCK_TYPE_MDINTERACTION_VALUE,
+                LearnGeneratedBlock.status == 1,
+                LearnGeneratedBlock.deleted == 0,
+                LearnGeneratedBlock.block_content_conf == button_md,
+            )
+            .order_by(LearnGeneratedBlock.id.desc())
+            .first()
+        )
+        if existing_block:
+            return
+        generated_block: LearnGeneratedBlock = init_generated_block(
+            self.app,
+            shifu_bid=progress_record.shifu_bid,
+            outline_item_bid=progress_record.outline_item_bid,
+            progress_record_bid=progress_record.progress_record_bid,
+            user_bid=self._user_info.user_id,
+            block_type=BLOCK_TYPE_MDINTERACTION_VALUE,
+            mdflow=button_md,
+            block_index=progress_record.block_position,
+        )
+        generated_block.role = ROLE_TEACHER
+        generated_block.block_content_conf = button_md
+        db.session.add(generated_block)
+        db.session.flush()
+        yield RunMarkdownFlowDTO(
+            outline_bid=progress_record.outline_item_bid,
+            generated_block_bid=generated_block.generated_block_bid,
+            type=GeneratedType.INTERACTION,
+            content=button_md,
+        )
+
     def _get_default_llm_settings(self) -> LLMSettings:
         return LLMSettings(
             model=self.app.config.get("DEFAULT_LLM_MODEL"),
             temperature=float(self.app.config.get("DEFAULT_LLM_TEMPERATURE")),
         )
 
-    def set_input(self, input: str, input_type: str):
+    def set_input(self, input: str | dict, input_type: str):
+        """
+        Set user input.
+
+        Args:
+            input: User input, can be:
+                   - str: legacy format (e.g., "Python")
+                   - dict: new format from markdown-flow 0.2.27+ (e.g., {"lang": ["Python"]})
+            input_type: Input type
+        """
         self._trace_args["input"] = input
         self._trace_args["input_type"] = input_type
         self._input_type = input_type
@@ -583,6 +663,8 @@ class RunScriptContextV2:
             self.app, outline_item_id, self._preview_mode
         )
 
+        self.app.logger.info(f"outline_item_info: {outline_item_info.mdflow}")
+
         mddoc = MarkdownFlow(outline_item_info.mdflow)
         block_list = mddoc.get_all_blocks()
         self.app.logger.info(
@@ -603,7 +685,7 @@ class RunScriptContextV2:
             LearnGeneratedBlock.deleted == 0,
         ).first()
         if not generate_block:
-            raise_error("LESSON.LESSON_NOT_FOUND_IN_COURSE")
+            raise_error("server.shifu.lessonNotFoundInCourse")
         outline_item_info: OutlineItemDtoWithMdflow = get_outline_item_dto_with_mdflow(
             self.app, generate_block.outline_item_bid, self._preview_mode
         )
@@ -621,21 +703,30 @@ class RunScriptContextV2:
         )
 
     def run_inner(self, app: Flask) -> Generator[RunMarkdownFlowDTO, None, None]:
+        self._current_attend = self._get_current_attend(self._outline_item_info.bid)
         app.logger.info(
             f"run_context.run {self._current_attend.block_position} {self._current_attend.status}"
         )
-        if not self._current_attend:
-            self._current_attend = self._get_current_attend(self._outline_item_info.bid)
+        self._trace_args["session_id"] = self._current_attend.progress_record_bid
         outline_updates = self._get_next_outline_item()
         if len(outline_updates) > 0:
             yield from self._render_outline_updates(outline_updates, new_chapter=False)
             db.session.flush()
-            if self._current_attend.status != LEARN_STATUS_IN_PROGRESS:
+            self._current_attend = self._get_current_attend(self._outline_item_info.bid)
+            if self._current_attend.status not in [
+                LEARN_STATUS_IN_PROGRESS,
+                LEARN_STATUS_NOT_STARTED,
+            ]:
+                app.logger.info(
+                    f"current_attend.status != LEARN_STATUS_IN_PROGRESS To False,current_attend.status: {self._current_attend.status}"
+                )
                 self._can_continue = False
                 return
+
         run_script_info: RunScriptInfo = self._get_run_script_info(self._current_attend)
         if run_script_info is None:
             self.app.logger.warning("run script is none")
+            yield from self._emit_next_chapter_interaction(self._current_attend)
             self._can_continue = False
             outline_updates = self._get_next_outline_item()
             if len(outline_updates) > 0:
@@ -648,9 +739,10 @@ class RunScriptContextV2:
         llm_settings = self.get_llm_settings(run_script_info.outline_bid)
         system_prompt = self.get_system_prompt(run_script_info.outline_bid)
         mdflow = MarkdownFlow(
-            run_script_info.mdflow,
+            document=run_script_info.mdflow,
+            document_prompt=system_prompt,
             llm_provider=RUNLLMProvider(
-                app, system_prompt, llm_settings, self._trace, self._trace_args
+                app, llm_settings, self._trace, self._trace_args
             ),
         )
         block_list = mdflow.get_all_blocks()
@@ -658,12 +750,21 @@ class RunScriptContextV2:
         if self._input_type == "ask":
             if self._last_position == -1:
                 self._last_position = run_script_info.block_position
+            ask_input = self._input
+            app.logger.info(f"ask_input: {ask_input}")
+            if isinstance(ask_input, dict):
+                ask_input = ask_input.get("input", "")
+            else:
+                ask_input = ask_input
+            if isinstance(ask_input, list):
+                ask_input = ",".join(ask_input)
+            app.logger.info(f"ask_input: {ask_input}")
             res = handle_input_ask(
                 app,
                 self,
                 self._user_info,
                 self._current_attend.progress_record_bid,
-                self._input,
+                ask_input,
                 self._outline_item_info,
                 self._trace_args,
                 self._trace,
@@ -697,6 +798,8 @@ class RunScriptContextV2:
                 db.session.flush()
             return
         block = block_list[run_script_info.block_position]
+        app.logger.info(f"block: {block}")
+        app.logger.info(f"self._run_type: {self._run_type}")
         if self._run_type == RunType.INPUT:
             if block.block_type != BlockType.INTERACTION:
                 self._can_continue = True
@@ -713,6 +816,8 @@ class RunScriptContextV2:
                     LearnGeneratedBlock.outline_item_bid == run_script_info.outline_bid,
                     LearnGeneratedBlock.user_bid == self._user_info.user_id,
                     LearnGeneratedBlock.type == BLOCK_TYPE_MDINTERACTION_VALUE,
+                    LearnGeneratedBlock.position == run_script_info.block_position,
+                    LearnGeneratedBlock.status == 1,
                 )
                 .order_by(LearnGeneratedBlock.id.desc())
                 .first()
@@ -728,7 +833,7 @@ class RunScriptContextV2:
                                 outline_bid=run_script_info.outline_bid,
                                 generated_block_bid=generated_block.generated_block_bid
                                 if generated_block
-                                else "",
+                                else generate_id(app),
                                 type=GeneratedType.INTERACTION,
                                 content=block.content,
                             )
@@ -753,23 +858,62 @@ class RunScriptContextV2:
                                 outline_bid=run_script_info.outline_bid,
                                 generated_block_bid=generated_block.generated_block_bid
                                 if generated_block
-                                else "",
+                                else generate_id(app),
                                 type=GeneratedType.INTERACTION,
                                 content=block.content,
                             )
                             self._can_continue = False
                             db.session.flush()
                             return
-
-            generated_block.generated_content = self._input
+            if not generated_block:
+                generated_block = init_generated_block(
+                    app,
+                    shifu_bid=run_script_info.attend.shifu_bid,
+                    outline_item_bid=run_script_info.outline_bid,
+                    progress_record_bid=run_script_info.attend.progress_record_bid,
+                    user_bid=self._user_info.user_id,
+                    block_type=BLOCK_TYPE_MDINTERACTION_VALUE,
+                    mdflow=block.content,
+                    block_index=run_script_info.block_position,
+                )
+                app.logger.info(
+                    f"generated_block not found, init new one: {generated_block.generated_block_bid}"
+                )
+                yield RunMarkdownFlowDTO(
+                    outline_bid=run_script_info.outline_bid,
+                    generated_block_bid=generated_block.generated_block_bid,
+                    type=GeneratedType.INTERACTION,
+                    content=block.content,
+                )
+                self._can_continue = False
+                db.session.add(generated_block)
+                db.session.flush()
+                return
+            # Convert dict to string for database storage (markdown-flow 0.2.27+ sends dict)
+            if isinstance(self._input, dict):
+                # Convert {"var": ["val1", "val2"]} to "val1,val2" or just "val1"
+                values = []
+                for v in self._input.values():
+                    if isinstance(v, list):
+                        # Filter out None and convert to string
+                        values.extend([str(item) for item in v if item is not None])
+                    elif v is not None:
+                        values.append(str(v))
+                generated_block.generated_content = ",".join(values) if values else ""
+            else:
+                generated_block.generated_content = (
+                    str(self._input) if self._input is not None else ""
+                )
             generated_block.role = ROLE_STUDENT
+            generated_block.position = run_script_info.block_position
+            generated_block.block_content_conf = block.content
             generated_block.status = 1
             db.session.flush()
             res = check_text_with_llm_response(
                 app,
                 self._user_info,
                 generated_block,
-                self._input,
+                generated_block.generated_content,  # Use converted string value
                 self._trace,
                 self._outline_item_info.bid,
                 self._outline_item_info.position,
@@ -815,12 +959,32 @@ class RunScriptContextV2:
                 self._current_attend.block_position += 1
                 db.session.flush()
                 return
-            validate_result = asyncio.run(
-                mdflow.process(
-                    run_script_info.block_position,
-                    ProcessMode.COMPLETE,
-                    user_input=self._input,
-                )
+            # Direct synchronous call - no async wrapper needed (markdown-flow 0.2.27+)
+            # Prepare user_input based on input type
+            if isinstance(self._input, dict):
+                # Already in dict format from frontend, but need to filter out None values
+                user_input_param = {}
+                for key, value in self._input.items():
+                    if isinstance(value, list):
+                        # Filter out None values and ensure all are strings
+                        cleaned = [str(v) for v in value if v is not None]
+                        if cleaned:  # Only add if there are non-None values
+                            user_input_param[key] = cleaned
+                    elif value is not None:
+                        user_input_param[key] = [str(value)]
+            else:
+                # Legacy string format, wrap it
+                if self._input is not None:
+                    user_input_param = {
+                        parsed_interaction.get("variable", "input"): [str(self._input)]
+                    }
+                else:
+                    user_input_param = {}
+
+            validate_result = mdflow.process(
+                run_script_info.block_position,
+                ProcessMode.COMPLETE,
+                user_input=user_input_param,
             )
 
             if (
@@ -830,7 +994,15 @@ class RunScriptContextV2:
                 profile_to_save: list[ProfileToSave] = []
                 for key, value in validate_result.variables.items():
                     profile_id = variable_definition_key_id_map.get(key, "")
-                    profile_to_save.append(ProfileToSave(key, value, profile_id))
+                    # Convert list to string (markdown-flow 0.2.27+ returns list[str] for multi-select)
+                    if isinstance(value, list):
+                        # Filter out None and convert to string
+                        value_str = ",".join(
+                            [str(item) for item in value if item is not None]
+                        )
+                    else:
+                        value_str = str(value) if value is not None else ""
+                    profile_to_save.append(ProfileToSave(key, value_str, profile_id))
 
                 save_user_profiles(
                     app,
@@ -916,7 +1088,7 @@ class RunScriptContextV2:
                 self._current_attend.status = LEARN_STATUS_IN_PROGRESS
                 db.session.add(generated_block)
                 db.session.flush()
-        if self._run_type == RunType.OUTPUT:
+        elif self._run_type == RunType.OUTPUT:
             generated_block: LearnGeneratedBlock = init_generated_block(
                 app,
                 shifu_bid=run_script_info.attend.shifu_bid,
@@ -968,56 +1140,52 @@ class RunScriptContextV2:
                 generated_block.type = BLOCK_TYPE_MDCONTENT_VALUE
                 generated_content = ""
 
-                async def process_stream():
-                    # Run in STREAM mode; mdflow.process may return a coroutine or an async generator
-                    stream_or_result = mdflow.process(
-                        run_script_info.block_position,
-                        ProcessMode.STREAM,
-                        variables=user_profile,
-                        user_input=self._input,
-                    )
-                    # Await if it's awaitable (coroutine returning either a result or an async generator)
-                    if inspect.isawaitable(stream_or_result):
-                        stream_or_result = await stream_or_result
-                    # If it's an async generator, yield chunks from it
-                    if inspect.isasyncgen(stream_or_result):
-                        async for chunk in stream_or_result:
-                            # chunk may be a simple string or an object with content/result/text
-                            if isinstance(chunk, str):
-                                yield chunk
-                            elif hasattr(chunk, "content") and chunk.content:
-                                yield chunk.content
-                            elif hasattr(chunk, "result") and chunk.result:
-                                yield chunk.result
-                            elif hasattr(chunk, "text") and chunk.text:
-                                yield chunk.text
-                            else:
-                                yield str(chunk)
-                        return
+                # Direct synchronous stream processing (markdown-flow 0.2.27+)
+                app.logger.info(f"process_stream: {run_script_info.block_position}")
+                app.logger.info(f"variables: {user_profile}")
 
-                    # Otherwise, handle a single result object
-                    result = stream_or_result
-                    if isinstance(result, str):
-                        yield result
-                    elif hasattr(result, "content") and result.content:
-                        yield result.content
-                    elif hasattr(result, "result") and result.result:
-                        yield result.result
-                    elif hasattr(result, "text") and result.text:
-                        yield result.text
-                    else:
-                        # Fallback: convert to string to avoid leaking object reprs
-                        yield str(result) if result else ""
+                # For CONTENT blocks, no user_input is needed (only INTERACTION blocks have user input)
+                stream_result = mdflow.process(
+                    run_script_info.block_position,
+                    ProcessMode.STREAM,
+                    variables=user_profile,
+                )
 
-                res = self._collect_async_generator(process_stream())
-                for i in res:
-                    generated_content += i
-                    yield RunMarkdownFlowDTO(
-                        outline_bid=run_script_info.outline_bid,
-                        generated_block_bid=generated_block.generated_block_bid,
-                        type=GeneratedType.CONTENT,
-                        content=i,  # i is now a string, not an object with content attribute
+                # Handle both Generator and single LLMResult (markdown-flow 0.2.27+)
+                # In some edge cases (e.g., no LLM provider), returns a single LLMResult instead of Generator
+                import inspect
+
+                if inspect.isgenerator(stream_result):
+                    # It's a generator, iterate normally
+                    for llm_result in stream_result:
+                        chunk_content = (
+                            llm_result.content
+                            if hasattr(llm_result, "content")
+                            else str(llm_result)
+                        )
+                        if chunk_content:
+                            generated_content += chunk_content
+                            yield RunMarkdownFlowDTO(
+                                outline_bid=run_script_info.outline_bid,
+                                generated_block_bid=generated_block.generated_block_bid,
+                                type=GeneratedType.CONTENT,
+                                content=chunk_content,
+                            )
+                else:
+                    # It's a single LLMResult object (edge case)
+                    chunk_content = (
+                        stream_result.content
+                        if hasattr(stream_result, "content")
+                        else str(stream_result)
                     )
+                    if chunk_content:
+                        generated_content += chunk_content
+                        yield RunMarkdownFlowDTO(
+                            outline_bid=run_script_info.outline_bid,
+                            generated_block_bid=generated_block.generated_block_bid,
+                            type=GeneratedType.CONTENT,
+                            content=chunk_content,
+                        )
                 yield RunMarkdownFlowDTO(
                     outline_bid=run_script_info.outline_bid,
                     generated_block_bid=generated_block.generated_block_bid,
@@ -1026,13 +1194,16 @@ class RunScriptContextV2:
                 )
                 generated_block.generated_content = generated_content
                 db.session.add(generated_block)
-                self._can_continue = True
+                self._can_continue = False
                 self._current_attend.status = LEARN_STATUS_IN_PROGRESS
                 self._current_attend.block_position += 1
                 db.session.flush()
+
+        progress_record = self._current_attend
         outline_updates = self._get_next_outline_item()
         if len(outline_updates) > 0:
             yield from self._render_outline_updates(outline_updates, new_chapter=True)
+            yield from self._emit_next_chapter_interaction(progress_record)
             self._can_continue = False
             db.session.flush()
         self._trace.update(**self._trace_args)
@@ -1041,11 +1212,22 @@ class RunScriptContextV2:
         try:
             yield from self.run_inner(app)
         except PaidException:
+            app.logger.info("PaidException")
+            self._can_continue = False
             yield RunMarkdownFlowDTO(
                 outline_bid=self._outline_item_info.bid,
-                generated_block_bid="",
+                generated_block_bid=generate_id(self.app),
                 type=GeneratedType.INTERACTION,
-                content=_("ORDER.CHECKOUT") + "//_sys_pay",
+                content=f"?[{_('server.order.checkout')}//_sys_pay]",
+            )
+        except UserNotLoginException:
+            app.logger.info("UserNotLoginException")
+            self._can_continue = False
+            yield RunMarkdownFlowDTO(
+                outline_bid=self._outline_item_info.bid,
+                generated_block_bid=generate_id(self.app),
+                type=GeneratedType.INTERACTION,
+                content=f"?[{_('USER.LOGIN')}//_sys_login]",
             )
 
     def has_next(self) -> bool:
@@ -1067,15 +1249,28 @@ class RunScriptContextV2:
         ] = {o.id: o for o in outline_item_info_db}
         for id in outline_ids:
             outline_item_info = outline_item_info_map.get(id, None)
-            if outline_item_info and outline_item_info.llm_system_prompt:
+            if (
+                outline_item_info
+                and outline_item_info.llm_system_prompt
+                and outline_item_info.llm_system_prompt != ""
+            ):
+                self.app.logger.info(
+                    f"outline_item_info.llm_system_prompt: {outline_item_info.llm_system_prompt}"
+                )
                 return outline_item_info.llm_system_prompt
         shifu_info_db: Union[DraftShifu, PublishedShifu] = (
             self._shifu_model.query.filter(
                 self._shifu_model.id.in_(shifu_ids),
                 self._shifu_model.deleted == 0,
-            ).first()
+            )
+            .order_by(self._shifu_model.id.desc())
+            .first()
         )
+        self.app.logger.info(f"shifu_info_db: {shifu_info_db}")
         if shifu_info_db and shifu_info_db.llm_system_prompt:
+            self.app.logger.info(
+                f"shifu_info_db.llm_system_prompt: {shifu_info_db.llm_system_prompt}"
+            )
             return shifu_info_db.llm_system_prompt
         return None
 
@@ -1111,32 +1306,44 @@ class RunScriptContextV2:
         return self._get_default_llm_settings()
 
     def reload(self, app: Flask, reload_generated_block_bid: str):
-        generated_block: LearnGeneratedBlock = LearnGeneratedBlock.query.filter(
-            LearnGeneratedBlock.generated_block_bid == reload_generated_block_bid,
-        ).first()
-        self._can_continue = False
-        if generated_block:
-            if self._input_type != "ask":
-                app.logger.error(
-                    f"reload generated_block: {generated_block.id},block_position: {generated_block.position}"
-                )
-                LearnGeneratedBlock.query.filter(
-                    LearnGeneratedBlock.progress_record_bid
-                    == generated_block.progress_record_bid,
-                    LearnGeneratedBlock.outline_item_bid
-                    == generated_block.outline_item_bid,
-                    LearnGeneratedBlock.user_bid == self._user_info.user_id,
-                    LearnGeneratedBlock.id >= generated_block.id,
-                    LearnGeneratedBlock.position >= generated_block.position,
-                ).update(
-                    {
-                        LearnGeneratedBlock.status: 0,
-                    }
-                )
-                self._current_attend.block_position = generated_block.position
-                self._current_attend.status = LEARN_STATUS_IN_PROGRESS
-                db.session.flush()
-            else:
-                self._last_position = generated_block.position
-        yield from self.run(app)
+        with app.app_context():
+            generated_block: LearnGeneratedBlock = LearnGeneratedBlock.query.filter(
+                LearnGeneratedBlock.generated_block_bid == reload_generated_block_bid,
+            ).first()
+
+            current_attend = self._get_current_attend(generated_block.outline_item_bid)
+            self._can_continue = False
+            if generated_block:
+                if self._input_type != "ask":
+                    app.logger.info(
+                        f"reload generated_block: {generated_block.id},block_position: {generated_block.position}"
+                    )
+                    if generated_block.type == BLOCK_TYPE_MDCONTENT_VALUE:
+                        LearnGeneratedBlock.query.filter(
+                            LearnGeneratedBlock.progress_record_bid
+                            == generated_block.progress_record_bid,
+                            LearnGeneratedBlock.outline_item_bid
+                            == generated_block.outline_item_bid,
+                            LearnGeneratedBlock.user_bid == self._user_info.user_id,
+                            LearnGeneratedBlock.id >= generated_block.id,
+                            LearnGeneratedBlock.position >= generated_block.position,
+                        ).update({LearnGeneratedBlock.status: 0})
+                    if generated_block.type == BLOCK_TYPE_MDINTERACTION_VALUE:
+                        LearnGeneratedBlock.query.filter(
+                            LearnGeneratedBlock.progress_record_bid
+                            == generated_block.progress_record_bid,
+                            LearnGeneratedBlock.outline_item_bid
+                            == generated_block.outline_item_bid,
+                            LearnGeneratedBlock.user_bid == self._user_info.user_id,
+                            LearnGeneratedBlock.id > generated_block.id,
+                            LearnGeneratedBlock.position > generated_block.position,
+                        ).update({LearnGeneratedBlock.status: 0})
+                    current_attend.block_position = generated_block.position
+                    current_attend.status = LEARN_STATUS_IN_PROGRESS
+                    db.session.commit()
+                else:
+                    self._last_position = generated_block.position
+        with app.app_context():
+            yield from self.run(app)
+            db.session.commit()
         return

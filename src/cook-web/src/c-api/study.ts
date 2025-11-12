@@ -41,8 +41,8 @@ export const runScript = (
       if (onMessage) {
         onMessage(response);
       }
-    } catch (e) {
-      console.log(e);
+    } catch {
+      // ignore malformed SSE payloads
     }
   };
 
@@ -56,7 +56,7 @@ export const runScript = (
 };
 
 /**
- * 获取课程学习记录
+ * Fetch course study records
  * @param {*} lessonId
  * @returns
  */

@@ -14,9 +14,7 @@
 const api = {
   // auth
   sendSmsCode: 'POST /user/send_sms_code',
-  sendMailCode: 'POST /user/send_mail_code',
   requireTmp: 'POST /user/require_tmp',
-  verifyMailCode: 'POST /user/verify_mail_code',
   verifySmsCode: 'POST /user/verify_sms_code',
   submitFeedback: 'POST /user/submit-feedback',
   googleOauthStart: 'GET /user/oauth/google',
@@ -40,6 +38,12 @@ const api = {
   modifyOutline: 'POST /shifu/shifus/{shifu_bid}/outlines/{outline_bid}',
   getOutlineInfo: 'GET /shifu/shifus/{shifu_bid}/outlines/{outline_bid}',
   reorderOutlineTree: 'PATCH /shifu/shifus/{shifu_bid}/outlines/reorder',
+
+  getMdflow: 'GET /shifu/shifus/{shifu_bid}/outlines/{outline_bid}/mdflow',
+  saveMdflow: 'POST /shifu/shifus/{shifu_bid}/outlines/{outline_bid}/mdflow',
+  parseMdflow:
+    'POST /shifu/shifus/{shifu_bid}/outlines/{outline_bid}/mdflow/parse',
+  runMdflow: 'POST /shifu/shifus/{shifu_bid}/outlines/{outline_bid}/mdflow/run',
   // outline api end
 
   // blocks api

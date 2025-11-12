@@ -32,7 +32,7 @@ export class ErrorWithCode extends Error {
 const handleApiError = (error: ErrorWithCode, showToast = true) => {
   if (showToast) {
     toast({
-      title: error.message || i18n.t('common.networkError'),
+      title: error.message || i18n.t('common.core.networkError'),
       variant: 'destructive',
     });
   }
@@ -50,7 +50,7 @@ const handleApiError = (error: ErrorWithCode, showToast = true) => {
 // Check response status code and handle business logic
 const handleBusinessCode = (response: any) => {
   const error = new ErrorWithCode(
-    response.message || i18n.t('common.unknownError'),
+    response.message || i18n.t('common.core.unknownError'),
     response.code || -1,
   );
 
@@ -84,14 +84,14 @@ const handleBusinessCode = (response: any) => {
       response.code === 9002
     ) {
       toast({
-        title: i18n.t('errors.noPermission'),
+        title: i18n.t('common.errors.noPermission'),
         variant: 'destructive',
       });
     }
 
     return Promise.reject(error);
   }
-  return response.data || response;
+  return response.data ?? response;
 };
 
 // ===== Utility Functions =====
@@ -133,10 +133,10 @@ export class Request {
       if (typeof window !== 'undefined') {
         // Client: use cached API base URL to avoid repeated requests
         const siteHost = await getDynamicApiBaseUrl();
-        fullUrl = (siteHost || 'http://localhost:8081') + url;
+        fullUrl = (siteHost || 'http://localhost:8080') + url;
       } else {
         // Fallback for server-side rendering
-        fullUrl = (getStringEnv('baseURL') || 'http://localhost:8081') + url;
+        fullUrl = (getStringEnv('baseURL') || 'http://localhost:8080') + url;
       }
     }
 

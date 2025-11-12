@@ -5,12 +5,12 @@
 body,
 html {
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 @layer base {
   :root {
-    --background: 0, 0%, 99.6%;
+    --background: 0 0% 99.6%;
     --foreground: 224 71.4% 4.1%;
     --card: 0 0% 100%;
     --card-foreground: 224 71.4% 4.1%;
@@ -132,6 +132,9 @@ html {
     box-shadow: var(--shadow-xs-offset-x, 0) var(--shadow-xs-offset-y, 1px)
       var(--shadow-xs-blur-radius, 2px) var(--shadow-xs-spread-radius, 0)
       var(--shadow-xs-color, rgba(0, 0, 0, 0.05));
+  }
+  .markdown-body input::selection {
+    background-color: #d6e4ff;
   }
   .markdown-body [type='button'] {
     border-radius: var(--border-radius-rounded-md, 8px);

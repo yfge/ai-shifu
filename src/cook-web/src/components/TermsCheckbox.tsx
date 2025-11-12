@@ -18,10 +18,7 @@ export function TermsCheckbox({
   const { t } = useTranslation();
   return (
     <div
-      className={cn(
-        'flex flex-col items-center gap-2 text-center sm:flex-row sm:items-center sm:gap-2 sm:text-left',
-        className,
-      )}
+      className={cn('flex flex-row items-center gap-2 text-left', className)}
     >
       <Checkbox
         id='terms'
@@ -31,10 +28,10 @@ export function TermsCheckbox({
       />
       <label
         htmlFor='terms'
-        className='block text-center text-sm font-medium leading-snug peer-disabled:cursor-not-allowed peer-disabled:opacity-70 sm:text-left'
+        className='block text-left text-sm font-medium leading-snug peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
       >
         <Trans
-          i18nKey='auth.readAndAgree'
+          i18nKey='module.auth.readAndAgree'
           components={{
             serviceAgreement: (
               <a
@@ -54,8 +51,8 @@ export function TermsCheckbox({
             ),
           }}
           values={{
-            serviceLabel: t('auth.serviceAgreement'),
-            privacyLabel: t('auth.privacyPolicy'),
+            serviceLabel: t('module.auth.serviceAgreement'),
+            privacyLabel: t('module.auth.privacyPolicy'),
           }}
         />
       </label>

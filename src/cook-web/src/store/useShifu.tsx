@@ -13,6 +13,7 @@ import {
   ReorderOutlineItemDto,
   BlockDTO,
   BlockType,
+  SaveMdflowPayload,
 } from '../types/shifu';
 import api from '@/api';
 import { useContentTypes } from '@/components/render-block';
@@ -26,6 +27,7 @@ import {
   useCallback,
   useRef,
 } from 'react';
+import { LEARNING_PERMISSION } from '@/c-api/studyV2';
 
 const ShifuContext = createContext<ShifuContextType | undefined>(undefined);
 
@@ -85,16 +87,35 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
     ProfileItem[]
   >([]);
   const [models, setModels] = useState<string[]>([]);
+  const [mdflow, setMdflow] = useState<string>('');
+  const [variables, setVariables] = useState<string[]>([]);
+  const currentMdflow = useRef<string>('');
+  const [systemVariables, setSystemVariables] = useState<
+    Record<string, string>[]
+  >([]);
+  // Debounced autosave for mdflow; kept stable via ref
+  const debouncedAutoSaveRef = useRef(
+    debounce(async (payload?: SaveMdflowPayload) => {
+      await saveMdflow(payload);
+    }, 3000),
+  );
 
   // Ensure UI types and content types are fetched only in the client environment
   // const UITypes = useUITypes()
   const ContentTypes = useContentTypes();
 
-  const loadShifu = async (shifuId: string) => {
-    setBlockUITypes({});
-    setBlockContentTypes({});
+  const loadShifu = async (
+    shifuId: string,
+    options?: {
+      silent?: boolean;
+    },
+  ) => {
+    const silent = options?.silent ?? false;
+
     try {
-      setIsLoading(true);
+      if (!silent) {
+        setIsLoading(true);
+      }
       setError(null);
       const shifu = await api.getShifuDetail({
         shifu_bid: shifuId,
@@ -104,7 +125,9 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
       console.error(error);
       setError('Failed to load shifu');
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
     }
   };
   const recursiveCataData = (cataTree: Outline[]): any => {
@@ -247,7 +270,8 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
     if (nextNode) {
       setCurrentNode(nextNode);
       if (nextNode.bid) {
-        await loadBlocks(nextNode.bid, currentShifu?.bid || '');
+        // await loadBlocks(nextNode.bid, currentShifu?.bid || '');
+        await loadMdflow(nextNode.bid, currentShifu?.bid || '');
       } else {
         setBlocks([]);
       }
@@ -268,8 +292,6 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
       : null;
 
     try {
-      console.log('removeOutline', outline);
-
       removeOutlineFromTree(outline);
       cleanupCatalogData(outline);
       await deleteOutlineAPI(outline);
@@ -307,6 +329,24 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
     });
   };
 
+  const loadMdflow = async (outlineId: string, shifuId: string) => {
+    setIsLoading(true);
+    setError(null);
+    const mdflow = await api.getMdflow({
+      shifu_bid: shifuId,
+      outline_bid: outlineId,
+    });
+    setMdflow(mdflow);
+    setCurrentMdflow(mdflow);
+    // if (mdflow) {
+    parseMdflow(mdflow, shifuId, outlineId);
+    // } else {
+    // setVariables([]);
+    // setSystemVariables([]);
+    // }
+    setIsLoading(false);
+  };
+
   const loadChapters = async (shifuId: string) => {
     try {
       setIsLoading(true);
@@ -316,7 +356,6 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
       const chaptersData = await api.getShifuOutlineTree({
         shifu_bid: shifuId,
       });
-
       const list = remapOutlineTree(chaptersData);
       if (list.length > 0) {
         if (list[0].children && list[0].children.length > 0) {
@@ -324,12 +363,13 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
             ...list[0].children[0],
             depth: 1,
           });
-          await loadBlocks(list[0].children[0].bid, shifuId);
+          await loadMdflow(list[0].children[0].bid, shifuId);
+          // await loadBlocks(list[0].children[0].bid, shifuId);
         }
       }
       setChapters(list);
       buildOutlineTree(list);
-      loadProfileItemDefinations(shifuId);
+      // loadProfileItemDefinations(shifuId);
     } catch (error) {
       console.error(error);
       setError('Failed to load chapters');
@@ -413,7 +453,6 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
       if (isLoading) {
         return;
       }
-      console.log('saveBlocks', blockPropertiesRef.current);
       const list = buildBlockListWithAllInfo(
         blocks,
         blockTypes,
@@ -540,7 +579,7 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
         });
 
         if (!result) {
-          setError('common.errorSaveFailed');
+          setError('common.core.errorSaveFailed');
           return result;
         }
 
@@ -572,33 +611,23 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
     [],
   );
 
-  const autoSaveBlocks = useCallback(
-    debounce(
-      async (
-        outline: string,
-        blocks: Block[],
-        blockTypes: Record<string, any>,
-        blockContentProperties: Record<string, any>,
-        shifu_id: string,
-      ) => {
-        return await saveCurrentBlocks(
-          outline,
-          blocks,
-          blockTypes,
-          blockContentProperties,
-          shifu_id,
-        );
-      },
-      3000,
-    ),
-    [saveCurrentBlocks],
-  ) as (
-    outline: string,
-    blocks: Block[],
-    blockTypes: Record<string, any>,
-    blockProperties: Record<string, any>,
-    shifu_id: string,
-  ) => Promise<ApiResponse<SaveBlockListResult> | null>;
+  const autoSaveBlocks = (
+    payload?: SaveMdflowPayload,
+  ): Promise<ApiResponse<SaveBlockListResult> | null> => {
+    debouncedAutoSaveRef.current(payload);
+    return Promise.resolve(null);
+  };
+
+  const flushAutoSaveBlocks = (payload?: SaveMdflowPayload) => {
+    if (payload) {
+      debouncedAutoSaveRef.current(payload);
+    }
+    debouncedAutoSaveRef.current.flush();
+  };
+
+  const cancelAutoSaveBlocks = () => {
+    debouncedAutoSaveRef.current.cancel();
+  };
 
   const addSiblingOutline = async (item: Outline, name = '') => {
     const id = 'new_chapter';
@@ -644,7 +673,7 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
           index: index,
           name: data.name,
           description: data.name,
-          type: 'trial',
+          type: LEARNING_PERMISSION.TRIAL,
           system_prompt: '',
           is_hidden: false,
           shifu_id: currentShifu?.bid || '',
@@ -711,7 +740,7 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
           index: index,
           name: data.name,
           description: data.name,
-          type: 'trial',
+          type: LEARNING_PERMISSION.TRIAL,
           system_prompt: '',
           is_hidden: false,
           shifu_bid: currentShifu?.bid || '',
@@ -774,7 +803,7 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
         index: Math.max(0, index - 1),
         name: data.name,
         description: data.name,
-        type: 'trial',
+        type: LEARNING_PERMISSION.TRIAL,
         system_prompt: '',
         is_hidden: false,
         shifu_id: currentShifu?.bid || '',
@@ -981,6 +1010,67 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
     });
   };
 
+  const parseMdflow = async (
+    value: string,
+    shifuId: string,
+    outlineId: string,
+  ) => {
+    setIsLoading(true);
+    try {
+      const list = await api.getProfileItemDefinitions({
+        parent_id: shifuId,
+        type: 'all',
+      });
+      const sysVariables = list
+        .filter(item => item.profile_scope === 'system')
+        .map(item => ({
+          name: item.profile_key,
+          label: item.profile_remark,
+        }));
+
+      setSystemVariables(sysVariables);
+
+      // const result = await api.parseMdflow({
+      //   shifu_bid: shifuId || currentShifu?.bid || '',
+      //   outline_bid: outlineId || currentNode?.bid || '',
+      //   data: value,
+      // });
+
+      // const customVariables = result.variables.filter(
+      //   item => !sysVariables.some(sysItem => sysItem.name === item),
+      // );
+
+      const customVariables = list
+        .filter(item => item.profile_scope === 'user')
+        .map(item => item.profile_key);
+
+      setVariables(customVariables || []);
+    } catch (error) {
+      console.error(error);
+      setSystemVariables([]);
+      setVariables([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const saveMdflow = async (payload?: SaveMdflowPayload) => {
+    const shifu_bid = payload?.shifu_bid ?? currentShifu?.bid ?? '';
+    const outline_bid = payload?.outline_bid ?? (currentNode?.bid || '');
+    const data = payload?.data ?? currentMdflow.current;
+    await api.saveMdflow({
+      shifu_bid,
+      outline_bid,
+      data,
+    });
+    setLastSaveTime(new Date());
+  };
+
+  const setCurrentMdflow = (value: string) => {
+    currentMdflow.current = value;
+    setMdflow(value || '');
+  };
+
   const value: ShifuContextType = {
     currentShifu,
     chapters,
@@ -1002,6 +1092,9 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
     blockProperties,
     blockUITypes,
     blockContentTypes,
+    mdflow,
+    variables,
+    systemVariables,
     actions: {
       setFocusId,
       addChapter,
@@ -1036,6 +1129,12 @@ export const ShifuProvider: React.FC<{ children: ReactNode }> = ({
       setBlockError,
       clearBlockErrors,
       reorderOutlineTree,
+      loadMdflow,
+      saveMdflow,
+      parseMdflow,
+      setCurrentMdflow,
+      flushAutoSaveBlocks,
+      cancelAutoSaveBlocks,
     },
   };
 
