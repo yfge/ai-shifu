@@ -61,7 +61,6 @@ function TextInput(props: UIBlockDTO) {
   };
 
   const handleProfileChange = (value: string[]) => {
-    console.log('handleProfileChange', value);
     // Ensure that both `profiles` (nested) and `profile_ids` (top-level) are updated in sync
     setTempProperties({
       ...tempProperties,
@@ -97,7 +96,7 @@ function TextInput(props: UIBlockDTO) {
           htmlFor=''
           className='whitespace-nowrap w-[70px] shrink-0'
         >
-          {t('textInput.inputPlaceholder')}
+          {t('module.renderUi.textInput.inputPlaceholder')}
         </label>
         <Input
           value={tempProperties.placeholder.lang[i18n.language]}
@@ -110,7 +109,7 @@ function TextInput(props: UIBlockDTO) {
           htmlFor=''
           className='whitespace-nowrap w-[70px] shrink-0'
         >
-          {t('textInput.inputName')}
+          {t('module.renderUi.textInput.inputName')}
         </label>
         <ProfileFormItem
           value={tempProperties?.result_variable_bids}
@@ -122,7 +121,7 @@ function TextInput(props: UIBlockDTO) {
           htmlFor=''
           className='whitespace-nowrap w-[70px] shrink-0'
         >
-          {t('textInput.prompt')}
+          {t('module.renderUi.textInput.prompt')}
         </label>
         <div className='w-full rounded-md border bg-background px-1 py-1'>
           <div
@@ -141,7 +140,7 @@ function TextInput(props: UIBlockDTO) {
           htmlFor=''
           className='whitespace-nowrap w-[70px] shrink-0'
         >
-          {t('textInput.model')}
+          {t('module.renderUi.textInput.model')}
         </label>
         <ModelList
           value={tempProperties.llm}
@@ -154,7 +153,7 @@ function TextInput(props: UIBlockDTO) {
           htmlFor=''
           className='whitespace-nowrap w-[70px] shrink-0'
         >
-          {t('textInput.temperature')}
+          {t('module.renderUi.textInput.temperature')}
         </label>
         <InputNumber
           min={0}
@@ -171,7 +170,7 @@ function TextInput(props: UIBlockDTO) {
           className='h-8 w-20'
           onClick={handleConfirm}
         >
-          {t('textInput.complete')}
+          {t('module.renderUi.textInput.complete')}
         </Button>
       </div>
     </div>

@@ -1,7 +1,6 @@
 from flask import Flask
 import jwt
 import time
-import base64
 import string
 import random
 import smtplib
@@ -11,10 +10,21 @@ from flaskr.i18n import _
 
 from ..common.models import raise_error
 from ...dao import redis_client as redis, db
-from captcha.image import ImageCaptcha
 from flaskr.api.sms.aliyun import send_sms_code_ali
 from .models import UserVerifyCode
+
+import json
+
+from flaskr.service.config.funcs import get_config as get_dynamic_config
+from flaskr.service.shifu.models import AiCourseAuth
+from flaskr.service.user.repository import mark_user_roles
+from flaskr.service.shifu.models import DraftShifu
+from flaskr.util import generate_id
+from flaskr.service.shifu.shifu_import_export_funcs import import_shifu
+from werkzeug.datastructures import FileStorage
 from io import BytesIO
+import os
+from pathlib import Path
 
 
 def get_user_openid(user):
@@ -80,36 +90,6 @@ def generate_token(app: Flask, user_id: str) -> str:
         return token
 
 
-# generate image captcha
-# author: yfge
-def generation_img_chk(app: Flask, identifying_account: str):
-    with app.app_context():
-        image_captcha = ImageCaptcha()
-        characters = string.ascii_uppercase + string.digits
-        # Generate a random string of length 4
-        random_string = "".join(random.choices(characters, k=4))
-        captcha_image = image_captcha.generate_image(random_string)
-        # Save the image to a BytesIO object
-        buffered = BytesIO()
-        captcha_image.save(buffered, format="PNG")
-        app.logger.info(
-            "identifying_account:"
-            + identifying_account
-            + " random_string:"
-            + random_string
-        )
-        # Encode the image to base64
-        img_base64 = "data:image/png;base64," + base64.b64encode(
-            buffered.getvalue()
-        ).decode("utf-8")
-        redis.set(
-            app.config["REDIS_KEY_PREFIX_CAPTCHA"] + identifying_account,
-            random_string,
-            ex=app.config["CAPTCHA_CODE_EXPIRE_TIME"],
-        )
-        return {"img": img_base64, "expire_in": app.config["CAPTCHA_CODE_EXPIRE_TIME"]}
-
-
 # send sms code
 def send_sms_code(app: Flask, phone: str, ip: str = None):
     with app.app_context():
@@ -119,7 +99,7 @@ def send_sms_code(app: Flask, phone: str, ip: str = None):
             if redis.get(ip_ban_key):
                 # Development, debugging and use
                 # redis.delete(ip_ban_key)
-                raise_error("USER.IP_BANNED")
+                raise_error("server.user.ipBanned")
 
             # Check IP sending frequency
             ip_limit_key = app.config["REDIS_KEY_PREFIX_IP_LIMIT"] + ip
@@ -130,7 +110,7 @@ def send_sms_code(app: Flask, phone: str, ip: str = None):
                 if ip_send_count >= int(app.config["IP_SMS_LIMIT_COUNT"]):
                     # Ban the IP
                     redis.set(ip_ban_key, 1, ex=int(app.config["IP_BAN_TIME"]))
-                    raise_error("USER.IP_BANNED")
+                    raise_error("server.user.ipBanned")
                 else:
                     redis.incr(ip_limit_key)
             else:
@@ -147,7 +127,7 @@ def send_sms_code(app: Flask, phone: str, ip: str = None):
 
             interval = int(app.config["SMS_CODE_INTERVAL"])
             if time_diff < interval:
-                raise_error("USER.SMS_SEND_TOO_FREQUENT")
+                raise_error("server.user.smsSendTooFrequent")
 
         characters = string.digits
         # Generate a random string of length 4
@@ -187,7 +167,7 @@ def send_email_code(app: Flask, email: str, ip: str = None, language: str = None
             if redis.get(ip_ban_key):
                 # Development, debugging and use
                 # redis.delete(ip_ban_key)
-                raise_error("USER.IP_BANNED")
+                raise_error("server.user.ipBanned")
 
             # Check IP sending frequency
             ip_limit_key = app.config["REDIS_KEY_PREFIX_IP_LIMIT"] + ip
@@ -198,7 +178,7 @@ def send_email_code(app: Flask, email: str, ip: str = None, language: str = None
                 if ip_send_count >= int(app.config["IP_MAIL_LIMIT_COUNT"]):
                     # Ban the IP
                     redis.set(ip_ban_key, 1, ex=int(app.config["IP_BAN_TIME"]))
-                    raise_error("USER.IP_BANNED")
+                    raise_error("server.user.ipBanned")
                 else:
                     redis.incr(ip_limit_key)
             else:
@@ -215,13 +195,13 @@ def send_email_code(app: Flask, email: str, ip: str = None, language: str = None
 
             interval = int(app.config["MAIL_CODE_INTERVAL"])
             if time_diff < interval:
-                raise_error("USER.EMAIL_SEND_TOO_FREQUENT")
+                raise_error("server.user.emailSendTooFrequent")
 
         # Create the email content
         msg = MIMEMultipart()
         msg["From"] = app.config["SMTP_SENDER"]
         msg["To"] = email
-        msg["Subject"] = _("EMAIL_VERIFICATION_SUBJECT")
+        msg["Subject"] = _("server.user.emailVerificationSubject")
         characters = string.digits
         random_string = "".join(random.choices(characters, k=4))
         # to set redis
@@ -262,7 +242,7 @@ def send_email_code(app: Flask, email: str, ip: str = None, language: str = None
             db.session.commit()
         except Exception as e:
             app.logger.error(f"Failed to send verification code to {email}: {str(e)}")
-            raise_error("USER.EMAIL_SEND_FAILED")
+            raise_error("server.user.emailSendFailed")
         return {"expire_in": app.config["MAIL_CODE_EXPIRE_TIME"]}
 
 
@@ -285,3 +265,122 @@ def create_and_commit_user_verify_code(
     db.session.add(user_verify_code)
     db.session.commit()
     return user_verify_code
+
+
+def ensure_admin_creator_and_demo_permissions(
+    app: Flask, user_id: str, language: str, login_context: str | None = None
+) -> None:
+    """
+    Ensure that an admin-login user is a creator and has demo course permissions.
+
+    This helper is controlled by the ADMIN_LOGIN_GRANT_CREATOR_WITH_DEMO flag and
+    is intended for demo/staging environments.
+    """
+    # Only apply when the feature flag is enabled
+    if not app.config.get("ADMIN_LOGIN_GRANT_CREATOR_WITH_DEMO", False):
+        return
+
+    # Only act on explicit admin logins
+    if login_context != "admin":
+        return
+
+    # Mark user as creator
+    mark_user_roles(user_id, is_creator=True)
+
+    # Grant demo course permissions if demo shifus are configured
+    demo_ids = set()
+    for key in ("DEMO_SHIFU_BID", "DEMO_EN_SHIFU_BID"):
+        bid = get_dynamic_config(app, key)
+        if bid:
+            demo_ids.add(bid)
+
+    if not demo_ids:
+        # No demo courses configured; nothing more to do
+        return
+
+    full_auth_types = json.dumps(["view"])
+
+    for shifu_bid in demo_ids:
+        auth = AiCourseAuth.query.filter(
+            AiCourseAuth.user_id == user_id,
+            AiCourseAuth.course_id == shifu_bid,
+        ).first()
+        if auth:
+            updated = False
+            if auth.auth_type != full_auth_types:
+                auth.auth_type = full_auth_types
+                updated = True
+            if auth.status != 1:
+                auth.status = 1
+                updated = True
+            if updated:
+                db.session.flush()
+        else:
+            auth = AiCourseAuth(
+                course_auth_id=generate_id(app),
+                user_id=user_id,
+                course_id=shifu_bid,
+                auth_type=full_auth_types,
+                status=1,
+            )
+            db.session.add(auth)
+            db.session.flush()
+    # create first lesson
+    draft_shifu = DraftShifu.query.filter(
+        DraftShifu.created_user_bid == user_id
+    ).first()
+    if draft_shifu:
+        db.session.flush()
+        return
+    app.logger.info(f"Creating first lesson for user {user_id}")
+    # Read file content
+    # Try multiple candidate paths to locate en_first_shifu.json
+    # In Docker: /app/flaskr/service/user/utils.py -> /app/en_first_shifu.json
+    # In local dev: src/api/flaskr/service/user/utils.py -> src/api/en_first_shifu.json
+    current_file = Path(__file__).resolve()
+
+    if language == "zh-CN":
+        first_shifu_file_name = "cn_first_shifu.json"
+    elif language == "en-US":
+        first_shifu_file_name = "en_first_shifu.json"
+    else:
+        first_shifu_file_name = "en_first_shifu.json"
+
+    candidates = [
+        current_file.parent.parent.parent.parent
+        / "demo_shifus"
+        / first_shifu_file_name,
+        Path(
+            f"/app/demo_shifus/{first_shifu_file_name}"
+        ),  # Absolute path in Docker container
+    ]
+
+    first_shifu_file_path = None
+    for candidate in candidates:
+        try:
+            candidate_resolved = candidate.resolve()
+            if candidate_resolved.exists() and candidate_resolved.is_file():
+                first_shifu_file_path = str(candidate_resolved)
+                break
+        except (OSError, RuntimeError):
+            # Skip invalid paths (e.g., symlink loops)
+            continue
+
+    if not first_shifu_file_path:
+        error_msg = f"Could not find en_first_shifu.json file. Tried: {[str(c) for c in candidates]}"
+        app.logger.error(error_msg)
+        raise FileNotFoundError(error_msg)
+
+    app.logger.info(f"Loading first shifu from: {first_shifu_file_path}")
+    with open(first_shifu_file_path, "rb") as f:
+        file_content = f.read()
+
+    # Create FileStorage from bytes
+    file_storage = FileStorage(
+        stream=BytesIO(file_content),
+        filename=os.path.basename(first_shifu_file_path),
+        name="file",
+    )
+
+    # Import or update shifu (don't commit inside transactional_session)
+    shifu_bid = import_shifu(app, None, file_storage, user_id, commit=True)

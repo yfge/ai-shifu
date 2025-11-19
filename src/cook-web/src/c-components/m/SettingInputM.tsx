@@ -1,24 +1,43 @@
 import styles from './SettingInputM.module.scss';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ChangeEvent } from 'react';
 
 import { Input } from '@/components/ui/Input';
 
+interface SettingInputRule {
+  validator: (value: string) => boolean;
+  message: string;
+}
+
+interface SettingInputMProps {
+  title: string;
+  placeholder?: string;
+  value?: string;
+  onChange?: (value: string) => void;
+  rules?: SettingInputRule[];
+}
+
 export const SettingInputM = ({
   title,
-  placeholder,
-  value,
+  placeholder = '',
+  value = '',
   onChange,
   rules = [],
-}) => {
-  const [_value, setValue] = useState(value);
+}: SettingInputMProps) => {
+  const [_value, setValue] = useState<string>(value ?? '');
   const [isError, setIsError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    setValue(value);
+    setValue(value ?? '');
   }, [value]);
 
-  const _onChange = val => {
+  const handleChange = (
+    eventOrValue: string | ChangeEvent<HTMLInputElement>,
+  ) => {
+    const val =
+      typeof eventOrValue === 'string'
+        ? eventOrValue
+        : (eventOrValue?.target?.value ?? '');
     setIsError(false);
     setValue(val);
     onChange?.(val);
@@ -29,14 +48,12 @@ export const SettingInputM = ({
       setIsError(false);
     }
 
-    rules.some(r => {
-      // @ts-expect-error EXPECT
-      const ret = r.validator(_value);
+    rules.some(rule => {
+      const ret = rule.validator(_value);
 
       if (!ret) {
         setIsError(true);
-        // @ts-expect-error EXPECT
-        setErrorMessage(r.message);
+        setErrorMessage(rule.message);
         return true;
       }
       return false;
@@ -54,8 +71,8 @@ export const SettingInputM = ({
       <div className={styles.inputWrapper}>
         <Input
           className={styles.inputElement}
-          value={value}
-          onChange={_onChange}
+          value={_value}
+          onChange={handleChange}
           onBlur={_onBlur}
           placeholder={placeholder || title}
           // @ts-expect-error EXPECT

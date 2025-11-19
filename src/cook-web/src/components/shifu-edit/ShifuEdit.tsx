@@ -1,291 +1,206 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { DndProvider, useDrag, useDrop } from 'react-dnd';
-import type { DropTargetMonitor } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from 'react';
 import { Button } from '@/components/ui/Button';
-import {
-  Plus,
-  GripVertical,
-  Trash2,
-  SquarePen,
-  BugPlay,
-  Settings2,
-  ListCollapse,
-} from 'lucide-react';
+import { Columns2, ListCollapse, Loader2, Plus, Sparkles } from 'lucide-react';
 import { useShifu } from '@/store';
 import { useUserStore } from '@/store';
 import OutlineTree from '@/components/outline-tree';
 import '@mdxeditor/editor/style.css';
 import Header from '../header';
-import { BlockDTO, BlockType, ContentDTO } from '@/types/shifu';
-import RenderBlockUI from '../render-ui';
-import AIDebugDialog from '@/components/ai-debug';
-
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '../ui/AlertDialog';
-import AddBlock from '@/components/add-block';
+import { UploadProps, MarkdownFlowEditor, EditMode } from 'markdown-flow-ui';
+// TODO@XJL
+import 'markdown-flow-ui/dist/markdown-flow-ui.css';
+import { cn } from '@/lib/utils';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import './shifuEdit.scss';
 import Loading from '../loading';
 import { useTranslation } from 'react-i18next';
-import i18n from '@/i18n';
-interface DragItem {
-  id: string;
-  index: number;
-}
+import i18n, { normalizeLanguage } from '@/i18n';
+import { useEnvStore } from '@/c-store';
+import { EnvStoreState } from '@/c-types/store';
+import { getBoolEnv } from '@/c-utils/envUtils';
+import LessonPreview from '@/components/lesson-preview';
+import { usePreviewChat } from '@/components/lesson-preview/usePreviewChat';
+import {
+  Panel,
+  PanelGroup,
+  PanelResizeHandle,
+  ImperativePanelGroupHandle,
+} from 'react-resizable-panels';
+import { useEditorLayoutState } from '@/hooks/useEditorLayoutState';
 
-interface DraggableBlockProps {
-  id: string;
-  type: BlockType;
-  index: number;
-  block: BlockDTO;
-  moveBlock: (dragIndex: number, hoverIndex: number) => void;
-  onClickDebug?: (id: string) => void;
-  onClickRemove?: (id: string) => void;
-  onClickChangeType?: (id: string, llm_enabled: boolean) => void;
-  children: React.ReactNode;
-  disabled?: boolean;
-  error?: string | null;
-}
+const initializeEnvData = async (): Promise<void> => {
+  const {
+    updateAppId,
+    updateCourseId,
+    updateDefaultLlmModel,
+    updateAlwaysShowLessonTree,
+    updateUmamiWebsiteId,
+    updateUmamiScriptSrc,
+    updateEruda,
+    updateBaseURL,
+    updateLogoHorizontal,
+    updateLogoVertical,
+    updateLogoUrl,
+    updateEnableWxcode,
+    updateHomeUrl,
+    updateCurrencySymbol,
+  } = useEnvStore.getState() as EnvStoreState;
 
-const DraggableBlock = ({
-  id,
-  type,
-  index,
-  block,
-  moveBlock,
-  onClickDebug,
-  onClickRemove,
-  onClickChangeType,
-  children,
-  disabled = false,
-  error,
-}: DraggableBlockProps) => {
-  const { t } = useTranslation();
-  const ref = React.useRef<HTMLDivElement>(null);
+  const fetchEnvData = async (): Promise<void> => {
+    try {
+      const res = await fetch('/api/config', {
+        method: 'GET',
+        referrer: 'no-referrer',
+      });
+      if (res.ok) {
+        const data = await res.json();
 
-  const [llmEnabled, setLlmEnabled] = useState(
-    (block.properties as ContentDTO).llm_enabled,
-  );
+        // await updateCourseId(data?.courseId || '');
+        await updateAppId(data?.wechatAppId || '');
+        await updateDefaultLlmModel(data?.defaultLlmModel || '');
+        await updateAlwaysShowLessonTree(data?.alwaysShowLessonTree || 'false');
+        await updateUmamiWebsiteId(data?.umamiWebsiteId || '');
+        await updateUmamiScriptSrc(data?.umamiScriptSrc || '');
+        await updateEruda(data?.enableEruda || 'false');
+        await updateBaseURL(data?.apiBaseUrl || '');
+        await updateLogoHorizontal(data?.logoHorizontal || '');
+        await updateLogoVertical(data?.logoVertical || '');
+        await updateLogoUrl(data?.logoUrl || '');
+        await updateEnableWxcode(data?.enableWechatCode?.toString() || 'true');
+        await updateHomeUrl(data?.homeUrl || '');
+        await updateCurrencySymbol(data?.currencySymbol || '¥');
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      const { umamiWebsiteId, umamiScriptSrc } =
+        useEnvStore.getState() as EnvStoreState;
+      if (getBoolEnv('eruda')) {
+        import('eruda').then(eruda => eruda.default.init());
+      }
 
-  const [{ handlerId }, drop] = useDrop<
-    DragItem,
-    void,
-    { handlerId: string | symbol | null }
-  >({
-    accept: 'BLOCK',
-    collect(monitor) {
-      return {
-        handlerId: monitor.getHandlerId(),
+      const loadUmamiScript = (): void => {
+        if (umamiScriptSrc && umamiWebsiteId) {
+          const script = document.createElement('script');
+          script.defer = true;
+          script.src = umamiScriptSrc;
+          script.setAttribute('data-website-id', umamiWebsiteId);
+          document.head.appendChild(script);
+        }
       };
-    },
-    hover(item: DragItem, monitor: DropTargetMonitor) {
-      if (!ref.current || disabled) {
-        return;
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadUmamiScript);
+      } else {
+        loadUmamiScript();
       }
-
-      const dragIndex = item.index;
-      const hoverIndex = index;
-
-      if (dragIndex === hoverIndex) {
-        return;
-      }
-
-      const hoverBoundingRect = ref.current?.getBoundingClientRect();
-      const hoverMiddleY =
-        (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
-      const clientOffset = monitor.getClientOffset();
-      const hoverClientY = clientOffset!.y - hoverBoundingRect.top;
-
-      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
-        return;
-      }
-      if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
-        return;
-      }
-
-      moveBlock(dragIndex, hoverIndex);
-      item.index = hoverIndex;
-    },
-  });
-
-  const [{ isDragging }, drag] = useDrag<
-    DragItem,
-    void,
-    { isDragging: boolean }
-  >({
-    type: 'BLOCK',
-    item: () => {
-      return { id, index };
-    },
-    canDrag: !disabled,
-    collect: monitor => ({
-      isDragging: monitor.isDragging(),
-    }),
-  });
-
-  const [showMenu, setShowMenu] = useState(false);
-
-  const handleMouseEnter = () => {
-    setShowMenu(true);
+    }
   };
-
-  const handleMouseLeave = () => {
-    setShowMenu(false);
-  };
-
-  const dragRef = React.useRef<HTMLDivElement>(null);
-  drop(ref);
-  drag(dragRef);
-
-  return (
-    <div
-      ref={ref}
-      style={{ opacity: isDragging ? 0.5 : 1 }}
-      data-handler-id={handlerId}
-      className='group'
-    >
-      <div
-        ref={dragRef}
-        style={{
-          border: error ? '1px solid #ff4d4f' : '1px solid #ddd',
-          padding: '1rem',
-          backgroundColor: '#fff',
-          borderRadius: '8px',
-          position: 'relative',
-        }}
-      >
-        <div
-          onMouseLeave={handleMouseLeave}
-          className='group-hover:opacity-100 opacity-0 cursor-grab'
-          style={{
-            zIndex: 100,
-            position: 'absolute',
-            top: '0',
-            left: '-56px',
-          }}
-        >
-          <div className='p-2 h-8 w-16 flex items-center justify-center border color-[#999] rounded'>
-            <SquarePen
-              className='text-gray-500'
-              onMouseEnter={handleMouseEnter}
-            />
-            <GripVertical
-              className='text-gray-500'
-              onMouseEnter={handleMouseEnter}
-            />
-          </div>
-
-          <div
-            className='shadow-md rounded-lg w-48 p-2 transition-all'
-            style={{
-              position: 'absolute',
-              left: '0px',
-              zIndex: 51,
-              display: `${showMenu ? 'block' : 'none'}`,
-              border: '1px solid #f3f4f6',
-              backgroundColor: '#fff',
-            }}
-          >
-            <div className='flex flex-col gap-2 text-sm'>
-              {type === 'content' && (
-                <div className='px-3 py-1.5 text-gray-500 text-lg'>
-                  {llmEnabled ? t('shifu.aiBlock') : t('shifu.regularBlock')}
-                </div>
-              )}
-              {type === 'content' && (
-                <div
-                  className='flex items-center gap-2 px-3 py-1.5 rounded hover:bg-gray-50 cursor-pointer'
-                  onClick={() => {
-                    onClickChangeType?.(id, !llmEnabled);
-                    setLlmEnabled(!llmEnabled);
-                  }}
-                >
-                  <Settings2 className='h-4 w-4' />
-                  {llmEnabled
-                    ? t('shifu.setAsRegularBlock')
-                    : t('shifu.setAsAiBlock')}
-                </div>
-              )}
-              {type === 'content' && llmEnabled && (
-                <div
-                  className='flex items-center gap-2 px-3 py-1.5 rounded hover:bg-gray-50 cursor-pointer'
-                  onClick={() => onClickDebug?.(id)}
-                >
-                  <BugPlay className='h-4 w-4' />
-                  {t('shifu.debug')}
-                </div>
-              )}
-              <div
-                className='flex items-center gap-2 px-3 py-1.5 rounded hover:bg-red-50 text-red-600 cursor-pointer'
-                onClick={() => onClickRemove?.(id)}
-              >
-                <Trash2 className='h-4 w-4' />
-                {t('shifu.delete')}
-              </div>
-            </div>
-          </div>
-        </div>
-        {error && (
-          <div
-            className='mb-2 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm'
-            role='alert'
-            aria-live='polite'
-          >
-            {error}
-          </div>
-        )}
-        {children}
-      </div>
-    </div>
-  );
+  await fetchEnvData();
 };
 
 const ScriptEditor = ({ id }: { id: string }) => {
   const { t } = useTranslation();
   const profile = useUserStore(state => state.userInfo);
-  const [expandedBlocks, setExpandedBlocks] = useState<Record<string, boolean>>(
-    {},
-  );
   const [foldOutlineTree, setFoldOutlineTree] = useState(false);
+  const [editMode, setEditMode] = useState<EditMode>('quickEdit' as EditMode);
+  const [isPreviewPanelOpen, setIsPreviewPanelOpen] = useState(false);
+  const [isPreviewPreparing, setIsPreviewPreparing] = useState(false);
+
+  // Layout state management with localStorage persistence
+  const {
+    layout,
+    handleLayoutChange,
+    saveCurrentWidth,
+    clearSavedWidth,
+    restoreDefaultLayout,
+    getLayoutArray,
+    getDefaultLayoutArray,
+    config: layoutConfig,
+  } = useEditorLayoutState();
+
+  // Ref for imperative control of PanelGroup (required for setLayout() calls)
+  const panelGroupRef = useRef<ImperativePanelGroupHandle>(null);
+  const {
+    items: previewItems,
+    isLoading: previewLoading,
+    isStreaming: previewStreaming,
+    error: previewError,
+    startPreview,
+    stopPreview,
+    resetPreview,
+    onRefresh,
+    onSend,
+    reGenerateConfirm,
+  } = usePreviewChat();
+  const editModeOptions = useMemo(
+    () => [
+      {
+        label: t('module.shifu.creationArea.modeText'),
+        value: 'quickEdit' as EditMode,
+      },
+      {
+        label: t('module.shifu.creationArea.modeCode'),
+        value: 'codeEdit' as EditMode,
+      },
+    ],
+    [t],
+  );
 
   useEffect(() => {
-    if (profile) {
-      i18n.changeLanguage(profile.language);
+    if (profile && profile.language) {
+      const next = normalizeLanguage(profile.language);
+      if ((i18n.resolvedLanguage ?? i18n.language) !== next) {
+        i18n.changeLanguage(next);
+      }
     }
   }, [profile]);
+
   const {
-    blocks,
+    mdflow,
     chapters,
     actions,
-    blockContentTypes,
-    blockProperties,
-    // blockUIProperties,
-    // blockUITypes,
-    currentNode,
     isLoading,
+    variables,
+    systemVariables,
     currentShifu,
-    blockErrors,
+    currentNode,
   } = useShifu();
 
-  const [debugBlockInfo, setDebugBlockInfo] = useState({
-    blockId: '',
-    visible: false,
-  });
+  useEffect(() => {
+    const baseTitle = t('common.core.adminTitle');
+    const suffix = currentShifu?.name ? ` - ${currentShifu.name}` : '';
+    document.title = `${baseTitle}${suffix}`;
+  }, [t, currentShifu?.name]);
 
-  const [removeBlockInfo, setRemoveBlockInfo] = useState({
-    blockId: '',
-    visible: false,
-  });
+  const token = useUserStore(state => state.getToken());
+  const baseURL = useEnvStore((state: EnvStoreState) => state.baseURL);
 
-  const [newBlockId, setNewBlockId] = useState('');
+  useEffect(() => {
+    void initializeEnvData();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      stopPreview();
+      resetPreview();
+    };
+  }, [resetPreview, stopPreview]);
+
+  useEffect(() => {
+    if (!currentNode?.bid) {
+      return;
+    }
+    stopPreview();
+    resetPreview();
+  }, [currentNode?.bid, resetPreview, stopPreview]);
 
   const onAddChapter = () => {
     actions.addChapter({
@@ -304,68 +219,6 @@ const ScriptEditor = ({ id }: { id: string }) => {
     }, 800);
   };
 
-  const onDebugBlock = (id: string) => {
-    setDebugBlockInfo({ blockId: id, visible: true });
-  };
-
-  const onDebugBlockClose = () => {
-    setDebugBlockInfo({ blockId: '', visible: false });
-  };
-
-  const onRemove = async (id: string) => {
-    setRemoveBlockInfo({ blockId: id, visible: true });
-  };
-
-  const handleConfirmDelete = async (id: string | undefined) => {
-    if (!id) return;
-    try {
-      await actions.removeBlock(id, currentShifu?.bid || '');
-      setRemoveBlockInfo({ blockId: '', visible: false });
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const onAddBlock = async (index: number, type: BlockType, bid: string) => {
-    const blockId = await actions.addBlock(index, type, bid);
-    if (blockId && ['content', 'input', 'goto', 'options'].includes(type)) {
-      setNewBlockId(blockId);
-      setExpandedBlocks(prev => ({
-        ...prev,
-        [blockId]: true,
-      }));
-    }
-  };
-
-  useEffect(() => {
-    console.log('newBlockId', newBlockId);
-    if (newBlockId && expandedBlocks[newBlockId] === false) {
-      console.log('setExpandedBlocks', newBlockId);
-      setExpandedBlocks(prev => ({
-        ...prev,
-        [newBlockId]: true,
-      }));
-      setNewBlockId('');
-    }
-  }, [newBlockId, expandedBlocks]);
-
-  useEffect(() => {
-    console.log('expandedBlocks', expandedBlocks);
-  }, [expandedBlocks]);
-
-  const onChangeBlockType = async (id: string, llm_enabled: boolean) => {
-    const p = blockProperties[id].properties as ContentDTO;
-    await actions.updateBlockProperties(id, {
-      ...blockProperties[id],
-      properties: {
-        ...p,
-        llm_enabled: llm_enabled,
-      },
-    });
-
-    actions.saveBlocks(currentShifu?.bid || '');
-  };
-
   useEffect(() => {
     actions.loadModels();
     if (id) {
@@ -373,179 +226,365 @@ const ScriptEditor = ({ id }: { id: string }) => {
     }
   }, [id]);
 
+  const handleTogglePreviewPanel = () => {
+    setIsPreviewPanelOpen(prev => {
+      const next = !prev;
+      if (!next) {
+        stopPreview();
+        resetPreview();
+      }
+      return next;
+    });
+  };
+
+  const handleChapterSelect = useCallback(() => {
+    if (!isPreviewPanelOpen) {
+      return;
+    }
+    setIsPreviewPanelOpen(false);
+    stopPreview();
+    resetPreview();
+  }, [isPreviewPanelOpen, stopPreview, resetPreview]);
+
+  const handlePreview = async () => {
+    if (!canPreview || !currentShifu?.bid || !currentNode?.bid) {
+      return;
+    }
+    setIsPreviewPanelOpen(true);
+    setIsPreviewPreparing(true);
+    resetPreview();
+
+    try {
+      await actions.saveMdflow({
+        shifu_bid: currentShifu.bid,
+        outline_bid: currentNode.bid,
+        data: mdflow,
+      });
+      const {
+        variables: parsedVariablesMap,
+        blocksCount,
+        systemVariableKeys,
+      } = await actions.previewParse(mdflow, currentShifu.bid, currentNode.bid);
+      const previewVariablesMap = { ...parsedVariablesMap };
+      void startPreview({
+        shifuBid: currentShifu.bid,
+        outlineBid: currentNode.bid,
+        mdflow,
+        variables: previewVariablesMap,
+        max_block_count: blocksCount,
+        systemVariableKeys,
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsPreviewPreparing(false);
+    }
+  };
+
+  const variablesList = useMemo(() => {
+    return variables.map((variable: string) => ({
+      name: variable,
+    }));
+  }, [variables]);
+
+  const systemVariablesList = useMemo(() => {
+    return systemVariables.map((variable: Record<string, string>) => ({
+      name: variable.name,
+      label: variable.label,
+    }));
+  }, [systemVariables]);
+
+  const onChangeMdflow = (value: string) => {
+    actions.setCurrentMdflow(value);
+    // Pass snapshot so autosave persists pre-switch content + chapter id
+    actions.autoSaveBlocks({
+      shifu_bid: currentShifu?.bid || '',
+      outline_bid: currentNode?.bid || '',
+      data: value,
+    });
+  };
+
+  const uploadProps: UploadProps = useMemo(() => {
+    const endpoint = baseURL || window.location.origin;
+    return {
+      action: `${endpoint}/api/shifu/upfile`,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Token: token,
+      },
+    };
+  }, [token, baseURL]);
+
+  const canPreview = Boolean(
+    currentNode?.depth && currentNode.depth > 0 && currentShifu?.bid,
+  );
+
+  const previewToggleLabel = isPreviewPanelOpen
+    ? t('module.shifu.previewArea.close')
+    : t('module.shifu.previewArea.open');
+
+  const previewDisabledReason = t('module.shifu.previewArea.disabled');
+
+  // Handle double-click on resize handle to restore default width
+  const handleResizeHandleDoubleClick = () => {
+    restoreDefaultLayout();
+    // Immediately apply the default layout using imperative API
+    if (panelGroupRef.current) {
+      panelGroupRef.current.setLayout(getDefaultLayoutArray());
+    }
+  };
+
+  // Toggle outline tree collapse/expand
+  const toggle = () => {
+    const willCollapse = !foldOutlineTree;
+
+    if (willCollapse) {
+      // About to collapse: save current width
+      saveCurrentWidth();
+    }
+
+    setFoldOutlineTree(willCollapse);
+  };
+
+  useEffect(() => {
+    if (panelGroupRef.current) {
+      const targetLayout = getLayoutArray(foldOutlineTree);
+      panelGroupRef.current.setLayout(targetLayout);
+    }
+  }, [foldOutlineTree, getLayoutArray]);
+
+  useEffect(() => {
+    if (!foldOutlineTree && layout.savedOutlineWidth !== undefined) {
+      clearSavedWidth();
+    }
+  }, [foldOutlineTree, layout.savedOutlineWidth, clearSavedWidth]);
+
   return (
     <div className='flex flex-col h-screen bg-gray-50'>
       <Header />
-      <div
-        className='flex-1 container mx-auto px-10'
-        style={{
-          height: 'calc(100vh - 50px)',
-          overflowY: 'auto',
-        }}
+      <PanelGroup
+        direction='horizontal'
+        className='flex-1 overflow-hidden'
+        ref={panelGroupRef}
+        onLayout={handleLayoutChange}
       >
-        <div
-          className='my-2'
-          style={{
-            position: 'fixed',
-            borderRadius: '8px',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-            top: 48,
-            bottom: 0,
-            zIndex: 1,
-          }}
-        >
-          <div className='px-3 flex items-center justify-between gap-3'>
-            <div
-              onClick={() => setFoldOutlineTree(!foldOutlineTree)}
-              className='rounded border bg-white p-1 cursor-pointer text-sm hover:bg-gray-200'
-            >
-              <ListCollapse className='h-5 w-5' />
-            </div>
-            {!foldOutlineTree && (
-              <Button
-                variant='outline'
-                className='h-8 bottom-0 left-4 flex-1'
-                size='sm'
-                onClick={onAddChapter}
-              >
-                <Plus />
-                {t('shifu.newChapter')}
-              </Button>
-            )}
-          </div>
-
-          {!foldOutlineTree && (
-            <div className='p-2 flex-1 h-full overflow-y-auto overflow-x-hidden pr-4 w-[240px]'>
-              <ol className=' text-sm'>
-                <OutlineTree
-                  items={chapters}
-                  onChange={newChapters => {
-                    actions.setChapters([...newChapters]);
-                  }}
-                />
-              </ol>
-            </div>
+        {/* Left Panel: Outline Tree */}
+        <Panel
+          id='outline-panel'
+          order={1}
+          defaultSize={getLayoutArray(foldOutlineTree)[0]}
+          minSize={
+            foldOutlineTree
+              ? layoutConfig.OUTLINE_COLLAPSED_SIZE
+              : layoutConfig.OUTLINE_MIN_SIZE
+          }
+          maxSize={
+            foldOutlineTree
+              ? layoutConfig.OUTLINE_COLLAPSED_SIZE
+              : layoutConfig.OUTLINE_MAX_SIZE
+          }
+          collapsible={false}
+          className={cn(
+            'bg-white',
+            // Only transition max-width and opacity for collapse/expand animation
+            // Remove transition-all to avoid interfering with drag responsiveness
+            'transition-[max-width,opacity] duration-200',
+            foldOutlineTree && 'max-w-[60px]',
           )}
-        </div>
-
-        <div
-          className='flex-1 overflow-auto relative text-sm'
-          style={{
-            paddingLeft: foldOutlineTree ? 80 : 260,
-          }}
         >
-          <div className='my-2 bg-white p-8 gap-4 flex flex-col rounded shadow-md'>
-            {isLoading ? (
-              <div className='h-40 flex items-center justify-center'>
-                <Loading />
+          <div className='p-4 flex flex-col h-full'>
+            <div className='flex items-center justify-between gap-3'>
+              <div
+                onClick={toggle}
+                className='rounded border bg-white p-1 cursor-pointer text-sm hover:bg-gray-200'
+              >
+                <ListCollapse className='h-5 w-5' />
               </div>
-            ) : (
-              <>
-                <DndProvider backend={HTML5Backend}>
-                  {blocks.map((block, index) => (
-                    <DraggableBlock
-                      key={block.bid}
-                      id={block.bid}
-                      block={block}
-                      type={block.type as BlockType}
-                      index={index}
-                      moveBlock={(dragIndex: number, hoverIndex: number) => {
-                        const dragBlock = blocks[dragIndex];
-                        const newBlocks = [...blocks];
-                        newBlocks.splice(dragIndex, 1);
-                        newBlocks.splice(hoverIndex, 0, dragBlock);
-                        actions.setBlocks(newBlocks);
-                        actions.autoSaveBlocks(
-                          currentNode!.bid,
-                          newBlocks,
-                          blockContentTypes,
-                          blockProperties,
-                          currentShifu?.bid || '',
-                        );
-                      }}
-                      onClickChangeType={onChangeBlockType}
-                      onClickDebug={onDebugBlock}
-                      onClickRemove={onRemove}
-                      disabled={expandedBlocks[block.bid]}
-                      error={blockErrors[block.bid]}
-                    >
-                      <div
-                        id={block.bid}
-                        className='relative flex flex-col gap-2 '
-                      >
-                        <RenderBlockUI
-                          block={block}
-                          onExpandChange={expanded => {
-                            setExpandedBlocks(prev => ({
-                              ...prev,
-                              [block.bid]: expanded,
-                            }));
-                          }}
-                          expanded={expandedBlocks[block.bid]}
-                        />
-                        <div>
-                          <AddBlock
-                            onAdd={(type: BlockType) => {
-                              onAddBlock(index + 1, type, id);
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </DraggableBlock>
-                  ))}
-                </DndProvider>
-                {(currentNode?.depth || 0) > 0 && blocks.length === 0 && (
-                  <div className='flex flex-row items-center justify-start h-6'>
-                    <AddBlock
-                      onAdd={(type: BlockType) => {
-                        onAddBlock(1, type, id);
-                      }}
-                    />
-                  </div>
-                )}
-              </>
+              {!foldOutlineTree && (
+                <Button
+                  variant='outline'
+                  className='h-8 bottom-0 left-4 flex-1'
+                  size='sm'
+                  onClick={onAddChapter}
+                >
+                  <Plus />
+                  {t('module.shifu.newChapter')}
+                </Button>
+              )}
+            </div>
+
+            {!foldOutlineTree && (
+              <div className='mt-4 flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-10'>
+                <ol className='text-sm'>
+                  <OutlineTree
+                    items={chapters}
+                    onChange={newChapters => {
+                      actions.setChapters([...newChapters]);
+                    }}
+                    onChapterSelect={handleChapterSelect}
+                  />
+                </ol>
+              </div>
             )}
           </div>
-        </div>
-      </div>
-      {debugBlockInfo.visible && (
-        <AIDebugDialog
-          blockId={debugBlockInfo.blockId}
-          open={true}
-          onOpenChange={onDebugBlockClose}
-        />
-      )}
+        </Panel>
 
-      <AlertDialog
-        open={removeBlockInfo.visible}
-        onOpenChange={(visible: boolean) => {
-          setRemoveBlockInfo({
-            ...removeBlockInfo,
-            visible,
-          });
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t('renderBlock.confirmDelete')}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('renderBlock.confirmDeleteDescription')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('renderBlock.cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => handleConfirmDelete(removeBlockInfo.blockId)}
+        {/* Resize Handle (only shown when outline tree is expanded) */}
+        {!foldOutlineTree && (
+          <PanelResizeHandle
+            className='group relative bg-transparent cursor-col-resize flex items-center justify-center'
+            onDoubleClick={handleResizeHandleDoubleClick}
+          >
+            {/* Visual indicator (thin line) */}
+            <div className='w-[2px] h-full bg-gray-200 group-hover:bg-blue-500 group-active:bg-blue-600 transition-colors' />
+          </PanelResizeHandle>
+        )}
+
+        {/* Right Panel: Editor + Preview */}
+        <Panel
+          id='editor-panel'
+          order={2}
+          defaultSize={getLayoutArray(foldOutlineTree)[1]}
+          minSize={30}
+          className='overflow-hidden relative text-sm'
+        >
+          <div className='flex h-full overflow-hidden'>
+            <div
+              className={cn(
+                'flex-1 overflow-auto',
+                !isPreviewPanelOpen && 'relative',
+              )}
             >
-              {t('renderBlock.confirm')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              <div
+                className={cn(
+                  'pt-5 px-6 pb-10 flex flex-col h-full w-full',
+                  isPreviewPanelOpen
+                    ? 'max-w-[900px] pr-0'
+                    : 'max-w-[900px] mx-auto relative',
+                )}
+              >
+                {currentNode?.depth && currentNode.depth > 0 ? (
+                  <>
+                    <div className='flex items-center gap-3 pb-2'>
+                      <div className='flex flex-1 min-w-0 items-baseline gap-2'>
+                        <h2 className='text-base font-semibold text-foreground whitespace-nowrap shrink-0'>
+                          {t('module.shifu.creationArea.title')}
+                        </h2>
+                        <p className='flex-1 min-w-0 text-xs leading-3 text-[rgba(0,0,0,0.45)] truncate'>
+                          {t('module.shifu.creationArea.description')}
+                        </p>
+                      </div>
+                      <div className='ml-auto flex flex-nowrap items-center gap-2 relative shrink-0'>
+                        <Tabs
+                          value={editMode}
+                          onValueChange={value =>
+                            setEditMode(value as EditMode)
+                          }
+                          className='shrink-0'
+                        >
+                          <TabsList className='h-8 rounded-full bg-muted/60 p-0 text-xs'>
+                            {editModeOptions.map(option => (
+                              <TabsTrigger
+                                key={option.value}
+                                value={option.value}
+                                className={cn(
+                                  'mode-btn rounded-full px-3 py-1.5 data-[state=active]:bg-background data-[state=active]:text-foreground',
+                                )}
+                              >
+                                {option.label}
+                              </TabsTrigger>
+                            ))}
+                          </TabsList>
+                        </Tabs>
+                        <Button
+                          type='button'
+                          size='sm'
+                          className='h-8 px-3 text-xs font-semibold text-[14px] shrink-0'
+                          onClick={handlePreview}
+                          disabled={!canPreview || isPreviewPreparing}
+                          title={
+                            !canPreview ? previewDisabledReason : undefined
+                          }
+                        >
+                          {isPreviewPreparing ? (
+                            <Loader2 className='h-4 w-4 animate-spin' />
+                          ) : (
+                            <Sparkles className='h-4 w-4' />
+                          )}
+                          {t('module.shifu.previewArea.action')}
+                        </Button>
+                      </div>
+                    </div>
+                    {!isPreviewPanelOpen && (
+                      <Button
+                        type='button'
+                        variant='outline'
+                        size='icon'
+                        className='h-8 w-8 absolute top-[60px] right-[-13px] z-10'
+                        onClick={handleTogglePreviewPanel}
+                        aria-label={previewToggleLabel}
+                        title={previewToggleLabel}
+                      >
+                        <Columns2 className='h-4 w-4' />
+                      </Button>
+                    )}
+                    {isLoading ? (
+                      <div className='h-40 flex items-center justify-center'>
+                        <Loading />
+                      </div>
+                    ) : (
+                      <MarkdownFlowEditor
+                        locale={
+                          normalizeLanguage(
+                            (i18n.resolvedLanguage ?? i18n.language) as string,
+                          ) as 'en-US' | 'zh-CN'
+                        }
+                        content={mdflow}
+                        variables={variablesList}
+                        systemVariables={systemVariablesList as any[]}
+                        onChange={onChangeMdflow}
+                        editMode={editMode}
+                        uploadProps={uploadProps}
+                      />
+                    )}
+                  </>
+                ) : null}
+              </div>
+            </div>
+            {isPreviewPanelOpen ? (
+              <div className='shrink-0 px-1 pt-[60px]'>
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='icon'
+                  className='h-8 w-8'
+                  onClick={handleTogglePreviewPanel}
+                  aria-label={previewToggleLabel}
+                  title={previewToggleLabel}
+                >
+                  <Columns2 className='h-4 w-4' />
+                </Button>
+              </div>
+            ) : null}
+            {isPreviewPanelOpen ? (
+              <div className='flex-1 overflow-auto pt-5 px-6 pb-10 pl-0'>
+                <div className='h-full'>
+                  <LessonPreview
+                    loading={previewLoading}
+                    isStreaming={previewStreaming}
+                    errorMessage={previewError || undefined}
+                    items={previewItems}
+                    shifuBid={currentShifu?.bid || ''}
+                    onRefresh={onRefresh}
+                    onSend={onSend}
+                    reGenerateConfirm={reGenerateConfirm}
+                  />
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </Panel>
+      </PanelGroup>
     </div>
   );
 };

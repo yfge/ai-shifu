@@ -5,7 +5,7 @@ import {
   TreeItemComponentProps,
   TreeItems,
 } from '../dnd-kit-sortable-tree';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Outline } from '@/types/shifu';
 import { cn } from '@/lib/utils';
 import {
@@ -39,13 +39,16 @@ import {
 import { Button } from '@/components/ui/Button';
 import { useTranslation } from 'react-i18next';
 import { useAlert } from '@/components/ui/UseAlert';
-import ChapterSettingsDialog from '../chapter-setting';
+import ChapterSettingsDialog, {
+  ChapterPromptSetting,
+} from '../chapter-setting';
 
 interface ICataTreeProps {
   currentNode?: Outline;
   items: TreeItems<Outline>;
   onChange?: (data: TreeItems<Outline>) => void;
   onAddNodeClick?: (node: Outline) => void;
+  onChapterSelect?: () => void;
 }
 
 const getReorderOutlineDto = (items: TreeItems<Outline>) => {
@@ -58,8 +61,23 @@ const getReorderOutlineDto = (items: TreeItems<Outline>) => {
 };
 
 export const CataTree = React.memo((props: ICataTreeProps) => {
-  const { items, onChange } = props;
+  const { items, onChange, onChapterSelect } = props;
   const { actions, focusId } = useShifu();
+  const TreeItemWithSelect = useMemo(() => {
+    const ForwardRefComponent = React.forwardRef<
+      HTMLDivElement,
+      TreeItemComponentProps<Outline>
+    >((minimalProps, ref) => (
+      <MinimalTreeItemComponent
+        {...minimalProps}
+        ref={ref}
+        onChapterSelect={onChapterSelect}
+      />
+    ));
+    ForwardRefComponent.displayName = 'TreeItemWithSelect';
+    return ForwardRefComponent;
+  }, [onChapterSelect]);
+
   const onItemsChanged = async (
     data: TreeItems<Outline>,
     reason: ItemChangedReason<Outline>,
@@ -78,9 +96,7 @@ export const CataTree = React.memo((props: ICataTreeProps) => {
       items={items}
       indentationWidth={20}
       onItemsChanged={onItemsChanged}
-      TreeItemComponent={props => {
-        return <MinimalTreeItemComponent {...props} />;
-      }}
+      TreeItemComponent={TreeItemWithSelect}
       dropAnimation={null}
     />
   );
@@ -91,6 +107,7 @@ CataTree.displayName = 'CataTree';
 export type TreeItemProps = {
   currentNode?: Outline;
   onChange?: (node: Outline, value: string) => void;
+  onChapterSelect?: () => void;
 };
 
 const MinimalTreeItemComponent = React.forwardRef<
@@ -101,14 +118,16 @@ const MinimalTreeItemComponent = React.forwardRef<
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  const [chapterSettingsOpen, setChapterSettingsOpen] = useState(false);
   const { t } = useTranslation();
+  const outlineVariant = (props.item?.depth ?? 0) <= 0 ? 'chapter' : 'lesson';
   const alert = useAlert();
   const onNodeChange = async (value: string) => {
     if (!value || value.trim() === '') {
       alert.showAlert({
-        title: t('outlineTree.nameRequired'),
+        title: t('component.outlineTree.nameRequired'),
         description: '',
-        confirmText: t('common.confirm'),
+        confirmText: t('common.core.confirm'),
         onConfirm() {
           actions.removeOutline({
             parent_bid: props.item.parentId,
@@ -152,17 +171,22 @@ const MinimalTreeItemComponent = React.forwardRef<
     if (props.item.depth == 0) {
       await actions.setCurrentNode(props.item);
       actions.setBlocks([]);
+      props.onChapterSelect?.();
       return;
     }
 
+    // Flush pending autosave with the latest snapshot before switching
+    actions.flushAutoSaveBlocks();
+
     await actions.setCurrentNode(props.item);
-    await actions.loadBlocks(props.item.bid || '', currentShifu?.bid || '');
+    await actions.loadMdflow(props.item.bid || '', currentShifu?.bid || '');
+    // await actions.loadBlocks(props.item.bid || '', currentShifu?.bid || '');
   };
 
   const handleConfirmDelete = async () => {
     await actions.removeOutline({
-      parent_bid: props.item.parentId,
       ...props.item,
+      parent_bid: props.item.parentId,
     });
     setShowDeleteDialog(false);
   };
@@ -187,7 +211,7 @@ const MinimalTreeItemComponent = React.forwardRef<
           )}
           onClick={onSelect}
         >
-          <span className='flex flex-row items-center whitespace-nowrap overflow-hidden text-ellipsis'>
+          <span className='flex flex-row items-center whitespace-nowrap overflow-hidden text-ellipsis flex-1 min-w-0'>
             <InlineInput
               isEdit={focusId === props.item.id}
               value={cataData[props.item.id!]?.name || ''}
@@ -232,7 +256,7 @@ const MinimalTreeItemComponent = React.forwardRef<
                   >
                     <DropdownMenuItem onClick={editNode}>
                       <Edit className='mr-2 h-4 w-4' />
-                      <span>{t('outlineTree.edit')}</span>
+                      <span>{t('component.outlineTree.rename')}</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={e => {
@@ -241,7 +265,7 @@ const MinimalTreeItemComponent = React.forwardRef<
                       }}
                     >
                       <SlidersHorizontal className='mr-2 h-4 w-4' />
-                      <span>{t('outlineTree.setting')}</span>
+                      <span>{t('component.outlineTree.setting')}</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
@@ -249,7 +273,7 @@ const MinimalTreeItemComponent = React.forwardRef<
                       className='text-destructive'
                     >
                       <Trash2 className='mr-2 h-4 w-4' />
-                      <span>{t('outlineTree.delete')}</span>
+                      <span>{t('component.outlineTree.delete')}</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -292,7 +316,16 @@ const MinimalTreeItemComponent = React.forwardRef<
                     >
                       <DropdownMenuItem onClick={editNode}>
                         <Edit className='mr-2 h-4 w-4' />
-                        <span>{t('outlineTree.edit')}</span>
+                        <span>{t('component.outlineTree.rename')}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={e => {
+                          e.stopPropagation();
+                          setChapterSettingsOpen(true);
+                        }}
+                      >
+                        <SlidersHorizontal className='mr-2 h-4 w-4' />
+                        <span>{t('component.outlineTree.setting')}</span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
@@ -300,7 +333,7 @@ const MinimalTreeItemComponent = React.forwardRef<
                         className='text-destructive'
                       >
                         <Trash2 className='mr-2 h-4 w-4' />
-                        <span>{t('outlineTree.delete')}</span>
+                        <span>{t('component.outlineTree.delete')}</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -337,7 +370,15 @@ const MinimalTreeItemComponent = React.forwardRef<
         outlineBid={props.item.bid}
         open={settingsDialogOpen}
         onOpenChange={setSettingsDialogOpen}
+        variant={outlineVariant}
       />
+      {outlineVariant === 'chapter' && props.item.id !== 'new_chapter' && (
+        <ChapterPromptSetting
+          outlineBid={props.item.bid}
+          open={chapterSettingsOpen}
+          onOpenChange={setChapterSettingsOpen}
+        />
+      )}
       <AlertDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
@@ -345,16 +386,18 @@ const MinimalTreeItemComponent = React.forwardRef<
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {t('outlineTree.confirmDelete')}
+              {t('component.outlineTree.confirmDelete')}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {t('outlineTree.confirmDeleteDescription')}
+              {t('component.outlineTree.confirmDeleteDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('outlineTree.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>
+              {t('component.outlineTree.cancel')}
+            </AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmDelete}>
-              {t('outlineTree.confirm')}
+              {t('component.outlineTree.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

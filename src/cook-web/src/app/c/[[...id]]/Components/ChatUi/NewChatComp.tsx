@@ -1,4 +1,5 @@
 import './ForkChatUI/styles/index.scss';
+// TODO@XJL
 import 'markdown-flow-ui/dist/markdown-flow-ui.css';
 import styles from './ChatComponents.module.scss';
 import {
@@ -17,13 +18,10 @@ import { AppContext } from '../AppContext';
 import { useChatComponentsScroll } from './ChatComponents/useChatComponentsScroll';
 import useAutoScroll from './useAutoScroll';
 import { useTracking } from '@/c-common/hooks/useTracking';
-import { useDisclosure } from '@/c-common/hooks/useDisclosure';
 import { useEnvStore } from '@/c-store/envStore';
 import { useUserStore } from '@/store';
+import { useCourseStore } from '@/c-store/useCourseStore';
 import { toast } from '@/hooks/useToast';
-import PayModal from '../Pay/PayModal';
-import PayModalM from '../Pay/PayModalM';
-import { PREVIEW_MODE } from '@/c-api/studyV2';
 import InteractionBlock from './InteractionBlock';
 import useChatLogicHook, {
   ChatContentItem,
@@ -32,6 +30,14 @@ import useChatLogicHook, {
 import AskBlock from './AskBlock';
 import InteractionBlockM from './InteractionBlockM';
 import ContentBlock from './ContentBlock';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/Dialog';
 
 export const NewChatComponents = ({
   className,
@@ -43,14 +49,14 @@ export const NewChatComponents = ({
   chapterUpdate,
   updateSelectedLesson,
   getNextLessonId,
-  preview_mode = PREVIEW_MODE.NORMAL,
+  previewMode = false,
 }) => {
   const { trackEvent, trackTrailProgress } = useTracking();
   const { t } = useTranslation();
   const chatBoxBottomRef = useRef<HTMLDivElement | null>(null);
   const showOutputInProgressToast = useCallback(() => {
     toast({
-      title: t('chat.outputInProgress'),
+      title: t('module.chat.outputInProgress'),
     });
   }, [t]);
 
@@ -74,16 +80,23 @@ export const NewChatComponents = ({
     threshold: 120,
   });
 
-  const {
-    open: payModalOpen,
-    onOpen: onPayModalOpen,
-    onClose: onPayModalClose,
-  } = useDisclosure();
+  const { openPayModal, payModalResult } = useCourseStore(
+    useShallow(state => ({
+      openPayModal: state.openPayModal,
+      payModalResult: state.payModalResult,
+    })),
+  );
 
-  const onPayModalOk = () => {
-    onPurchased?.();
-    refreshUserInfo();
-  };
+  const onPayModalOpen = useCallback(() => {
+    openPayModal();
+  }, [openPayModal]);
+
+  useEffect(() => {
+    if (payModalResult === 'ok') {
+      onPurchased?.();
+      refreshUserInfo();
+    }
+  }, [onPurchased, payModalResult, refreshUserInfo]);
 
   const [mobileInteraction, setMobileInteraction] = useState({
     open: false,
@@ -98,15 +111,15 @@ export const NewChatComponents = ({
     isLoading,
     onSend,
     onRefresh,
-    onTypeFinished,
     toggleAskExpanded,
+    reGenerateConfirm,
   } = useChatLogicHook({
     onGoChapter,
     shifuBid,
     outlineBid: lessonId,
     lessonId,
     chapterId,
-    previewMode: preview_mode,
+    previewMode,
     trackEvent,
     chatBoxBottomRef,
     trackTrailProgress,
@@ -196,9 +209,8 @@ export const NewChatComponents = ({
     [toggleAskExpanded],
   );
 
-  // Memoize onSend and onTypeFinished to prevent new function references
+  // Memoize onSend to prevent new function references
   const memoizedOnSend = useCallback(onSend, [onSend]);
-  const memoizedOnTypeFinished = useCallback(onTypeFinished, [onTypeFinished]);
 
   return (
     <div
@@ -218,37 +230,62 @@ export const NewChatComponents = ({
 
           if (item.type === ChatContentItemType.ASK) {
             return (
-              <AskBlock
-                isExpanded={item.isAskExpanded}
-                shifu_bid={shifuBid}
-                outline_bid={lessonId}
-                preview_mode={preview_mode}
-                generated_block_bid={item.parent_block_bid || ''}
-                onToggleAskExpanded={toggleAskExpanded}
+              <div
                 key={`${idx}-ask`}
-                askList={(item.ask_list || []) as any[]}
-              />
+                style={{
+                  position: 'relative',
+                  margin: '0 auto',
+                  maxWidth: mobileStyle ? '100%' : '1000px',
+                  padding: '0 20px',
+                }}
+              >
+                <AskBlock
+                  isExpanded={item.isAskExpanded}
+                  shifu_bid={shifuBid}
+                  outline_bid={lessonId}
+                  preview_mode={previewMode}
+                  generated_block_bid={item.parent_block_bid || ''}
+                  onToggleAskExpanded={toggleAskExpanded}
+                  askList={(item.ask_list || []) as any[]}
+                />
+              </div>
             );
           }
 
           if (item.type === ChatContentItemType.LIKE_STATUS) {
             return mobileStyle ? null : (
-              <InteractionBlock
+              <div
                 key={`${idx}-interaction`}
-                shifu_bid={shifuBid}
-                generated_block_bid={item.parent_block_bid || ''}
-                like_status={item.like_status}
-                readonly={item.readonly}
-                onRefresh={onRefresh}
-                onToggleAskExpanded={toggleAskExpanded}
-              />
+                style={{
+                  margin: '0 auto',
+                  maxWidth: '1000px',
+                  padding: '0px 20px',
+                }}
+              >
+                <InteractionBlock
+                  shifu_bid={shifuBid}
+                  generated_block_bid={item.parent_block_bid || ''}
+                  like_status={item.like_status}
+                  readonly={item.readonly}
+                  onRefresh={onRefresh}
+                  onToggleAskExpanded={toggleAskExpanded}
+                />
+              </div>
             );
           }
 
           return (
             <div
               key={`${idx}-content`}
-              style={{ position: 'relative' }}
+              style={{
+                position: 'relative',
+                margin:
+                  !idx || item.type === ChatContentItemType.INTERACTION
+                    ? '0 auto'
+                    : '40px auto 0 auto',
+                maxWidth: mobileStyle ? '100%' : '1000px',
+                padding: '0 20px',
+              }}
             >
               {isLongPressed && mobileStyle && (
                 <div className='long-press-overlay' />
@@ -257,9 +294,9 @@ export const NewChatComponents = ({
                 item={item}
                 mobileStyle={mobileStyle}
                 blockBid={item.generated_block_bid}
+                confirmButtonText={t('module.renderUi.core.confirm')}
                 onClickCustomButtonAfterContent={handleClickAskButton}
                 onSend={memoizedOnSend}
-                onTypeFinished={memoizedOnTypeFinished}
                 onLongPress={handleLongPress}
               />
             </div>
@@ -286,24 +323,39 @@ export const NewChatComponents = ({
           onRefresh={onRefresh}
         />
       )}
-      {payModalOpen &&
-        (mobileStyle ? (
-          <PayModalM
-            open={payModalOpen}
-            onCancel={onPayModalClose}
-            onOk={onPayModalOk}
-            type={''}
-            payload={{}}
-          />
-        ) : (
-          <PayModal
-            open={payModalOpen}
-            onCancel={onPayModalClose}
-            onOk={onPayModalOk}
-            type={''}
-            payload={{}}
-          />
-        ))}
+      <Dialog
+        open={reGenerateConfirm.open}
+        onOpenChange={open => {
+          if (!open) {
+            reGenerateConfirm.onCancel();
+          }
+        }}
+      >
+        <DialogContent className='sm:max-w-md'>
+          <DialogHeader>
+            <DialogTitle>{t('module.chat.regenerateConfirmTitle')}</DialogTitle>
+            <DialogDescription>
+              {t('module.chat.regenerateConfirmDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className='flex gap-2 sm:gap-2'>
+            <button
+              type='button'
+              onClick={reGenerateConfirm.onCancel}
+              className='px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50'
+            >
+              {t('common.core.cancel')}
+            </button>
+            <button
+              type='button'
+              onClick={reGenerateConfirm.onConfirm}
+              className='px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary-lighter'
+            >
+              {t('common.core.ok')}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

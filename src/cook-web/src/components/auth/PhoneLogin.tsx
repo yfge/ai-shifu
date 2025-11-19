@@ -13,13 +13,16 @@ import { isValidPhoneNumber } from '@/lib/validators';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 import { useAuth } from '@/hooks/useAuth';
+import { cn } from '@/lib/utils';
 
 import type { UserInfo } from '@/c-types';
+import { tokenTool } from '@/c-service/storeUtil';
 interface PhoneLoginProps {
   onLoginSuccess: (userInfo: UserInfo) => void;
+  loginContext?: string;
 }
 
-export function PhoneLogin({ onLoginSuccess }: PhoneLoginProps) {
+export function PhoneLogin({ onLoginSuccess, loginContext }: PhoneLoginProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -31,15 +34,16 @@ export function PhoneLogin({ onLoginSuccess }: PhoneLoginProps) {
   const { t } = useTranslation();
   const { loginWithSmsCode, sendSmsCode } = useAuth({
     onSuccess: onLoginSuccess,
+    loginContext,
   });
   const validatePhone = (phone: string) => {
     if (!phone) {
-      setPhoneError(t('auth.phoneEmpty'));
+      setPhoneError(t('module.auth.phoneEmpty'));
       return false;
     }
 
     if (!isValidPhoneNumber(phone)) {
-      setPhoneError(t('auth.phoneError'));
+      setPhoneError(t('module.auth.phoneError'));
       return false;
     }
 
@@ -64,7 +68,7 @@ export function PhoneLogin({ onLoginSuccess }: PhoneLoginProps) {
 
     if (!termsAccepted) {
       toast({
-        title: t('auth.termsError'),
+        title: t('module.auth.termsError'),
         variant: 'destructive',
       });
       return;
@@ -89,13 +93,14 @@ export function PhoneLogin({ onLoginSuccess }: PhoneLoginProps) {
         }, 1000);
 
         toast({
-          title: t('auth.sendSuccess'),
-          description: t('auth.checkYourSms'),
+          title: t('module.auth.sendSuccess'),
+          description: t('module.auth.checkYourSms'),
         });
       }
     } catch {
       // Error already handled in sendSmsCode
     } finally {
+      setShowOtpInput(true);
       setIsLoading(false);
     }
   };
@@ -103,7 +108,7 @@ export function PhoneLogin({ onLoginSuccess }: PhoneLoginProps) {
   const handleVerifyOtp = async () => {
     if (!phoneOtp) {
       toast({
-        title: t('auth.otpError'),
+        title: t('module.auth.otpError'),
         variant: 'destructive',
       });
       return;
@@ -111,7 +116,7 @@ export function PhoneLogin({ onLoginSuccess }: PhoneLoginProps) {
 
     if (!termsAccepted) {
       toast({
-        title: t('auth.termsError'),
+        title: t('module.auth.termsError'),
         variant: 'destructive',
       });
       return;
@@ -139,19 +144,19 @@ export function PhoneLogin({ onLoginSuccess }: PhoneLoginProps) {
           htmlFor='phone'
           className={phoneError ? 'text-red-500' : ''}
         >
-          {t('auth.phone')}
+          {t('module.auth.phone')}
         </Label>
         <Input
           id='phone'
-          placeholder={t('auth.phonePlaceholder')}
+          placeholder={t('module.auth.phonePlaceholder')}
           value={phoneNumber}
           onChange={handlePhoneChange}
           disabled={isLoading}
-          className={
-            phoneError
-              ? 'border-red-500 focus-visible:ring-red-500 placeholder:text-muted-foreground'
-              : ''
-          }
+          className={cn(
+            'text-base sm:text-sm',
+            phoneError &&
+              'border-red-500 focus-visible:ring-red-500 placeholder:text-muted-foreground',
+          )}
         />
         {phoneError && <p className='text-xs text-red-500'>{phoneError}</p>}
       </div>
@@ -160,11 +165,12 @@ export function PhoneLogin({ onLoginSuccess }: PhoneLoginProps) {
         <div className='flex-1'>
           <Input
             id='otp'
-            placeholder={t('auth.otpPlaceholder')}
+            placeholder={t('module.auth.otpPlaceholder')}
             value={phoneOtp}
             onChange={e => setPhoneOtp(e.target.value)}
             onKeyDown={handleOtpKeyDown}
             disabled={isLoading || !showOtpInput}
+            className='text-base sm:text-sm'
           />
         </div>
         <Button
@@ -175,9 +181,9 @@ export function PhoneLogin({ onLoginSuccess }: PhoneLoginProps) {
           {isLoading && !showOtpInput ? (
             <Loader2 className='h-4 w-4 animate-spin mr-2' />
           ) : countdown > 0 ? (
-            t('auth.secondsLater', { count: countdown })
+            t('module.auth.secondsLater', { count: countdown })
           ) : (
-            t('auth.getOtp')
+            t('module.auth.getOtp')
           )}
         </Button>
       </div>
@@ -197,7 +203,7 @@ export function PhoneLogin({ onLoginSuccess }: PhoneLoginProps) {
           disabled={isLoading || !phoneOtp}
         >
           {isLoading ? <Loader2 className='h-4 w-4 animate-spin mr-2' /> : null}
-          {t('auth.login')}
+          {t('module.auth.login')}
         </Button>
       )}
     </div>

@@ -21,11 +21,13 @@ import {
 
 import { useEnvStore, useCourseStore } from '@/c-store';
 import { UserProvider, useUserStore } from '@/store';
+import { redirectToHomeUrlIfRootPath } from '@/lib/utils';
 
 const initializeEnvData = async (): Promise<void> => {
   const {
     updateAppId,
     updateCourseId,
+    updateDefaultLlmModel,
     updateAlwaysShowLessonTree,
     updateUmamiWebsiteId,
     updateUmamiScriptSrc,
@@ -33,8 +35,13 @@ const initializeEnvData = async (): Promise<void> => {
     updateBaseURL,
     updateLogoHorizontal,
     updateLogoVertical,
+    updateLogoUrl,
     updateEnableWxcode,
-    updateSiteUrl,
+    updateHomeUrl,
+    updateCurrencySymbol,
+    updateStripePublishableKey,
+    updateStripeEnabled,
+    updatePaymentChannels,
   } = useEnvStore.getState() as EnvStoreState;
 
   const fetchEnvData = async (): Promise<void> => {
@@ -45,6 +52,9 @@ const initializeEnvData = async (): Promise<void> => {
       });
       if (res.ok) {
         const data = await res.json();
+        if (redirectToHomeUrlIfRootPath(data?.homeUrl)) {
+          return;
+        }
 
         // await updateCourseId(data?.courseId || '');
         await updateAppId(data?.wechatAppId || '');
@@ -55,8 +65,23 @@ const initializeEnvData = async (): Promise<void> => {
         await updateBaseURL(data?.apiBaseUrl || '');
         await updateLogoHorizontal(data?.logoHorizontal || '');
         await updateLogoVertical(data?.logoVertical || '');
+        await updateLogoUrl(data?.logoUrl || '');
         await updateEnableWxcode(data?.enableWechatCode?.toString() || 'true');
-        await updateSiteUrl(data?.siteHost || '');
+        await updateDefaultLlmModel(data?.defaultLlmModel || '');
+        await updateHomeUrl(data?.homeUrl || '');
+        await updateCurrencySymbol(data?.currencySymbol || '¥');
+        await updateStripePublishableKey(data?.stripePublishableKey || '');
+        await updateStripeEnabled(
+          data?.stripeEnabled !== undefined
+            ? data.stripeEnabled.toString()
+            : 'false',
+        );
+        await updatePaymentChannels(
+          Array.isArray(data?.paymentChannels) &&
+            data.paymentChannels.length > 0
+            ? data.paymentChannels
+            : (useEnvStore.getState() as EnvStoreState).paymentChannels,
+        );
       }
     } catch (error) {
       console.error(error);
@@ -237,7 +262,6 @@ export default function ChatLayout({
             window.location.href = '/404';
           }
         } catch (error) {
-          console.log(error);
           window.location.href = '/404';
         }
       }

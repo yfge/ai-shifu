@@ -17,13 +17,13 @@ export const LogoWithText = ({ direction, size = 64 }) => {
   const flexFlow = isRow ? 'row nowrap' : 'column nowrap';
   const logoHorizontal = useEnvStore(state => state.logoHorizontal);
   const logoVertical = useEnvStore(state => state.logoVertical);
-  const siteUrl = useEnvStore(state => state.siteUrl);
+  const logoUrl = useEnvStore(state => state.logoUrl);
+  const homeUrl = useEnvStore(state => state.homeUrl);
   const width = isRow ? size * 3.8125 : size;
   const height = isRow ? size : size * 2.5;
-  const commonStyles = {
-    width: width + 'px',
-    height: height + 'px',
-  };
+  const logoSrc = isRow
+    ? logoUrl || logoHorizontal || imgLogoRow.src
+    : logoVertical || imgLogoColumn.src;
 
   return (
     <div
@@ -31,27 +31,21 @@ export const LogoWithText = ({ direction, size = 64 }) => {
         display: 'flex',
         flexFlow: flexFlow,
         alignItems: 'center',
-        ...commonStyles,
+        // ...commonStyles,
       }}
     >
-      <a href={siteUrl}>
-        {isRow ? (
-          <Image
-            src={logoHorizontal || imgLogoRow.src}
-            alt='logo'
-            width={width}
-            height={height}
-            style={{ ...commonStyles }}
-          />
-        ) : (
-          <Image
-            src={logoVertical || imgLogoColumn.src}
-            alt='logo'
-            width={width}
-            height={height}
-            style={{ ...commonStyles }}
-          />
-        )}
+      <a href={homeUrl || 'https://ai-shifu.cn/'}>
+        <Image
+          src={logoSrc}
+          alt='logo'
+          width={Math.round(width)}
+          height={Math.round(height)}
+          style={{
+            width,
+            height: isRow ? height : 34,
+            objectFit: 'contain',
+          }}
+        />
       </a>
     </div>
   );

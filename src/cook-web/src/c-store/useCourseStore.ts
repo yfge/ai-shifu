@@ -29,10 +29,42 @@ export const useCourseStore = create<
     updateResetedLessonId: resetedLessonId => set(() => ({ resetedLessonId })),
     updateResetedChapterId: resetedChapterId =>
       set(() => ({ resetedChapterId })),
-    resetChapter: async resetedChapterId => {
-      await apiResetChapter({ chapterId: resetedChapterId });
+    resetChapter: async lid => {
+      await apiResetChapter({ lessonId: lid });
       // set({ chapterId: resetedChapterId });
-      set({ resetedLessonId: resetedChapterId, lessonId: resetedChapterId });
+      set({ resetedLessonId: lid, lessonId: lid });
+    },
+    payModalOpen: false,
+    payModalState: {
+      type: '',
+      payload: {},
+    },
+    payModalResult: null,
+    openPayModal: (options = {}) => {
+      const { type = '', payload = {} } = options;
+      set(() => ({
+        payModalOpen: true,
+        payModalState: { type, payload },
+        payModalResult: null,
+      }));
+    },
+    closePayModal: () => {
+      set(() => ({ payModalOpen: false }));
+    },
+    setPayModalState: (state = {}) => {
+      set(current => ({
+        payModalState: {
+          type:
+            state.type !== undefined ? state.type : current.payModalState.type,
+          payload:
+            state.payload !== undefined
+              ? state.payload
+              : current.payModalState.payload,
+        },
+      }));
+    },
+    setPayModalResult: result => {
+      set(() => ({ payModalResult: result }));
     },
   })),
 );

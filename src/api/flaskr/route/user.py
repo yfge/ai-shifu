@@ -7,18 +7,13 @@ from flaskr.service.profile.funcs import (
     get_user_profile_labels,
     update_user_profile_with_lable,
 )
-from ..service.user import (
-    validate_user,
-    update_user_info,
+from ..service.user.common import validate_user, update_user_info, verify_sms_code
+from ..service.user.user import (
     generate_temp_user,
-    generation_img_chk,
-    send_sms_code,
-    send_email_code,
-    verify_sms_code,
-    verify_mail_code,
-    upload_user_avatar,
     update_user_open_id,
+    upload_user_avatar,
 )
+from ..service.user.utils import send_sms_code
 from ..service.feedback.funs import submit_feedback
 from ..service.user.auth import get_provider
 from ..service.user.auth.base import OAuthCallbackRequest
@@ -216,68 +211,6 @@ def register_user_handler(app: Flask, path_prefix: str) -> Flask:
         resp = make_response(make_common_response(user_token))
         return resp
 
-    @app.route(path_prefix + "/generate_chk_code", methods=["POST"])
-    # @bypass_token_validation
-    def generate_chk_code():
-        """
-        Generating a Graphical Captcha
-        ---
-        tags:
-            - user
-        parameters:
-          - in: body
-            required: true
-            description: mobile or email
-            schema:
-              properties:
-                mobile:
-                  type: string
-                  description: mobile
-                mail:
-                  type: string
-                  description: email
-              required:
-                - mobile
-                - mail
-        responses:
-            200:
-                description:
-                content:
-                    application/json:
-                        schema:
-                            properties:
-                                code:
-                                    type: integer
-                                    description: return code
-                                message:
-                                    type: string
-                                    description: return message
-                                data:
-                                    type: object
-                                    description: return message
-                                    properties:
-                                        expire_in:
-                                            type: string
-                                            description: expire in
-                                        img:
-                                            type: string
-                                            description: img png base64
-
-
-            400:
-                description: parameter error
-        """
-        mobile = request.get_json().get("mobile", None)
-        mail = request.get_json().get("mail", None)
-        identifying_account = ""
-        if mobile:
-            identifying_account = mobile
-        if mail:
-            identifying_account = mail
-        if not identifying_account:
-            raise_param_error("mobile or mail is required")
-        return make_common_response(generation_img_chk(app, identifying_account))
-
     @app.route(path_prefix + "/send_sms_code", methods=["POST"])
     @bypass_token_validation
     @optional_token_validation
@@ -348,6 +281,7 @@ def register_user_handler(app: Flask, path_prefix: str) -> Flask:
             sms_code = request.get_json().get("sms_code", None)
             course_id = request.get_json().get("course_id", None)
             language = request.get_json().get("language", None)
+            login_context = request.get_json().get("login_context", None)
             user_id = (
                 None if getattr(request, "user", None) is None else request.user.user_id
             )
@@ -355,7 +289,15 @@ def register_user_handler(app: Flask, path_prefix: str) -> Flask:
                 raise_param_error("mobile")
             if not sms_code:
                 raise_param_error("sms_code")
-            ret = verify_sms_code(app, user_id, mobile, sms_code, course_id, language)
+            ret = verify_sms_code(
+                app,
+                user_id,
+                mobile,
+                sms_code,
+                course_id,
+                language,
+                login_context,
+            )
             db.session.commit()
             resp = make_response(make_common_response(ret))
             return resp
@@ -590,123 +532,6 @@ def register_user_handler(app: Flask, path_prefix: str) -> Flask:
             raise_param_error("feedback")
         return make_common_response(submit_feedback(app, user_id, feedback, mail))
 
-    @app.route(path_prefix + "/send_mail_code", methods=["POST"])
-    @bypass_token_validation
-    @optional_token_validation
-    def send_mail_code_api():
-        """
-        Send email Captcha
-        ---
-        tags:
-           - user
-
-        parameters:
-          - in: body
-            required: true
-            schema:
-              properties:
-                mail:
-                  type: string
-                  description: mail
-              required:
-                - mobile
-        responses:
-            200:
-                description: sent successfully
-                content:
-                    application/json:
-                        schema:
-                            properties:
-                                code:
-                                    type: integer
-                                    description: return code
-                                message:
-                                    type: string
-                                    description: retrun message
-                                data:
-                                    description: mail captcha expire_in
-                                    schema:
-                                        properties:
-                                            expire_in:
-                                                type: integer
-                                                description: expire in
-            400:
-                description: parameter error
-
-        """
-        mail = request.get_json().get("mail", None)
-        language = request.get_json().get("language", None)
-        if not mail:
-            raise_param_error("mail")
-        if "X-Forwarded-For" in request.headers:
-            client_ip = request.headers["X-Forwarded-For"].split(",")[0].strip()
-        else:
-            client_ip = request.remote_addr
-        return make_common_response(send_email_code(app, mail, client_ip, language))
-
-    @app.route(path_prefix + "/verify_mail_code", methods=["POST"])
-    @bypass_token_validation
-    @optional_token_validation
-    def verify_mail_code_api():
-        """
-        Send verify email code
-        ---
-        tags:
-            - user
-        parameters:
-            -   in: body
-                required: true
-                schema:
-                    properties:
-                        mail:
-                            type: string
-                            description: mail
-                        mail_code:
-                            type: string
-                            description: mail chekcode
-                        course_id:
-                            type: string
-                            description: course id
-                        language:
-                            type: string
-                            description: language
-        responses:
-            200:
-                description: user logs in success
-                content:
-                    application/json:
-                        schema:
-                            properties:
-                                code:
-                                    type: integer
-                                    description: return code
-                                message:
-                                    type: string
-                                    description: return information
-                                data:
-                                    $ref: "#/components/schemas/UserToken"
-            400:
-                description: parameter error
-
-
-        """
-        with app.app_context():
-            mail = request.get_json().get("mail", None)
-            mail_code = request.get_json().get("mail_code", None)
-            course_id = request.get_json().get("course_id", None)
-            user_id = (
-                None if getattr(request, "user", None) is None else request.user.user_id
-            )
-            language = request.get_json().get("language", None)
-            if not mail:
-                raise_param_error("mail")
-            if not mail_code:
-                raise_param_error("mail_code")
-            ret = verify_mail_code(app, user_id, mail, mail_code, course_id, language)
-            db.session.commit()
-            resp = make_response(make_common_response(ret))
-            return resp
-
     @app.route(path_prefix + "/oauth/google", methods=["GET"])
     @bypass_token_validation
     def google_oauth_start():
@@ -715,6 +540,12 @@ def register_user_handler(app: Flask, path_prefix: str) -> Flask:
         redirect_uri = request.args.get("redirect_uri")
         if redirect_uri:
             metadata["redirect_uri"] = redirect_uri
+        login_context = request.args.get("login_context")
+        if login_context:
+            metadata["login_context"] = login_context
+        ui_language = request.args.get("language")
+        if ui_language:
+            metadata["language"] = ui_language
         result = provider.begin_oauth(app, metadata)
         dto = OAuthStartDTO(
             authorization_url=result["authorization_url"],
@@ -724,12 +555,19 @@ def register_user_handler(app: Flask, path_prefix: str) -> Flask:
 
     @app.route(path_prefix + "/oauth/google/callback", methods=["GET"])
     @bypass_token_validation
+    @optional_token_validation
     def google_oauth_callback():
         provider = get_provider("google")
+        current_user = getattr(request, "user", None)
+        current_user_id = None
+        if current_user is not None:
+            current_user_id = getattr(current_user, "user_id", None)
+
         callback_request = OAuthCallbackRequest(
             state=request.args.get("state"),
             code=request.args.get("code"),
             raw_request_args=request.args.to_dict(flat=True),
+            current_user_id=current_user_id,
         )
         try:
             auth_result = provider.handle_oauth_callback(app, callback_request)

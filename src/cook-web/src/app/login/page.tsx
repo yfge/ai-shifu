@@ -14,7 +14,7 @@ import {
 import { PhoneLogin } from '@/components/auth/PhoneLogin';
 import { EmailLogin } from '@/components/auth/EmailLogin';
 import { FeedbackForm } from '@/components/auth/FeedbackForm';
-import Image from 'next/image';
+import Image, { type StaticImageData } from 'next/image';
 import logoHorizontal from '@/c-assets/logos/ai-shifu-logo-horizontal.png';
 import LanguageSelect from '@/components/language-select';
 import { useTranslation } from 'react-i18next';
@@ -33,6 +33,9 @@ export default function AuthPage() {
   const [authMode, setAuthMode] = useState<'login' | 'feedback'>('login');
   const [isI18nReady, setIsI18nReady] = useState(false);
   const userInfo = useUserStore(state => state.userInfo);
+  const [logoSrc, setLogoSrc] = useState<string | StaticImageData>(
+    environment.logoUrl || logoHorizontal,
+  );
 
   const [loginConfig, setLoginConfig] = useState(() => ({
     methods: environment.loginMethodsEnabled,
@@ -65,6 +68,7 @@ export default function AuthPage() {
           return;
         }
 
+        setLogoSrc(data?.logoUrl || environment.logoUrl || logoHorizontal);
         setLoginConfig({
           methods:
             normalizedMethods.length > 0
@@ -128,10 +132,15 @@ export default function AuthPage() {
   const resolveRedirectPath = useCallback(() => {
     let redirect = searchParams.get('redirect');
     if (!redirect || redirect.charAt(0) !== '/') {
-      redirect = '/main';
+      redirect = '/admin';
     }
     return redirect;
   }, [searchParams]);
+
+  const loginContext = useMemo(() => {
+    const redirectPath = resolveRedirectPath();
+    return redirectPath.startsWith('/admin') ? 'admin' : 'default';
+  }, [resolveRedirectPath]);
 
   const handleAuthSuccess = () => {
     router.replace(resolveRedirectPath());
@@ -219,7 +228,11 @@ export default function AuthPage() {
     }
 
     const resolvedLanguage = i18n.resolvedLanguage ?? i18n.language;
-    const hasBundle = i18n.hasResourceBundle(language, 'translation');
+    const defaultNamespaceOption = i18n.options.defaultNS;
+    const defaultNamespace = Array.isArray(defaultNamespaceOption)
+      ? defaultNamespaceOption[0]
+      : (defaultNamespaceOption ?? 'common');
+    const hasBundle = i18n.hasResourceBundle(language, defaultNamespace);
 
     if (!ready || resolvedLanguage !== language) {
       return;
@@ -231,15 +244,28 @@ export default function AuthPage() {
   }, [language, ready]);
 
   useEffect(() => {
-    if (!isInitialized || !isLoggedIn) {
+    if (!language || !ready) {
       return;
     }
 
-    const target = resolveRedirectPath();
-    if (window.location.pathname !== target) {
-      router.replace(target);
+    const resolvedLanguage = i18n.resolvedLanguage ?? i18n.language;
+    if (resolvedLanguage !== language) {
+      return;
     }
-  }, [isInitialized, isLoggedIn, resolveRedirectPath, router]);
+
+    document.title = t('module.auth.title');
+  }, [language, ready, t]);
+
+  // useEffect(() => {
+  //   if (!isInitialized || !isLoggedIn) {
+  //     return;
+  //   }
+
+  // const target = resolveRedirectPath();
+  // if (window.location.pathname !== target) {
+  //   router.replace(target);
+  // }
+  // }, [isInitialized, isLoggedIn, resolveRedirectPath, router]);
 
   const [googleTermsAccepted, setGoogleTermsAccepted] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -260,7 +286,7 @@ export default function AuthPage() {
 
     if (!googleTermsAccepted) {
       toast({
-        title: t('auth.termsError'),
+        title: t('module.auth.termsError'),
         variant: 'destructive',
       });
       return;
@@ -268,13 +294,17 @@ export default function AuthPage() {
 
     try {
       setIsGoogleLoading(true);
-      await startGoogleLogin({ redirectPath: resolveRedirectPath() });
+      await startGoogleLogin({
+        redirectPath: resolveRedirectPath(),
+        language: language ?? undefined,
+      });
     } catch (error) {
       setIsGoogleLoading(false);
     }
   }, [
     googleTermsAccepted,
     isGoogleEnabled,
+    language,
     resolveRedirectPath,
     startGoogleLogin,
     t,
@@ -285,7 +315,12 @@ export default function AuthPage() {
     (method: LoginMethod) => {
       switch (method) {
         case 'phone':
-          return <PhoneLogin onLoginSuccess={handleAuthSuccess} />;
+          return (
+            <PhoneLogin
+              onLoginSuccess={handleAuthSuccess}
+              loginContext={loginContext}
+            />
+          );
         case 'email':
           return <EmailLogin onLoginSuccess={handleAuthSuccess} />;
         case 'google':
@@ -316,6 +351,7 @@ export default function AuthPage() {
   );
 
   const shouldShowTabs = availableMethods.length > 1;
+  const resolvedLogo = logoSrc || logoHorizontal;
 
   // Show loading state until translations are ready
   if (!isI18nReady || !language) {
@@ -325,7 +361,7 @@ export default function AuthPage() {
           <div className='flex flex-col items-center'>
             <Image
               className='dark:invert'
-              src={logoHorizontal}
+              src={resolvedLogo}
               alt='AI-Shifu'
               width={180}
               height={40}
@@ -348,7 +384,7 @@ export default function AuthPage() {
           <h2 className='text-primary flex items-center font-semibold pb-2  w-full justify-center'>
             <Image
               className='dark:invert'
-              src={logoHorizontal}
+              src={resolvedLogo}
               alt='AI-Shifu'
               width={180}
               height={40}
@@ -368,16 +404,16 @@ export default function AuthPage() {
           <CardHeader>
             {authMode === 'login' && (
               <CardTitle className='text-xl text-center'>
-                {t('auth.title')}
+                {t('module.auth.title')}
               </CardTitle>
             )}
             {authMode === 'feedback' && (
               <>
                 <CardTitle className='text-xl text-center'>
-                  {t('auth.feedback')}
+                  {t('module.auth.feedback')}
                 </CardTitle>
                 <CardDescription className='text-sm text-center'>
-                  {t('auth.feedback')}
+                  {t('module.auth.feedback')}
                 </CardDescription>
               </>
             )}
@@ -407,10 +443,10 @@ export default function AuthPage() {
                             value={method}
                           >
                             {method === 'phone'
-                              ? t('auth.phone')
+                              ? t('module.auth.phone')
                               : method === 'email'
-                                ? t('auth.email')
-                                : t('auth.googleTab')}
+                                ? t('module.auth.email')
+                                : t('module.auth.googleTab')}
                           </TabsTrigger>
                         ))}
                       </TabsList>
@@ -433,7 +469,7 @@ export default function AuthPage() {
                   )
                 ) : (
                   <p className='text-sm text-muted-foreground text-center'>
-                    {t('auth.noLoginMethods')}
+                    {t('module.auth.noLoginMethods')}
                   </p>
                 )}
               </div>
@@ -449,17 +485,17 @@ export default function AuthPage() {
                 onClick={handleBackToLogin}
                 className='text-primary hover:underline'
               >
-                {t('auth.backToLogin')}
+                {t('module.auth.backToLogin')}
               </button>
             )}
             {authMode !== 'feedback' && (
               <p className='text-sm text-muted-foreground'>
-                {t('auth.problem')}
+                {t('module.auth.problem')}
                 <button
                   onClick={handleFeedback}
                   className='text-primary hover:underline'
                 >
-                  {t('auth.submitFeedback')}
+                  {t('module.auth.submitFeedback')}
                 </button>
               </p>
             )}

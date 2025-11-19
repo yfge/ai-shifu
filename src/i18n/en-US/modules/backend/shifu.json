@@ -1,0 +1,21 @@
+{
+  "__namespace__": "server.shifu",
+  "__flat__": {
+    "noPermission": "No permission",
+    "outlineDeleted": "Outline has been deleted",
+    "outlineItemNotFound": "Outline item not found",
+    "outlineNameTooLong": "Outline name is too long",
+    "parentOutlineNotFound": "Parent outline not found",
+    "shifuNotFound": "Shifu not found",
+    "shifuStructNotFound": "Shifu structure not found",
+    "unitNameTooLong": "Unit name is too long",
+    "unitNotFound": "Unit not found",
+    "shifuNameRequired": "Shifu name is required",
+    "shifuNameAlreadyExists": "Shifu name already exists",
+    "outlineNotFound": "Outline not found",
+    "shifuNameTooLong": "Shifu name is too long (max {max_length} characters)",
+    "shifuDescriptionTooLong": "Shifu description is too long (max 500 characters)",
+    "importFileInvalid": "Import file is invalid",
+    "shifuPriceTooLow": "Shifu price is too low (min {min_shifu_price})"
+  }
+}

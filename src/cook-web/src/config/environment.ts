@@ -13,15 +13,23 @@ interface EnvironmentConfig {
 
   // Content & Course Configuration
   courseId: string;
+  defaultLlmModel: string;
+  currencySymbol: string;
 
   // WeChat Integration
   wechatAppId: string;
   enableWechatCode: boolean;
 
+  // Payment Configuration
+  stripePublishableKey: string;
+  stripeEnabled: boolean;
+  paymentChannels: string[];
+
   // UI Configuration
   alwaysShowLessonTree: boolean;
   logoHorizontal: string;
   logoVertical: string;
+  logoUrl: string;
 
   // Analytics & Tracking
   umamiScriptSrc: string;
@@ -33,6 +41,21 @@ interface EnvironmentConfig {
   // Authentication Configuration
   loginMethodsEnabled: string[];
   defaultLoginMethod: string;
+
+  // Redirect Configuration
+  homeUrl: string;
+
+  // Legal Documents Configuration
+  legalUrls: {
+    agreement: {
+      'zh-CN': string;
+      'en-US': string;
+    };
+    privacy: {
+      'zh-CN': string;
+      'en-US': string;
+    };
+  };
 }
 
 /**
@@ -79,7 +102,7 @@ async function getClientApiBaseUrl(): Promise<string> {
     }
 
     // Fallback to the default value when fetching fails
-    cachedApiBaseUrl = 'http://localhost:8081';
+    cachedApiBaseUrl = 'http://localhost:8080';
     return cachedApiBaseUrl;
   })();
 
@@ -100,7 +123,7 @@ function getApiBaseUrl(): string {
   }
 
   // 2. Clients fall back to the build value and update dynamically later
-  return process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8081';
+  return process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 }
 
 /**
@@ -128,6 +151,15 @@ function getCourseId(): string {
 }
 
 /**
+ * Gets default LLM model
+ */
+function getDefaultLlmModel(): string {
+  return (
+    getRuntimeEnv('DEFAULT_LLM_MODEL') || process.env.DEFAULT_LLM_MODEL || ''
+  );
+}
+
+/**
  * Gets WeChat App ID
  */
 function getWeChatAppId(): string {
@@ -148,6 +180,51 @@ function getWeChatCodeEnabled(): boolean {
   }
   const value = process.env.NEXT_PUBLIC_WECHAT_CODE_ENABLED;
   return getBooleanValue(value, true);
+}
+
+/**
+ * Gets Stripe publishable key
+ */
+function getStripePublishableKey(): string {
+  const runtimeKey = getRuntimeEnv('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY');
+  if (runtimeKey) {
+    return runtimeKey;
+  }
+  return process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
+}
+
+/**
+ * Gets Stripe enable flag
+ */
+function getStripeEnabled(): boolean {
+  const runtimeEnabled = getRuntimeEnv('NEXT_PUBLIC_STRIPE_ENABLED');
+  if (runtimeEnabled !== undefined) {
+    return getBooleanValue(runtimeEnabled, false);
+  }
+  const value = process.env.NEXT_PUBLIC_STRIPE_ENABLED;
+  return getBooleanValue(value, false);
+}
+
+function parsePaymentChannels(value?: string): string[] {
+  if (!value) return ['pingxx', 'stripe'];
+  const channels = value
+    .split(',')
+    .map(item => item.trim().toLowerCase())
+    .filter(Boolean);
+  return channels.length > 0 ? channels : ['pingxx', 'stripe'];
+}
+
+function getPaymentChannels(): string[] {
+  const runtime =
+    getRuntimeEnv('PAYMENT_CHANNELS_ENABLED') ||
+    getRuntimeEnv('NEXT_PUBLIC_PAYMENT_CHANNELS_ENABLED');
+  if (runtime) {
+    return parsePaymentChannels(runtime);
+  }
+  const buildValue =
+    process.env.PAYMENT_CHANNELS_ENABLED ||
+    process.env.NEXT_PUBLIC_PAYMENT_CHANNELS_ENABLED;
+  return parsePaymentChannels(buildValue);
 }
 
 /**
@@ -182,6 +259,13 @@ function getUILogoVertical(): string {
     return runtimeLogo;
   }
   return process.env.NEXT_PUBLIC_UI_LOGO_VERTICAL || '';
+}
+
+/**
+ * Gets custom logo URL (runtime override)
+ */
+function getLogoUrl(): string {
+  return getRuntimeEnv('LOGO_URL') || process.env.LOGO_URL || '';
 }
 
 /**
@@ -268,6 +352,51 @@ function getBooleanValue(
 }
 
 /**
+ * Gets home URL
+ */
+function getHomeUrl(): string {
+  return getRuntimeEnv('HOME_URL') || process.env.HOME_URL || '/admin';
+}
+
+/**
+ * Gets currency symbol
+ */
+function getCurrencySymbol(): string {
+  return getRuntimeEnv('CURRENCY_SYMBOL') || process.env.CURRENCY_SYMBOL || '¥';
+}
+
+/**
+ * Gets legal document URLs for all supported languages
+ */
+function getLegalUrls(): {
+  agreement: { 'zh-CN': string; 'en-US': string };
+  privacy: { 'zh-CN': string; 'en-US': string };
+} {
+  return {
+    agreement: {
+      'zh-CN':
+        getRuntimeEnv('LEGAL_AGREEMENT_URL_ZH_CN') ||
+        process.env.LEGAL_AGREEMENT_URL_ZH_CN ||
+        '',
+      'en-US':
+        getRuntimeEnv('LEGAL_AGREEMENT_URL_EN_US') ||
+        process.env.LEGAL_AGREEMENT_URL_EN_US ||
+        '',
+    },
+    privacy: {
+      'zh-CN':
+        getRuntimeEnv('LEGAL_PRIVACY_URL_ZH_CN') ||
+        process.env.LEGAL_PRIVACY_URL_ZH_CN ||
+        '',
+      'en-US':
+        getRuntimeEnv('LEGAL_PRIVACY_URL_EN_US') ||
+        process.env.LEGAL_PRIVACY_URL_EN_US ||
+        '',
+    },
+  };
+}
+
+/**
  * Environment configuration instance with new organized structure
  */
 export const environment: EnvironmentConfig = {
@@ -276,15 +405,22 @@ export const environment: EnvironmentConfig = {
 
   // Content & Course Configuration
   courseId: getCourseId(),
+  defaultLlmModel: getDefaultLlmModel(),
 
   // WeChat Integration
   wechatAppId: getWeChatAppId(),
   enableWechatCode: getWeChatCodeEnabled(),
 
+  // Payment Configuration
+  stripePublishableKey: getStripePublishableKey(),
+  stripeEnabled: getStripeEnabled(),
+  paymentChannels: getPaymentChannels(),
+
   // UI Configuration
   alwaysShowLessonTree: getUIAlwaysShowLessonTree(),
   logoHorizontal: getUILogoHorizontal(),
   logoVertical: getUILogoVertical(),
+  logoUrl: getLogoUrl(),
 
   // Analytics & Tracking
   umamiScriptSrc: getAnalyticsUmamiScript(),
@@ -296,6 +432,13 @@ export const environment: EnvironmentConfig = {
   // Authentication Configuration
   loginMethodsEnabled: getLoginMethodsEnabled(),
   defaultLoginMethod: getDefaultLoginMethod(),
+
+  // Redirect Configuration
+  homeUrl: getHomeUrl(),
+  currencySymbol: getCurrencySymbol(),
+
+  // Legal Documents Configuration
+  legalUrls: getLegalUrls(),
 };
 
 export default environment;

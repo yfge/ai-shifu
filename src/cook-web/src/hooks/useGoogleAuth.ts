@@ -41,6 +41,7 @@ interface UseGoogleAuthOptions {
 interface StartGoogleLoginOptions {
   redirectPath?: string;
   redirectUriOverride?: string;
+  language?: string;
 }
 
 interface FinalizeGoogleLoginOptions {
@@ -96,13 +97,18 @@ export function useGoogleAuth(options: UseGoogleAuthOptions = {}) {
     async ({
       redirectPath,
       redirectUriOverride,
+      language,
     }: StartGoogleLoginOptions = {}) => {
       try {
         if (typeof window === 'undefined') {
           throw new Error('Google OAuth requires a browser environment.');
         }
 
-        const redirectTarget = redirectPath || '/main';
+        const redirectTarget = redirectPath || '/admin';
+        const loginContext =
+          redirectTarget && redirectTarget.startsWith('/admin')
+            ? 'admin'
+            : 'default';
         setGoogleOAuthRedirect(redirectTarget);
 
         const redirectUri = buildRedirectUri(redirectUriOverride);
@@ -110,7 +116,11 @@ export function useGoogleAuth(options: UseGoogleAuthOptions = {}) {
         await ensureGuestToken();
 
         const response = await callWithTokenRefresh(() =>
-          apiService.googleOauthStart({ redirect_uri: redirectUri }),
+          apiService.googleOauthStart({
+            redirect_uri: redirectUri,
+            login_context: loginContext,
+            language,
+          }),
         );
         const payload = extractData<OAuthStartPayload>(response);
 
@@ -122,9 +132,9 @@ export function useGoogleAuth(options: UseGoogleAuthOptions = {}) {
         window.location.href = payload.authorization_url;
       } catch (error: any) {
         clearGoogleSession();
-        const message = error?.message || t('auth.googleLoginError');
+        const message = error?.message || t('module.auth.googleLoginError');
         toast({
-          title: t('auth.failed'),
+          title: t('module.auth.failed'),
           description: message,
           variant: 'destructive',
         });
@@ -153,7 +163,7 @@ export function useGoogleAuth(options: UseGoogleAuthOptions = {}) {
       try {
         const expectedState = getGoogleOAuthState();
         if (expectedState && state && expectedState !== state) {
-          throw new Error(t('auth.googleStateMismatch'));
+          throw new Error(t('module.auth.googleStateMismatch'));
         }
 
         const response = await callWithTokenRefresh(() =>
@@ -168,10 +178,10 @@ export function useGoogleAuth(options: UseGoogleAuthOptions = {}) {
         await login(payload.userInfo, payload.token);
 
         const redirectTarget =
-          fallbackRedirect || getGoogleOAuthRedirect() || '/main';
+          fallbackRedirect || getGoogleOAuthRedirect() || '/admin';
 
         options.onSuccess?.(payload.userInfo, redirectTarget);
-        toast({ title: t('auth.success') });
+        toast({ title: t('module.auth.success') });
 
         clearGoogleSession();
 
@@ -181,9 +191,9 @@ export function useGoogleAuth(options: UseGoogleAuthOptions = {}) {
         };
       } catch (error: any) {
         clearGoogleSession();
-        const message = error?.message || t('auth.googleLoginError');
+        const message = error?.message || t('module.auth.googleLoginError');
         toast({
-          title: t('auth.failed'),
+          title: t('module.auth.failed'),
           description: message,
           variant: 'destructive',
         });

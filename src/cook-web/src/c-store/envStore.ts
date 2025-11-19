@@ -5,6 +5,9 @@ import { environment } from '@/config/environment';
 export const useEnvStore = create<EnvStoreState>(set => ({
   courseId: environment.courseId,
   updateCourseId: async (courseId: string) => set({ courseId }),
+  defaultLlmModel: environment.defaultLlmModel,
+  updateDefaultLlmModel: async (defaultLlmModel: string) =>
+    set({ defaultLlmModel }),
   appId: environment.wechatAppId,
   updateAppId: async (appId: string) => set({ appId }),
   alwaysShowLessonTree: environment.alwaysShowLessonTree.toString(),
@@ -25,8 +28,21 @@ export const useEnvStore = create<EnvStoreState>(set => ({
     set({ logoHorizontal }),
   logoVertical: environment.logoVertical,
   updateLogoVertical: async (logoVertical: string) => set({ logoVertical }),
+  logoUrl: environment.logoUrl,
+  updateLogoUrl: async (logoUrl: string) => set({ logoUrl }),
   enableWxcode: environment.enableWechatCode.toString(),
   updateEnableWxcode: async (enableWxcode: string) => set({ enableWxcode }),
-  siteUrl: environment.apiBaseUrl,
-  updateSiteUrl: async (siteUrl: string) => set({ siteUrl }),
+  homeUrl: environment.homeUrl,
+  updateHomeUrl: async (homeUrl: string) => set({ homeUrl }),
+  currencySymbol: environment.currencySymbol,
+  updateCurrencySymbol: async (currencySymbol: string) =>
+    set({ currencySymbol }),
+  stripePublishableKey: environment.stripePublishableKey,
+  updateStripePublishableKey: async (stripePublishableKey: string) =>
+    set({ stripePublishableKey }),
+  stripeEnabled: environment.stripeEnabled.toString(),
+  updateStripeEnabled: async (stripeEnabled: string) => set({ stripeEnabled }),
+  paymentChannels: environment.paymentChannels,
+  updatePaymentChannels: async (paymentChannels: string[]) =>
+    set({ paymentChannels }),
 }));

@@ -1,0 +1,55 @@
+services:
+  ai-shifu-api-dev:
+    container_name: ai-shifu-api-dev
+    image: ai-shifu-api-dev:latest
+    command: ["sh", "-c", "until timeout 1 bash -c 'cat < /dev/null > /dev/tcp/ai-shifu-mysql/3306'; do sleep 1; done && flask db upgrade && flask console update_demo_shifu && cd /app && exec flask run --reload --debugger --host=0.0.0.0 --port=5800"]
+    env_file:
+      - ./.env
+    volumes:
+      - ../src/api/:/app/
+      - ../src/i18n/:/i18n/
+    depends_on:
+      - ai-shifu-mysql
+      - ai-shifu-redis
+
+  ai-shifu-cook-web-dev:
+    container_name: ai-shifu-cook-web-dev
+    image: ai-shifu-cook-web-dev:latest
+    env_file:
+      - ./.env
+    environment:
+      - I18N_ROOT=/app/src/i18n
+    depends_on:
+      - ai-shifu-api-dev
+    volumes:
+      - ../src/cook-web/public:/app/public
+      - ../src/cook-web/src:/app/src
+      - ../src/i18n:/app/src/i18n
+
+  ai-shifu-nginx-dev-dev:
+    container_name: ai-shifu-nginx-dev
+    image: nginx:latest
+    ports:
+      - "8080:8080"
+    depends_on:
+      - ai-shifu-cook-web-dev
+      - ai-shifu-api-dev
+    restart: always
+    volumes:
+      - ./nginx.dev.conf:/etc/nginx/nginx.conf
+
+  ai-shifu-mysql:
+    container_name: ai-shifu-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ai-shifu
+      MYSQL_DATABASE: ai-shifu
+    image: mysql:8.0
+    restart: always
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+
+  ai-shifu-redis:
+    container_name: ai-shifu-redis
+    image: redis:7-alpine
+    volumes:
+      - ./redis_data:/data

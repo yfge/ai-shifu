@@ -5,6 +5,9 @@ import { toast } from '@/hooks/useToast';
 import i18n from 'i18next';
 import { v4 as uuidv4 } from 'uuid';
 
+const AUTH_ERROR_CODES = new Set([1001, 1004, 1005]);
+let isHandlingAuthError = false;
+
 // ===== Type Definitions =====
 export type RequestConfig = RequestInit & { params?: any; data?: any };
 
@@ -32,7 +35,7 @@ export class ErrorWithCode extends Error {
 const handleApiError = (error: ErrorWithCode, showToast = true) => {
   if (showToast) {
     toast({
-      title: error.message || i18n.t('common.networkError'),
+      title: error.message || i18n.t('common.core.networkError'),
       variant: 'destructive',
     });
   }
@@ -47,17 +50,47 @@ const handleApiError = (error: ErrorWithCode, showToast = true) => {
   }
 };
 
+const handleAuthRecovery = async () => {
+  if (
+    isHandlingAuthError ||
+    typeof window === 'undefined' ||
+    window.__IS_LOGGING_OUT__
+  ) {
+    return;
+  }
+
+  const { logout } = useUserStore.getState();
+  if (!logout) {
+    return;
+  }
+
+  isHandlingAuthError = true;
+  try {
+    await logout(false);
+  } catch (authError) {
+    console.warn('Failed to recover from auth error:', authError);
+  } finally {
+    isHandlingAuthError = false;
+  }
+};
+
 // Check response status code and handle business logic
-const handleBusinessCode = (response: any) => {
+const handleBusinessCode = async (response: any) => {
   const error = new ErrorWithCode(
-    response.message || i18n.t('common.unknownError'),
+    response.message || i18n.t('common.core.unknownError'),
     response.code || -1,
   );
 
   if (response.code !== 0) {
+    const isAuthError = AUTH_ERROR_CODES.has(response.code);
+
     // Special status codes do not show toast
-    if (![1001].includes(response.code)) {
+    if (!isAuthError) {
       handleApiError(error);
+    }
+
+    if (isAuthError) {
+      await handleAuthRecovery();
     }
 
     // Authentication related errors, redirect to login (only on client side)
@@ -67,8 +100,8 @@ const handleBusinessCode = (response: any) => {
     // Related file: src/store/useUserStore.ts
     if (
       typeof window !== 'undefined' &&
-      location.pathname !== '/login' &&
-      [1001, 1004, 1005].includes(response.code) &&
+      !location.pathname.includes('/login') &&
+      isAuthError &&
       !window.__IS_LOGGING_OUT__ // Added: skip redirects while logout is in progress
     ) {
       const currentPath = encodeURIComponent(
@@ -84,14 +117,14 @@ const handleBusinessCode = (response: any) => {
       response.code === 9002
     ) {
       toast({
-        title: i18n.t('errors.noPermission'),
+        title: i18n.t('common.errors.noPermission'),
         variant: 'destructive',
       });
     }
 
     return Promise.reject(error);
   }
-  return response.data || response;
+  return response.data ?? response;
 };
 
 // ===== Utility Functions =====
@@ -133,10 +166,10 @@ export class Request {
       if (typeof window !== 'undefined') {
         // Client: use cached API base URL to avoid repeated requests
         const siteHost = await getDynamicApiBaseUrl();
-        fullUrl = (siteHost || 'http://localhost:8081') + url;
+        fullUrl = (siteHost || 'http://localhost:8080') + url;
       } else {
         // Fallback for server-side rendering
-        fullUrl = (getStringEnv('baseURL') || 'http://localhost:8081') + url;
+        fullUrl = (getStringEnv('baseURL') || 'http://localhost:8080') + url;
       }
     }
 
@@ -174,7 +207,12 @@ export class Request {
 
       // Check business status code
       if (Object.prototype.hasOwnProperty.call(res, 'code')) {
-        if (location.pathname === '/login') return res;
+        const isAuthError = AUTH_ERROR_CODES.has(res.code);
+        // If it's login page, we only skip non-auth errors to allow UI to handle business errors
+        // But Auth errors (1001, 1004, 1005) MUST be handled by global handler to clear token
+        if (location.pathname.includes('/login') && !isAuthError) {
+          return res;
+        }
         return handleBusinessCode(res);
       }
 
@@ -207,7 +245,13 @@ export class Request {
       requestConfig.headers = headers;
       requestConfig.body = body;
     } else {
-      requestConfig.body = JSON.stringify(body ?? {});
+      try {
+        requestConfig.body = JSON.stringify(body ?? {});
+      } catch (e) {
+        // Payload serialization failed (often due to passing event objects)
+        handleApiError(new ErrorWithCode('Invalid request payload', -1));
+        throw e;
+      }
       requestConfig.headers = {
         'Content-Type': 'application/json',
         ...headers,
@@ -262,12 +306,16 @@ export class Request {
     config: StreamRequestConfig = {},
     callback?: StreamCallback,
   ) {
-    const { url: fullUrl } = await this.prepareConfig(url, config);
+    const { url: fullUrl, config: preparedConfig } = await this.prepareConfig(
+      url,
+      config,
+    );
 
     try {
       const { parseChunk, ...rest } = config as any;
       const controller = new AbortController();
       const response = await fetch(fullUrl, {
+        ...preparedConfig,
         ...rest,
         method: 'POST',
         body: JSON.stringify(body),
@@ -329,12 +377,16 @@ export class Request {
     config: StreamRequestConfig = {},
     callback?: StreamCallback,
   ) {
-    const { url: fullUrl } = await this.prepareConfig(url, config);
+    const { url: fullUrl, config: preparedConfig } = await this.prepareConfig(
+      url,
+      config,
+    );
 
     try {
       const { parseChunk, ...rest } = config as any;
       const controller = new AbortController();
       const response = await fetch(fullUrl, {
+        ...preparedConfig,
         ...rest,
         method: 'POST',
         body: JSON.stringify(body),

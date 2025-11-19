@@ -57,11 +57,10 @@ export const CourseCatalogList = ({
               width={16}
               height={16}
               src={imgCourseList.src}
-              alt={t('navigation.courseList')}
+              alt={t('component.navigation.courseList')}
             />
             <div className={styles.titleName}>{courseName}</div>
           </div>
-          {getRightAreaControl()}
         </div>
         <div className={styles.listRow}>
           {catalogs.map(catalog => {

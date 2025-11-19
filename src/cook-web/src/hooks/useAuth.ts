@@ -21,6 +21,7 @@ interface LoginResponse extends ApiResponse {
 interface UseAuthOptions {
   onSuccess?: (userInfo: UserInfo) => void;
   onError?: (error: any) => void;
+  loginContext?: string;
 }
 
 export function useAuth(options: UseAuthOptions = {}) {
@@ -54,20 +55,22 @@ export function useAuth(options: UseAuthOptions = {}) {
     // Skip token expiration as it's handled by retry logic
     if (code === 1005) return;
 
-    const title = t('auth.failed');
+    const title = t('module.auth.failed');
     let description: string;
 
     switch (code) {
       case 1001:
-        description = t('auth.credentialError');
+        description = t('module.auth.credentialError');
         break;
       case 1003:
         // For SMS context, 1003 means OTP expired; for email context, it means wrong credentials
         description =
-          context === 'sms' ? t('auth.otpExpired') : t('auth.credentialError');
+          context === 'sms'
+            ? t('module.auth.otpExpired')
+            : t('module.auth.credentialError');
         break;
       default:
-        description = message || t('common.networkError');
+        description = message || t('common.core.networkError');
     }
 
     toast({
@@ -81,7 +84,7 @@ export function useAuth(options: UseAuthOptions = {}) {
   const processLoginResponse = async (response: LoginResponse) => {
     if (response.code === 0 && response.data) {
       toast({
-        title: t('auth.success'),
+        title: t('module.auth.success'),
       });
       await login(response.data.userInfo, response.data.token);
       options.onSuccess?.(response.data.userInfo);
@@ -98,7 +101,12 @@ export function useAuth(options: UseAuthOptions = {}) {
   ) => {
     try {
       const response = await callWithTokenRefresh(() =>
-        apiService.verifySmsCode({ mobile, sms_code, language }),
+        apiService.verifySmsCode({
+          mobile,
+          sms_code,
+          language,
+          login_context: options.loginContext,
+        }),
       );
 
       const success = await processLoginResponse(response);
@@ -113,8 +121,8 @@ export function useAuth(options: UseAuthOptions = {}) {
       return response;
     } catch (error: any) {
       toast({
-        title: t('auth.failed'),
-        description: error.message || t('common.networkError'),
+        title: t('module.auth.failed'),
+        description: error.message || t('common.core.networkError'),
         variant: 'destructive',
       });
       options.onError?.(error);
@@ -131,15 +139,15 @@ export function useAuth(options: UseAuthOptions = {}) {
 
       if (response.code !== 0) {
         throw new Error(
-          response.message || response.msg || t('common.networkError'),
+          response.message || response.msg || t('common.core.networkError'),
         );
       }
 
       return response;
     } catch (error: any) {
       toast({
-        title: t('auth.sendFailed'),
-        description: error.message || t('common.networkError'),
+        title: t('module.auth.sendFailed'),
+        description: error.message || t('common.core.networkError'),
         variant: 'destructive',
       });
       throw error;

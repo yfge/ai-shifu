@@ -5,26 +5,24 @@ repos:
     rev: v6.0.0
     hooks:
     -   id: check-yaml
-        exclude: ^src/web/pnpm-lock\.yaml$
     -   id: check-json
     -   id: check-merge-conflict
     -   id: check-symlinks
     -   id: end-of-file-fixer
-        exclude: ^src/web/pnpm-lock\.yaml$
     -   id: trailing-whitespace
-        exclude: ^src/web/pnpm-lock\.yaml$
     -   id: pretty-format-json
         args: ['--autofix', '--indent=2', '--no-ensure-ascii', '--top-keys=langName']
-        files: ^(src/web/public/locales/.*\.json|src/cook-web/public/locales/.*\.json)$
+        files: ^src/cook-web/public/locales/.*\.json$
     -   id: requirements-txt-fixer
+        exclude: ^src/api/requirements\.txt$
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.13.1
+    rev: v0.14.4
     hooks:
     -   id: ruff-check
         args: [ --fix ]
     -   id: ruff-format
 -   repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.9.1  # use latest stable version
+    rev: v4.10.0  # use latest stable version
     hooks:
     -   id: commitizen
         stages: [commit-msg]
@@ -40,15 +38,32 @@ repos:
         additional_dependencies: ['prettier@^3.5.3']
 -   repo: local
     hooks:
+    -   id: check-shared-translations
+        name: Validate shared translation parity
+        entry: python3 scripts/check_translations.py
+        language: system
+        pass_filenames: false
+    -   id: check-translation-usage
+        name: Validate translation key usage
+        entry: python3 scripts/check_translation_usage.py --fail-on-unused
+        language: system
+        pass_filenames: false
+    -   id: generate-languages-check
+        name: Validate locales metadata up to date
+        entry: bash -lc 'python3 scripts/generate_languages.py && git diff --exit-code -- src/i18n/locales.json'
+        language: system
+        pass_filenames: false
+-   repo: local
+    hooks:
     -   id: eslint
         name: ESLint cook-web files (errors only)
         entry: bash -c 'cd src/cook-web && npm run lint-file -- $(echo "$@" | sed "s|src/cook-web/||g")' --
         language: system
         files: ^src/cook-web/.*\.(js|jsx|ts|tsx)$
--   repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v9.36.0
+-   repo: local
     hooks:
-    -   id: eslint
-        name: ESLint web files (errors only)
-        files: ^src/web/.*\.(js|jsx|ts|tsx)$
-        args: [--config, src/web/eslint.config.cjs, --max-warnings=0, --fix]
+    -   id: no-hardcoded-cjk-in-backend
+        name: Forbid hardcoded CJK characters in backend Python
+        entry: python3 scripts/check_backend_hardcoded_cn.py
+        language: system
+        pass_filenames: false

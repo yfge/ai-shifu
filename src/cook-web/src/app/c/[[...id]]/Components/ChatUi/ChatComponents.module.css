@@ -4,9 +4,6 @@
   position: relative;
   box-sizing: border-box;
 }
-.chatComponents :global(.content-render) {
-  margin: 12px 0;
-}
 .chatComponents :global(.content-render-theme) {
   position: relative;
 }
@@ -25,7 +22,7 @@
   height: 1.2rem;
 }
 .chatComponents :global(#chat-box-bottom) {
-  height: 80px;
+  height: 100px;
   width: 100%;
 }
 .chatComponents :global(.MessageContainer) {
@@ -192,7 +189,7 @@
 }
 .chatComponents.mobile :global(.MessageList) {
   padding-top: 86px;
-  padding-bottom: 50px;
+  padding-bottom: 120px;
 }
 .chatComponents.mobile
   :global(.MessageList)

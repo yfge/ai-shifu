@@ -1,4 +1,6 @@
 from enum import Enum
+from typing import Any, Dict, List, Optional
+
 from flaskr.common.swagger import register_schema_to_swagger
 from pydantic import BaseModel, Field
 
@@ -15,12 +17,23 @@ class LearnStatus(Enum):
 
 
 @register_schema_to_swagger
+class OutlineType(Enum):
+    NORMAL = "normal"
+    TRIAL = "trial"
+    GUEST = "guest"
+
+    def __json__(self):
+        return self.value
+
+
+@register_schema_to_swagger
 class GeneratedType(Enum):
     CONTENT = "content"
     BREAK = "break"
     INTERACTION = "interaction"
     VARIABLE_UPDATE = "variable_update"
     OUTLINE_ITEM_UPDATE = "outline_item_update"
+    DONE = "done"
 
     def __json__(self):
         return self.value
@@ -192,6 +205,8 @@ class LearnOutlineItemInfoDTO(BaseModel):
     position: str = Field(..., description="outline position", required=False)
     title: str = Field(..., description="outline title", required=False)
     status: LearnStatus = Field(..., description="outline status", required=False)
+    type: OutlineType = Field(..., description="outline type", required=False)
+    is_paid: bool = Field(..., description="outline is paid", required=False)
     children: list["LearnOutlineItemInfoDTO"] = Field(
         ..., description="outline children", required=False
     )
@@ -202,10 +217,18 @@ class LearnOutlineItemInfoDTO(BaseModel):
         position: str,
         title: str,
         status: LearnStatus,
+        type: OutlineType,
+        is_paid: bool,
         children: list["LearnOutlineItemInfoDTO"],
     ):
         super().__init__(
-            bid=bid, position=position, title=title, status=status, children=children
+            bid=bid,
+            position=position,
+            title=title,
+            status=status,
+            children=children,
+            type=type,
+            is_paid=is_paid,
         )
 
     def __json__(self):
@@ -214,7 +237,9 @@ class LearnOutlineItemInfoDTO(BaseModel):
             "position": self.position,
             "title": self.title,
             "status": self.status.value,
+            "is_paid": self.is_paid,
             "children": self.children,
+            "type": self.type.value,
         }
 
 
@@ -320,6 +345,79 @@ class GeneratedBlockDTO(BaseModel):
         return ret
 
 
+class PlaygroundPreviewRequest(BaseModel):
+    content: Optional[str] = Field(
+        default=None, description="Markdown-Flow document content"
+    )
+    block_index: int = Field(..., description="Block index to preview")
+    context: Optional[List[Dict[str, str]]] = Field(
+        default=None, description="Conversation context messages"
+    )
+    variables: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Variables to replace inside Markdown-Flow document",
+    )
+    user_input: Optional[Dict[str, List[str]]] = Field(
+        default=None, description="User input when previewing interaction blocks"
+    )
+    document_prompt: Optional[str] = Field(
+        default=None, description="Document level system prompt"
+    )
+    interaction_prompt: Optional[str] = Field(
+        default=None, description="Interaction render prompt override"
+    )
+    interaction_error_prompt: Optional[str] = Field(
+        default=None, description="Interaction error prompt override"
+    )
+    model: Optional[str] = Field(
+        default=None, description="Target LLM model used during preview"
+    )
+    temperature: Optional[float] = Field(
+        default=None,
+        ge=0.0,
+        le=2.0,
+        description="LLM temperature override used during preview",
+    )
+
+    def get_document(self) -> str:
+        return self.content or ""
+
+
+class PreviewSSEMessageType(Enum):
+    CONTENT = "content"
+    INTERACTION = "interaction"
+    TEXT_END = "text_end"
+
+    def __json__(self):
+        return self.value
+
+
+class PreviewContentSSEData(BaseModel):
+    mdflow: str = Field(..., description="MarkdownFlow content chunk")
+
+
+class PreviewInteractionSSEData(BaseModel):
+    mdflow: str = Field(..., description="Rendered interaction content")
+    variable: str = Field(..., description="Target variable name for interaction")
+
+
+class PreviewTextEndSSEData(BaseModel):
+    mdflow: str = Field(default="", description="Text end marker payload")
+
+
+class PreviewSSEMessage(BaseModel):
+    generated_block_bid: str = Field(
+        ..., description="client-side identifier of the block", required=True
+    )
+    type: PreviewSSEMessageType = Field(..., description="SSE message type")
+    data: PreviewContentSSEData | PreviewInteractionSSEData | PreviewTextEndSSEData
+
+    def __json__(self):
+        payload = self.model_dump()
+        payload["type"] = self.type.value
+        return payload
+
+
 @register_schema_to_swagger
 class LearnRecordDTO(BaseModel):
     records: list[GeneratedBlockDTO] = Field(
@@ -338,4 +436,51 @@ class LearnRecordDTO(BaseModel):
         return {
             "records": self.records,
             "interaction": self.interaction,
+        }
+
+
+@register_schema_to_swagger
+class RunStatusDTO(BaseModel):
+    is_running: bool = Field(..., description="is running", required=False)
+    running_time: int = Field(..., description="running time", required=False)
+
+    def __init__(
+        self,
+        is_running: bool,
+        running_time: int,
+    ):
+        super().__init__(is_running=is_running, running_time=running_time)
+
+    def __json__(self):
+        return {
+            "is_running": self.is_running,
+            "running_time": self.running_time,
+        }
+
+
+@register_schema_to_swagger
+class GeneratedInfoDTO(BaseModel):
+    position: int = Field(..., description="generated block position", required=False)
+    outline_name: str = Field(..., description="outline item name", required=False)
+    is_trial_lesson: bool = Field(
+        ..., description="whether the outline item is a trial lesson", required=False
+    )
+
+    def __init__(
+        self,
+        position: int,
+        outline_name: str,
+        is_trial_lesson: bool,
+    ):
+        super().__init__(
+            position=position,
+            outline_name=outline_name,
+            is_trial_lesson=is_trial_lesson,
+        )
+
+    def __json__(self):
+        return {
+            "position": self.position,
+            "outline_name": self.outline_name,
+            "is_trial_lesson": self.is_trial_lesson,
         }

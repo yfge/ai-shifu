@@ -131,6 +131,31 @@ Default: "phone" (phone-only login if not configured)""",
         description="Timezone setting for the application",
         group="app",
     ),
+    # Legal Documents Configuration
+    "LEGAL_AGREEMENT_URL_ZH_CN": EnvVar(
+        name="LEGAL_AGREEMENT_URL_ZH_CN",
+        default="",
+        description="Service agreement URL for Chinese (zh-CN) users. Leave empty to disable the link.",
+        group="legal",
+    ),
+    "LEGAL_AGREEMENT_URL_EN_US": EnvVar(
+        name="LEGAL_AGREEMENT_URL_EN_US",
+        default="",
+        description="Service agreement URL for English (en-US) users. Leave empty to disable the link.",
+        group="legal",
+    ),
+    "LEGAL_PRIVACY_URL_ZH_CN": EnvVar(
+        name="LEGAL_PRIVACY_URL_ZH_CN",
+        default="",
+        description="Privacy policy URL for Chinese (zh-CN) users. Leave empty to disable the link.",
+        group="legal",
+    ),
+    "LEGAL_PRIVACY_URL_EN_US": EnvVar(
+        name="LEGAL_PRIVACY_URL_EN_US",
+        default="",
+        description="Privacy policy URL for English (en-US) users. Leave empty to disable the link.",
+        group="legal",
+    ),
     # LLM Configuration
     "OPENAI_API_KEY": EnvVar(
         name="OPENAI_API_KEY",
@@ -339,12 +364,6 @@ Example: mysql://username:password@hostname:3306/database_name?charset=utf8mb4""
         description="Redis key prefix for password reset",
         group="redis",
     ),
-    "REDIS_KEY_PREFIX_CAPTCHA": EnvVar(
-        name="REDIS_KEY_PREFIX_CAPTCHA",
-        default="ai-shifu:captcha:",
-        description="Redis key prefix for captcha",
-        group="redis",
-    ),
     "REDIS_KEY_PREFIX_PHONE": EnvVar(
         name="REDIS_KEY_PREFIX_PHONE",
         default="ai-shifu:phone:",
@@ -414,13 +433,6 @@ Generate secure key: python -c "import secrets; print(secrets.token_urlsafe(32))
         default=300,
         type=int,
         description="Expire time for password reset code in seconds",
-        group="auth",
-    ),
-    "CAPTCHA_CODE_EXPIRE_TIME": EnvVar(
-        name="CAPTCHA_CODE_EXPIRE_TIME",
-        default=300,
-        type=int,
-        description="Expire time for captcha in seconds",
         group="auth",
     ),
     "PHONE_CODE_EXPIRE_TIME": EnvVar(
@@ -508,6 +520,95 @@ Generate secure key: python -c "import secrets; print(secrets.token_urlsafe(32))
             "Only use for local development or testing."
         ),
         group="auth",
+    ),
+    "ADMIN_LOGIN_GRANT_CREATOR_WITH_DEMO": EnvVar(
+        name="ADMIN_LOGIN_GRANT_CREATOR_WITH_DEMO",
+        default=False,
+        type=bool,
+        description=(
+            "When enabled, users logging in from the admin interface are "
+            "automatically marked as creators and granted demo course "
+            "permissions (DEMO_SHIFU_BID / DEMO_EN_SHIFU_BID if configured). "
+            "Intended for demo and staging environments only."
+        ),
+        group="auth",
+    ),
+    # Payment Providers
+    "PINGXX_SECRET_KEY": EnvVar(
+        name="PINGXX_SECRET_KEY",
+        default="",
+        description="Ping++ API secret key used for charge creation",
+        secret=True,
+        group="payment",
+    ),
+    "PINGXX_PRIVATE_KEY_PATH": EnvVar(
+        name="PINGXX_PRIVATE_KEY_PATH",
+        default="",
+        description="Filesystem path to the Ping++ RSA private key",
+        group="payment",
+    ),
+    "PINGXX_APP_ID": EnvVar(
+        name="PINGXX_APP_ID",
+        default="",
+        description="Ping++ application identifier",
+        group="payment",
+    ),
+    "STRIPE_SECRET_KEY": EnvVar(
+        name="STRIPE_SECRET_KEY",
+        default="",
+        description="Stripe secret API key for server-side requests",
+        secret=True,
+        group="payment",
+    ),
+    "STRIPE_PUBLISHABLE_KEY": EnvVar(
+        name="STRIPE_PUBLISHABLE_KEY",
+        default="",
+        description="Stripe publishable key shared with client applications",
+        group="payment",
+    ),
+    "STRIPE_WEBHOOK_SECRET": EnvVar(
+        name="STRIPE_WEBHOOK_SECRET",
+        default="",
+        description="Stripe webhook signing secret",
+        secret=True,
+        group="payment",
+    ),
+    "STRIPE_API_VERSION": EnvVar(
+        name="STRIPE_API_VERSION",
+        default="",
+        description="Stripe API version to lock requests against",
+        group="payment",
+    ),
+    "STRIPE_SUCCESS_URL": EnvVar(
+        name="STRIPE_SUCCESS_URL",
+        default="",
+        description="Stripe Checkout success redirect URL",
+        group="payment",
+    ),
+    "STRIPE_CANCEL_URL": EnvVar(
+        name="STRIPE_CANCEL_URL",
+        default="",
+        description="Stripe Checkout cancellation redirect URL",
+        group="payment",
+    ),
+    "STRIPE_DEFAULT_CURRENCY": EnvVar(
+        name="STRIPE_DEFAULT_CURRENCY",
+        default="usd",
+        description="Default currency code used for Stripe payments",
+        group="payment",
+    ),
+    "PAYMENT_CHANNELS_ENABLED": EnvVar(
+        name="PAYMENT_CHANNELS_ENABLED",
+        default="pingxx,stripe",
+        description="Comma-separated list of enabled payment providers (e.g., pingxx,stripe)",
+        group="payment",
+    ),
+    "PAY_ORDER_EXPIRE_TIME": EnvVar(
+        name="PAY_ORDER_EXPIRE_TIME",
+        default=600,
+        type=int,
+        description="Order expiration time in seconds before a new order is created",
+        group="payment",
     ),
     # Alibaba Cloud Configuration
     "ALIBABA_CLOUD_SMS_ACCESS_KEY_ID": EnvVar(
@@ -752,7 +853,7 @@ Generate secure key: python -c "import secrets; print(secrets.token_urlsafe(32))
     ),
     "SITE_HOST": EnvVar(
         name="SITE_HOST",
-        default="http://localhost:8081/",
+        default="http://localhost:8080/",
         description="Site host URL",
         group="frontend",
     ),
@@ -768,6 +869,14 @@ Generate secure key: python -c "import secrets; print(secrets.token_urlsafe(32))
         default="api.settings",
         description="Django settings module for testing",
         group="testing",
+    ),
+    # Minimum Shifu Price
+    "MIN_SHIFU_PRICE": EnvVar(
+        name="MIN_SHIFU_PRICE",
+        default=0.5,
+        type=float,
+        description="Minimum price of shifu",
+        group="shifu",
     ),
 }
 
@@ -948,15 +1057,15 @@ class EnhancedConfig:
         """
         if filter_type == "required":
             header_lines = [
-                "# AI-Shifu Environment Configuration - MINIMAL REQUIRED SET",
-                "# This file contains only the required environment variables that MUST be set",
-                "# For the complete list of configurable options, see .env.example.full\n",
+                "# AI-Shifu Environment Configuration - REQUIRED VARIABLES",
+                "# These are the bare minimum values that must be set.",
+                "# Start from docker/.env.example.full and configure at least one LLM API key.\n",
             ]
         else:
             header_lines = [
                 "# AI-Shifu Environment Configuration - COMPLETE SET",
-                "# This file contains all available environment variables with their defaults",
-                "# For a minimal setup, see .env.example.minimal\n",
+                "# Copy this file to .env for Docker usage and update at least one LLM API key",
+                "# Example keys: OPENAI_API_KEY, ERNIE_API_KEY, GLM_API_KEY, etc.\n",
             ]
 
         lines = header_lines
