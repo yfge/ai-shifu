@@ -30,6 +30,28 @@ def _to_list(value, default=None):
     return default
 
 
+def _parse_alias_map(raw_value):
+    """
+    Parse alias mapping string into a dictionary.
+    Expected format: "id1=Alias One,id2=Alias Two".
+    """
+    if not raw_value:
+        return {}
+    if isinstance(raw_value, dict):
+        return raw_value
+    aliases = {}
+    for item in str(raw_value).split(","):
+        item = item.strip()
+        if not item or "=" not in item:
+            continue
+        key, label = item.split("=", 1)
+        key = key.strip()
+        label = label.strip()
+        if key and label:
+            aliases[key] = label
+    return aliases
+
+
 def register_config_handler(app: Flask, path_prefix: str) -> Flask:
     @app.route(path_prefix + "/runtime-config", methods=["GET"])
     @bypass_token_validation
@@ -50,6 +72,9 @@ def register_config_handler(app: Flask, path_prefix: str) -> Flask:
             # Content & Course Configuration
             "courseId": get_config("DEFAULT_COURSE_ID", ""),
             "defaultLlmModel": get_config("DEFAULT_LLM_MODEL", ""),
+            # Recommended & alias configuration for LLM models
+            "recommendedLlmModels": _to_list(get_config("RECOMMENDED_LLM_MODELS", "")),
+            "llmModelAliases": _parse_alias_map(get_config("LLM_MODEL_ALIASES", "")),
             # WeChat Integration
             "wechatAppId": get_config("WECHAT_APP_ID", ""),
             "enableWechatCode": bool(get_config("WECHAT_APP_ID", "")),

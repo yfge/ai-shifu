@@ -372,6 +372,24 @@ Gemini: gemini-1.5-flash, gemini-1.5-flash-8b, gemini-1.5-pro""",
         group="llm",
         validator=lambda x: 0.0 <= float(x) <= 2.0,
     ),
+    "RECOMMENDED_LLM_MODELS": EnvVar(
+        name="RECOMMENDED_LLM_MODELS",
+        default="",
+        description=(
+            "Comma-separated list of officially recommended LLM model ids. "
+            "Example: 'gpt-4o-mini,deepseek-chat'."
+        ),
+        group="llm",
+    ),
+    "LLM_MODEL_ALIASES": EnvVar(
+        name="LLM_MODEL_ALIASES",
+        default="",
+        description=(
+            "Optional mapping to rename LLM model display names. "
+            "Format: 'id1=Alias One,id2=Alias Two'."
+        ),
+        group="llm",
+    ),
     # Database Configuration
     "SQLALCHEMY_DATABASE_URI": EnvVar(
         name="SQLALCHEMY_DATABASE_URI",
