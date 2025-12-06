@@ -8,6 +8,7 @@ import {
 } from '../ui/Select';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
+import { useEnvStore } from '@/c-store';
 
 export default function ModelList({
   value,
@@ -22,6 +23,20 @@ export default function ModelList({
 }) {
   const { models } = useShifu();
   const { t } = useTranslation();
+  const { recommendedLlmModels, llmModelAliases } = useEnvStore(state => ({
+    recommendedLlmModels: state.recommendedLlmModels,
+    llmModelAliases: state.llmModelAliases,
+  }));
+
+  const recommendedSet = new Set(recommendedLlmModels || []);
+  const sortedModels = [...models].sort((a, b) => {
+    const aRecommended = recommendedSet.has(a);
+    const bRecommended = recommendedSet.has(b);
+    if (aRecommended === bRecommended) {
+      return a.localeCompare(b);
+    }
+    return aRecommended ? -1 : 1;
+  });
 
   // Empty string is used to represent using the default model. However, the Select component uses empty string as unselected.
   // So we need to use a special value to represent the empty state in the Select component.
@@ -51,13 +66,14 @@ export default function ModelList({
         >
           {t('common.core.default')}
         </SelectItem>
-        {models.map((item, i) => {
+        {sortedModels.map((item, i) => {
+          const label = (llmModelAliases && llmModelAliases[item]) || item;
           return (
             <SelectItem
               key={i}
               value={item}
             >
-              {item}
+              {label}
             </SelectItem>
           );
         })}

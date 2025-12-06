@@ -15,6 +15,8 @@ interface EnvironmentConfig {
   courseId: string;
   defaultLlmModel: string;
   currencySymbol: string;
+  recommendedLlmModels: string[];
+  llmModelAliases: Record<string, string>;
 
   // WeChat Integration
   wechatAppId: string;
@@ -331,6 +333,8 @@ export const environment: EnvironmentConfig = {
   // Content & Course Configuration
   courseId: getCourseId(),
   defaultLlmModel: getDefaultLlmModel(),
+  recommendedLlmModels: [],
+  llmModelAliases: {},
 
   // WeChat Integration
   wechatAppId: getWeChatAppId(),

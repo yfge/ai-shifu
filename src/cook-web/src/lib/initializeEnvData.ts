@@ -25,6 +25,8 @@ const loadRuntimeConfig = async () => {
   const {
     updateAppId,
     updateDefaultLlmModel,
+    updateRecommendedLlmModels,
+    updateLlmModelAliases,
     updateAlwaysShowLessonTree,
     updateUmamiWebsiteId,
     updateUmamiScriptSrc,
@@ -164,6 +166,17 @@ const loadRuntimeConfig = async () => {
     runtimeConfig?.enableWechatCode?.toString() || 'true',
   );
   await updateDefaultLlmModel(runtimeConfig?.defaultLlmModel || '');
+  await updateRecommendedLlmModels(
+    Array.isArray(runtimeConfig?.recommendedLlmModels)
+      ? runtimeConfig.recommendedLlmModels
+      : (useEnvStore.getState() as EnvStoreState).recommendedLlmModels,
+  );
+  await updateLlmModelAliases(
+    runtimeConfig?.llmModelAliases &&
+      typeof runtimeConfig.llmModelAliases === 'object'
+      ? runtimeConfig.llmModelAliases
+      : (useEnvStore.getState() as EnvStoreState).llmModelAliases,
+  );
   await updateHomeUrl(runtimeConfig?.homeUrl || '');
   await updateCurrencySymbol(runtimeConfig?.currencySymbol || '¥');
   await updateStripePublishableKey(runtimeConfig?.stripePublishableKey || '');

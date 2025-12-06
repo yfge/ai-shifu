@@ -8,6 +8,12 @@ export const useEnvStore = create<EnvStoreState>(set => ({
   defaultLlmModel: environment.defaultLlmModel,
   updateDefaultLlmModel: async (defaultLlmModel: string) =>
     set({ defaultLlmModel }),
+  recommendedLlmModels: environment.recommendedLlmModels,
+  updateRecommendedLlmModels: async (recommendedLlmModels: string[]) =>
+    set({ recommendedLlmModels }),
+  llmModelAliases: environment.llmModelAliases,
+  updateLlmModelAliases: async (llmModelAliases: Record<string, string>) =>
+    set({ llmModelAliases }),
   appId: environment.wechatAppId,
   updateAppId: async (appId: string) => set({ appId }),
   alwaysShowLessonTree: environment.alwaysShowLessonTree.toString(),
