@@ -5,13 +5,6 @@
     "failed": "失败",
     "unknown": "未知"
   },
-  "couponStatus": {
-    "active": "激活",
-    "inactive": "未激活",
-    "timeout": "已过期",
-    "unknown": "未知",
-    "used": "已使用"
-  },
   "couponType": {
     "fixed": "固定金额",
     "percent": "百分比",
@@ -25,28 +18,17 @@
   "emptyValue": "暂无",
   "fields": {
     "activityPrice": "活动优惠",
-    "chargeId": "支付单号",
-    "checkoutSession": "结账会话",
     "couponType": "优惠类型",
     "couponValue": "优惠额度",
     "createdAt": "创建时间",
-    "currency": "币种",
     "discount": "优惠",
-    "latestCharge": "最新扣款",
     "paid": "实付",
     "payable": "应付",
-    "paymentAmount": "支付金额",
     "paymentChannel": "支付渠道",
     "paymentCreatedAt": "支付创建时间",
-    "paymentIntent": "支付意图",
-    "paymentMethod": "支付方式",
     "paymentStatus": "支付状态",
-    "paymentUpdatedAt": "支付更新时间",
-    "receipt": "收据链接",
     "shifu": "课程",
     "status": "状态",
-    "transactionNo": "交易号",
-    "updatedAt": "更新时间",
     "user": "用户"
   },
   "filters": {
@@ -111,15 +93,13 @@
     "timeout": "已过期（超过 {minutes} 分钟未支付）"
   },
   "table": {
-    "action": "操作",
     "amount": "支付金额",
     "createdAt": "创建时间",
     "orderId": "订单 ID",
     "payment": "支付",
     "shifu": "课程",
     "status": "状态",
-    "user": "用户",
-    "view": "查看"
+    "user": "用户"
   },
   "title": "订单",
   "totalCount": "订单数：{count}"

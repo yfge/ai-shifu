@@ -26,6 +26,17 @@ const fallbackValue = (value: string | undefined, fallback: string) => {
   return value;
 };
 
+const formatPercentValue = (value: string | undefined) => {
+  const raw = Number(value);
+  if (!Number.isFinite(raw)) {
+    return value || '';
+  }
+  const percent = raw * 100;
+  const normalized =
+    Math.round((Number.isFinite(percent) ? percent : 0) * 100) / 100;
+  return normalized.toString();
+};
+
 const DetailRow = ({ label, value }: { label: string; value: string }) => (
   <div className='flex items-start justify-between gap-4 text-sm'>
     <span className='text-muted-foreground'>{label}</span>
@@ -86,16 +97,6 @@ const OrderDetailSheet = ({
     }),
     [t],
   );
-  const couponStatusLabels = useMemo(
-    () => ({
-      inactive: t('module.order.couponStatus.inactive'),
-      active: t('module.order.couponStatus.active'),
-      used: t('module.order.couponStatus.used'),
-      timeout: t('module.order.couponStatus.timeout'),
-      unknown: t('module.order.couponStatus.unknown'),
-    }),
-    [t],
-  );
   const couponTypeLabels = useMemo(
     () => ({
       fixed: t('module.order.couponType.fixed'),
@@ -120,15 +121,6 @@ const OrderDetailSheet = ({
       4102: activeStatusLabels.failed,
     }),
     [activeStatusLabels],
-  );
-  const couponStatusByCode = useMemo(
-    () => ({
-      901: couponStatusLabels.inactive,
-      902: couponStatusLabels.active,
-      903: couponStatusLabels.used,
-      904: couponStatusLabels.timeout,
-    }),
-    [couponStatusLabels],
   );
   const couponTypeByCode = useMemo(
     () => ({
@@ -184,6 +176,14 @@ const OrderDetailSheet = ({
   const paymentStatusLabel = payment?.status_key
     ? t(payment.status_key)
     : paymentStatusByCode[payment?.status ?? 0] || paymentStatusLabels.unknown;
+  const userValue = useMemo(() => {
+    const mobile = summary?.user_mobile?.trim();
+    const nickname = summary?.user_nickname?.trim();
+    if (mobile && nickname) {
+      return `${mobile} (${nickname})`;
+    }
+    return mobile || nickname || emptyValue;
+  }, [emptyValue, summary?.user_mobile, summary?.user_nickname]);
 
   return (
     <Sheet
@@ -226,10 +226,7 @@ const OrderDetailSheet = ({
                 />
                 <DetailRow
                   label={t('module.order.fields.user')}
-                  value={fallbackValue(
-                    summary.user_mobile || summary.user_bid,
-                    emptyValue,
-                  )}
+                  value={userValue}
                 />
                 <DetailRow
                   label={t('module.order.fields.payable')}
@@ -239,10 +236,12 @@ const OrderDetailSheet = ({
                   label={t('module.order.fields.paid')}
                   value={summary.paid_price}
                 />
-                <DetailRow
-                  label={t('module.order.fields.discount')}
-                  value={summary.discount_amount}
-                />
+                {Number(summary.discount_amount) > 0 && (
+                  <DetailRow
+                    label={t('module.order.fields.discount')}
+                    value={summary.discount_amount}
+                  />
+                )}
                 <DetailRow
                   label={t('module.order.fields.status')}
                   value={t(summary.status_key)}
@@ -255,10 +254,6 @@ const OrderDetailSheet = ({
                   label={t('module.order.fields.createdAt')}
                   value={summary.created_at}
                 />
-                <DetailRow
-                  label={t('module.order.fields.updatedAt')}
-                  value={summary.updated_at}
-                />
               </Section>
 
               <Section title={t('module.order.sections.payment')}>
@@ -267,51 +262,8 @@ const OrderDetailSheet = ({
                   value={paymentStatusLabel}
                 />
                 <DetailRow
-                  label={t('module.order.fields.paymentAmount')}
-                  value={fallbackValue(payment?.amount, emptyValue)}
-                />
-                <DetailRow
-                  label={t('module.order.fields.currency')}
-                  value={fallbackValue(payment?.currency, emptyValue)}
-                />
-                <DetailRow
-                  label={t('module.order.fields.transactionNo')}
-                  value={fallbackValue(payment?.transaction_no, emptyValue)}
-                />
-                <DetailRow
-                  label={t('module.order.fields.chargeId')}
-                  value={fallbackValue(payment?.charge_id, emptyValue)}
-                />
-                <DetailRow
-                  label={t('module.order.fields.paymentIntent')}
-                  value={fallbackValue(payment?.payment_intent_id, emptyValue)}
-                />
-                <DetailRow
-                  label={t('module.order.fields.checkoutSession')}
-                  value={fallbackValue(
-                    payment?.checkout_session_id,
-                    emptyValue,
-                  )}
-                />
-                <DetailRow
-                  label={t('module.order.fields.latestCharge')}
-                  value={fallbackValue(payment?.latest_charge_id, emptyValue)}
-                />
-                <DetailRow
-                  label={t('module.order.fields.receipt')}
-                  value={fallbackValue(payment?.receipt_url, emptyValue)}
-                />
-                <DetailRow
-                  label={t('module.order.fields.paymentMethod')}
-                  value={fallbackValue(payment?.payment_method, emptyValue)}
-                />
-                <DetailRow
                   label={t('module.order.fields.paymentCreatedAt')}
                   value={fallbackValue(payment?.created_at, emptyValue)}
-                />
-                <DetailRow
-                  label={t('module.order.fields.paymentUpdatedAt')}
-                  value={fallbackValue(payment?.updated_at, emptyValue)}
                 />
               </Section>
 
@@ -328,7 +280,7 @@ const OrderDetailSheet = ({
                   >
                     <div className='flex items-center justify-between gap-2'>
                       <span className='font-medium text-foreground'>
-                        {activity.active_name || activity.active_id}
+                        {activity.active_name || emptyValue}
                       </span>
                       <Badge variant='outline'>
                         {activity.status_key
@@ -337,12 +289,8 @@ const OrderDetailSheet = ({
                             activeStatusLabels.unknown}
                       </Badge>
                     </div>
-                    <div className='mt-2 flex items-center justify-between text-xs text-muted-foreground'>
-                      <span>
-                        {t('module.order.fields.activityPrice')}:{' '}
-                        {activity.price}
-                      </span>
-                      <span>{activity.created_at}</span>
+                    <div className='mt-2 text-xs text-muted-foreground'>
+                      {t('module.order.fields.activityPrice')}: {activity.price}
                     </div>
                   </div>
                 ))}
@@ -363,12 +311,6 @@ const OrderDetailSheet = ({
                       <span className='font-medium text-foreground'>
                         {coupon.name || coupon.code}
                       </span>
-                      <Badge variant='outline'>
-                        {coupon.status_key
-                          ? t(coupon.status_key)
-                          : couponStatusByCode[coupon.status] ||
-                            couponStatusLabels.unknown}
-                      </Badge>
                     </div>
                     <div className='mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground'>
                       <span>
@@ -379,9 +321,11 @@ const OrderDetailSheet = ({
                             couponTypeLabels.unknown}
                       </span>
                       <span>
-                        {t('module.order.fields.couponValue')}: {coupon.value}
+                        {t('module.order.fields.couponValue')}:{' '}
+                        {coupon.discount_type === 702
+                          ? formatPercentValue(coupon.value)
+                          : coupon.value}
                       </span>
-                      <span>{coupon.created_at}</span>
                     </div>
                   </div>
                 ))}

@@ -5,13 +5,6 @@
     "failed": "Failed",
     "unknown": "Unknown"
   },
-  "couponStatus": {
-    "active": "Active",
-    "inactive": "Inactive",
-    "timeout": "Expired",
-    "unknown": "Unknown",
-    "used": "Used"
-  },
   "couponType": {
     "fixed": "Fixed Amount",
     "percent": "Percent",
@@ -25,28 +18,17 @@
   "emptyValue": "N/A",
   "fields": {
     "activityPrice": "Activity Discount",
-    "chargeId": "Charge ID",
-    "checkoutSession": "Checkout Session",
     "couponType": "Coupon Type",
     "couponValue": "Coupon Value",
     "createdAt": "Created At",
-    "currency": "Currency",
     "discount": "Discount",
-    "latestCharge": "Latest Charge",
     "paid": "Paid",
     "payable": "Payable",
-    "paymentAmount": "Payment Amount",
     "paymentChannel": "Payment Channel",
     "paymentCreatedAt": "Payment Created At",
-    "paymentIntent": "Payment Intent",
-    "paymentMethod": "Payment Method",
     "paymentStatus": "Payment Status",
-    "paymentUpdatedAt": "Payment Updated At",
-    "receipt": "Receipt URL",
     "shifu": "Course",
     "status": "Status",
-    "transactionNo": "Transaction No.",
-    "updatedAt": "Updated At",
     "user": "User"
   },
   "filters": {
@@ -111,15 +93,13 @@
     "timeout": "Expired (unpaid for over {minutes} min)"
   },
   "table": {
-    "action": "Action",
     "amount": "Payment Amount",
     "createdAt": "Created",
     "orderId": "Order ID",
     "payment": "Payment",
     "shifu": "Course",
     "status": "Status",
-    "user": "User",
-    "view": "View"
+    "user": "User"
   },
   "title": "Orders",
   "totalCount": "Orders: {count}"

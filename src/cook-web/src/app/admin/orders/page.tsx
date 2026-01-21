@@ -94,7 +94,6 @@ const DEFAULT_COLUMN_WIDTHS = {
   status: 110,
   payment: 90,
   createdAt: 170,
-  action: 100,
 };
 
 type ColumnKey = keyof typeof DEFAULT_COLUMN_WIDTHS;
@@ -545,7 +544,6 @@ const OrdersPage = () => {
         status: order => [t(order.status_key)],
         payment: order => [t(order.payment_channel_key)],
         createdAt: order => [order.created_at],
-        action: () => [t('module.order.table.view')],
       };
 
       items.forEach(order => {
@@ -562,7 +560,6 @@ const OrdersPage = () => {
             status: 4.4,
             payment: 4.4,
             createdAt: 4.8,
-            action: 4.4,
           };
           const multiplier = multiplierMap[key] ?? 7;
           const required = texts.reduce(
@@ -627,6 +624,29 @@ const OrdersPage = () => {
       <Tooltip>
         <TooltipTrigger asChild>
           <span className={cn('truncate', className)}>{value}</span>
+        </TooltipTrigger>
+        <TooltipContent side='top'>{value}</TooltipContent>
+      </Tooltip>
+    );
+  };
+
+  const renderOrderBidLink = (order: OrderSummary) => {
+    const value =
+      order.order_bid && order.order_bid.trim().length > 0
+        ? order.order_bid
+        : '-';
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type='button'
+            className={cn(
+              'block w-full truncate text-left text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+            )}
+            onClick={() => handleViewDetail(order)}
+          >
+            {value}
+          </button>
         </TooltipTrigger>
         <TooltipContent side='top'>{value}</TooltipContent>
       </Tooltip>
@@ -1282,18 +1302,11 @@ const OrdersPage = () => {
                       {t('module.order.table.createdAt')}
                       {renderResizeHandle('createdAt')}
                     </TableHead>
-                    <TableHead
-                      className='sticky right-0 top-0 z-40 bg-muted shadow-[-4px_0_4px_rgba(0,0,0,0.02)] before:content-[""] before:absolute before:left-0 before:inset-y-0 before:w-px before:bg-border'
-                      style={getColumnStyle('action')}
-                    >
-                      {t('module.order.table.action')}
-                      {renderResizeHandle('action')}
-                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {orders.length === 0 && (
-                    <TableEmpty colSpan={8}>
+                    <TableEmpty colSpan={7}>
                       {t('module.order.emptyList')}
                     </TableEmpty>
                   )}
@@ -1303,7 +1316,7 @@ const OrdersPage = () => {
                         className='border-r border-border last:border-r-0 whitespace-nowrap overflow-hidden text-ellipsis'
                         style={getColumnStyle('orderId')}
                       >
-                        {renderTooltipText(order.order_bid)}
+                        {renderOrderBidLink(order)}
                       </TableCell>
                       <TableCell
                         className='whitespace-nowrap border-r border-border last:border-r-0 overflow-hidden text-ellipsis'
@@ -1383,18 +1396,6 @@ const OrdersPage = () => {
                         style={getColumnStyle('createdAt')}
                       >
                         {renderTooltipText(order.created_at)}
-                      </TableCell>
-                      <TableCell
-                        className='sticky right-0 z-10 bg-white shadow-[-4px_0_4px_rgba(0,0,0,0.02)] before:content-[""] before:absolute before:left-0 before:inset-y-0 before:w-px before:bg-border whitespace-nowrap overflow-hidden text-ellipsis'
-                        style={getColumnStyle('action')}
-                      >
-                        <Button
-                          size='sm'
-                          variant='outline'
-                          onClick={() => handleViewDetail(order)}
-                        >
-                          {t('module.order.table.view')}
-                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
