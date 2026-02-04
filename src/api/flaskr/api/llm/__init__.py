@@ -661,6 +661,7 @@ def invoke_llm(
                 model=model,
             )
     finally:
+        app.logger.info(f"[LLM_CLEANUP] Starting cleanup for model={model}")
         app.logger.info(f"invoke_llm response: {response_text} ")
         if usage is None:
             app.logger.info("invoke_llm usage: None")
@@ -687,46 +688,69 @@ def invoke_llm(
         usage_metadata.setdefault("generation_name", generation_name)
         if "temperature" in kwargs:
             usage_metadata.setdefault("temperature", kwargs.get("temperature"))
-        if usage is None:
-            usage_metadata.setdefault("usage_source", "missing")
-            record_llm_usage(
-                app,
-                usage_context,
-                provider=provider_name or "",
-                model=model,
-                is_stream=stream_flag,
-                input=0,
-                output=0,
-                total=0,
-                latency_ms=latency_ms,
-                status=0,
-                error_message="",
-                extra=usage_metadata,
-            )
-        else:
-            usage_metadata.setdefault("usage_source", "litellm")
-            record_llm_usage(
-                app,
-                usage_context,
-                provider=provider_name or "",
-                model=model,
-                is_stream=stream_flag,
-                input=_extract_usage_value(usage, "input"),
-                output=_extract_usage_value(usage, "output"),
-                total=_extract_usage_value(usage, "total"),
-                latency_ms=latency_ms,
-                status=0,
-                error_message="",
-                extra=usage_metadata,
-            )
-        generation.end(
-            input=generation_input,
-            output=response_text,
-            usage=usage,
-            metadata=kwargs,
-            completion_start_time=start_completion_time,
+
+        app.logger.info(
+            f"[LLM_CLEANUP] About to call record_llm_usage, usage={usage}, context={usage_context}"
         )
-        span.update(output=response_text)
+        try:
+            if usage is None:
+                usage_metadata.setdefault("usage_source", "missing")
+                usage_bid = record_llm_usage(
+                    app,
+                    usage_context,
+                    provider=provider_name or "",
+                    model=model,
+                    is_stream=stream_flag,
+                    input=0,
+                    output=0,
+                    total=0,
+                    latency_ms=latency_ms,
+                    status=0,
+                    error_message="",
+                    extra=usage_metadata,
+                )
+                app.logger.info(
+                    f"[LLM_CLEANUP] record_llm_usage returned usage_bid={usage_bid}"
+                )
+            else:
+                usage_metadata.setdefault("usage_source", "litellm")
+                usage_bid = record_llm_usage(
+                    app,
+                    usage_context,
+                    provider=provider_name or "",
+                    model=model,
+                    is_stream=stream_flag,
+                    input=_extract_usage_value(usage, "input"),
+                    output=_extract_usage_value(usage, "output"),
+                    total=_extract_usage_value(usage, "total"),
+                    latency_ms=latency_ms,
+                    status=0,
+                    error_message="",
+                    extra=usage_metadata,
+                )
+                app.logger.info(
+                    f"[LLM_CLEANUP] record_llm_usage returned usage_bid={usage_bid}"
+                )
+        except Exception as record_exc:
+            app.logger.error(
+                f"[LLM_CLEANUP] record_llm_usage FAILED: {record_exc}", exc_info=True
+            )
+
+        try:
+            generation.end(
+                input=generation_input,
+                output=response_text,
+                usage=usage,
+                metadata=kwargs,
+                completion_start_time=start_completion_time,
+            )
+            span.update(output=response_text)
+            app.logger.info("[LLM_CLEANUP] Completed successfully")
+        except Exception as cleanup_exc:
+            app.logger.error(
+                f"[LLM_CLEANUP] generation.end/span.update FAILED: {cleanup_exc}",
+                exc_info=True,
+            )
 
 
 def chat_llm(
@@ -833,6 +857,7 @@ def chat_llm(
                 model=model,
             )
     finally:
+        app.logger.info(f"[CHAT_LLM_CLEANUP] Starting cleanup for model={model}")
         app.logger.info(f"invoke_llm response: {response_text} ")
         if usage is None:
             app.logger.info("invoke_llm usage: None")
@@ -859,45 +884,69 @@ def chat_llm(
         usage_metadata.setdefault("generation_name", generation_name)
         if "temperature" in kwargs:
             usage_metadata.setdefault("temperature", kwargs.get("temperature"))
-        if usage is None:
-            usage_metadata.setdefault("usage_source", "missing")
-            record_llm_usage(
-                app,
-                usage_context,
-                provider=provider_name or "",
-                model=model,
-                is_stream=stream_flag,
-                input=0,
-                output=0,
-                total=0,
-                latency_ms=latency_ms,
-                status=0,
-                error_message="",
-                extra=usage_metadata,
-            )
-        else:
-            usage_metadata.setdefault("usage_source", "litellm")
-            record_llm_usage(
-                app,
-                usage_context,
-                provider=provider_name or "",
-                model=model,
-                is_stream=stream_flag,
-                input=_extract_usage_value(usage, "input"),
-                output=_extract_usage_value(usage, "output"),
-                total=_extract_usage_value(usage, "total"),
-                latency_ms=latency_ms,
-                status=0,
-                error_message="",
-                extra=usage_metadata,
-            )
-        generation.end(
-            input=generation_input,
-            output=response_text,
-            usage=usage,
-            metadata=kwargs,
-            completion_start_time=start_completion_time,
+
+        app.logger.info(
+            f"[CHAT_LLM_CLEANUP] About to call record_llm_usage, usage={usage}, context={usage_context}"
         )
+        try:
+            if usage is None:
+                usage_metadata.setdefault("usage_source", "missing")
+                usage_bid = record_llm_usage(
+                    app,
+                    usage_context,
+                    provider=provider_name or "",
+                    model=model,
+                    is_stream=stream_flag,
+                    input=0,
+                    output=0,
+                    total=0,
+                    latency_ms=latency_ms,
+                    status=0,
+                    error_message="",
+                    extra=usage_metadata,
+                )
+                app.logger.info(
+                    f"[CHAT_LLM_CLEANUP] record_llm_usage returned usage_bid={usage_bid}"
+                )
+            else:
+                usage_metadata.setdefault("usage_source", "litellm")
+                usage_bid = record_llm_usage(
+                    app,
+                    usage_context,
+                    provider=provider_name or "",
+                    model=model,
+                    is_stream=stream_flag,
+                    input=_extract_usage_value(usage, "input"),
+                    output=_extract_usage_value(usage, "output"),
+                    total=_extract_usage_value(usage, "total"),
+                    latency_ms=latency_ms,
+                    status=0,
+                    error_message="",
+                    extra=usage_metadata,
+                )
+                app.logger.info(
+                    f"[CHAT_LLM_CLEANUP] record_llm_usage returned usage_bid={usage_bid}"
+                )
+        except Exception as record_exc:
+            app.logger.error(
+                f"[CHAT_LLM_CLEANUP] record_llm_usage FAILED: {record_exc}",
+                exc_info=True,
+            )
+
+        try:
+            generation.end(
+                input=generation_input,
+                output=response_text,
+                usage=usage,
+                metadata=kwargs,
+                completion_start_time=start_completion_time,
+            )
+            app.logger.info("[CHAT_LLM_CLEANUP] Completed successfully")
+        except Exception as cleanup_exc:
+            app.logger.error(
+                f"[CHAT_LLM_CLEANUP] generation.end FAILED: {cleanup_exc}",
+                exc_info=True,
+            )
 
 
 def _build_model_options(

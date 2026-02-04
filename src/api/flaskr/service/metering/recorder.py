@@ -42,16 +42,31 @@ def _resolve_billable(usage_scene: int, billable: Optional[int]) -> int:
 
 
 def _persist_usage_record(app: Flask, record: BillingUsageRecord) -> bool:
+    """
+    Persist usage record to database.
+
+    Note: This function is designed to be called from generator finally blocks,
+    so it must not rely on Flask app_context() which may be invalid at that point.
+    Instead, it assumes the caller already has an active app context.
+    """
     try:
-        with app.app_context():
-            db.session.add(record)
-            db.session.commit()
+        # Directly use db.session without app_context() wrapper
+        # The caller (invoke_llm/chat_llm) already has an active app context
+        db.session.add(record)
+        db.session.flush()  # Flush first to catch any DB errors
+        db.session.commit()
         return True
     except Exception as exc:
         try:
             app.logger.error("Usage metering persist failed: %s", exc, exc_info=True)
         except Exception:
-            pass
+            # If logging fails, print to stderr as last resort
+            import sys
+
+            print(
+                f"CRITICAL: Usage metering failed and logging failed: {exc}",
+                file=sys.stderr,
+            )
         try:
             db.session.rollback()
         except Exception:
