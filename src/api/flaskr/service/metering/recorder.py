@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 from flask import Flask
+from sqlalchemy.orm import Session as OrmSession
 
 from flaskr.dao import db
 from flaskr.util.uuid import generate_id
@@ -50,10 +51,18 @@ def _resolve_billable(usage_scene: int, billable: Optional[int]) -> int:
 
 
 def _persist_usage_record(app: Flask, record: BillUsageRecord) -> bool:
+    # IMPORTANT:
+    # Do NOT use the request-scoped `db.session` here. This helper can be called while
+    # the main request is in the middle of building/streaming learn blocks.
+    # If we commit/rollback the shared session (or if persistence fails due to a
+    # missing table), it can commit/rollback unrelated changes (e.g. progress updates),
+    # causing the client to get stuck and repeatedly replay the previous block.
+    meter_session: Optional[OrmSession] = None
     try:
         with app.app_context():
-            db.session.add(record)
-            db.session.commit()
+            meter_session = OrmSession(bind=db.engine)
+            meter_session.add(record)
+            meter_session.commit()
         return True
     except Exception as exc:
         try:
@@ -62,11 +71,19 @@ def _persist_usage_record(app: Flask, record: BillUsageRecord) -> bool:
             # Ignore logging failures to avoid masking the original persistence error.
             pass
         try:
-            db.session.rollback()
+            if meter_session is not None:
+                meter_session.rollback()
         except Exception:
             # Ignore rollback failures; session may already be invalidated.
             pass
         return False
+    finally:
+        try:
+            if meter_session is not None:
+                meter_session.close()
+        except Exception:
+            # Ignore close failures; best-effort cleanup only.
+            pass
 
 
 def record_llm_usage(
