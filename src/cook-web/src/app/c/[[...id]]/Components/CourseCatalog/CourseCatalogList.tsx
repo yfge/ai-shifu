@@ -1,18 +1,14 @@
 // Course catalog
-import { memo, useCallback, useState, useEffect } from 'react';
+import { memo, useCallback, useState, useEffect, useContext } from 'react';
 import styles from './CourseCatalogList.module.scss';
-import { useTranslation } from 'react-i18next';
-import { shifu } from '@/c-service/Shifu';
 import TrialNodeBottomArea from './TrialNodeBottomArea';
 import CourseCatalog from './CourseCatalog';
 import { TRAIL_NODE_POSITION } from './TrialNodeBottomArea';
 import TrialNodeOuter from './TrialNodeOuter';
-
-import Image from 'next/image';
-import imgCourseList from '@/c-assets/newchat/light/icon16-course-list.png';
-
+import { Avatar, AvatarImage } from '@/components/ui/Avatar';
 export const CourseCatalogList = ({
   courseName = '',
+  courseAvatar = '',
   catalogs = [],
   containerScrollTop = 0,
   containerHeight = 0,
@@ -22,19 +18,10 @@ export const CourseCatalogList = ({
   selectedLessonId = '',
   bannerInfo = null,
 }) => {
-  const { t } = useTranslation();
   const [trialNodePosition, setTrialNodePosition] = useState(
     TRAIL_NODE_POSITION.NORMAL,
   );
   const [trialNodePayload, setTrialNodePayload] = useState(null);
-
-  const getRightAreaControl = useCallback(() => {
-    const Control = shifu.getControl(
-      shifu.ControlTypes.NAVIGATOR_TITLE_RIGHT_AREA,
-    );
-
-    return Control && bannerInfo ? <Control payload={bannerInfo} /> : <></>;
-  }, [bannerInfo]);
 
   useEffect(() => {
     setTrialNodePayload(
@@ -52,16 +39,13 @@ export const CourseCatalogList = ({
       <div className={styles.courseCatalogList}>
         <div className={styles.titleRow}>
           <div className={styles.titleArea}>
-            <Image
-              className={styles.icon}
-              width={16}
-              height={16}
-              src={imgCourseList.src}
-              alt={t('navigation.courseList')}
-            />
+            {courseAvatar && (
+              <Avatar className='w-8 h-8 mr-3'>
+                <AvatarImage src={courseAvatar} />
+              </Avatar>
+            )}
             <div className={styles.titleName}>{courseName}</div>
           </div>
-          {getRightAreaControl()}
         </div>
         <div className={styles.listRow}>
           {catalogs.map(catalog => {

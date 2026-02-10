@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import LanguageSelect from '@/components/language-select';
 import i18n, { normalizeLanguage } from '@/i18n';
 import { useUserStore } from '@/store';
+import { useSystemStore } from '@/c-store/useSystemStore';
 
 const UserProfileCard = () => {
   const { t } = useTranslation();
@@ -35,14 +36,32 @@ const UserProfileCard = () => {
     }
   }, [language]);
 
+  // Keep local selection in sync if language changes elsewhere
+  useEffect(() => {
+    const current = normalizeLanguage(i18n.resolvedLanguage ?? i18n.language);
+    if (language !== current) {
+      setLanguage(current);
+    }
+  }, [i18n.language, i18n.resolvedLanguage]);
+
   if (!isInitialized || !userInfo) {
     return null;
   }
 
-  const updateLanguage = (language: string) => {
+  const updateLanguage = async (language: string) => {
     const normalizedLang = normalizeLanguage(language);
     setLanguage(normalizedLang);
-    api.updateUserInfo({ language: normalizedLang });
+    try {
+      await api.updateUserInfo({ language: normalizedLang });
+    } catch (e) {
+      // non-blocking
+      console.warn('Failed to persist language preference', e);
+    }
+    // Update stores for immediate UI coherence
+    useUserStore.getState().updateUserInfo({ language: normalizedLang });
+    try {
+      useSystemStore.getState().updateLanguage(normalizedLang);
+    } catch {}
   };
 
   const userMenuItems: {
@@ -54,7 +73,7 @@ const UserProfileCard = () => {
     {
       icon: <HeartIcon className='w-4 h-4' />,
       id: 'follow',
-      label: t('common.follow'),
+      label: t('common.core.follow'),
       href: '#',
     },
   ];
@@ -63,7 +82,7 @@ const UserProfileCard = () => {
     <Popover>
       <PopoverTrigger asChild>
         <div className='flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer transition-all duration-200 group'>
-          <Avatar>
+          <Avatar className='w-9 h-9'>
             <AvatarImage src='https://github.com/shadcn.png' />
             <AvatarFallback>CN</AvatarFallback>
           </Avatar>
@@ -81,7 +100,7 @@ const UserProfileCard = () => {
         sideOffset={5}
       >
         <div className='flex items-center space-x-2 p-2'>
-          <Avatar>
+          <Avatar className='w-9 h-9'>
             <AvatarImage src='https://github.com/shadcn.png' />
             <AvatarFallback>CN</AvatarFallback>
           </Avatar>
@@ -126,11 +145,19 @@ const UserProfileCard = () => {
               </a>
             );
           })}
-          <LanguageSelect
-            language={language}
-            onSetLanguage={updateLanguage}
-            variant='standard'
-          />
+          <div className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100'>
+            <LogOut className='w-4 h-4 opacity-0' />
+            <span className='flex-1 text-left'>
+              {t('component.menus.navigationMenus.language')}
+            </span>
+            <div className='w-36'>
+              <LanguageSelect
+                language={language}
+                onSetLanguage={updateLanguage}
+                variant='standard'
+              />
+            </div>
+          </div>
         </div>
         <hr />
         <div
@@ -140,7 +167,7 @@ const UserProfileCard = () => {
           className='flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 cursor-pointer'
         >
           <LogOut className='w-4 h-4' />
-          <span>{t('common.logout')}</span>
+          <span>{t('common.core.logout')}</span>
         </div>
       </PopoverContent>
     </Popover>

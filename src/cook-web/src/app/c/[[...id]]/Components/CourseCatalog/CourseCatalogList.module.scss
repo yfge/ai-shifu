@@ -25,13 +25,11 @@
       }
 
       .titleName {
-        margin-left: 12px;
         font-weight: var(--font-weight-bold);
-        color: var(--font-color-main);
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        overflow: hidden;
-        padding-right: 0.5em;
+        color: #0a0a0a;
+        font-size: 16px;
+        line-height: 23px;
+        // flex: 1;
       }
     }
 

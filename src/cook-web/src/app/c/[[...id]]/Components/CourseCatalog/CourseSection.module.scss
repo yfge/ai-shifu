@@ -4,7 +4,15 @@
 
   &.mobile {
     .textArea {
+      position: static;
+
       .rightSection {
+        position: static;
+        transform: none;
+        opacity: 1;
+        pointer-events: auto;
+        margin-left: 6px;
+
         .resetButton {
           display: flex;
         }
@@ -30,10 +38,22 @@
 
   &.selected {
     .textArea {
-      background-color: var(--color-2);
+      border-radius: var(--border-radius-rounded-md, 8px);
+      background: #e5e5e5;
 
       .courseTitle {
-        color: var(--color-4);
+        display: block;
+        overflow: hidden;
+        color: #0a0a0a;
+        font-size: var(--text-sm-font-size, 14px);
+        font-style: normal;
+        font-weight: 600;
+        line-height: 20px;
+        max-width: 100%;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+        hyphens: auto;
+        white-space: normal;
       }
     }
   }
@@ -92,8 +112,8 @@
       }
 
       .bigIcon {
-        width: 16px;
-        height: 16px;
+        width: 12px;
+        height: 12px;
       }
     }
 
@@ -113,12 +133,30 @@
     flex-flow: row nowrap;
     align-items: center;
     justify-content: space-between;
+    position: relative;
 
     .leftSection {
       flex: 1 1 0;
-
+      display: flex;
+      align-items: center;
+      &.notPaid {
+        .courseTitle {
+          color: rgba(10, 10, 10, 0.45);
+        }
+      }
       .courseTitle {
-        display: inline;
+        display: inline-block;
+        overflow: hidden;
+        color: var(--base-sidebar-foreground, #0a0a0a);
+        font-size: var(--text-sm-font-size, 14px);
+        font-style: normal;
+        font-weight: var(--font-weight-normal, 400);
+        line-height: 20px;
+        max-width: 100%;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+        hyphens: auto;
+        white-space: normal;
       }
     }
 
@@ -127,10 +165,33 @@
       display: flex;
       flex-flow: row nowrap;
       align-items: center;
+      position: absolute;
+      top: 50%;
+      right: 8px;
+      transform: translateY(-50%);
+      opacity: 0;
+      pointer-events: none;
+      transition:
+        opacity 0.2s ease,
+        transform 0.2s ease;
 
       .resetButton {
-        margin: 0 6px;
-        display: none;
+        margin: 0;
+        display: flex;
+        pointer-events: auto;
+      }
+    }
+  }
+
+  &:not(.mobile).available:hover,
+  &:not(.mobile).available:focus-within {
+    cursor: pointer;
+
+    .textArea {
+      .rightSection {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translate(-4px, -50%);
       }
     }
   }

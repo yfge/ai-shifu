@@ -58,6 +58,7 @@ class HistoryItem(BaseModel, Generic[T]):
     id: int
     type: str
     children: List["HistoryItem"] = []
+    child_count: int = 0
 
     def to_json(self):
         """
@@ -104,7 +105,7 @@ def get_shifu_history(app, shifu_bid: str) -> HistoryItem:
             LogDraftStruct.query.filter_by(
                 shifu_bid=shifu_bid,
             )
-            .order_by(LogDraftStruct.created_at.desc())
+            .order_by(LogDraftStruct.id.desc())
             .first()
         )
         if not shifu_history:
@@ -320,7 +321,12 @@ def save_new_block_history(
 
 
 def save_outline_history(
-    app: Flask, user_id: str, shifu_bid: str, outline_bid: str, id: int
+    app: Flask,
+    user_id: str,
+    shifu_bid: str,
+    outline_bid: str,
+    id: int,
+    child_count: int = 0,
 ):
     """
     Save outline history
@@ -340,6 +346,8 @@ def save_outline_history(
         item = q.get()
         if item.bid == outline_bid:
             item.id = id
+            if child_count > 0:
+                item.child_count = child_count
             break
         for child in item.children:
             q.put(child)
@@ -375,7 +383,11 @@ def delete_block_history(app: Flask, user_id: str, shifu_bid: str, block_bid: st
 
 
 def save_outline_tree_history(
-    app: Flask, user_id: str, shifu_bid: str, outline_tree: List[HistoryItem]
+    app: Flask,
+    user_id: str,
+    shifu_bid: str,
+    outline_tree: List[HistoryItem],
+    shifu_id: int = None,
 ):
     """
     Save outline tree history
@@ -384,10 +396,13 @@ def save_outline_tree_history(
         user_id: User ID
         shifu_bid: Shifu bid
         outline_tree: Outline tree
+        shifu_id: Optional shifu database id to ensure root node id is correct
     Returns:
         None
     """
     history = get_shifu_history(app, shifu_bid)
+    if shifu_id is not None:
+        history.id = shifu_id
     q = queue.Queue()
     q.put(history)
     blocks_infos = {}

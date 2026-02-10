@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { LikeStatus } from '@/c-api/studyV2';
@@ -16,6 +16,12 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/Dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 type Size = 'sm' | 'md' | 'lg';
 
 export interface InteractionBlockProps {
@@ -28,6 +34,9 @@ export interface InteractionBlockProps {
   className?: string;
   onToggleAskExpanded?: (generated_block_bid: string) => void;
   onRefresh?: (generated_block_bid: string) => void;
+  disableAskButton?: boolean;
+  disableInteractionButtons?: boolean;
+  extraActions?: React.ReactNode;
 }
 
 /**
@@ -40,9 +49,12 @@ export default function InteractionBlock({
   like_status = LIKE_STATUS.NONE,
   readonly = false,
   disabled = false,
+  disableAskButton = false,
+  disableInteractionButtons = false,
   className,
   onRefresh,
   onToggleAskExpanded,
+  extraActions,
 }: InteractionBlockProps) {
   const { t } = useTranslation();
   const [status, setStatus] = useState<LikeStatus>(
@@ -58,11 +70,14 @@ export default function InteractionBlock({
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
-      width: 14,
-      height: 14,
-      cursor: disabled ? 'not-allowed' : 'pointer',
+      width: 22,
+      height: 22,
+      padding: 3,
+      borderRadius: 4,
+      transition: 'background-color 0.2s ease',
+      cursor: disabled || disableInteractionButtons ? 'not-allowed' : 'pointer',
     }),
-    [disabled],
+    [disabled, disableInteractionButtons],
   );
 
   const dislikeBtnStyle = useMemo(
@@ -70,11 +85,14 @@ export default function InteractionBlock({
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
-      width: 14,
-      height: 14,
-      cursor: disabled ? 'not-allowed' : 'pointer',
+      width: 22,
+      height: 22,
+      padding: 3,
+      borderRadius: 4,
+      transition: 'background-color 0.2s ease',
+      cursor: disabled || disableInteractionButtons ? 'not-allowed' : 'pointer',
     }),
-    [disabled],
+    [disabled, disableInteractionButtons],
   );
 
   const refreshBtnStyle = useMemo(
@@ -82,8 +100,11 @@ export default function InteractionBlock({
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
-      width: 14,
-      height: 14,
+      width: 22,
+      height: 22,
+      padding: 3,
+      borderRadius: 4,
+      transition: 'background-color 0.2s ease',
       cursor: disabled ? 'not-allowed' : 'pointer',
     }),
     [disabled],
@@ -94,7 +115,7 @@ export default function InteractionBlock({
       shifu_bid,
       generated_block_bid,
       action,
-    }).catch(e => {
+    }).catch(() => {
       // errors handled by request layer toast; ignore here
     });
   };
@@ -132,9 +153,11 @@ export default function InteractionBlock({
     onRefresh?.(generated_block_bid);
   };
 
+  const canHover = !(disabled || readonly);
+
   return (
     <div className={cn(['interaction-block'], className)}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         <button
           onClick={handleChangeAskPanel}
           type='button'
@@ -145,7 +168,7 @@ export default function InteractionBlock({
             'transition-colors',
             'disabled:opacity-50 disabled:cursor-not-allowed',
           )}
-          disabled={disabled || readonly}
+          disabled={disabled || readonly || disableAskButton}
         >
           <Image
             src={AskIcon.src}
@@ -153,7 +176,7 @@ export default function InteractionBlock({
             width={14}
             height={14}
           />
-          <span>{t('chat.ask')}</span>
+          <span>{t('module.chat.ask')}</span>
         </button>
         <button
           type='button'
@@ -162,48 +185,105 @@ export default function InteractionBlock({
           style={refreshBtnStyle}
           disabled={disabled || readonly}
           onClick={handleRefreshClick}
+          className={cn('interaction-icon-btn', canHover && 'group')}
         >
-          <RefreshCcw
-            size={14}
-            className={cn('text-gray-400', 'w-5', 'h-5')}
-          />
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <RefreshCcw
+                  size={16}
+                  className={cn(
+                    'text-[#55575E]',
+                    'w-4',
+                    'h-4',
+                    'transition-colors',
+                    'duration-200',
+                  )}
+                />
+              </TooltipTrigger>
+              <TooltipContent
+                side='top'
+                className='bg-black text-white border-none'
+              >
+                {t('module.chat.regenerate')}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </button>
+        {extraActions}
         <button
           type='button'
           aria-label='Like'
           aria-pressed={isLike}
-          disabled={disabled || readonly}
+          disabled={disabled || readonly || disableInteractionButtons}
           onClick={onLike}
           title='Like'
           style={likeBtnStyle}
+          className={cn('interaction-icon-btn', canHover && 'group')}
         >
-          <ThumbsUp
-            size={14}
-            className={cn(
-              isLike ? 'text-blue-500' : 'text-gray-400',
-              'w-5',
-              'h-5',
-            )}
-          />
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <ThumbsUp
+                  size={16}
+                  strokeWidth={2}
+                  stroke='currentColor'
+                  fill={isLike ? 'currentColor' : 'none'}
+                  absoluteStrokeWidth={isLike}
+                  className={cn(
+                    'w-4',
+                    'h-4',
+                    'transition-colors',
+                    'duration-200',
+                    'text-[#55575E]',
+                  )}
+                />
+              </TooltipTrigger>
+              <TooltipContent
+                side='top'
+                className='bg-black text-white border-none'
+              >
+                {t('module.chat.like')}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </button>
-
         <button
           type='button'
           aria-label='Dislike'
           aria-pressed={isDislike}
-          disabled={disabled || readonly}
+          disabled={disabled || readonly || disableInteractionButtons}
           onClick={onDislike}
           title='Dislike'
           style={dislikeBtnStyle}
+          className={cn('interaction-icon-btn', canHover && 'group')}
         >
-          <ThumbsDown
-            size={14}
-            className={cn(
-              isDislike ? 'text-blue-500' : 'text-gray-400',
-              'w-5',
-              'h-5',
-            )}
-          />
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <ThumbsDown
+                  size={16}
+                  absoluteStrokeWidth={isDislike}
+                  strokeWidth={2}
+                  stroke='currentColor'
+                  fill={isDislike ? 'currentColor' : 'none'}
+                  className={cn(
+                    'w-4',
+                    'h-4',
+                    'transition-colors',
+                    'duration-200',
+                    'text-[#55575E]',
+                  )}
+                />
+              </TooltipTrigger>
+              <TooltipContent
+                side='top'
+                className='bg-black text-white border-none'
+              >
+                {t('module.chat.dislike')}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </button>
       </div>
 
@@ -213,9 +293,9 @@ export default function InteractionBlock({
       >
         <DialogContent className='sm:max-w-md'>
           <DialogHeader>
-            <DialogTitle>{t('chat.regenerateConfirmTitle')}</DialogTitle>
+            <DialogTitle>{t('module.chat.regenerateConfirmTitle')}</DialogTitle>
             <DialogDescription>
-              {t('chat.regenerateConfirmDescription')}
+              {t('module.chat.regenerateConfirmDescription')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className='flex gap-2 sm:gap-2'>
@@ -224,14 +304,14 @@ export default function InteractionBlock({
               onClick={() => setShowRegenerateDialog(false)}
               className='px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50'
             >
-              {t('common.cancel')}
+              {t('common.core.cancel')}
             </button>
             <button
               type='button'
               onClick={handleConfirmRegenerate}
               className='px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary-lighter'
             >
-              {t('common.ok')}
+              {t('common.core.ok')}
             </button>
           </DialogFooter>
         </DialogContent>

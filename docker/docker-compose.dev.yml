@@ -1,0 +1,59 @@
+services:
+  ai-shifu-api-dev:
+    container_name: ai-shifu-api-dev
+    image: ai-shifu-api-dev:latest
+#    command: ["sh", "-c", "until timeout 1 bash -c 'cat < /dev/null > /dev/tcp/ai-shifu-mysql/3306'; do sleep 1; done && flask db upgrade && flask console update_demo_shifu && cd /app && exec flask run --reload --debugger --host=0.0.0.0 --port=5800"]
+    command: ["sh", "-c", "until timeout 1 bash -c 'cat < /dev/null > /dev/tcp/ai-shifu-mysql/3306'; do sleep 1; done && flask db upgrade && flask console update_demo_shifu && cd /app && exec gunicorn -k gevent -w 4 -b 0.0.0.0:5800 'app:app' --timeout 300 --log-level info --access-logfile /var/log/app.log --reload --capture-output "]
+    env_file:
+      - ./.env
+    volumes:
+      - ../src/api/:/app/
+      - ../src/i18n/:/i18n/
+      - ./storage:/app/storage
+    depends_on:
+      - ai-shifu-mysql
+
+  ai-shifu-cook-web-dev:
+    container_name: ai-shifu-cook-web-dev
+    image: ai-shifu-cook-web-dev:latest
+    restart: unless-stopped
+    command:
+      - sh
+      - -c
+      - cd /app && rm -rf .next && exec ./node_modules/.bin/next dev -H 0.0.0.0 -p "${PORT:-5000}"
+    env_file:
+      - ./.env
+    environment:
+      - I18N_ROOT=/app/src/i18n
+      - NEXT_TELEMETRY_DISABLED=1
+      - NODE_OPTIONS=--max-old-space-size=2048
+    depends_on:
+      - ai-shifu-api-dev
+    volumes:
+      - ../src/cook-web/public:/app/public
+      - ../src/cook-web/src:/app/src
+      - ../src/i18n:/app/src/i18n
+
+  ai-shifu-nginx-dev-dev:
+    container_name: ai-shifu-nginx-dev
+    image: nginx:latest
+    ports:
+      - "8080:8080"
+    depends_on:
+      - ai-shifu-cook-web-dev
+      - ai-shifu-api-dev
+    restart: always
+    volumes:
+      - ./nginx.dev.conf:/etc/nginx/nginx.conf
+
+  ai-shifu-mysql:
+    container_name: ai-shifu-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ai-shifu
+      MYSQL_DATABASE: ai-shifu
+    image: mysql:8.0
+    restart: always
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - ./mysql_data:/var/lib/mysql

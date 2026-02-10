@@ -29,7 +29,24 @@ Author: yfge
 Date: 2025-08-07
 """
 
-from flask import Flask, request, current_app
+import os
+import tempfile
+import base64
+import json
+import uuid
+from dataclasses import replace
+from pathlib import Path
+from urllib.parse import urlsplit
+
+from flask import (
+    Flask,
+    request,
+    current_app,
+    send_file,
+    after_this_request,
+    Response,
+    stream_with_context,
+)
 from .funcs import (
     mark_or_unmark_favorite_shifu,
     upload_file,
@@ -37,12 +54,14 @@ from .funcs import (
     get_video_info,
     shifu_permission_verification,
 )
-from flaskr.route.common import make_common_response
+from flaskr.route.common import make_common_response, bypass_token_validation
 from flaskr.framework.plugin.inject import inject
 from flaskr.service.common.models import raise_param_error, raise_error
-from .consts import UNIT_TYPE_TRIAL
+from .consts import UNIT_TYPE_GUEST
 from functools import wraps
 from enum import Enum
+from flaskr.service.shifu.shifu_import_export_funcs import export_shifu
+from flaskr.common.shifu_context import with_shifu_context
 
 
 from flaskr.service.shifu.shifu_draft_funcs import (
@@ -50,6 +69,8 @@ from flaskr.service.shifu.shifu_draft_funcs import (
     create_shifu_draft,
     get_shifu_draft_info,
     save_shifu_draft_info,
+    archive_shifu,
+    unarchive_shifu,
 )
 from flaskr.service.shifu.shifu_publish_funcs import (
     publish_shifu_draft,
@@ -62,11 +83,6 @@ from flaskr.service.shifu.shifu_outline_funcs import (
     get_unit_by_id,
     delete_unit,
     get_outline_tree,
-)
-from flaskr.service.shifu.shifu_block_funcs import (
-    get_block_list,
-    save_shifu_block_list,
-    add_block,
 )
 from flaskr.service.shifu.shifu_mdflow_funcs import (
     get_shifu_mdflow,
@@ -106,18 +122,23 @@ class ShifuTokenValidation:
             if not token and request.method.upper() == "POST" and request.is_json:
                 token = request.get_json().get("token", None)
 
-            if not request.user.is_creator:
-                raise_error("SHIFU.NO_PERMISSION")
-
             # If is_creator is True, only verify creator permission and skip shifu-specific verification
             if self.is_creator:
+                if not request.user.is_creator:
+                    raise_error("server.shifu.noPermission")
                 return f(*args, **kwargs)
 
             shifu_bid = request.view_args.get("shifu_bid", None)
             if not shifu_bid:
+                shifu_bid = request.view_args.get("shifu_id", None)
+            if not shifu_bid:
                 shifu_bid = request.args.get("shifu_bid", None)
+            if not shifu_bid:
+                shifu_bid = request.args.get("shifu_id", None)
             if not shifu_bid and request.method.upper() == "POST" and request.is_json:
                 shifu_bid = request.get_json().get("shifu_bid", None)
+                if not shifu_bid:
+                    shifu_bid = request.get_json().get("shifu_id", None)
 
             if not token:
                 raise_param_error("token is required")
@@ -131,11 +152,26 @@ class ShifuTokenValidation:
                 app, user_id, shifu_bid, self.permission.value
             )
             if not has_permission:
-                raise_error("SHIFU.NO_PERMISSION")
+                raise_error("server.shifu.noPermission")
 
             return f(*args, **kwargs)
 
         return decorated_function
+
+
+def _get_request_base_url() -> str:
+    """
+    Determine the base URL based on the incoming request headers.
+    """
+    origin = request.headers.get("Origin")
+    if origin:
+        return origin.rstrip("/")
+    referer = request.headers.get("Referer")
+    if referer:
+        parsed_referer = urlsplit(referer)
+        if parsed_referer.scheme and parsed_referer.netloc:
+            return f"{parsed_referer.scheme}://{parsed_referer.netloc}"
+    return request.url_root.rstrip("/")
 
 
 @inject
@@ -186,6 +222,10 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         page_size = request.args.get("page_size", 10)
         is_favorite = request.args.get("is_favorite", "False")
         is_favorite = True if is_favorite.lower() == "true" else False
+        archived_param = request.args.get("archived")
+        archived = False
+        if archived_param is not None:
+            archived = archived_param.lower() == "true"
         try:
             page_index = int(page_index)
             page_size = int(page_size)
@@ -198,8 +238,24 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
             f"get shifu list, user_id: {user_id}, page_index: {page_index}, page_size: {page_size}, is_favorite: {is_favorite}"
         )
         return make_common_response(
-            get_shifu_draft_list(app, user_id, page_index, page_size, is_favorite)
+            get_shifu_draft_list(
+                app, user_id, page_index, page_size, is_favorite, archived
+            )
         )
+
+    @app.route(path_prefix + "/shifus/<shifu_id>/archive", methods=["POST"])
+    @ShifuTokenValidation(ShifuPermission.VIEW)
+    def archive_shifu_api(shifu_id: str):
+        user_id = request.user.user_id
+        archive_shifu(app, user_id, shifu_id)
+        return make_common_response({"archived": True})
+
+    @app.route(path_prefix + "/shifus/<shifu_id>/unarchive", methods=["POST"])
+    @ShifuTokenValidation(ShifuPermission.VIEW)
+    def unarchive_shifu_api(shifu_id: str):
+        user_id = request.user.user_id
+        unarchive_shifu(app, user_id, shifu_id)
+        return make_common_response({"archived": False})
 
     @app.route(path_prefix + "/shifus", methods=["PUT"])
     @ShifuTokenValidation(ShifuPermission.VIEW, is_creator=True)
@@ -256,6 +312,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
 
     @app.route(path_prefix + "/shifus/<shifu_bid>/detail", methods=["GET"])
     @ShifuTokenValidation(ShifuPermission.VIEW)
+    @with_shifu_context()
     def get_shifu_detail_api(shifu_bid: str):
         """
         get shifu detail
@@ -284,11 +341,15 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                                     $ref: "#/components/schemas/ShifuDetailDto"
         """
         user_id = request.user.user_id
+        base_url = _get_request_base_url()
         app.logger.info(f"get shifu detail, user_id: {user_id}, shifu_bid: {shifu_bid}")
-        return make_common_response(get_shifu_draft_info(app, user_id, shifu_bid))
+        return make_common_response(
+            get_shifu_draft_info(app, user_id, shifu_bid, base_url)
+        )
 
     @app.route(path_prefix + "/shifus/<shifu_bid>/detail", methods=["POST"])
     @ShifuTokenValidation(ShifuPermission.EDIT)
+    @with_shifu_context()
     def save_shifu_detail_api(shifu_bid: str):
         """
         save shifu detail
@@ -329,6 +390,27 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                     temperature:
                         type: number
                         description: shifu temperature
+                    tts_enabled:
+                        type: boolean
+                        description: TTS enabled
+                    tts_provider:
+                        type: string
+                        description: TTS provider (minimax, volcengine, volcengine_http, baidu, aliyun)
+                    tts_model:
+                        type: string
+                        description: TTS model/resource ID
+                    tts_voice_id:
+                        type: string
+                        description: TTS voice ID
+                    tts_speed:
+                        type: number
+                        description: TTS speech speed (provider-specific range)
+                    tts_pitch:
+                        type: integer
+                        description: TTS pitch adjustment (provider-specific range)
+                    tts_emotion:
+                        type: string
+                        description: TTS emotion setting
         responses:
             200:
                 description: save shifu detail success
@@ -347,13 +429,29 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                                     $ref: "#/components/schemas/ShifuDetailDto"
         """
         user_id = request.user.user_id
-        shifu_name = request.get_json().get("name")
-        shifu_description = request.get_json().get("description")
-        shifu_avatar = request.get_json().get("avatar")
-        shifu_keywords = request.get_json().get("keywords")
-        shifu_model = request.get_json().get("model")
-        shifu_price = request.get_json().get("price")
-        shifu_temperature = request.get_json().get("temperature")
+        json_data = request.get_json()
+        shifu_name = json_data.get("name")
+        shifu_description = json_data.get("description")
+        shifu_avatar = json_data.get("avatar")
+        shifu_keywords = json_data.get("keywords")
+        shifu_model = json_data.get("model")
+        shifu_price = json_data.get("price")
+        shifu_temperature = json_data.get("temperature")
+        shifu_system_prompt = json_data.get("system_prompt", None)
+        # TTS Configuration
+        tts_enabled = json_data.get("tts_enabled", False)
+        tts_provider = json_data.get("tts_provider", "") or ""
+        tts_provider = tts_provider.strip().lower()
+        tts_model = json_data.get("tts_model", "")
+        tts_voice_id = json_data.get("tts_voice_id", "")
+        tts_speed = json_data.get("tts_speed", 1.0)
+        tts_pitch = json_data.get("tts_pitch", 0)
+        tts_emotion = json_data.get("tts_emotion", "")
+        # Language Output Configuration
+        use_learner_language = json_data.get("use_learner_language", False)
+        if isinstance(use_learner_language, str):
+            use_learner_language = use_learner_language.lower() == "true"
+        base_url = _get_request_base_url()
         return make_common_response(
             save_shifu_draft_info(
                 app,
@@ -366,11 +464,22 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                 shifu_model,
                 shifu_temperature,
                 shifu_price,
+                shifu_system_prompt,
+                base_url,
+                tts_enabled=tts_enabled,
+                tts_provider=tts_provider,
+                tts_model=tts_model,
+                tts_voice_id=tts_voice_id,
+                tts_speed=tts_speed,
+                tts_pitch=tts_pitch,
+                tts_emotion=tts_emotion,
+                use_learner_language=use_learner_language,
             )
         )
 
     @app.route(path_prefix + "/shifus/<shifu_bid>/favorite", methods=["POST"])
     @ShifuTokenValidation(ShifuPermission.VIEW, is_creator=True)
+    @with_shifu_context()
     def mark_favorite_shifu_api():
         """
         mark favorite shifu
@@ -422,6 +531,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
 
     @app.route(path_prefix + "/shifus/<shifu_bid>/publish", methods=["POST"])
     @ShifuTokenValidation(ShifuPermission.PUBLISH)
+    @with_shifu_context()
     def publish_shifu_api(shifu_bid: str):
         """
         publish shifu
@@ -450,10 +560,14 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                                     description: publish url
         """
         user_id = request.user.user_id
-        return make_common_response(publish_shifu_draft(app, user_id, shifu_bid))
+        base_url = _get_request_base_url()
+        return make_common_response(
+            publish_shifu_draft(app, user_id, shifu_bid, base_url)
+        )
 
     @app.route(path_prefix + "/shifus/<shifu_bid>/preview", methods=["POST"])
     @ShifuTokenValidation(ShifuPermission.VIEW)
+    @with_shifu_context()
     def preview_shifu_api(shifu_bid: str):
         """
         preview shifu
@@ -473,9 +587,6 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                     variables:
                         type: object
                         description: variables
-                    skip:
-                        type: boolean
-                        description: skip
         responses:
             200:
                 description: preview shifu success
@@ -495,13 +606,14 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         """
         user_id = request.user.user_id
         variables = request.get_json().get("variables")
-        skip = request.get_json().get("skip", False)
+        base_url = _get_request_base_url()
         return make_common_response(
-            preview_shifu_draft(app, user_id, shifu_bid, variables, skip)
+            preview_shifu_draft(app, user_id, shifu_bid, variables, base_url)
         )
 
     @app.route(path_prefix + "/shifus/<shifu_bid>/outlines/reorder", methods=["PATCH"])
     @ShifuTokenValidation(ShifuPermission.EDIT)
+    @with_shifu_context()
     def update_chapter_order_api(shifu_bid: str):
         """
         update chapter order
@@ -551,6 +663,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
 
     @app.route(path_prefix + "/shifus/<shifu_bid>/outlines", methods=["PUT"])
     @ShifuTokenValidation(ShifuPermission.EDIT)
+    @with_shifu_context()
     def create_outline_api(shifu_bid: str):
         """
         create unit
@@ -578,7 +691,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                         description: outline description
                     type:
                         type: string
-                        description: outline type (normal,trial)
+                        description: outline type (normal,trial,guest)
                     system_prompt:
                         type: string
                         description: outline system prompt
@@ -609,7 +722,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         parent_bid = request.get_json().get("parent_bid")
         name = request.get_json().get("name")
         description = request.get_json().get("description", "")
-        type = request.get_json().get("type", UNIT_TYPE_TRIAL)
+        type = request.get_json().get("type", UNIT_TYPE_GUEST)
         index = request.get_json().get("index", None)
         system_prompt = request.get_json().get("system_prompt", None)
         is_hidden = request.get_json().get("is_hidden", False)
@@ -662,7 +775,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                         description: outline is hidden
                     type:
                         type: string
-                        description: unit type (normal,trial)
+                        description: unit type (normal,trial,guest)
         responses:
             200:
                 description: modify outline success
@@ -686,7 +799,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         index = request.get_json().get("index")
         system_prompt = request.get_json().get("system_prompt", None)
         is_hidden = request.get_json().get("is_hidden", False)
-        type = request.get_json().get("type", UNIT_TYPE_TRIAL)
+        type = request.get_json().get("type", UNIT_TYPE_GUEST)
         return make_common_response(
             modify_unit(
                 app,
@@ -705,6 +818,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         path_prefix + "/shifus/<shifu_bid>/outlines/<outline_bid>", methods=["GET"]
     )
     @ShifuTokenValidation(ShifuPermission.VIEW)
+    @with_shifu_context()
     def get_unit_info_api(shifu_bid: str, outline_bid: str):
         """
         get unit info
@@ -740,6 +854,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         methods=["DELETE"],
     )
     @ShifuTokenValidation(ShifuPermission.EDIT)
+    @with_shifu_context()
     def delete_unit_api(shifu_bid: str, outline_bid: str):
         """
         delete unit
@@ -778,6 +893,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         methods=["GET"],
     )
     @ShifuTokenValidation(ShifuPermission.VIEW)
+    @with_shifu_context()
     def get_mdflow_api(shifu_bid: str, outline_bid: str):
         """
         get mdflow
@@ -863,9 +979,10 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
 
     @app.route(
         path_prefix + "/shifus/<shifu_bid>/outlines/<outline_bid>/mdflow/parse",
-        methods=["GET"],
+        methods=["POST"],
     )
     @ShifuTokenValidation(ShifuPermission.VIEW)
+    @with_shifu_context()
     def parse_mdflow_api(shifu_bid: str, outline_bid: str):
         """
         parse mdflow
@@ -876,7 +993,15 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
             - name: outline_bid
               type: string
               required: true
-
+            - in: body
+              name: body
+              required: true
+              schema:
+                type: object
+                properties:
+                    data:
+                        type: string
+                        description: mdflow
         responses:
             200:
                 description: parse mdflow success
@@ -894,7 +1019,10 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                                     type: object
                                     $ref: "#/components/schemas/MdflowDTOParseResult"
         """
-        return make_common_response(parse_shifu_mdflow(app, shifu_bid, outline_bid))
+        data = request.get_json().get("data", None)
+        return make_common_response(
+            parse_shifu_mdflow(app, shifu_bid, outline_bid, data)
+        )
 
     @app.route(
         path_prefix + "/shifus/<shifu_bid>/outlines/<outline_bid>/mdflow/run",
@@ -912,6 +1040,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
 
     @app.route(path_prefix + "/shifus/<shifu_bid>/outlines", methods=["GET"])
     @ShifuTokenValidation(ShifuPermission.VIEW)
+    @with_shifu_context()
     def get_outline_tree_api(shifu_bid: str):
         """
         get outline tree
@@ -942,148 +1071,6 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         """
         user_id = request.user.user_id
         return make_common_response(get_outline_tree(app, user_id, shifu_bid))
-
-    @app.route(
-        path_prefix + "/shifus/<shifu_bid>/outlines/<outline_bid>/blocks",
-        methods=["GET"],
-    )
-    @ShifuTokenValidation(ShifuPermission.VIEW)
-    def get_block_list_api(shifu_bid: str, outline_bid: str):
-        """
-        get block list
-        ---
-        tags:
-            - shifu
-        parameters:
-            - name: outline_id
-              type: string
-              required: true
-        responses:
-            200:
-                description: get block list success
-                content:
-                    application/json:
-                        schema:
-                            properties:
-                                code:
-                                    type: integer
-                                    description: code
-                                message:
-                                    type: string
-                                    description: message
-                                data:
-                                    type: array
-                                    items:
-                                        $ref: "#/components/schemas/BlockDto"
-        """
-        user_id = request.user.user_id
-        return make_common_response(get_block_list(app, user_id, outline_bid))
-
-    @app.route(
-        path_prefix + "/shifus/<shifu_bid>/outlines/<outline_bid>/blocks",
-        methods=["POST"],
-    )
-    @ShifuTokenValidation(ShifuPermission.EDIT)
-    def save_blocks_api(shifu_bid: str, outline_bid: str):
-        """
-        save blocks
-        ---
-        tags:
-            - shifu
-        parameters:
-            - in: body
-              name: body
-              required: true
-              schema:
-                type: object
-                properties:
-                    outline_id:
-                        type: string
-                        description: outline id
-                    blocks:
-                        type: array
-                        items:
-                            $ref: "#/components/schemas/BlockDto"
-        responses:
-            200:
-                description: save blocks success
-                content:
-                    application/json:
-                        schema:
-                            properties:
-                                code:
-                                    type: integer
-                                    description: code
-                                message:
-                                    type: string
-                                    description: message
-                                data:
-                                    type: array
-                                    items:
-                                        $ref: "#/components/schemas/BlockDto"
-        """
-        user_id = request.user.user_id
-        blocks = request.get_json().get("blocks")
-        return make_common_response(
-            save_shifu_block_list(app, user_id, outline_bid, blocks)
-        )
-
-    @app.route(
-        path_prefix + "/shifus/<shifu_bid>/outlines/<outline_bid>/blocks",
-        methods=["PUT"],
-    )
-    @ShifuTokenValidation(ShifuPermission.EDIT)
-    def add_block_api(shifu_bid: str, outline_bid: str):
-        """
-        add block
-        ---
-        tags:
-            - shifu
-        parameters:
-            - in: body
-              name: body
-              required: true
-              schema:
-                type: object
-                properties:
-                    outline_bid:
-                        type: string
-                        description: outline bid
-                    block:
-                        type: object
-                        $ref: "#/components/schemas/BlockDto"
-                    block_index:
-                        type: integer
-                        description: block index
-        responses:
-            200:
-                description: add block success
-                content:
-                    application/json:
-                        schema:
-                            properties:
-                                code:
-                                    type: integer
-                                    description: code
-                                message:
-                                    type: string
-                                    description: message
-                                data:
-                                    type: object
-                                    $ref: "#/components/schemas/BlockDto"
-        """
-        user_id = request.user.user_id
-        block = request.get_json().get("block")
-        block_index = request.get_json().get("block_index")
-        if block is None:
-            raise_param_error("block is required")
-        if block_index is None:
-            raise_param_error("block_index is required")
-        if not block.get("type"):
-            raise_param_error("block type is required")
-        return make_common_response(
-            add_block(app, user_id, outline_bid, block, block_index)
-        )
 
     @app.route(path_prefix + "/upfile", methods=["POST"])
     def upfile_api():
@@ -1203,5 +1190,221 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         if not url:
             raise_param_error("url is required")
         return make_common_response(get_video_info(app, user_id, url))
+
+    @app.route(path_prefix + "/shifus/<shifu_bid>/export", methods=["GET"])
+    @ShifuTokenValidation(ShifuPermission.VIEW)
+    def export_shifu_api(shifu_bid: str):
+        """
+        export shifu
+        ---
+        tags:
+            - shifu
+        parameters:
+            - name: shifu_bid
+              type: string
+              required: true
+        responses:
+            200:
+                description: export shifu success
+                content:
+                    application/octet-stream:
+                        schema:
+                            type: string
+                            format: binary
+        """
+        temp_dir = tempfile.mkdtemp(prefix="shifu_export_")
+        file_path = Path(temp_dir) / f"{shifu_bid}.json"
+        export_shifu(app, shifu_bid, str(file_path))
+
+        @after_this_request
+        def cleanup(response):
+            try:
+                os.remove(file_path)
+                os.rmdir(temp_dir)
+            except OSError:
+                current_app.logger.warning(
+                    "Failed to cleanup shifu export temp files", exc_info=True
+                )
+            return response
+
+        return send_file(
+            file_path,
+            mimetype="application/json",
+            as_attachment=True,
+            download_name=f"{shifu_bid}.json",
+        )
+
+    @app.route(path_prefix + "/tts/config", methods=["GET"])
+    @bypass_token_validation
+    def tts_config_api():
+        """
+        Get TTS provider configuration
+        ---
+        tags:
+            - tts
+        responses:
+            200:
+                description: TTS provider configuration
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                providers:
+                                    type: array
+                                    description: List of available providers with configs
+        """
+        from flaskr.api.tts import get_all_provider_configs
+
+        config = get_all_provider_configs()
+        return make_common_response(config)
+
+    @app.route(path_prefix + "/tts/preview", methods=["POST"])
+    @bypass_token_validation
+    def tts_preview_api():
+        """
+        Preview TTS with specified settings
+        ---
+        tags:
+            - tts
+        requestBody:
+            required: true
+            content:
+                application/json:
+                    schema:
+                        type: object
+                        properties:
+                            voice_id:
+                                type: string
+                                description: Voice ID for synthesis
+                            speed:
+                                type: number
+                                description: Speech speed (provider-specific range)
+                            pitch:
+                                type: integer
+                                description: Pitch adjustment (provider-specific range)
+                            emotion:
+                                type: string
+                                description: Emotion setting
+                            text:
+                                type: string
+                                description: Optional custom text to preview
+        responses:
+            200:
+                description: stream TTS preview audio
+                content:
+                    text/event-stream:
+                        schema:
+                            type: string
+                            example: 'data: {"type":"audio_segment","content":{"segment_index":0,"audio_data":"...","duration_ms":123,"is_final":false}}'
+        """
+        from flaskr.api.tts import (
+            synthesize_text,
+            is_tts_configured,
+            get_default_voice_settings,
+            get_default_audio_settings,
+        )
+        from flaskr.service.tts.pipeline import split_text_for_tts
+        from flaskr.service.tts.validation import validate_tts_settings_strict
+
+        json_data = request.get_json() or {}
+        provider_name = (json_data.get("provider") or "").strip().lower()
+        model = (json_data.get("model") or "").strip()
+        voice_id = json_data.get("voice_id") or ""
+        speed_raw = json_data.get("speed")
+        pitch_raw = json_data.get("pitch")
+        emotion = json_data.get("emotion", "")
+        text = json_data.get(
+            "text",
+            "你好，这是语音合成的试听效果。Hello, this is a preview of text-to-speech.",
+        )
+
+        validated = validate_tts_settings_strict(
+            provider=provider_name,
+            model=model,
+            voice_id=voice_id,
+            speed=speed_raw,
+            pitch=pitch_raw,
+            emotion=emotion,
+        )
+
+        if not is_tts_configured(validated.provider):
+            raise_param_error(f"TTS provider is not configured: {validated.provider}")
+
+        # Limit text length for preview
+        if len(text) > 200:
+            text = text[:200]
+
+        voice_settings = get_default_voice_settings(validated.provider)
+        voice_settings.voice_id = validated.voice_id
+        voice_settings.speed = validated.speed
+        voice_settings.pitch = validated.pitch
+        voice_settings.emotion = validated.emotion
+
+        segments = split_text_for_tts(text, provider_name=validated.provider)
+        if not segments:
+            raise_error("TTS_PREVIEW_FAILED")
+
+        audio_settings = get_default_audio_settings(validated.provider)
+        safe_audio_settings = replace(audio_settings, format="mp3")
+        audio_bid = uuid.uuid4().hex
+
+        def event_stream():
+            total_duration_ms = 0
+            try:
+                for index, segment_text in enumerate(segments):
+                    result = synthesize_text(
+                        text=segment_text,
+                        voice_settings=voice_settings,
+                        audio_settings=safe_audio_settings,
+                        model=validated.model or None,
+                        provider_name=validated.provider,
+                    )
+                    total_duration_ms += int(result.duration_ms or 0)
+                    audio_base64 = base64.b64encode(result.audio_data).decode("utf-8")
+                    payload = {
+                        "outline_bid": "",
+                        "generated_block_bid": "",
+                        "type": "audio_segment",
+                        "content": {
+                            "segment_index": index,
+                            "audio_data": audio_base64,
+                            "duration_ms": int(result.duration_ms or 0),
+                            "is_final": False,
+                        },
+                    }
+                    yield (
+                        "data: "
+                        + json.dumps(payload, ensure_ascii=False)
+                        + "\n\n".encode("utf-8").decode("utf-8")
+                    )
+
+                payload = {
+                    "outline_bid": "",
+                    "generated_block_bid": "",
+                    "type": "audio_complete",
+                    "content": {
+                        "audio_url": "",
+                        "audio_bid": audio_bid,
+                        "duration_ms": total_duration_ms,
+                    },
+                }
+                yield (
+                    "data: "
+                    + json.dumps(payload, ensure_ascii=False)
+                    + "\n\n".encode("utf-8").decode("utf-8")
+                )
+            except GeneratorExit:
+                current_app.logger.info("client closed tts preview stream early")
+                raise
+            except Exception:
+                current_app.logger.error("TTS preview stream failed", exc_info=True)
+                raise
+
+        return Response(
+            stream_with_context(event_stream()),
+            headers={"Cache-Control": "no-cache"},
+            mimetype="text/event-stream",
+        )
 
     return app

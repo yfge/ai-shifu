@@ -20,6 +20,7 @@ class EnvVar:
     name: str
     required: bool = False  # Whether variable must be explicitly set in environment
     default: Any = None  # Default value if not set (only if required=False)
+    example: Any = None  # Optional value to emit in generated example files
     type: Type = str  # Using Type annotation to avoid conflict
     description: str = ""
     validator: Optional[Callable[[Any], bool]] = None
@@ -80,37 +81,24 @@ class EnvVar:
 # Environment variable registry
 ENV_VARS: Dict[str, EnvVar] = {
     # Application Configuration
-    "WEB_URL": EnvVar(
-        name="WEB_URL",
-        default="UNCONFIGURED",
-        description="Website access domain name",
-        group="app",
-    ),
-    "NEXT_PUBLIC_LOGIN_METHODS_ENABLED": EnvVar(
-        name="NEXT_PUBLIC_LOGIN_METHODS_ENABLED",
-        default="phone",
-        description="""Login method configuration (phone, email, or both)
-Values: "phone" | "email" | "phone,email"
-Default: "phone" (phone-only login if not configured)""",
-        group="app",
-    ),
-    "NEXT_PUBLIC_DEFAULT_LOGIN_METHOD": EnvVar(
-        name="NEXT_PUBLIC_DEFAULT_LOGIN_METHOD",
-        default="phone",
-        description='Default login method tab. Values: "phone" | "email"',
-        group="app",
-    ),
-    "REACT_APP_ALWAYS_SHOW_LESSON_TREE": EnvVar(
-        name="REACT_APP_ALWAYS_SHOW_LESSON_TREE",
-        default="true",
-        description="Always show lesson tree",
-        group="app",
-    ),
     "LOGGING_PATH": EnvVar(
         name="LOGGING_PATH",
         default="logs/ai-shifu.log",
         description="Path of log file",
         group="app",
+    ),
+    # Storage Configuration
+    "STORAGE_PROVIDER": EnvVar(
+        name="STORAGE_PROVIDER",
+        default="auto",
+        description='Storage provider for uploaded/generated files. Values: "auto" | "oss" | "local".',
+        group="storage",
+    ),
+    "LOCAL_STORAGE_ROOT": EnvVar(
+        name="LOCAL_STORAGE_ROOT",
+        default="storage",
+        description="Filesystem directory used for local storage provider (relative to app working dir if not absolute).",
+        group="storage",
     ),
     "ASK_MAX_HISTORY_LEN": EnvVar(
         name="ASK_MAX_HISTORY_LEN",
@@ -121,7 +109,8 @@ Default: "phone" (phone-only login if not configured)""",
     ),
     "SHIFU_PERMISSION_CACHE_EXPIRE": EnvVar(
         name="SHIFU_PERMISSION_CACHE_EXPIRE",
-        default="1",
+        default=300,
+        type=int,
         description="Shifu permission cache expiration time in seconds",
         group="app",
     ),
@@ -130,6 +119,161 @@ Default: "phone" (phone-only login if not configured)""",
         default="UTC",
         description="Timezone setting for the application",
         group="app",
+    ),
+    # Frontend Configuration
+    "PORT": EnvVar(
+        name="PORT",
+        default=5000,
+        type=int,
+        description="Frontend server port",
+        group="frontend",
+        validator=lambda x: 1 <= int(x) <= 65535,
+    ),
+    "CURRENCY_SYMBOL": EnvVar(
+        name="CURRENCY_SYMBOL",
+        default="\u00a5",
+        description="Currency symbol used in Cook Web (default: ¥)",
+        group="frontend",
+    ),
+    "HOME_URL": EnvVar(
+        name="HOME_URL",
+        default="/admin",
+        description="Default redirect path after login",
+        group="frontend",
+    ),
+    "LOGO_WIDE_URL": EnvVar(
+        name="LOGO_WIDE_URL",
+        default="",
+        description="Custom wide logo URL override returned by /api/config",
+        group="frontend",
+    ),
+    "LOGO_SQUARE_URL": EnvVar(
+        name="LOGO_SQUARE_URL",
+        default="",
+        description="Custom square logo URL override returned by /api/config",
+        group="frontend",
+    ),
+    "FAVICON_URL": EnvVar(
+        name="FAVICON_URL",
+        default="",
+        description="Custom favicon URL override returned by /api/config",
+        group="frontend",
+    ),
+    "ANALYTICS_UMAMI_SCRIPT": EnvVar(
+        name="ANALYTICS_UMAMI_SCRIPT",
+        default="",
+        description="Umami analytics script URL",
+        group="frontend",
+    ),
+    "ANALYTICS_UMAMI_SITE_ID": EnvVar(
+        name="ANALYTICS_UMAMI_SITE_ID",
+        default="",
+        description="Umami analytics site identifier",
+        group="frontend",
+    ),
+    "DEFAULT_COURSE_ID": EnvVar(
+        name="DEFAULT_COURSE_ID",
+        default="",
+        description="Default course id for Cook Web",
+        group="frontend",
+    ),
+    "DEFAULT_LOGIN_METHOD": EnvVar(
+        name="DEFAULT_LOGIN_METHOD",
+        default="phone",
+        description='Default login method tab. Values: "phone" | "email" | "google"',
+        group="frontend",
+    ),
+    "DEBUG_ERUDA_ENABLED": EnvVar(
+        name="DEBUG_ERUDA_ENABLED",
+        default=False,
+        type=bool,
+        description="Enable Eruda debug console",
+        group="frontend",
+    ),
+    "LOGIN_METHODS_ENABLED": EnvVar(
+        name="LOGIN_METHODS_ENABLED",
+        default="phone",
+        description="""Login methods exposed to users.
+Values: "phone" | "email" | "google" combinations (comma-separated)
+Default: "phone".""",
+        group="frontend",
+    ),
+    "STRIPE_ENABLED": EnvVar(
+        name="STRIPE_ENABLED",
+        default=False,
+        type=bool,
+        description="Enable Stripe payment entry points on Cook Web",
+        group="frontend",
+    ),
+    "UI_ALWAYS_SHOW_LESSON_TREE": EnvVar(
+        name="UI_ALWAYS_SHOW_LESSON_TREE",
+        default=False,
+        type=bool,
+        description="Always show lesson tree in Cook Web",
+        group="frontend",
+    ),
+    "UI_LOGO_HORIZONTAL": EnvVar(
+        name="UI_LOGO_HORIZONTAL",
+        default="",
+        description="Horizontal logo URL for Cook Web",
+        group="frontend",
+    ),
+    "UI_LOGO_VERTICAL": EnvVar(
+        name="UI_LOGO_VERTICAL",
+        default="",
+        description="Vertical logo URL for Cook Web",
+        group="frontend",
+    ),
+    "GEN_MDF_API_URL": EnvVar(
+        name="GEN_MDF_API_URL",
+        default="",
+        description="API URL for generating MDF (Markdown Flow) content",
+        group="integrations",
+    ),
+    "GEN_MDF_APP_ID": EnvVar(
+        name="GEN_MDF_APP_ID",
+        default="",
+        description="Application ID for MDF API authentication (X-App-Id header)",
+        secret=True,
+        group="integrations",
+    ),
+    "WECHAT_APP_ID": EnvVar(
+        name="WECHAT_APP_ID",
+        default="",
+        description="WeChat App ID for OAuth / QR login",
+        group="auth",
+    ),
+    "WECHAT_APP_SECRET": EnvVar(
+        name="WECHAT_APP_SECRET",
+        default="",
+        description="WeChat App secret for server-side exchanges",
+        group="auth",
+        secret=True,
+    ),
+    # Legal Documents Configuration
+    "LEGAL_AGREEMENT_URL_ZH_CN": EnvVar(
+        name="LEGAL_AGREEMENT_URL_ZH_CN",
+        default="",
+        description="Service agreement URL for Chinese (zh-CN) users. Leave empty to disable the link.",
+        group="legal",
+    ),
+    "LEGAL_AGREEMENT_URL_EN_US": EnvVar(
+        name="LEGAL_AGREEMENT_URL_EN_US",
+        default="",
+        description="Service agreement URL for English (en-US) users. Leave empty to disable the link.",
+        group="legal",
+    ),
+    "LEGAL_PRIVACY_URL_ZH_CN": EnvVar(
+        name="LEGAL_PRIVACY_URL_ZH_CN",
+        default="",
+        description="Privacy policy URL for Chinese (zh-CN) users. Leave empty to disable the link.",
+        group="legal",
+    ),
+    "LEGAL_PRIVACY_URL_EN_US": EnvVar(
+        name="LEGAL_PRIVACY_URL_EN_US",
+        default="",
+        description="Privacy policy URL for English (en-US) users. Leave empty to disable the link.",
+        group="legal",
     ),
     # LLM Configuration
     "OPENAI_API_KEY": EnvVar(
@@ -175,14 +319,14 @@ Default: "phone" (phone-only login if not configured)""",
     "ARK_ACCESS_KEY_ID": EnvVar(
         name="ARK_ACCESS_KEY_ID",
         default="",
-        description="ByteDance Volcengine Ark Access Key ID",
+        description="ByteDance Volcengine Ark access key ID",
         secret=True,
         group="llm",
     ),
     "ARK_SECRET_ACCESS_KEY": EnvVar(
         name="ARK_SECRET_ACCESS_KEY",
         default="",
-        description="ByteDance Volcengine Ark Secret Access Key",
+        description="ByteDance Volcengine Ark secret access key",
         secret=True,
         group="llm",
     ),
@@ -220,6 +364,19 @@ Default: "phone" (phone-only login if not configured)""",
         description="DeepSeek API URL",
         group="llm",
     ),
+    "GEMINI_API_KEY": EnvVar(
+        name="GEMINI_API_KEY",
+        default="",
+        description="Google Gemini API key",
+        secret=True,
+        group="llm",
+    ),
+    "GEMINI_API_URL": EnvVar(
+        name="GEMINI_API_URL",
+        default="",
+        description="Optional Google Gemini API base URL (leave blank to use default)",
+        group="llm",
+    ),
     "QWEN_API_KEY": EnvVar(
         name="QWEN_API_KEY",
         default="",
@@ -241,8 +398,31 @@ OpenAI: gpt-4o-latest, gpt-4o-mini, gpt-4, gpt-3.5-turbo, chatgpt-4o-latest
 ERNIE: ERNIE-4.0-8K, ERNIE-3.5-8K, ERNIE-3.5-128K, ERNIE-Speed-8K, ERNIE-Speed-128K
 GLM: glm-4, glm-4-air, glm-4-airx, glm-4-flash, glm-4v, glm-3-turbo
 Qwen: qwen-long, qwen-max, qwen-max-longcontext, qwen-plus, qwen-turbo, qwen2-*
-DeepSeek: deepseek-chat""",
+DeepSeek: deepseek-chat
+Gemini: gemini-1.5-flash, gemini-1.5-flash-8b, gemini-1.5-pro""",
         group="llm",
+    ),
+    "LLM_ALLOWED_MODELS": EnvVar(
+        name="LLM_ALLOWED_MODELS",
+        default=[],
+        type=list,
+        description=(
+            "Comma separated list of allowed LLM models to expose in UI. "
+            "When empty, all detected models are shown."
+        ),
+        group="llm",
+        required=False,
+    ),
+    "LLM_ALLOWED_MODEL_DISPLAY_NAMES": EnvVar(
+        name="LLM_ALLOWED_MODEL_DISPLAY_NAMES",
+        default=[],
+        type=list,
+        description=(
+            "Optional display names for allowed LLM models. Must match the "
+            "length and order of LLM_ALLOWED_MODELS. Ignored otherwise."
+        ),
+        group="llm",
+        required=False,
     ),
     "DEFAULT_LLM_TEMPERATURE": EnvVar(
         name="DEFAULT_LLM_TEMPERATURE",
@@ -256,6 +436,7 @@ DeepSeek: deepseek-chat""",
     "SQLALCHEMY_DATABASE_URI": EnvVar(
         name="SQLALCHEMY_DATABASE_URI",
         required=True,
+        example="mysql://root:ai-shifu@ai-shifu-mysql:3306/ai-shifu?charset=utf8mb4",
         description="""MySQL database connection URI
 Example: mysql://username:password@hostname:3306/database_name?charset=utf8mb4""",
         secret=True,
@@ -292,8 +473,8 @@ Example: mysql://username:password@hostname:3306/database_name?charset=utf8mb4""
     # Redis Configuration
     "REDIS_HOST": EnvVar(
         name="REDIS_HOST",
-        default="localhost",
-        description="Redis server host",
+        default="",
+        description="Redis server host (optional). Leave empty to disable Redis.",
         group="redis",
     ),
     "REDIS_PORT": EnvVar(
@@ -327,70 +508,11 @@ Example: mysql://username:password@hostname:3306/database_name?charset=utf8mb4""
         description="Redis key prefix",
         group="redis",
     ),
-    "REDIS_KEY_PREFIX_USER": EnvVar(
-        name="REDIS_KEY_PREFIX_USER",
-        default="ai-shifu:user:",
-        description="Redis key prefix for user data",
-        group="redis",
-    ),
-    "REDIS_KEY_PREFIX_RESET_PWD": EnvVar(
-        name="REDIS_KEY_PREFIX_RESET_PWD",
-        default="ai-shifu:reset_pwd:",
-        description="Redis key prefix for password reset",
-        group="redis",
-    ),
-    "REDIS_KEY_PREFIX_CAPTCHA": EnvVar(
-        name="REDIS_KEY_PREFIX_CAPTCHA",
-        default="ai-shifu:captcha:",
-        description="Redis key prefix for captcha",
-        group="redis",
-    ),
-    "REDIS_KEY_PREFIX_PHONE": EnvVar(
-        name="REDIS_KEY_PREFIX_PHONE",
-        default="ai-shifu:phone:",
-        description="Redis key prefix for phone",
-        group="redis",
-    ),
-    "REDIS_KEY_PREFIX_PHONE_CODE": EnvVar(
-        name="REDIS_KEY_PREFIX_PHONE_CODE",
-        default="ai-shifu:phone_code:",
-        description="Redis key prefix for phone verification code",
-        group="redis",
-    ),
-    "REDIS_KEY_PREFIX_MAIL_CODE": EnvVar(
-        name="REDIS_KEY_PREFIX_MAIL_CODE",
-        default="ai-shifu:mail_code:",
-        description="Prefix of email verification code",
-        group="redis",
-    ),
-    "REDIS_KEY_PREFIX_MAIL_LIMIT": EnvVar(
-        name="REDIS_KEY_PREFIX_MAIL_LIMIT",
-        default="ai-shifu:mail_limit:",
-        description="The Redis key prefix for email sending restrictions",
-        group="redis",
-    ),
-    "REDIS_KEY_PREFIX_PHONE_LIMIT": EnvVar(
-        name="REDIS_KEY_PREFIX_PHONE_LIMIT",
-        default="ai-shifu:phone_limit:",
-        description="The prefix of Redis key for mobile phone number sending restrictions",
-        group="redis",
-    ),
-    "REDIS_KEY_PREFIX_IP_BAN": EnvVar(
-        name="REDIS_KEY_PREFIX_IP_BAN",
-        default="ai-shifu:ip_ban:",
-        description="The prefix of Redis key in the IP banned state",
-        group="redis",
-    ),
-    "REDIS_KEY_PREFIX_IP_LIMIT": EnvVar(
-        name="REDIS_KEY_PREFIX_IP_LIMIT",
-        default="ai-shifu:ip_limit:",
-        description="The Redis key prefix with a limit on the number of IP transmissions",
-        group="redis",
-    ),
     # Authentication Configuration
     "SECRET_KEY": EnvVar(
         name="SECRET_KEY",
         required=True,
+        example="ai-shifu",
         description="""Secret key for JWT token signing and verification
 CRITICAL: Used to encrypt/decrypt user authentication tokens
 - Must be a strong random string (at least 32 characters recommended)
@@ -416,13 +538,6 @@ Generate secure key: python -c "import secrets; print(secrets.token_urlsafe(32))
         description="Expire time for password reset code in seconds",
         group="auth",
     ),
-    "CAPTCHA_CODE_EXPIRE_TIME": EnvVar(
-        name="CAPTCHA_CODE_EXPIRE_TIME",
-        default=300,
-        type=int,
-        description="Expire time for captcha in seconds",
-        group="auth",
-    ),
     "PHONE_CODE_EXPIRE_TIME": EnvVar(
         name="PHONE_CODE_EXPIRE_TIME",
         default=300,
@@ -441,6 +556,20 @@ Generate secure key: python -c "import secrets; print(secrets.token_urlsafe(32))
         default="",
         description="OAuth client secret issued by Google",
         secret=True,
+        group="auth",
+    ),
+    "GOOGLE_OAUTH_TOKEN_ENDPOINT": EnvVar(
+        name="GOOGLE_OAUTH_TOKEN_ENDPOINT",
+        default="https://oauth2.googleapis.com/token",
+        description=(
+            "Google OAuth token endpoint URL used by the backend to exchange auth codes."
+        ),
+        group="auth",
+    ),
+    "GOOGLE_OAUTH_USERINFO_ENDPOINT": EnvVar(
+        name="GOOGLE_OAUTH_USERINFO_ENDPOINT",
+        default="https://openidconnect.googleapis.com/v1/userinfo",
+        description="Google OpenID Connect userinfo endpoint URL used by the backend.",
         group="auth",
     ),
     "MAIL_CODE_EXPIRE_TIME": EnvVar(
@@ -501,6 +630,8 @@ Generate secure key: python -c "import secrets; print(secrets.token_urlsafe(32))
     ),
     "UNIVERSAL_VERIFICATION_CODE": EnvVar(
         name="UNIVERSAL_VERIFICATION_CODE",
+        required=False,
+        example="1024",
         description=(
             "Universal verification code for testing.\n"
             "**SECURITY WARNING:** Do NOT set this in production environments.\n"
@@ -508,6 +639,109 @@ Generate secure key: python -c "import secrets; print(secrets.token_urlsafe(32))
             "Only use for local development or testing."
         ),
         group="auth",
+    ),
+    "ADMIN_LOGIN_GRANT_CREATOR_WITH_DEMO": EnvVar(
+        name="ADMIN_LOGIN_GRANT_CREATOR_WITH_DEMO",
+        default=True,
+        type=bool,
+        description=(
+            "When enabled, users logging in from the admin interface are "
+            "automatically marked as creators and granted demo course "
+            "permissions (DEMO_SHIFU_BID / DEMO_EN_SHIFU_BID if configured). "
+            "Intended for demo and staging environments only."
+        ),
+        group="auth",
+    ),
+    # Payment Providers
+    "PINGXX_SECRET_KEY": EnvVar(
+        name="PINGXX_SECRET_KEY",
+        default="",
+        description="Ping++ API secret key used for charge creation",
+        secret=True,
+        group="payment",
+    ),
+    "PINGXX_PRIVATE_KEY_PATH": EnvVar(
+        name="PINGXX_PRIVATE_KEY_PATH",
+        default="",
+        description="Filesystem path to the Ping++ RSA private key",
+        group="payment",
+    ),
+    "PINGXX_APP_ID": EnvVar(
+        name="PINGXX_APP_ID",
+        default="",
+        description="Ping++ application identifier",
+        group="payment",
+    ),
+    "STRIPE_SECRET_KEY": EnvVar(
+        name="STRIPE_SECRET_KEY",
+        default="",
+        description="Stripe secret API key for server-side requests",
+        secret=True,
+        group="payment",
+    ),
+    "STRIPE_PUBLISHABLE_KEY": EnvVar(
+        name="STRIPE_PUBLISHABLE_KEY",
+        default="",
+        description="Stripe publishable key shared with client applications",
+        group="payment",
+    ),
+    "STRIPE_WEBHOOK_SECRET": EnvVar(
+        name="STRIPE_WEBHOOK_SECRET",
+        default="",
+        description="Stripe webhook signing secret",
+        secret=True,
+        group="payment",
+    ),
+    "STRIPE_API_VERSION": EnvVar(
+        name="STRIPE_API_VERSION",
+        default="",
+        description="Stripe API version to lock requests against",
+        group="payment",
+    ),
+    "STRIPE_SUCCESS_URL": EnvVar(
+        name="STRIPE_SUCCESS_URL",
+        default="",
+        description="Stripe Checkout success redirect URL",
+        group="payment",
+    ),
+    "STRIPE_CANCEL_URL": EnvVar(
+        name="STRIPE_CANCEL_URL",
+        default="",
+        description="Stripe Checkout cancellation redirect URL",
+        group="payment",
+    ),
+    "STRIPE_DEFAULT_CURRENCY": EnvVar(
+        name="STRIPE_DEFAULT_CURRENCY",
+        default="usd",
+        description="Default currency code used for Stripe payments",
+        group="payment",
+    ),
+    "STRIPE_WECHAT_PAY_ENABLED": EnvVar(
+        name="STRIPE_WECHAT_PAY_ENABLED",
+        default=False,
+        type=bool,
+        description="Enable WeChat Pay",
+        group="payment",
+    ),
+    "STRIPE_ALIPAY_ENABLED": EnvVar(
+        name="STRIPE_ALIPAY_ENABLED",
+        default=False,
+        type=bool,
+        description="Enable Alipay for Stripe",
+        group="payment",
+    ),
+    "PAYMENT_CHANNELS_ENABLED": EnvVar(
+        name="PAYMENT_CHANNELS_ENABLED",
+        default="pingxx,stripe",
+        description="Comma-separated list of enabled payment providers (e.g., pingxx,stripe)",
+        group="payment",
+    ),
+    "PAY_ORDER_EXPIRE_TIME": EnvVar(
+        name="PAY_ORDER_EXPIRE_TIME",
+        default=600,
+        type=int,
+        description="Order expiration time in seconds before a new order is created",
+        group="payment",
     ),
     # Alibaba Cloud Configuration
     "ALIBABA_CLOUD_SMS_ACCESS_KEY_ID": EnvVar(
@@ -735,33 +969,6 @@ Generate secure key: python -c "import secrets; print(secrets.token_urlsafe(32))
         description="Environment (development/production)",
         group="flask",
     ),
-    # Frontend Configuration
-    "REACT_APP_BASEURL": EnvVar(
-        name="REACT_APP_BASEURL",
-        default="",
-        description="React app base URL",
-        group="frontend",
-    ),
-    "PORT": EnvVar(
-        name="PORT",
-        default=5000,
-        type=int,
-        description="Frontend server port",
-        group="frontend",
-        validator=lambda x: 1 <= int(x) <= 65535,
-    ),
-    "SITE_HOST": EnvVar(
-        name="SITE_HOST",
-        default="http://localhost:8081/",
-        description="Site host URL",
-        group="frontend",
-    ),
-    "REACT_APP_ENABLE_ERUDA": EnvVar(
-        name="REACT_APP_ENABLE_ERUDA",
-        default="",
-        description="Enable Eruda console for debugging",
-        group="frontend",
-    ),
     # Testing Configuration
     "DJANGO_SETTINGS_MODULE": EnvVar(
         name="DJANGO_SETTINGS_MODULE",
@@ -769,6 +976,154 @@ Generate secure key: python -c "import secrets; print(secrets.token_urlsafe(32))
         description="Django settings module for testing",
         group="testing",
     ),
+    # Minimum Shifu Price
+    "MIN_SHIFU_PRICE": EnvVar(
+        name="MIN_SHIFU_PRICE",
+        default=0.5,
+        type=float,
+        description="Minimum price of shifu",
+        group="shifu",
+    ),
+    # TTS Configuration
+    "MINIMAX_API_KEY": EnvVar(
+        name="MINIMAX_API_KEY",
+        default="",
+        description="Minimax API key for TTS synthesis",
+        secret=True,
+        group="tts",
+    ),
+    "MINIMAX_GROUP_ID": EnvVar(
+        name="MINIMAX_GROUP_ID",
+        default="",
+        description="Minimax group ID for API access",
+        group="tts",
+    ),
+    "TTS_MAX_SEGMENT_CHARS": EnvVar(
+        name="TTS_MAX_SEGMENT_CHARS",
+        default=300,
+        type=int,
+        description="Maximum characters per TTS segment",
+        group="tts",
+    ),
+    "MINIMAX_TTS_SAMPLE_RATE": EnvVar(
+        name="MINIMAX_TTS_SAMPLE_RATE",
+        default=24000,
+        type=int,
+        description="TTS audio sample rate (8000-44100)",
+        group="tts",
+    ),
+    "MINIMAX_TTS_BITRATE": EnvVar(
+        name="MINIMAX_TTS_BITRATE",
+        default=128000,
+        type=int,
+        description="TTS audio bitrate (32000-256000)",
+        group="tts",
+    ),
+    # Volcengine TTS Configuration (shared by WebSocket + HTTP providers)
+    "VOLCENGINE_TTS_APP_KEY": EnvVar(
+        name="VOLCENGINE_TTS_APP_KEY",
+        default="",
+        description="Volcengine TTS app key/appid (used by both WebSocket and HTTP providers)",
+        secret=True,
+        group="tts",
+    ),
+    "VOLCENGINE_TTS_ACCESS_KEY": EnvVar(
+        name="VOLCENGINE_TTS_ACCESS_KEY",
+        default="",
+        description="Volcengine TTS access key/token (used by both WebSocket and HTTP providers)",
+        secret=True,
+        group="tts",
+    ),
+    "VOLCENGINE_TTS_CLUSTER_ID": EnvVar(
+        name="VOLCENGINE_TTS_CLUSTER_ID",
+        default="volcano_tts",
+        description="Volcengine TTS cluster for HTTP v1/tts (e.g., volcano_tts)",
+        group="tts",
+    ),
+    "VOLCENGINE_TTS_SAMPLE_RATE": EnvVar(
+        name="VOLCENGINE_TTS_SAMPLE_RATE",
+        default=24000,
+        type=int,
+        description="Volcengine TTS audio sample rate (8000-48000)",
+        group="tts",
+    ),
+    "VOLCENGINE_TTS_BITRATE": EnvVar(
+        name="VOLCENGINE_TTS_BITRATE",
+        default=128000,
+        type=int,
+        description="Volcengine TTS audio bitrate",
+        group="tts",
+    ),
+    # Baidu TTS Configuration
+    "BAIDU_TTS_API_KEY": EnvVar(
+        name="BAIDU_TTS_API_KEY",
+        default="",
+        description="Baidu TTS API Key",
+        secret=True,
+        group="tts",
+    ),
+    "BAIDU_TTS_SECRET_KEY": EnvVar(
+        name="BAIDU_TTS_SECRET_KEY",
+        default="",
+        description="Baidu TTS Secret Key",
+        secret=True,
+        group="tts",
+    ),
+    # Aliyun TTS Configuration
+    "ALIYUN_TTS_APPKEY": EnvVar(
+        name="ALIYUN_TTS_APPKEY",
+        default="",
+        description="Aliyun TTS Appkey from Intelligent Speech Interaction console",
+        secret=True,
+        group="tts",
+    ),
+    "ALIYUN_AK_ID": EnvVar(
+        name="ALIYUN_AK_ID",
+        default="",
+        description="Aliyun AccessKey ID used to create temporary NLS tokens via OpenAPI (CreateToken)",
+        secret=True,
+        group="tts",
+    ),
+    "ALIYUN_AK_SECRET": EnvVar(
+        name="ALIYUN_AK_SECRET",
+        default="",
+        description="Aliyun AccessKey Secret used to create temporary NLS tokens via OpenAPI (CreateToken)",
+        secret=True,
+        group="tts",
+    ),
+    "ALIYUN_TTS_TOKEN": EnvVar(
+        name="ALIYUN_TTS_TOKEN",
+        default="",
+        description="Aliyun NLS access token (manual override; if empty the backend auto-fetches and caches a temporary token)",
+        secret=True,
+        group="tts",
+    ),
+    "ALIYUN_TTS_REGION": EnvVar(
+        name="ALIYUN_TTS_REGION",
+        default="shanghai",
+        description="Aliyun TTS region (shanghai, beijing, shenzhen)",
+        group="tts",
+    ),
+    "ALIYUN_TTS_SAMPLE_RATE": EnvVar(
+        name="ALIYUN_TTS_SAMPLE_RATE",
+        default=16000,
+        type=int,
+        description="Aliyun TTS sample rate (8000, 16000, 24000)",
+        group="tts",
+    ),
+}
+
+# Derived Redis prefixes built from REDIS_KEY_PREFIX
+REDIS_KEY_SUFFIXES: Dict[str, str] = {
+    "REDIS_KEY_PREFIX_USER": "user:",
+    "REDIS_KEY_PREFIX_RESET_PWD": "reset_pwd:",
+    "REDIS_KEY_PREFIX_PHONE": "phone:",
+    "REDIS_KEY_PREFIX_PHONE_CODE": "phone_code:",
+    "REDIS_KEY_PREFIX_MAIL_CODE": "mail_code:",
+    "REDIS_KEY_PREFIX_MAIL_LIMIT": "mail_limit:",
+    "REDIS_KEY_PREFIX_PHONE_LIMIT": "phone_limit:",
+    "REDIS_KEY_PREFIX_IP_BAN": "ip_ban:",
+    "REDIS_KEY_PREFIX_IP_LIMIT": "ip_limit:",
 }
 
 
@@ -780,7 +1135,7 @@ class EnhancedConfig:
         self._cache: Dict[str, Any] = {}
         self._validated = False
 
-    def validate_environment(self) -> None:
+    def validate_environment(self, allow_conversion_errors: bool = False) -> None:
         """Validate all required environment variables at startup."""
         errors = []
         missing_required = []
@@ -793,6 +1148,7 @@ class EnhancedConfig:
             "ARK_API_KEY",
             "SILICON_API_KEY",
             "GLM_API_KEY",
+            "GEMINI_API_KEY",
             "DEEPSEEK_API_KEY",
             "QWEN_API_KEY",
             "BIGMODEL_API_KEY",
@@ -821,7 +1177,15 @@ class EnhancedConfig:
                             f"- {var_name}: Invalid value '{value}' - {env_var.description}"
                         )
                 except Exception as e:
-                    validation_errors.append(f"- {var_name}: {str(e)}")
+                    # For optional fields, log and continue; required fields remain fatal
+                    if env_var.required or not allow_conversion_errors:
+                        validation_errors.append(f"- {var_name}: {str(e)}")
+                    else:
+                        logging.getLogger(__name__).warning(
+                            "Non-fatal config conversion issue for %s: %s",
+                            var_name,
+                            str(e),
+                        )
         if missing_required:
             errors.append(
                 "Missing required environment variables (must be set in environment):\n"
@@ -937,6 +1301,10 @@ class EnhancedConfig:
                 print(item)
         print("\n" + "=" * 30 + "\n")
 
+    def export_env_example(self) -> str:
+        """Export full environment variable definitions as .env.example format."""
+        return self.export_env_example_filtered(filter_type="all")
+
     def export_env_example_filtered(self, filter_type: str = "all") -> str:
         """Export environment variable definitions as .env.example format with filtering.
 
@@ -946,17 +1314,28 @@ class EnhancedConfig:
         Returns:
             Formatted .env.example content as string
         """
+
+        # Format values for .env output, handling lists as comma-separated strings
+        def format_value(env_var: EnvVar, value: Any) -> str:
+            if value is None:
+                return ""
+            if env_var.type is list:
+                if isinstance(value, list):
+                    return ",".join(str(item) for item in value)
+                return str(value)
+            return str(value)
+
         if filter_type == "required":
             header_lines = [
-                "# AI-Shifu Environment Configuration - MINIMAL REQUIRED SET",
-                "# This file contains only the required environment variables that MUST be set",
-                "# For the complete list of configurable options, see .env.example.full\n",
+                "# AI-Shifu Environment Configuration - REQUIRED VARIABLES",
+                "# These are the bare minimum values that must be set.",
+                "# Start from docker/.env.example.full and configure at least one LLM API key.\n",
             ]
         else:
             header_lines = [
                 "# AI-Shifu Environment Configuration - COMPLETE SET",
-                "# This file contains all available environment variables with their defaults",
-                "# For a minimal setup, see .env.example.minimal\n",
+                "# Copy this file to docker/.env (or .env) to boot the Docker stack with sane defaults",
+                "# Set at least one LLM API key (e.g., OPENAI_API_KEY) before using in production.\n",
             ]
 
         lines = header_lines
@@ -983,6 +1362,9 @@ class EnhancedConfig:
             lines.append(f"#{'=' * 60}\n")
 
             for env_var in sorted(vars, key=lambda x: x.name):
+                example_value = (
+                    env_var.example if env_var.example is not None else env_var.default
+                )
                 if env_var.description:
                     # Handle multi-line descriptions
                     description_lines = env_var.description.strip().split("\n")
@@ -996,34 +1378,41 @@ class EnhancedConfig:
                 elif env_var.default is None:
                     metadata.append("Optional - handled by libraries")
                 else:
-                    metadata.append(f"Optional - default: {env_var.default}")
+                    # Avoid leaking secret defaults
+                    default_display = ""
+                    if not (
+                        env_var.secret
+                        and env_var.example is None
+                        and env_var.default not in (None, "")
+                    ):
+                        default_display = format_value(env_var, env_var.default)
+                    metadata.append(f"Optional - default: {default_display}")
 
+                # Emit metadata on separate lines for readability and testing expectations
+                for item in metadata:
+                    lines.append(f"# ({item})")
                 if env_var.type is not str:
-                    metadata.append(f"Type: {env_var.type.__name__}")
-
+                    lines.append(f"# Type: {env_var.type.__name__}")
                 if env_var.validator:
-                    metadata.append("Has validation")
-
+                    lines.append("# (Has validation)")
                 if env_var.secret:
-                    metadata.append("Secret value")
-
-                if metadata:
-                    lines.append(f"# ({', '.join(metadata)})")
+                    lines.append("# Secret value")
 
                 # Set the value
                 if env_var.required:
-                    # Required variables should not have a preset value
-                    value = ""
+                    # Required variables can expose a sample value if provided
+                    value = example_value if example_value is not None else ""
                 else:
-                    default_value = (
-                        env_var.default if env_var.default is not None else ""
-                    )
-                    if env_var.secret and default_value:
+                    value = example_value if example_value is not None else ""
+                    if (
+                        env_var.secret
+                        and env_var.example is None
+                        and env_var.default not in (None, "")
+                    ):
                         value = ""
-                    else:
-                        value = default_value
 
-                lines.append(f'{env_var.name}="{value}"')
+                value_str = format_value(env_var, value)
+                lines.append(f'{env_var.name}="{value_str}"')
                 lines.append("")
 
         # Add footer
@@ -1052,14 +1441,18 @@ class Config(FlaskConfig):
         self.parent = parent
         self.app = app
         self.enhanced = __ENHANCED_CONFIG__
+        # Reset shared cache per initialization to avoid cross-app contamination
+        self.enhanced._cache.clear()
+        self.enhanced._validated = False
         __INSTANCE__ = self
         # Validate environment on initialization
         try:
-            self.enhanced.validate_environment()
+            self.enhanced.validate_environment(allow_conversion_errors=True)
             app.logger.info("Environment configuration validated successfully")
         except EnvironmentConfigError as e:
             app.logger.error(f"Environment configuration error: {e}")
             raise
+        self._populate_redis_prefixes()
 
     def __getitem__(self, key: Any) -> Any:
         """Get configuration value using enhanced config first, with fallback to parent."""
@@ -1069,8 +1462,11 @@ class Config(FlaskConfig):
         """Get configuration attribute using enhanced config first."""
         try:
             return self.enhanced.get(key)
+        except EnvironmentConfigError:
+            # Fall back to parent on validation errors
+            return getattr(self.parent, key)
         except Exception:
-            return self.parent.__getattr__(key)
+            return getattr(self.parent, key)
 
     def __setitem__(self, key: Any, value: Any) -> None:
         """Set configuration value."""
@@ -1079,6 +1475,18 @@ class Config(FlaskConfig):
         # Clear cache
         if key in self.enhanced._cache:
             del self.enhanced._cache[key]
+
+    def _populate_redis_prefixes(self) -> None:
+        """Populate derived Redis key prefixes from the global prefix."""
+        base_prefix = self.enhanced.get_str("REDIS_KEY_PREFIX")
+        for key, suffix in REDIS_KEY_SUFFIXES.items():
+            env_value = os.environ.get(key)
+            derived_value = (
+                env_value.strip()
+                if env_value is not None and env_value.strip()
+                else f"{base_prefix}{suffix}"
+            )
+            self.parent.setdefault(key, derived_value)
 
     def get(self, key: Any, default: Any = None) -> Any:
         """Get configuration value with fallback to parent and optional default.
@@ -1093,12 +1501,23 @@ class Config(FlaskConfig):
             The configuration value, or default if not found
         """
         # Try enhanced config first
-        value = self.enhanced.get(key)
-        if value is not None:
-            return value
+        try:
+            value = self.enhanced.get(key)
+            if value is not None:
+                return value
+        except EnvironmentConfigError:
+            # Defer to parent/default when enhanced config refuses
+            # Try parent __getitem__ as next priority
+            try:
+                return self.parent.__getitem__(key)
+            except Exception:
+                return default
 
         # Fallback to parent Flask config
-        value = self.parent.get(key, None)
+        try:
+            value = self.parent.get(key, None)
+        except Exception:
+            value = None
         if value is not None:
             return value
 
@@ -1144,9 +1563,12 @@ class Config(FlaskConfig):
         This method maintains compatibility with Flask's Config.setdefault() API.
         """
         # Check enhanced config first
-        value = self.enhanced.get(key)
-        if value is not None:
-            return value
+        try:
+            value = self.enhanced.get(key)
+            if value is not None:
+                return value
+        except EnvironmentConfigError:
+            pass
 
         # Use parent's setdefault for consistency
         return self.parent.setdefault(key, default)

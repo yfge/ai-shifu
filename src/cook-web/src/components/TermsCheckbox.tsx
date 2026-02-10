@@ -1,6 +1,10 @@
+import { useCallback } from 'react';
+import type { MouseEvent, TouchEvent } from 'react';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { cn } from '@/lib/utils';
 import { Trans, useTranslation } from 'react-i18next';
+import { useEnvStore } from '@/c-store';
+import { EnvStoreState } from '@/c-types/store';
 
 interface TermsCheckboxProps {
   checked: boolean;
@@ -15,47 +19,64 @@ export function TermsCheckbox({
   disabled = false,
   className,
 }: TermsCheckboxProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const legalUrls = useEnvStore((state: EnvStoreState) => state.legalUrls);
+  const stopLabelInteraction = useCallback(
+    (event: MouseEvent<HTMLAnchorElement> | TouchEvent<HTMLAnchorElement>) => {
+      // Prevent the label from swallowing anchor clicks so the links remain clickable
+      event.stopPropagation();
+    },
+    [],
+  );
+
+  // Get current language URL
+  const currentLang = (i18n.language || 'en-US') as 'zh-CN' | 'en-US';
+  const agreementUrl = legalUrls?.agreement?.[currentLang] || '';
+  const privacyUrl = legalUrls?.privacy?.[currentLang] || '';
   return (
-    <div
-      className={cn(
-        'flex flex-col items-center gap-2 text-center sm:flex-row sm:items-center sm:gap-2 sm:text-left',
-        className,
-      )}
-    >
+    <div className={cn('flex flex-row items-start gap-2 text-left', className)}>
       <Checkbox
         id='terms'
         checked={checked}
         onCheckedChange={value => onCheckedChange(Boolean(value))}
         disabled={disabled}
+        className='mt-[1px]'
       />
       <label
         htmlFor='terms'
-        className='block text-center text-sm font-medium leading-snug peer-disabled:cursor-not-allowed peer-disabled:opacity-70 sm:text-left'
+        className='block text-left text-sm font-medium leading-snug peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
       >
         <Trans
-          i18nKey='auth.readAndAgree'
+          i18nKey='module.auth.readAndAgree'
           components={{
-            serviceAgreement: (
+            serviceAgreement: agreementUrl ? (
               <a
-                href='/agreement'
+                href={agreementUrl}
                 target='_blank'
                 rel='noopener noreferrer'
                 className='text-primary hover:underline mx-1'
+                onClick={stopLabelInteraction}
+                onTouchStart={stopLabelInteraction}
               />
+            ) : (
+              <span className='mx-1' />
             ),
-            privacyPolicy: (
+            privacyPolicy: privacyUrl ? (
               <a
-                href='/privacy'
+                href={privacyUrl}
                 target='_blank'
                 rel='noopener noreferrer'
                 className='text-primary hover:underline mx-1'
+                onClick={stopLabelInteraction}
+                onTouchStart={stopLabelInteraction}
               />
+            ) : (
+              <span className='mx-1' />
             ),
           }}
           values={{
-            serviceLabel: t('auth.serviceAgreement'),
-            privacyLabel: t('auth.privacyPolicy'),
+            serviceLabel: t('module.auth.serviceAgreement'),
+            privacyLabel: t('module.auth.privacyPolicy'),
           }}
         />
       </label>

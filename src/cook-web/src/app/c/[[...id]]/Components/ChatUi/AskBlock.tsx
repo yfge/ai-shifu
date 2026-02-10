@@ -7,14 +7,13 @@ import React, {
 } from 'react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
-import { Send, Maximize2, Minimize2, X } from 'lucide-react';
-import { ContentRender } from 'markdown-flow-ui';
+import { Maximize2, Minimize2, X } from 'lucide-react';
+import { ContentRender, MarkdownFlowInput } from 'markdown-flow-ui/renderer';
 import {
+  checkIsRunning,
   getRunMessage,
   SSE_INPUT_TYPE,
   SSE_OUTPUT_TYPE,
-  PREVIEW_MODE,
-  type PreviewMode,
 } from '@/c-api/studyV2';
 import { fixMarkdownStream } from '@/c-utils/markdownUtils';
 import LoadingBar from './LoadingBar';
@@ -24,7 +23,8 @@ import { AppContext } from '../AppContext';
 import Image from 'next/image';
 import ShifuIcon from '@/c-assets/newchat/light/icon_shifu.svg';
 import { BLOCK_TYPE } from '@/c-api/studyV2';
-
+import { Avatar, AvatarImage } from '@/components/ui/Avatar';
+import { useCourseStore } from '@/c-store/useCourseStore';
 export interface AskMessage {
   type: typeof BLOCK_TYPE.ASK | typeof BLOCK_TYPE.ANSWER;
   content: string;
@@ -37,28 +37,30 @@ export interface AskBlockProps {
   isExpanded?: boolean;
   shifu_bid: string;
   outline_bid: string;
-  preview_mode?: PreviewMode;
+  preview_mode?: boolean;
   generated_block_bid: string;
   onToggleAskExpanded?: (generated_block_bid: string) => void;
 }
 
 /**
  * AskBlock
- * 追问区域组件，包含问答对话列表和自定义输入框，支持流式渲染
+ * Follow-up area component that contains the Q&A list and custom input box with streaming support
  */
 export default function AskBlock({
   askList = [],
   className,
-  isExpanded = false,
+  isExpanded = undefined,
   shifu_bid,
   outline_bid,
-  preview_mode = PREVIEW_MODE.NORMAL,
+  preview_mode = false,
   generated_block_bid,
   onToggleAskExpanded,
 }: AskBlockProps) {
   const { t } = useTranslation();
+  const copyButtonText = t('module.renderUi.core.copyCode');
+  const copiedButtonText = t('module.renderUi.core.copied');
   const { mobileStyle } = useContext(AppContext);
-
+  const courseAvatar = useCourseStore(state => state.courseAvatar);
   const [displayList, setDisplayList] = useState<AskMessage[]>(() => {
     return askList.map(item => ({
       content: item.content || '',
@@ -66,41 +68,42 @@ export default function AskBlock({
     }));
   });
 
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [inputValue, setInputValue] = useState('');
   const sseRef = useRef<any>(null);
   const currentContentRef = useRef<string>('');
   const isStreamingRef = useRef(false);
-  const [isTypeFinished, setIsTypeFinished] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showMobileDialog, setShowMobileDialog] = useState(askList.length > 0);
   const mobileContentRef = useRef<HTMLDivElement | null>(null);
+  const inputWrapperRef = useRef<HTMLDivElement | null>(null);
+  const expanded = isExpanded ?? (!mobileStyle && askList.length > 0);
   const showOutputInProgressToast = useCallback(() => {
     toast({
-      title: t('chat.outputInProgress'),
+      title: t('module.chat.outputInProgress'),
     });
   }, [t]);
 
-  const handleSendCustomQuestion = useCallback(() => {
-    const question = inputRef.current?.value.trim() || '';
+  const handleSendCustomQuestion = useCallback(async () => {
+    const question = inputValue.trim();
     if (isStreamingRef.current) {
       showOutputInProgressToast();
       return;
     }
 
-    if (!isTypeFinished) {
-      showOutputInProgressToast();
-      return;
-    }
     if (!question) {
       return;
     }
+    const runningRes = await checkIsRunning(shifu_bid, outline_bid);
+    if (runningRes.is_running) {
+      showOutputInProgressToast();
+      return;
+    }
 
-    // 关闭之前的 SSE 连接
+    // Close any previous SSE connection
     sseRef.current?.close();
-    setIsTypeFinished(false);
     setShowMobileDialog(true);
 
-    // 将新问题作为用户消息追加到列表末尾
+    // Append the new question as a user message at the end
     setDisplayList(prev => [
       ...prev,
       {
@@ -109,12 +112,9 @@ export default function AskBlock({
       },
     ]);
 
-    // 清空输入框
-    if (inputRef.current) {
-      inputRef.current.value = '';
-    }
+    setInputValue('');
 
-    // 添加一个空的老师回复占位，准备接收流式内容
+    // Add an empty teacher reply placeholder to receive streaming content
     setDisplayList(prev => [
       ...prev,
       {
@@ -124,11 +124,11 @@ export default function AskBlock({
       },
     ]);
 
-    // 重置流式内容缓存
+    // Reset the streaming content buffer
     currentContentRef.current = '';
     isStreamingRef.current = true;
 
-    // 发起 SSE 请求
+    // Initiate the SSE request
     const source = getRunMessage(
       shifu_bid,
       outline_bid,
@@ -137,20 +137,21 @@ export default function AskBlock({
         input: question,
         input_type: SSE_INPUT_TYPE.ASK,
         reload_generated_block_bid: generated_block_bid,
+        listen: false,
       },
       async response => {
         try {
-          setIsTypeFinished(false);
-          console.log('SSE response:', response);
-
+          if (response.type === SSE_OUTPUT_TYPE.HEARTBEAT) {
+            return;
+          }
           if (response.type === SSE_OUTPUT_TYPE.CONTENT) {
-            // 流式内容
+            // Streaming content
             const prevText = currentContentRef.current || '';
             const delta = fixMarkdownStream(prevText, response.content || '');
             const nextText = prevText + delta;
             currentContentRef.current = nextText;
 
-            // 更新最后一条老师消息的内容
+            // Update the content of the last teacher message
             setDisplayList(prev => {
               const newList = [...prev];
               const lastIndex = newList.length - 1;
@@ -166,15 +167,8 @@ export default function AskBlock({
               }
               return newList;
             });
-          }
-          // if (
-          //   response.type === SSE_OUTPUT_TYPE.BREAK ||
-          //   response.type === SSE_OUTPUT_TYPE.TEXT_END ||
-          //   response.type === SSE_OUTPUT_TYPE.INTERACTION
-          // )
-          else {
-            // 流式结束
-            console.log('SSE end, close sse:', response);
+          } else {
+            // Streaming finished
             isStreamingRef.current = false;
             setDisplayList(prev => {
               const newList = [...prev];
@@ -192,16 +186,14 @@ export default function AskBlock({
             });
             sseRef.current?.close();
           }
-        } catch (error) {
-          console.warn('SSE handling error:', error);
+        } catch {
           isStreamingRef.current = false;
         }
       },
     );
 
-    // 添加错误和连接关闭的监听，确保状态被重置
+    // Add error and close listeners to ensure the state resets
     source.addEventListener('error', () => {
-      console.log('SSE error');
       isStreamingRef.current = false;
       setDisplayList(prev => {
         const newList = [...prev];
@@ -217,9 +209,10 @@ export default function AskBlock({
     });
 
     source.addEventListener('readystatechange', () => {
-      console.log('SSE readystatechange:', source.readyState);
       // readyState: 0=CONNECTING, 1=OPEN, 2=CLOSED
-      if (source.readyState === 2) {
+      if (source.readyState === 1) {
+        isStreamingRef.current = true;
+      } else if (source.readyState === 2) {
         isStreamingRef.current = false;
         setDisplayList(prev => {
           const newList = [...prev];
@@ -241,19 +234,24 @@ export default function AskBlock({
     outline_bid,
     preview_mode,
     generated_block_bid,
-    isTypeFinished,
+    inputValue,
     showOutputInProgressToast,
   ]);
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setInputValue(e.target.value);
+    },
+    [],
+  );
 
-  // 决定显示哪些消息
-  const messagesToShow = isExpanded ? displayList : displayList.slice(0, 1);
-  // console.log('displayList:',isExpanded,messagesToShow);
+  // Decide which messages to display
+  const messagesToShow = expanded ? displayList : displayList.slice(0, 1);
 
   useEffect(() => {
-    if (!isExpanded) {
+    if (!expanded) {
       setIsFullscreen(false);
     }
-  }, [isExpanded]);
+  }, [expanded]);
 
   useEffect(() => {
     return () => {
@@ -268,7 +266,7 @@ export default function AskBlock({
   }, [askList.length]);
 
   useEffect(() => {
-    if (!mobileStyle || !isExpanded) {
+    if (!mobileStyle || !expanded) {
       return;
     }
 
@@ -282,10 +280,10 @@ export default function AskBlock({
     return () => {
       document.body.style.overflow = originalOverflow;
     };
-  }, [mobileStyle, isExpanded]);
+  }, [mobileStyle, expanded]);
 
   useEffect(() => {
-    if (!mobileStyle || !showMobileDialog || !isExpanded) {
+    if (!mobileStyle || !showMobileDialog || !expanded) {
       return;
     }
 
@@ -301,7 +299,7 @@ export default function AskBlock({
     return () => {
       cancelAnimationFrame(rafId);
     };
-  }, [mobileStyle, showMobileDialog, isExpanded, messagesToShow.length]);
+  }, [mobileStyle, showMobileDialog, expanded, messagesToShow.length]);
 
   const handleClose = useCallback(() => {
     setIsFullscreen(false);
@@ -313,14 +311,43 @@ export default function AskBlock({
     setIsFullscreen(prev => !prev);
   }, []);
 
+  const focusAskInput = useCallback(() => {
+    // Auto focus the follow-up textarea so the cursor is ready after expanding
+    // if (!inputWrapperRef.current) {
+    //   return null;
+    // }
+    // const focusable = inputWrapperRef.current.querySelector<
+    //   HTMLTextAreaElement | HTMLInputElement | HTMLElement
+    // >('textarea, input, [contenteditable="true"]');
+    // if (focusable && typeof focusable.focus === 'function') {
+    //   return requestAnimationFrame(() => {
+    //     focusable.focus({ preventScroll: true });
+    //   });
+    // }
+    // return null;
+  }, []);
+
+  useEffect(() => {
+    if (!expanded) {
+      return;
+    }
+    const rafId = focusAskInput() ?? null;
+    return () => {
+      // Cancel RAF to avoid focusing after unmount or quick collapse
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+  }, [expanded, focusAskInput]);
+
   const handleClickTitle = useCallback(
     (index: number) => {
-      if (index !== 0 || isExpanded || !mobileStyle) {
+      if (index !== 0 || expanded || !mobileStyle) {
         return;
       }
       onToggleAskExpanded?.(generated_block_bid);
     },
-    [onToggleAskExpanded, generated_block_bid, isExpanded, mobileStyle],
+    [onToggleAskExpanded, generated_block_bid, expanded, mobileStyle],
   );
 
   const renderMessages = ({
@@ -338,7 +365,7 @@ export default function AskBlock({
         style={
           !mobileStyle
             ? {
-                marginBottom: isExpanded ? '12px' : '0',
+                marginBottom: expanded ? '12px' : '0',
               }
             : undefined
         }
@@ -357,7 +384,7 @@ export default function AskBlock({
               <div
                 className={cn(
                   styles.userMessage,
-                  isExpanded && styles.isExpanded,
+                  expanded && styles.isExpanded,
                 )}
               >
                 {message.content}
@@ -374,10 +401,11 @@ export default function AskBlock({
                   onSend={() => {}}
                   defaultButtonText={''}
                   defaultInputText={''}
-                  enableTypewriter={message.isStreaming === true}
-                  typingSpeed={60}
+                  enableTypewriter={false}
+                  typingSpeed={20}
                   readonly={true}
-                  onTypeFinished={() => setIsTypeFinished(true)}
+                  copyButtonText={copyButtonText}
+                  copiedButtonText={copiedButtonText}
                 />
               </div>
             )}
@@ -388,33 +416,25 @@ export default function AskBlock({
   };
 
   const renderInput = (extraClass?: string) => {
-    if (!isExpanded) {
+    if (!expanded) {
       return null;
     }
 
     return (
-      <div className={cn(styles.userInput, extraClass)}>
-        <input
-          ref={inputRef}
-          type='text'
-          placeholder={t('chat.askContent')}
-          className={cn('flex-1 outline-none border-none bg-transparent')}
-          onKeyDown={e => {
-            if (e.key === 'Enter') {
-              handleSendCustomQuestion();
-            }
-          }}
-        />
-        <button
-          onClick={handleSendCustomQuestion}
+      <div
+        className={cn(extraClass)}
+        ref={inputWrapperRef}
+      >
+        <MarkdownFlowInput
+          placeholder={t('module.chat.askContent')}
+          value={inputValue}
+          onChange={handleInputChange}
+          onSend={handleSendCustomQuestion}
           className={cn(
-            'flex items-center justify-center',
-            'cursor-pointer',
-            isStreamingRef.current || !isTypeFinished ? styles.isSending : '',
+            styles.inputGroup,
+            isStreamingRef.current ? styles.isSending : '',
           )}
-        >
-          <Send size={mobileStyle ? 18 : 12} />
-        </button>
+        />
       </div>
     );
   };
@@ -422,8 +442,8 @@ export default function AskBlock({
   if (mobileStyle && showMobileDialog && messagesToShow.length > 0) {
     return (
       <div className={cn(styles.askBlock, className, styles.mobile)}>
-        {!isExpanded && renderMessages()}
-        {isExpanded && (
+        {!expanded && renderMessages()}
+        {expanded && (
           <>
             <div
               className={styles.mobileOverlay}
@@ -437,14 +457,12 @@ export default function AskBlock({
             >
               <div className={styles.mobileHeader}>
                 <div className={styles.mobileTitle}>
-                  <Image
-                    src={ShifuIcon.src}
-                    alt='shifu icon'
-                    width={20}
-                    height={20}
-                    className={styles.mobileIcon}
-                  />
-                  <span>{t('chat.ask')}</span>
+                  {courseAvatar && (
+                    <Avatar className='w-7 h-7 mr-2'>
+                      <AvatarImage src={courseAvatar} />
+                    </Avatar>
+                  )}
+                  <span>{t('module.chat.ask')}</span>
                 </div>
                 <div className={styles.mobileActions}>
                   <button
@@ -493,8 +511,8 @@ export default function AskBlock({
         mobileStyle ? styles.mobile : '',
       )}
       style={{
-        marginTop: isExpanded || messagesToShow.length > 0 ? '8px' : '0',
-        padding: isExpanded || messagesToShow.length > 0 ? '16px' : '0',
+        marginTop: expanded || messagesToShow.length > 0 ? '8px' : '0',
+        padding: expanded || messagesToShow.length > 0 ? '16px' : '0',
       }}
     >
       {renderMessages()}

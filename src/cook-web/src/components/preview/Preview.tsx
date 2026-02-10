@@ -1,99 +1,58 @@
 import React, { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogTrigger,
-} from '@/components/ui/Dialog';
 import { Button } from '@/components/button';
-import { Switch } from '@/components/ui/Switch';
-import { PlayIcon } from 'lucide-react';
+import { Loader2, MonitorPlay, PlayIcon } from 'lucide-react';
 import { useShifu } from '@/store';
 import api from '@/api';
-import { useAlert } from '@/components/ui/UseAlert';
 import { useTranslation } from 'react-i18next';
+import { useTracking } from '@/c-common/hooks/useTracking';
 
 const PreviewSettingsModal = () => {
   const { t } = useTranslation();
-  const { showAlert } = useAlert();
-  const [open, setOpen] = useState(false);
   const { currentShifu, actions } = useShifu();
-
-  const [autoSkipEmptyFields, setAutoSkipEmptyFields] = useState(false);
+  const { trackEvent } = useTracking();
+  const [loading, setLoading] = useState(false);
 
   const handleStartPreview = async () => {
-    await actions.saveBlocks(currentShifu?.bid || '');
-    // Handle the start preview action
-    const result = await api.previewShifu({
-      shifu_bid: currentShifu?.bid || '',
-      skip: autoSkipEmptyFields,
-      variables: {},
-    });
-    setOpen(false);
-    showAlert({
-      title: t('preview.title'),
-      confirmText: t('preview.view'),
-      cancelText: t('preview.close'),
-      description: (
-        <div className='flex flex-col space-y-2'>
-          {t('preview.link')}：
-          <a
-            href={result}
-            target='_blank'
-            className='text-blue-500 hover:underline break-all'
-          >
-            {result}
-          </a>
-        </div>
-      ),
-      onConfirm: () => {
+    if (loading) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      if (!currentShifu?.readonly) {
+        await actions.saveMdflow();
+      }
+      trackEvent('creator_shifu_preview_click', {
+        shifu_bid: currentShifu?.bid || '',
+      });
+      const result = await api.previewShifu({
+        shifu_bid: currentShifu?.bid || '',
+        skip: false,
+        variables: {},
+      });
+      if (result) {
         window.open(result, '_blank');
-      },
-    });
+      }
+    } catch (error) {
+      console.error('Preview failed:', error);
+    } finally {
+      setLoading(false);
+    }
   };
   return (
-    <Dialog
-      open={open}
-      onOpenChange={setOpen}
-    >
-      <DialogTrigger asChild>
-        <Button
-          variant='ghost'
-          size='sm'
-          className='h-8 px-2 text-xs font-normal'
-        >
-          <PlayIcon /> {t('preview.preview')}
-        </Button>
-      </DialogTrigger>
-      <DialogContent className='sm:max-w-md'>
-        <DialogHeader>
-          <DialogTitle className='text-center text-xl font-medium'>
-            {t('preview.previewSettings')}
-          </DialogTitle>
-        </DialogHeader>
-
-        <div>
-          <div className='flex items-center justify-end space-x-2 mt-4'>
-            <span className='text-sm'>{t('preview.autoSkip')}</span>
-            <Switch
-              checked={autoSkipEmptyFields}
-              onCheckedChange={setAutoSkipEmptyFields}
-            />
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button
-            className='w-full bg-primary hover:bg-primary-lighter'
-            onClick={handleStartPreview}
-          >
-            {t('preview.startPreview')}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <div className='flex items-center justify-center h-9 rounded-lg cursor-pointer shifu-setting-icon-container ml-2'>
+      <Button
+        variant='ghost'
+        size='sm'
+        className='h-8 px-2 text-xs font-normal'
+        onClick={handleStartPreview}
+        disabled={loading}
+        loading={loading}
+      >
+        {loading ? null : <MonitorPlay className='h-4 w-4 mr-[5px]' />}{' '}
+        <span className='title'>{t('module.preview.previewAll')}</span>
+      </Button>
+    </div>
   );
 };
 

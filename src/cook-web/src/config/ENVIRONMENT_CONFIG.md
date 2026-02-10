@@ -10,7 +10,7 @@
 
 | 变量名                     | 用途       | 默认值                  |
 | -------------------------- | ---------- | ----------------------- |
-| `NEXT_PUBLIC_API_BASE_URL` | API基础URL | `http://localhost:8081` |
+| `NEXT_PUBLIC_API_BASE_URL` | API基础URL | `http://localhost:8080` |
 
 ### 2. 课程配置 (Course Configuration)
 
@@ -32,6 +32,9 @@
 | `NEXT_PUBLIC_UI_ALWAYS_SHOW_LESSON_TREE` | 是否始终显示课程树 | `false`  |
 | `NEXT_PUBLIC_UI_LOGO_HORIZONTAL`         | 水平Logo URL       | 空字符串 |
 | `NEXT_PUBLIC_UI_LOGO_VERTICAL`           | 垂直Logo URL       | 空字符串 |
+| `LOGO_WIDE_URL`                          | 运行时宽幅Logo URL | 空字符串 |
+| `LOGO_SQUARE_URL`                        | 运行时方形Logo URL | 空字符串 |
+| `FAVICON_URL`                            | 自定义 Favicon URL | 空字符串 |
 
 ### 5. 分析统计 (Analytics)
 
@@ -52,6 +55,26 @@
 | ----------------------------------- | -------------- | --------- | ------------------------------------------------------------------------------------------- |
 | `NEXT_PUBLIC_LOGIN_METHODS_ENABLED` | 启用的登录方式 | `"phone"` | `"phone"`, `"email"`, `"google"`, `"phone,email"`, `"phone,google"`, `"phone,email,google"` |
 | `NEXT_PUBLIC_DEFAULT_LOGIN_METHOD`  | 默认登录方式   | `"phone"` | `"phone"`, `"email"`, `"google"`                                                            |
+
+### 8. 支付配置 (Payment Configuration)
+
+| 变量名                               | 用途                              | 默认值   |
+| ------------------------------------ | --------------------------------- | -------- |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe前端可公开的Publishable Key | 空字符串 |
+| `NEXT_PUBLIC_STRIPE_ENABLED`         | 是否启用Stripe前端支付入口        | `false`  |
+
+### 9. 法律文档配置 (Legal Documents Configuration)
+
+| 变量名                      | 用途            | 默认值   | 说明                           |
+| --------------------------- | --------------- | -------- | ------------------------------ |
+| `LEGAL_AGREEMENT_URL_ZH_CN` | 中文服务协议URL | 空字符串 | 留空则不显示链接，显示为纯文本 |
+| `LEGAL_AGREEMENT_URL_EN_US` | 英文服务协议URL | 空字符串 | 留空则不显示链接，显示为纯文本 |
+| `LEGAL_PRIVACY_URL_ZH_CN`   | 中文隐私政策URL | 空字符串 | 留空则不显示链接，显示为纯文本 |
+| `LEGAL_PRIVACY_URL_EN_US`   | 英文隐私政策URL | 空字符串 | 留空则不显示链接，显示为纯文本 |
+
+**注意**: 这些配置由后端 `/api/config` API 返回。Cook Web 内置的 `/api/config` 仅返回后端地址 (`apiBaseUrl`)，实际配置均通过后端接口获取。
+
+- 前端不再读取除 `NEXT_PUBLIC_API_BASE_URL` 以外的 `NEXT_PUBLIC_*` 变量；这些值统一在后端环境/DB 中配置，并通过 `/api/runtime-config` 返回，避免前后端重复设置。
 
 ## 使用方式
 
@@ -77,6 +100,13 @@ const isPhoneEnabled = loginMethods.includes('phone');
 const isEmailEnabled = loginMethods.includes('email');
 const isGoogleEnabled = loginMethods.includes('google');
 const googleRedirect = '/login/google-callback';
+
+// Get legal document URLs (from /api/config)
+const legalUrls = environment.legalUrls;
+const agreementUrlZhCN = legalUrls.agreement['zh-CN']; // 中文服务协议URL
+const agreementUrlEnUS = legalUrls.agreement['en-US']; // 英文服务协议URL
+const privacyUrlZhCN = legalUrls.privacy['zh-CN']; // 中文隐私政策URL
+const privacyUrlEnUS = legalUrls.privacy['en-US']; // 英文隐私政策URL
 ```
 
 ### 在API路由中使用
@@ -86,9 +116,7 @@ import { environment } from '@/config/environment';
 
 export async function GET() {
   return NextResponse.json({
-    apiBaseUrl: environment.apiBaseUrl,
-    courseId: environment.courseId,
-    // ... other settings
+    apiBaseUrl: environment.apiBaseUrl, // Cook Web 本地接口只暴露后端地址
   });
 }
 ```
@@ -104,13 +132,16 @@ export async function GET() {
   "wechatAppId": "wx973eb6079c64d030",
   "enableWechatCode": true,
   "alwaysShowLessonTree": "true",
-  "logoHorizontal": "",
-  "logoVertical": "",
+  "logoWideUrl": "",
+  "logoSquareUrl": "",
+  "faviconUrl": "",
   "umamiScriptSrc": "https://umami.ai-shifu.com/script.js",
   "umamiWebsiteId": "f3108c8f-6898-4404-b6d7-fd076ad011db",
   "enableEruda": "false",
   "loginMethodsEnabled": ["phone"],
-  "defaultLoginMethod": "phone"
+  "defaultLoginMethod": "phone",
+  "stripePublishableKey": "pk_test_xxx",
+  "stripeEnabled": false
 }
 ```
 
@@ -289,6 +320,8 @@ NEXT_PUBLIC_DEBUG_ERUDA_ENABLED=false
 # ===== Authentication Configuration =====
 NEXT_PUBLIC_LOGIN_METHODS_ENABLED=phone
 NEXT_PUBLIC_DEFAULT_LOGIN_METHOD=phone
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
+NEXT_PUBLIC_STRIPE_ENABLED=false
 ```
 
 ### 生产环境 (docker.env.example)
@@ -319,6 +352,8 @@ NEXT_PUBLIC_DEBUG_ERUDA_ENABLED=false
 # ===== Authentication Configuration =====
 NEXT_PUBLIC_LOGIN_METHODS_ENABLED=phone
 NEXT_PUBLIC_DEFAULT_LOGIN_METHOD=phone
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_xxx
+NEXT_PUBLIC_STRIPE_ENABLED=true
 
 # ===== Docker Specific Configuration =====
 PORT=3000

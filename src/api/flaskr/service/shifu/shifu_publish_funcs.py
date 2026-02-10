@@ -13,36 +13,51 @@ from flaskr.dao import db
 from flaskr.service.shifu.models import (
     PublishedShifu,
     PublishedOutlineItem,
-    PublishedBlock,
     DraftOutlineItem,
-    DraftBlock,
     LogPublishedStruct,
 )
 from flaskr.service.shifu.shifu_outline_funcs import (
     build_outline_tree,
     ShifuOutlineTreeNode,
 )
-from flaskr.service.shifu.shifu_block_funcs import __get_block_list_internal
 from flaskr.service.shifu.shifu_history_manager import HistoryItem
 from flaskr.service.shifu.shifu_struct_manager import get_shifu_outline_tree
-from flaskr.common import get_config
 from flaskr.util import generate_id
 from datetime import datetime
-import json
 import threading
-from collections import defaultdict
 import queue
 from flaskr.service.shifu.shifu_struct_manager import ShifuInfoDto
 from flaskr.api.llm import invoke_llm
 from flaskr.api.langfuse import langfuse_client
+from flaskr.service.metering import UsageContext
+from flaskr.service.metering.consts import BILL_USAGE_SCENE_DEBUG
 from flaskr.util.prompt_loader import load_prompt_template
 from flaskr.service.shifu.consts import (
     ASK_MODE_ENABLE,
-    BLOCK_TYPE_CONTENT_VALUE,
+)
+from markdown_flow import (
+    MarkdownFlow,
+    BlockType,
+)
+from flaskr.common.i18n_utils import get_markdownflow_output_language
+from flaskr.common.shifu_context import (
+    get_shifu_context_snapshot,
+    apply_shifu_context_snapshot,
 )
 
 
-def preview_shifu_draft(app, user_id: str, shifu_id: str, variables: dict, skip: bool):
+def _build_frontend_url(base_url: str, path: str) -> str:
+    """
+    Build a frontend URL based on the provided base URL.
+    """
+    normalized_base = base_url.rstrip("/") if base_url else ""
+    cleaned_path = path if path.startswith("/") else f"/{path}"
+    return f"{normalized_base}{cleaned_path}" if normalized_base else cleaned_path
+
+
+def preview_shifu_draft(
+    app, user_id: str, shifu_id: str, variables: dict, base_url: str
+):
     """
     Preview shifu draft
     Args:
@@ -50,34 +65,37 @@ def preview_shifu_draft(app, user_id: str, shifu_id: str, variables: dict, skip:
         user_id: User ID
         shifu_id: Shifu ID
         variables: Variables
-        skip: Skip
+        base_url: Base URL to build preview link
     """
     with app.app_context():
         shifu_draft = get_latest_shifu_draft(shifu_id)
         if not shifu_draft:
-            raise_error("SHIFU.SHIFU_NOT_FOUND")
+            raise_error("server.shifu.shifuNotFound")
 
-        return (
-            get_config("WEB_URL")
-            + "/c/"
-            + shifu_id
-            + "?preview=true"
-            + "&skip="
-            + str(skip).lower()
-        )
+        return _build_frontend_url(base_url, f"/c/{shifu_id}?preview=true")
 
 
-def publish_shifu_draft(app, user_id: str, shifu_id: str):
+def publish_shifu_draft(
+    app,
+    user_id: str,
+    shifu_id: str,
+    base_url: str,
+    sync_summary: bool = False,
+):
     """
     Publish shifu draft
     will copy all draft data to published data
     and save history to database
-    and run summary generation in background
+    and run summary generation in background by default
     and return published shifu url
     Args:
         app: Flask application instance
         user_id: User ID
         shifu_id: Shifu ID
+        base_url: Base URL to build published link
+        sync_summary: If True, generate summary/ask prompts synchronously in the
+            current process (useful for one-off console commands). Default False
+            keeps existing async background behavior.
     Returns:
         str: Shifu published URL
     """
@@ -85,10 +103,9 @@ def publish_shifu_draft(app, user_id: str, shifu_id: str):
         now_time = datetime.now()
         shifu_draft = get_latest_shifu_draft(shifu_id)
         if not shifu_draft:
-            raise_error("SHIFU.SHIFU_NOT_FOUND")
+            raise_error("server.shifu.shifuNotFound")
         PublishedShifu.query.filter_by(shifu_bid=shifu_id).update({"deleted": 1})
         PublishedOutlineItem.query.filter_by(shifu_bid=shifu_id).update({"deleted": 1})
-        PublishedBlock.query.filter_by(shifu_bid=shifu_id).update({"deleted": 1})
         shifu_published = PublishedShifu()
         shifu_published.shifu_bid = shifu_id
         shifu_published.title = shifu_draft.title
@@ -98,8 +115,18 @@ def publish_shifu_draft(app, user_id: str, shifu_id: str):
         shifu_published.llm = shifu_draft.llm
         shifu_published.llm_temperature = shifu_draft.llm_temperature
         shifu_published.price = shifu_draft.price
+        shifu_published.created_user_bid = shifu_draft.created_user_bid
         shifu_published.updated_user_bid = user_id
         shifu_published.updated_at = now_time
+        shifu_published.llm_system_prompt = shifu_draft.llm_system_prompt
+        # TTS Configuration
+        shifu_published.tts_enabled = shifu_draft.tts_enabled
+        shifu_published.tts_provider = getattr(shifu_draft, "tts_provider", "") or ""
+        shifu_published.tts_model = getattr(shifu_draft, "tts_model", "") or ""
+        shifu_published.tts_voice_id = shifu_draft.tts_voice_id
+        shifu_published.tts_speed = shifu_draft.tts_speed
+        shifu_published.tts_pitch = shifu_draft.tts_pitch
+        shifu_published.tts_emotion = shifu_draft.tts_emotion
         db.session.add(shifu_published)
         db.session.flush()
         outline_tree = build_outline_tree(app, shifu_id)
@@ -133,38 +160,21 @@ def publish_shifu_draft(app, user_id: str, shifu_id: str):
             outline_item.content = draft_outline_item.content
             db.session.add(outline_item)
             db.session.flush()
+            markdown_flow = MarkdownFlow(
+                draft_outline_item.content
+            ).set_output_language(get_markdownflow_output_language())
+            blocks = markdown_flow.get_all_blocks()
             outline_item_history_item = HistoryItem(
-                bid=node.outline_id, id=outline_item.id, type="outline", children=[]
+                bid=node.outline_id,
+                id=outline_item.id,
+                type="outline",
+                children=[],
+                child_count=len(blocks),
             )
             history_item.children.append(outline_item_history_item)
             if node.children and len(node.children) > 0:
                 for child in node.children:
                     publish_outline_item(child, outline_item_history_item)
-            else:
-                draft_blocks: list[DraftBlock] = __get_block_list_internal(
-                    draft_outline_item.outline_item_bid
-                )
-                for block in draft_blocks:
-                    block_item = PublishedBlock()
-                    block_item.shifu_bid = shifu_id
-                    block_item.block_bid = block.block_bid
-                    block_item.position = block.position
-                    block_item.variable_bids = block.variable_bids
-                    block_item.resource_bids = block.resource_bids
-                    block_item.type = block.type
-                    block_item.created_user_bid = user_id
-                    block_item.created_at = now_time
-                    block_item.updated_user_bid = user_id
-                    block_item.updated_at = now_time
-                    block_item.outline_item_bid = draft_outline_item.outline_item_bid
-                    block_item.content = block.content
-                    db.session.add(block_item)
-                    db.session.flush()
-                    block_history_item = HistoryItem(
-                        bid=block.block_bid, id=block_item.id, type="block", children=[]
-                    )
-                    outline_item_history_item.children.append(block_history_item)
-                    db.session.flush()
 
         history_item = HistoryItem(
             bid=shifu_id, id=shifu_published.id, type="shifu", children=[]
@@ -180,16 +190,20 @@ def publish_shifu_draft(app, user_id: str, shifu_id: str):
         shifu_log_published_struct.created_at = now_time
         db.session.add(shifu_log_published_struct)
         db.session.commit()
-        thread = threading.Thread(
-            target=_run_summary_with_error_handling, args=(app, shifu_id)
-        )
-        thread.daemon = True  # Ensure thread doesn't prevent app shutdown
-        thread.start()
-        db.session.commit()
-        return get_config("WEB_URL") + "/c/" + shifu_id
+        parent_shifu_context = get_shifu_context_snapshot()
+        if sync_summary:
+            _run_summary_with_error_handling(app, shifu_id, parent_shifu_context)
+        else:
+            thread = threading.Thread(
+                target=_run_summary_with_error_handling,
+                args=(app, shifu_id, parent_shifu_context),
+            )
+            thread.daemon = True  # Ensure thread doesn't prevent app shutdown
+            thread.start()
+        return _build_frontend_url(base_url, f"/c/{shifu_id}")
 
 
-def _run_summary_with_error_handling(app, shifu_id):
+def _run_summary_with_error_handling(app, shifu_id, shifu_context_snapshot=None):
     """
     Run shifu summary generation with error handling
     Args:
@@ -197,6 +211,7 @@ def _run_summary_with_error_handling(app, shifu_id):
         shifu_id: Shifu ID
     """
     try:
+        apply_shifu_context_snapshot(shifu_context_snapshot)
         get_shifu_summary(app, shifu_id)
     except Exception as e:
         app.logger.error(f"Failed to generate shifu summary for {shifu_id}: {str(e)}")
@@ -224,13 +239,11 @@ def get_shifu_summary(app, shifu_id: str):
         ask_prompt_template = load_prompt_template("ask")
 
         # Get course data
-        outline_tree, outline_ids, all_blocks, lesson_map = _get_shifu_data(
-            app, shifu_id
-        )
+        outline_tree, outline_ids, outline_item_map = _get_shifu_data(app, shifu_id)
 
         # Generate summaries
         outline_summary_map = _generate_summaries(
-            app, outline_tree, all_blocks, lesson_map, summary_prompt_template, shifu
+            app, outline_tree, outline_item_map, summary_prompt_template, shifu
         )
 
         # Generate ask_prompt
@@ -239,7 +252,7 @@ def get_shifu_summary(app, shifu_id: str):
             outline_tree,
             outline_ids,
             outline_summary_map,
-            lesson_map,
+            outline_item_map,
             ask_prompt_template,
         )
         shifu.ask_enabled_status = ASK_MODE_ENABLE
@@ -302,7 +315,6 @@ def _generate_ask_prompts(
 def _generate_summaries(
     app,
     outline_tree: ShifuInfoDto,
-    all_blocks: dict[str, list[PublishedBlock]],
     outline_item_map: dict[str, PublishedOutlineItem],
     summary_prompt_template,
     shifu: PublishedShifu,
@@ -312,7 +324,6 @@ def _generate_summaries(
     Args:
         app: Flask application instance
         outline_tree: Outline tree
-        all_blocks: All block data
         outline_item_map: Outline item mapping
         summary_prompt_template: Summary template
         shifu: Course information
@@ -329,15 +340,21 @@ def _generate_summaries(
 
     for chapter in outline_tree.outline_items:
         for section in chapter.children:
-            section_blocks = all_blocks.get(section.bid, [])
-            content_blocks = [
-                block
-                for block in section_blocks
-                if block.type == BLOCK_TYPE_CONTENT_VALUE
-            ]
-            now_lesson_script_prompts = "".join(
-                json.loads(block.content)["content"] for block in content_blocks
-            )
+            outline_item = outline_item_map.get(section.bid)
+            now_lesson_script_prompts = ""
+            if outline_item and bool(outline_item.content):
+                app.logger.info(
+                    f"outline_item: {outline_item.outline_item_bid} has mdflow content,make summary from mdflow"
+                )
+                mdflow = MarkdownFlow(outline_item.content).set_output_language(
+                    get_markdownflow_output_language()
+                )
+                blocks = mdflow.get_all_blocks()
+                for block in blocks:
+                    if block.block_type == BlockType.CONTENT:
+                        now_lesson_script_prompts += "\n" + block.content
+            else:
+                now_lesson_script_prompts = outline_item.content
 
             final_prompt = summary_prompt_template.format(
                 all_script_content=now_lesson_script_prompts
@@ -373,7 +390,6 @@ def _get_shifu_data(
 ) -> tuple[
     ShifuInfoDto,
     list[str],
-    dict[str, list[PublishedBlock]],
     dict[str, PublishedOutlineItem],
 ]:
     """
@@ -382,7 +398,7 @@ def _get_shifu_data(
         app: Flask application instance
         shifu_id: shifu ID
     Returns:
-        (outline_tree, outline_ids, all_blocks, lesson_map)
+        (outline_tree, outline_ids, outline_item_map)
     """
 
     outline_ids = []
@@ -399,9 +415,6 @@ def _get_shifu_data(
             for child in item.children:
                 q.put(child)
 
-    # Get all section blocks
-    all_blocks = _get_all_publish_blocks(app, outline_ids)
-
     # Get all section data
     outline_items = (
         PublishedOutlineItem.query.filter(
@@ -415,7 +428,7 @@ def _get_shifu_data(
         outline_item.outline_item_bid: outline_item for outline_item in outline_items
     }
 
-    return shifu_outline_tree, outline_ids, all_blocks, outline_item_map
+    return shifu_outline_tree, outline_ids, outline_item_map
 
 
 def _make_ask_prompt(
@@ -437,25 +450,6 @@ def _make_ask_prompt(
         shifu_system_message="{shifu_system_message}",
     )
     return result
-
-
-def _get_all_publish_blocks(app, outline_ids: list[str]):
-    """
-    Return {outline_id: [block, ...]}, only contains STATUS_PUBLISH, and each group is sorted by script_index in ascending order
-    """
-    query = PublishedBlock.query.filter(
-        PublishedBlock.outline_item_bid.in_(outline_ids),
-        PublishedBlock.deleted == 0,
-    )
-    blocks: list[PublishedBlock] = query.all()
-    # Group by lesson_id
-    result = defaultdict(list)
-    for block in blocks:
-        result[block.outline_item_bid].append(block)
-    # Sort each group by script_index
-    for k in result:
-        result[k] = sorted(result[k], key=lambda b: b.position)
-    return dict(result)
 
 
 def _get_summary(app, prompt, model_name, user_id=None, temperature=0.8):
@@ -483,6 +477,14 @@ def _get_summary(app, prompt, model_name, user_id=None, temperature=0.8):
         prompt,
         temperature=temperature,
         generation_name="shifu_summary",
+        usage_context=UsageContext(
+            user_bid=user_id or "shifu-summary",
+            shifu_bid="",
+            usage_scene=BILL_USAGE_SCENE_DEBUG,
+            billable=0,
+        ),
+        usage_scene=BILL_USAGE_SCENE_DEBUG,
+        billable=0,
     )
     summary = ""
     for chunk in response:

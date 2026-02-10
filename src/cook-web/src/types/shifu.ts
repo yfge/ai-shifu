@@ -1,3 +1,6 @@
+import type { PreviewVariablesMap } from '@/components/lesson-preview/variableStorage';
+import type { LearningPermission } from '@/c-api/studyV2';
+
 export type BlockType =
   | 'content'
   | 'button'
@@ -7,6 +10,11 @@ export type BlockType =
   | 'goto'
   | 'input';
 
+export interface ModelOption {
+  value: string;
+  label: string;
+}
+
 export interface Shifu {
   bid: string;
   name?: string;
@@ -14,6 +22,10 @@ export interface Shifu {
   avatar?: string;
   state?: number;
   is_favorite?: boolean;
+  readonly?: boolean;
+  archived?: boolean;
+  created_user_bid?: string;
+  can_manage_archive?: boolean;
 }
 
 export interface Outline {
@@ -27,6 +39,17 @@ export interface Outline {
   depth?: number;
   status?: 'new' | 'edit' | 'saving';
   shifu_bid?: string;
+  is_hidden?: boolean;
+  type?: LearningPermission;
+  system_prompt?: string;
+  collapsed?: boolean;
+}
+
+export interface LessonCreationSettings {
+  name: string;
+  learningPermission: LearningPermission;
+  isHidden: boolean;
+  systemPrompt: string;
 }
 
 export interface Block {
@@ -43,12 +66,17 @@ export interface ColorSetting {
 }
 
 export interface ProfileItem {
+  profile_id?: string;
   profile_key: string;
   color_setting: ColorSetting;
   profile_type: string;
+  profile_scope?: string;
+  profile_scope_str?: string;
+  profile_remark?: string;
+  is_hidden?: boolean;
 }
 
-export interface ProfileItemDefination {
+export interface ProfileItemDefinition {
   profile_id: string;
   profile_key: string;
   value: string;
@@ -75,7 +103,13 @@ export interface ShifuState {
   blockErrors: { [x: string]: string | null };
   profileItemDefinations: ProfileItem[];
   currentNode: Outline | null;
-  models: string[];
+  models: ModelOption[];
+  mdflow: string;
+  variables: string[];
+  hiddenVariables: string[];
+  systemVariables: Record<string, string>[];
+  unusedVariables: string[];
+  hideUnusedMode: boolean;
 }
 
 export interface ApiResponse<T> {
@@ -94,27 +128,36 @@ export interface ReorderOutlineItemDto {
   children: ReorderOutlineItemDto[];
 }
 
+// Snapshot payload for mdflow saving to avoid relying on mutable state
+export interface SaveMdflowPayload {
+  shifu_bid?: string;
+  outline_bid?: string;
+  data?: string;
+}
+
 export interface ShifuActions {
   addChapter: (chapter: Outline) => void;
-  loadShifu: (shifuId: string) => Promise<void>;
+  addRootOutline: (settings: LessonCreationSettings) => Promise<void>;
+  loadShifu: (shifuId: string, options?: { silent?: boolean }) => Promise<void>;
   loadChapters: (shifuId: string) => Promise<void>;
   createChapter: (chapter: Omit<Outline, 'chapter_id'>) => Promise<void>;
   setChapters: (chapters: Outline[]) => void;
   setFocusId: (id: string) => void;
   setFocusValue: (value: string) => void;
-  updateOuline: (id: string, chapter: Outline) => Promise<void>;
-  addSubOutline: (parent: Outline, name: string) => Promise<void>;
-  addSiblingOutline: (item: Outline, name: string) => Promise<void>;
+  updateOutline: (id: string, chapter: Outline) => Promise<void>;
+  addSubOutline: (
+    parent: Outline,
+    settings: LessonCreationSettings,
+  ) => Promise<void>;
+  addSiblingOutline: (
+    item: Outline,
+    settings: LessonCreationSettings,
+  ) => Promise<void>;
   removeOutline: (item: Outline) => Promise<void>;
   replaceOutline: (id: string, outline: Outline) => Promise<void>;
   createOutline: (outline: Outline) => Promise<void>;
   createSiblingUnit: (chapter: Outline) => Promise<void>;
   loadBlocks: (outlineId: string, shifuId: string) => void;
-  addBlock: (
-    index: number,
-    type: BlockType,
-    shifuId: string,
-  ) => Promise<string>;
   setBlockContentPropertiesById: (
     id: string,
     properties: AIBlockProperties | SolidContentBlockProperties,
@@ -136,12 +179,10 @@ export interface ShifuActions {
   setBlocks: (blocks: Block[]) => void;
   saveBlocks: (shifuId: string) => Promise<void>;
   autoSaveBlocks: (
-    outline: string,
-    blocks: Block[],
-    blockTypes: Record<string, any>,
-    blockProperties: Record<string, any>,
-    shifuId: string,
+    payload?: SaveMdflowPayload,
   ) => Promise<ApiResponse<SaveBlockListResult> | null>;
+  flushAutoSaveBlocks: (payload?: SaveMdflowPayload) => void;
+  cancelAutoSaveBlocks: () => void;
   saveCurrentBlocks: (
     outline: string,
     blocks: Block[],
@@ -151,11 +192,55 @@ export interface ShifuActions {
   ) => Promise<ApiResponse<SaveBlockListResult> | null>;
   removeBlock: (id: string, shifuId: string) => Promise<void>;
   setCurrentNode: (node: Outline) => void;
-  loadModels: () => void;
+  loadModels: () => Promise<void>;
   setBlockError: (blockId: string, error: string | null) => void;
   clearBlockErrors: () => void;
   reorderOutlineTree: (outlines: ReorderOutlineItemDto[]) => Promise<void>;
   updateBlockProperties: (bid: string, properties: any) => Promise<void>;
+  loadMdflow: (outlineId: string, shifuId: string) => Promise<void>;
+  saveMdflow: (payload?: SaveMdflowPayload) => Promise<void>;
+  setCurrentMdflow: (value: string) => void;
+  getCurrentMdflow: () => string;
+  hasUnsavedMdflow: (outlineId?: string, value?: string) => boolean;
+  parseMdflow: (
+    value: string,
+    shifuId: string,
+    outlineId: string,
+  ) => Promise<void>;
+  previewParse: (
+    value: string,
+    shifuId: string,
+    outlineId: string,
+  ) => Promise<{
+    variables: PreviewVariablesMap;
+    blocksCount: number;
+    systemVariableKeys: string[];
+    allVariableKeys?: string[];
+    unusedKeys?: string[];
+  }>;
+  hideUnusedVariables: (shifuId: string) => Promise<void>;
+  restoreHiddenVariables: (shifuId: string) => Promise<void>;
+  hideVariableByKey: (shifuId: string, key: string) => Promise<void>;
+  unhideVariablesByKeys: (shifuId: string, keys: string[]) => Promise<void>;
+  refreshProfileDefinitions: (
+    shifuId: string,
+    options?: { forceRefresh?: boolean },
+  ) => Promise<{
+    list: ProfileItem[];
+    systemVariableKeys: string[];
+    unusedKeys?: string[];
+  }>;
+  refreshVariableUsage: (shifuId: string) => Promise<{
+    used_keys?: string[];
+    unused_keys?: string[];
+  } | null>;
+  syncHiddenVariablesToUsage: (
+    shifuId: string,
+    options?: { unusedKeys?: string[]; hiddenKeys?: string[] },
+  ) => Promise<void>;
+  insertPlaceholderChapter: () => void;
+  insertPlaceholderLesson: (parent: Outline) => void;
+  removePlaceholderOutline: (outline: Outline) => void;
 }
 
 export interface ShifuContextType extends ShifuState {

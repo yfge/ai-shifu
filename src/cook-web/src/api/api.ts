@@ -12,15 +12,17 @@
  */
 
 const api = {
+  // config
+  getRuntimeConfig: 'GET /config',
+
   // auth
   sendSmsCode: 'POST /user/send_sms_code',
-  sendMailCode: 'POST /user/send_mail_code',
   requireTmp: 'POST /user/require_tmp',
-  verifyMailCode: 'POST /user/verify_mail_code',
   verifySmsCode: 'POST /user/verify_sms_code',
   submitFeedback: 'POST /user/submit-feedback',
   googleOauthStart: 'GET /user/oauth/google',
   googleOauthCallback: 'GET /user/oauth/google/callback',
+  ensureAdminCreator: 'POST /user/ensure_admin_creator',
 
   // shifu api start
   getShifuList: 'GET /shifu/shifus',
@@ -29,6 +31,9 @@ const api = {
   saveShifuDetail: 'POST /shifu/shifus/{shifu_bid}/detail',
   publishShifu: 'POST /shifu/shifus/{shifu_bid}/publish',
   previewShifu: 'POST /shifu/shifus/{shifu_bid}/preview',
+  archiveShifu: 'POST /shifu/shifus/{shifu_bid}/archive',
+  unarchiveShifu: 'POST /shifu/shifus/{shifu_bid}/unarchive',
+  previewOutlineBlock: 'POST /learn/shifu/{shifu_bid}/preview/{outline_bid}',
   // shifu api end
 
   markFavoriteShifu: 'POST /shifu/mark-favorite-shifu',
@@ -40,6 +45,12 @@ const api = {
   modifyOutline: 'POST /shifu/shifus/{shifu_bid}/outlines/{outline_bid}',
   getOutlineInfo: 'GET /shifu/shifus/{shifu_bid}/outlines/{outline_bid}',
   reorderOutlineTree: 'PATCH /shifu/shifus/{shifu_bid}/outlines/reorder',
+
+  getMdflow: 'GET /shifu/shifus/{shifu_bid}/outlines/{outline_bid}/mdflow',
+  saveMdflow: 'POST /shifu/shifus/{shifu_bid}/outlines/{outline_bid}/mdflow',
+  parseMdflow:
+    'POST /shifu/shifus/{shifu_bid}/outlines/{outline_bid}/mdflow/parse',
+  runMdflow: 'POST /shifu/shifus/{shifu_bid}/outlines/{outline_bid}/mdflow/run',
   // outline api end
 
   // blocks api
@@ -66,11 +77,27 @@ const api = {
   upfileByUrl: 'POST /shifu/url-upfile',
   // resource api end
 
+  // TTS api
+  ttsPreview: 'POST /shifu/tts/preview',
+  ttsConfig: 'GET /shifu/tts/config',
+  // admin order api
+  getAdminOrders: 'GET /order/admin/orders',
+  getAdminOrderDetail: 'GET /order/admin/orders/{order_bid}',
+  getAdminOrderShifus: 'GET /order/admin/orders/shifus',
+  importActivationOrder: 'POST /order/admin/orders/import-activation',
+
   // profile
 
   saveProfile: 'POST /profiles/save-profile-item',
   deleteProfile: 'POST /profiles/delete-profile-item',
   getProfileList: 'GET /profiles/get-profile-item-definitions',
+  hideUnusedProfileItems: 'POST /profiles/hide-unused-profile-items',
+  getProfileVariableUsage: 'GET /profiles/profile-variable-usage',
+  updateProfileHiddenState: 'POST /profiles/update-profile-hidden-state',
+
+  // MDF Conversion
+  genMdfConvert: 'POST /gen_mdf/convert',
+  genMdfConfigStatus: 'GET /gen_mdf/config-status',
 };
 
 export default api;

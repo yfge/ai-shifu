@@ -3,6 +3,7 @@ import { useUserStore } from '@/store';
 import apiService from '@/api';
 import { useTranslation } from 'react-i18next';
 import type { UserInfo } from '@/c-types';
+import { useTracking } from '@/c-common/hooks/useTracking';
 
 interface ApiResponse {
   code: number;
@@ -21,12 +22,14 @@ interface LoginResponse extends ApiResponse {
 interface UseAuthOptions {
   onSuccess?: (userInfo: UserInfo) => void;
   onError?: (error: any) => void;
+  loginContext?: string;
 }
 
 export function useAuth(options: UseAuthOptions = {}) {
   const { toast } = useToast();
   const { login, logout } = useUserStore();
   const { t } = useTranslation();
+  const { trackEvent } = useTracking();
 
   // Generic wrapper for API calls with automatic token refresh on expiration
   const callWithTokenRefresh = async <T extends ApiResponse>(
@@ -54,20 +57,22 @@ export function useAuth(options: UseAuthOptions = {}) {
     // Skip token expiration as it's handled by retry logic
     if (code === 1005) return;
 
-    const title = t('auth.failed');
+    const title = t('module.auth.failed');
     let description: string;
 
     switch (code) {
       case 1001:
-        description = t('auth.credentialError');
+        description = t('module.auth.credentialError');
         break;
       case 1003:
         // For SMS context, 1003 means OTP expired; for email context, it means wrong credentials
         description =
-          context === 'sms' ? t('auth.otpExpired') : t('auth.credentialError');
+          context === 'sms'
+            ? t('module.auth.otpExpired')
+            : t('module.auth.credentialError');
         break;
       default:
-        description = message || t('common.networkError');
+        description = message || t('common.core.networkError');
     }
 
     toast({
@@ -78,13 +83,22 @@ export function useAuth(options: UseAuthOptions = {}) {
   };
 
   // Process login response
-  const processLoginResponse = async (response: LoginResponse) => {
+  const processLoginResponse = async (
+    response: LoginResponse,
+    loginMethod?: string,
+  ) => {
     if (response.code === 0 && response.data) {
       toast({
-        title: t('auth.success'),
+        title: t('module.auth.success'),
       });
       await login(response.data.userInfo, response.data.token);
       options.onSuccess?.(response.data.userInfo);
+      if (loginMethod) {
+        trackEvent('learner_login_success', {
+          user_id: response.data.userInfo?.user_id || '',
+          login_method: loginMethod,
+        });
+      }
       return true;
     }
     return false;
@@ -98,10 +112,15 @@ export function useAuth(options: UseAuthOptions = {}) {
   ) => {
     try {
       const response = await callWithTokenRefresh(() =>
-        apiService.verifySmsCode({ mobile, sms_code, language }),
+        apiService.verifySmsCode({
+          mobile,
+          sms_code,
+          language,
+          login_context: options.loginContext,
+        }),
       );
 
-      const success = await processLoginResponse(response);
+      const success = await processLoginResponse(response, 'sms');
       if (!success) {
         handleLoginError(
           response.code,
@@ -113,8 +132,8 @@ export function useAuth(options: UseAuthOptions = {}) {
       return response;
     } catch (error: any) {
       toast({
-        title: t('auth.failed'),
-        description: error.message || t('common.networkError'),
+        title: t('module.auth.failed'),
+        description: error.message || t('common.core.networkError'),
         variant: 'destructive',
       });
       options.onError?.(error);
@@ -131,15 +150,15 @@ export function useAuth(options: UseAuthOptions = {}) {
 
       if (response.code !== 0) {
         throw new Error(
-          response.message || response.msg || t('common.networkError'),
+          response.message || response.msg || t('common.core.networkError'),
         );
       }
 
       return response;
     } catch (error: any) {
       toast({
-        title: t('auth.sendFailed'),
-        description: error.message || t('common.networkError'),
+        title: t('module.auth.sendFailed'),
+        description: error.message || t('common.core.networkError'),
         variant: 'destructive',
       });
       throw error;

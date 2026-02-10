@@ -1,0 +1,47 @@
+{
+  "__namespace__": "common.core",
+  "adminTitle": "管理后台",
+  "all": "全部",
+  "archived": "归档",
+  "cancel": "取消",
+  "close": "关闭",
+  "collapse": "收起",
+  "companyAddress": "北京朝阳区望京东煌大厦19层163室",
+  "companyName": "北京潺潺山木科技有限公司",
+  "confirm": "确认",
+  "createBlankShifu": "新建课程",
+  "createFailed": "创建失败",
+  "createSuccess": "创建成功",
+  "createSuccessDescription": "新课程已创建",
+  "default": "默认",
+  "errorSaveFailed": "保存失败：服务器响应无效",
+  "expand": "展开",
+  "follow": "关注",
+  "logout": "退出",
+  "more": "更多",
+  "networkError": "网络错误,请稍后重试",
+  "noMoreShifus": "没有更多课程了",
+  "noShifus": "暂无课程",
+  "ok": "确定",
+  "retry": "重试",
+  "selectModel": "模型",
+  "settings": "设置",
+  "shifu": "课程",
+  "shortcut": {
+    "key": {
+      "cmd": "⌘",
+      "ctrl": "Ctrl",
+      "shift": "⇧",
+      "space": "空格"
+    },
+    "title": {
+      "ask": "追问",
+      "continue": "继续（无需用户输入或选择时）",
+      "shortcut": "显示快捷方式"
+    }
+  },
+  "submitFailed": "提交失败",
+  "submitting": "提交中...",
+  "unknownError": "未知错误",
+  "waitingForCompletion": "敬请期待"
+}

@@ -29,7 +29,7 @@ export default function GoogleCallbackPage() {
       console.info('[Google OAuth] running');
       try {
         const fallbackRedirect =
-          redirect && redirect.startsWith('/') ? redirect : '/main';
+          redirect && redirect.startsWith('/') ? redirect : undefined;
         console.info('[Google OAuth] exchanging token');
         const result = await finalizeGoogleLogin({
           code,
@@ -42,7 +42,7 @@ export default function GoogleCallbackPage() {
         window.location.assign(targetUrl);
       } catch (err: any) {
         console.error('[Google OAuth] finalize error', err);
-        setError(err?.message || t('auth.googleLoginError'));
+        setError(err?.message || t('module.auth.googleLoginError'));
         setTimeout(() => {
           const fallbackLoginUrl = `${window.location.origin}/login${
             redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''
@@ -60,11 +60,11 @@ export default function GoogleCallbackPage() {
   }, [code, finalizeGoogleLogin, redirect, router, state, t]);
 
   return (
-    <div className='min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4'>
+    <div className='min-h-screen flex items-center justify-center p-4'>
       <Card className='w-full max-w-sm'>
         <CardHeader>
           <CardTitle className='text-center'>
-            {t('auth.googleLoginProcessing')}
+            {t('module.auth.googleLoginProcessing')}
           </CardTitle>
         </CardHeader>
         <CardContent className='flex flex-col items-center space-y-4 text-center'>
@@ -77,7 +77,7 @@ export default function GoogleCallbackPage() {
             <>
               <Loader2 className='h-10 w-10 animate-spin text-primary' />
               <p className='text-sm text-muted-foreground'>
-                {t('auth.googleLoginRedirecting')}
+                {t('module.auth.googleLoginRedirecting')}
               </p>
             </>
           )}
