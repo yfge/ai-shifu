@@ -13,7 +13,8 @@ if os.name == "nt":
     os.system('tzutil /s "UTC"')
 else:
     # Load environment variables first so we can use get_config
-    load_dotenv()
+    if not os.getenv("SKIP_LOAD_DOTENV"):
+        load_dotenv()
     from flaskr.common.config import get_config
 
     timezone = get_config("TZ")
@@ -30,7 +31,17 @@ def create_app() -> Flask:
 
     pymysql.install_as_MySQLdb()
     app = Flask(__name__, instance_relative_config=True)
-    CORS(app, resources={r"/*": {"supports_credentials": True}})
+    CORS(
+        app,
+        resources={
+            r"/api/*": {
+                "origins": ["http://localhost:3000", "http://127.0.0.1:3000"],
+                "allow_headers": "*",
+                "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+            }
+        },
+        supports_credentials=True,
+    )
     from flaskr.common import Config, init_log
 
     app.config = Config(app.config, app)
@@ -51,6 +62,10 @@ def create_app() -> Flask:
 
     # init redis
     dao.init_redis(app)
+
+    from flaskr.service.user.auth import register_builtin_providers
+
+    register_builtin_providers()
 
     # Init LLM
     with app.app_context():
@@ -90,12 +105,14 @@ def create_app() -> Flask:
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(host="0.0.0.0", port=5800, debug=True)
+    # Only enable debug mode if explicitly running in development environment
+    app.run(host="0.0.0.0", port=5800, debug=app.config.get("ENV") == "development")
 else:
-    app = create_app()
-    from flaskr.framework.plugin.enable_plugin import enable_plugins
+    if not os.getenv("SKIP_APP_AUTOCREATE"):
+        app = create_app()
+        from flaskr.framework.plugin.enable_plugin import enable_plugins
 
-    enable_plugins(app)
-    from flaskr.command import enable_commands
+        enable_plugins(app)
+        from flaskr.command import enable_commands
 
-    enable_commands(app)
+        enable_commands(app)

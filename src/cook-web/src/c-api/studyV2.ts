@@ -1,9 +1,7 @@
 import { SSE } from 'sse.js';
 import request from '@/lib/request';
-import { tokenStore } from '@/c-service/storeUtil';
 import { v4 } from 'uuid';
-import { getStringEnv } from '@/c-utils/envUtils';
-import { useSystemStore } from '@/c-store/useSystemStore';
+import { getResolvedBaseURL } from '@/c-utils/envUtils';
 import { useUserStore } from '@/store/useUserStore';
 
 // ===== Constants  Types for shared literals =====
@@ -31,23 +29,35 @@ export const SSE_INPUT_TYPE = {
 export type SSE_INPUT_TYPE =
   (typeof SSE_INPUT_TYPE)[keyof typeof SSE_INPUT_TYPE];
 
-export const PREVIEW_MODE = {
-  COOK: 'cook',
-  PREVIEW: 'preview',
+// export const PREVIEW_MODE = {
+//   COOK: 'cook',
+//   PREVIEW: 'preview',
+//   NORMAL: 'normal',
+// } as const;
+// export type PreviewMode = (typeof PREVIEW_MODE)[keyof typeof PREVIEW_MODE];
+
+export const LEARNING_PERMISSION = {
   NORMAL: 'normal',
+  TRIAL: 'trial',
+  GUEST: 'guest',
 } as const;
-export type PreviewMode = (typeof PREVIEW_MODE)[keyof typeof PREVIEW_MODE];
+export type LearningPermission =
+  (typeof LEARNING_PERMISSION)[keyof typeof LEARNING_PERMISSION];
 
 // run sse output type
 export const SSE_OUTPUT_TYPE = {
   CONTENT: 'content',
   BREAK: 'break',
   ASK: 'ask',
-  TEXT_END: 'text_end',
+  TEXT_END: 'done',
   INTERACTION: 'interaction',
   OUTLINE_ITEM_UPDATE: 'outline_item_update',
+  HEARTBEAT: 'heartbeat',
   VARIABLE_UPDATE: 'variable_update',
   PROFILE_UPDATE: 'update_user_info', // TODO: update user_info
+  // Audio types for TTS
+  AUDIO_SEGMENT: 'audio_segment',
+  AUDIO_COMPLETE: 'audio_complete',
 } as const;
 export type SSE_OUTPUT_TYPE =
   (typeof SSE_OUTPUT_TYPE)[keyof typeof SSE_OUTPUT_TYPE];
@@ -67,6 +77,8 @@ export interface StudyRecordItem {
   like_status?: LikeStatus;
   user_input?: string;
   isHistory?: boolean;
+  audio_url?: string;
+  audio_list?: GeneratedAudioPartData[];
 }
 
 export interface LessonStudyRecords {
@@ -78,7 +90,7 @@ export interface GetLessonStudyRecordParams {
   shifu_bid: string;
   outline_bid: string;
   // Optional preview mode flag
-  preview_mode?: PreviewMode;
+  preview_mode?: boolean;
 }
 
 export interface PostGeneratedContentActionParams {
@@ -99,23 +111,72 @@ export interface PostGeneratedContentActionData {
   action: LikeStatus;
 }
 
+export interface RunningResult {
+  is_running: boolean;
+  running_time: number;
+}
+
+// Audio types for TTS
+export interface AudioSegmentData {
+  position?: number;
+  segment_index: number;
+  audio_data: string; // Base64 encoded
+  duration_ms: number;
+  is_final: boolean;
+}
+
+export interface AudioCompleteData {
+  position?: number;
+  audio_url: string;
+  audio_bid: string;
+  duration_ms: number;
+  is_last?: boolean;
+}
+
+export interface GeneratedAudioPartData {
+  position: number;
+  audio_url: string;
+  audio_bid: string;
+  duration_ms: number;
+}
+
+export interface StreamGeneratedBlockAudioParams {
+  shifu_bid: string;
+  generated_block_bid: string;
+  preview_mode?: boolean;
+  onMessage: (data: any) => void;
+  onError?: (error: unknown) => void;
+}
+
 export const getRunMessage = (
   shifu_bid: string,
   outline_bid: string,
-  preview_mode: PreviewMode = PREVIEW_MODE.NORMAL,
-  body: { input: Record<string, any> | string; [key: string]: any },
+  preview_mode: boolean,
+  body: {
+    input: Record<string, any> | string;
+    listen?: boolean;
+    [key: string]: any;
+  },
   onMessage: (data: any) => void,
 ) => {
   const token = useUserStore.getState().getToken();
   const payload = { ...body };
 
-  let baseURL = getStringEnv('baseURL');
-  if (baseURL === '' || baseURL === '/') {
-    baseURL = window.location.origin;
-  }
+  const baseURL = getResolvedBaseURL();
 
-  // TODO: MOCK
-  payload.input = Object.values(body.input).join('');
+  // Convert input values to array format for markdown-flow 0.2.27+
+  // Backend expects: { "variableName": ["value1", "value2"] }
+  if (typeof body.input === 'object' && body.input !== null) {
+    payload.input = Object.fromEntries(
+      Object.entries(body.input).map(([key, value]) => [
+        key,
+        Array.isArray(value) ? value : [value],
+      ]),
+    );
+  } else if (typeof body.input === 'string') {
+    // If input is string, use default 'input' as key
+    payload.input = { input: [body.input] };
+  }
   const source = new SSE(
     `${baseURL}/api/learn/shifu/${shifu_bid}/run/${outline_bid}?preview_mode=${preview_mode}`,
     {
@@ -133,12 +194,11 @@ export const getRunMessage = (
   source.addEventListener('message', event => {
     try {
       const response = JSON.parse(event.data);
-      console.log('[SSE response]', response);
       if (onMessage) {
         onMessage(response);
       }
-    } catch (e) {
-      console.log(e);
+    } catch {
+      // ignore malformed SSE payloads
     }
   });
 
@@ -146,27 +206,44 @@ export const getRunMessage = (
     console.error('[SSE error]', e);
   });
 
-  source.addEventListener('open', () => {
-    console.log('[SSE connection opened]');
+  source.stream();
+
+  return source;
+};
+
+const createSseSource = (
+  url: string,
+  payload: Record<string, unknown>,
+  onMessage: (data: any) => void,
+  onError?: (error: unknown) => void,
+) => {
+  const token = useUserStore.getState().getToken();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'X-Request-ID': v4().replace(/-/g, ''),
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+    headers.Token = token;
+  }
+
+  const source = new SSE(url, {
+    headers,
+    payload: JSON.stringify(payload),
+    method: 'POST',
   });
 
-  // sse.js may not support 'close' event, use readystatechange instead
-  source.addEventListener('readystatechange', () => {
-    console.log('[SSE readystatechange]', source.readyState);
-    // readyState: 0=CONNECTING, 1=OPEN, 2=CLOSED
-    if (source.readyState === 2) {
-      console.log('[SSE connection closed via readystatechange]');
+  source.addEventListener('message', event => {
+    try {
+      const response = JSON.parse(event.data);
+      onMessage(response);
+    } catch {
+      // ignore malformed SSE payloads
     }
   });
 
-  // Attempt standard close event (may not trigger)
-  source.addEventListener('close', () => {
-    console.log('[SSE connection closed via close event]');
-  });
-
-  // Add abort event listener (if supported)
-  source.addEventListener('abort', () => {
-    console.log('[SSE connection aborted]');
+  source.addEventListener('error', e => {
+    onError?.(e);
   });
 
   source.stream();
@@ -174,18 +251,30 @@ export const getRunMessage = (
   return source;
 };
 
+export const streamGeneratedBlockAudio = ({
+  shifu_bid,
+  generated_block_bid,
+  preview_mode = false,
+  onMessage,
+  onError,
+}: StreamGeneratedBlockAudioParams) => {
+  const baseURL = getResolvedBaseURL();
+  const url = `${baseURL}/api/learn/shifu/${shifu_bid}/generated-blocks/${generated_block_bid}/tts?preview_mode=${preview_mode}`;
+  return createSseSource(url, {}, onMessage, onError);
+};
+
 /**
- * 获取课程学习记录
+ * Fetch course study records
  * @param {*} lessonId
- *  shifu_bid : shifu_bid
-    outline_bid: 大纲bid
-    preview_mode: 是否为预览模式，可选值：　cook|preview|nomal ，为空时为normal
+ *  shifu_bid : shifu bid
+    outline_bid: outline bid
+    preview_mode: whether preview mode is enabled; possible values: cook | preview | normal (default is normal)
  * @returns
  */
 export const getLessonStudyRecord = async ({
   shifu_bid,
   outline_bid,
-  preview_mode = PREVIEW_MODE.NORMAL,
+  preview_mode = false,
 }: GetLessonStudyRecordParams): Promise<LessonStudyRecords> => {
   return request
     .get(
@@ -200,10 +289,10 @@ export const getLessonStudyRecord = async ({
 };
 
 /**
- * 点赞/点踩 生成内容
- * shifu_bid: shifu_bid
- * generated_block_bid: 生成内容bid
- * action: 动作 like|dislike|none
+ * Like or dislike generated content
+ * shifu_bid: shifu bid
+ * generated_block_bid: generated content bid
+ * action: action like | dislike | none
  * @param params
  * @returns
  */
@@ -215,3 +304,11 @@ export async function postGeneratedContentAction(
   // Use standard request wrapper; it will return response.data when code===0
   return request.post(url, params);
 }
+
+export const checkIsRunning = async (
+  shifu_bid: string,
+  outline_bid: string,
+): Promise<RunningResult> => {
+  const url = `/api/learn/shifu/${shifu_bid}/run/${outline_bid}`;
+  return request.get(url);
+};

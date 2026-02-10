@@ -6,10 +6,10 @@ const LoadingBar = () => {
   return (
     <span className='flex gap-[10px] items-center'>
       <Loader
-        className='animate-spin'
+        className='animate-[spin_1.8s_linear_infinite]'
         style={{ width: '15px', height: '15px' }}
       />
-      {t('chat.thinking')}
+      {t('module.chat.thinking')}
     </span>
   );
 };

@@ -3,7 +3,8 @@ import styles from './MainMenuModal.module.scss';
 import { memo, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useShallow } from 'zustand/react/shallow';
-import i18n from '@/i18n';
+import { normalizeLanguage } from '@/i18n';
+import { useSystemStore } from '@/c-store/useSystemStore';
 import api from '@/api';
 import {
   AlertDialog,
@@ -23,10 +24,10 @@ import { shifu } from '@/c-service/Shifu';
 import { useTracking, EVENT_NAMES } from '@/c-common/hooks/useTracking';
 
 import Image from 'next/image';
-import imgUserInfo from '@/c-assets/newchat/light/userInfo.png';
 import imgPersonal from '@/c-assets/newchat/light/personal.png';
 import imgMultiLanguage from '@/c-assets/newchat/light/multiLanguage.png';
 import imgSignIn from '@/c-assets/newchat/light/signin.png';
+import { Monitor, BookPlus } from 'lucide-react';
 
 import LanguageSelect from '@/components/language-select';
 
@@ -38,16 +39,20 @@ const MainMenuModal = ({
   className = '',
   onBasicInfoClick,
   onPersonalInfoClick,
+  isAdmin = false,
 }) => {
   const { t } = useTranslation();
 
   const htmlRef = useRef(null);
-  const { isLoggedIn, logout } = useUserStore(
+  const { isLoggedIn, logout, userInfo } = useUserStore(
     useShallow(state => ({
       logout: state.logout,
       isLoggedIn: state.isLoggedIn,
+      userInfo: state.userInfo,
     })),
   );
+
+  const isCreator = userInfo?.is_creator ?? false;
 
   const { trackEvent } = useTracking();
 
@@ -58,7 +63,6 @@ const MainMenuModal = ({
       shifu.loginTools.openLogin();
       return;
     }
-
     onBasicInfoClick?.();
   };
 
@@ -71,6 +75,15 @@ const MainMenuModal = ({
     }
 
     onPersonalInfoClick?.();
+  };
+
+  const onAdminEntryClick = (evt: React.MouseEvent) => {
+    evt.preventDefault();
+    evt.stopPropagation();
+    // Admin console handles login redirect and permission request internally
+    window.open('/admin', '_blank');
+    // @ts-expect-error EXPECT
+    onClose?.(evt);
   };
 
   const onLoginClick = () => {
@@ -96,22 +109,21 @@ const MainMenuModal = ({
     }
   };
 
-  const normalizeLanguage = (lang: string): string => {
-    const supportedLanguages = Object.values(
-      i18n.options.fallbackLng || {},
-    ).flat();
-    const normalizedLang = lang.replace('_', '-');
-    if (supportedLanguages.includes(normalizedLang)) {
-      return normalizedLang;
+  const updateLanguage = async (language: string) => {
+    const normalized = normalizeLanguage(language);
+    // Persist preference to backend (best-effort)
+    try {
+      await api.updateUserInfo({ language: normalized });
+    } catch (e) {
+      // Non-blocking: UI already switched via LanguageSelect
+      console.warn('Failed to persist language preference', e);
     }
-    return 'en-US';
-  };
-
-  const updateLanguage = (language: string) => {
-    // const normalizedLang = normalizeLanguage(language);
-    // i18n.changeLanguage(language);
-    // console.log('updateLanguage====', language);
-    api.updateUserInfo({ language });
+    // Update local store so pages relying on userInfo.language react immediately
+    useUserStore.getState().updateUserInfo({ language: normalized });
+    // Keep system store language in sync for APIs that read it
+    try {
+      useSystemStore.getState().updateLanguage(normalized);
+    } catch {}
   };
 
   return (
@@ -122,15 +134,17 @@ const MainMenuModal = ({
       >
         <AlertDialogContent className={mobileStyle ? 'w-[80%]' : ''}>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('user.confirmLogoutTitle')}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t('module.user.confirmLogoutTitle')}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              {t('user.confirmLogoutContent')}
+              {t('module.user.confirmLogoutContent')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.core.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={onLogoutConfirm}>
-              确认
+              {t('common.core.ok')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -150,36 +164,46 @@ const MainMenuModal = ({
           className={styles.mainMenuModal}
           ref={htmlRef}
         >
-          <div
-            className={cn(styles.mainMenuModalRow, 'px-2.5')}
-            onClick={onUserInfoClick}
-          >
-            <Image
-              className={styles.rowIcon}
-              width={16}
-              height={16}
-              src={imgUserInfo.src}
-              alt=''
-            />
-            <div className={styles.rowTitle}>
-              {t('menus.navigationMenus.basicInfo')}
-            </div>
-          </div>
-          <div
-            className={cn(styles.mainMenuModalRow, 'px-2.5')}
-            onClick={_onPersonalInfoClick}
-          >
-            <Image
-              className={styles.rowIcon}
-              width={16}
-              height={16}
-              src={imgPersonal.src}
-              alt=''
-            />
-            <div className={styles.rowTitle}>
-              {t('menus.navigationMenus.personalInfo')}
-            </div>
-          </div>
+          {!isAdmin && (
+            <>
+              <div
+                className={cn(styles.mainMenuModalRow, 'px-2.5')}
+                onClick={_onPersonalInfoClick}
+              >
+                <Image
+                  className={styles.rowIcon}
+                  width={16}
+                  height={16}
+                  src={imgPersonal.src}
+                  alt=''
+                />
+                <div className={styles.rowTitle}>
+                  {t('component.menus.navigationMenus.personalInfo')}
+                </div>
+              </div>
+              <div
+                className={cn(styles.mainMenuModalRow, 'px-2.5')}
+                onClick={onAdminEntryClick}
+              >
+                {isCreator ? (
+                  <Monitor
+                    className={styles.rowIcon}
+                    size={16}
+                  />
+                ) : (
+                  <BookPlus
+                    className={styles.rowIcon}
+                    size={16}
+                  />
+                )}
+                <div className={styles.rowTitle}>
+                  {isCreator
+                    ? t('component.menus.navigationMenus.adminConsole')
+                    : t('component.menus.navigationMenus.createCourse')}
+                </div>
+              </div>
+            </>
+          )}
 
           <div className={styles.languageRow}>
             <div
@@ -198,7 +222,7 @@ const MainMenuModal = ({
                   alt=''
                 />
                 <div className={styles.rowTitle}>
-                  {t('menus.navigationMenus.language')}
+                  {t('component.menus.navigationMenus.language')}
                 </div>
               </div>
               <div className={styles.languageRowRight}>
@@ -221,7 +245,7 @@ const MainMenuModal = ({
                 src={imgSignIn.src}
                 alt=''
               />
-              <div className={styles.rowTitle}>{t('user.login')}</div>
+              <div className={styles.rowTitle}>{t('module.user.login')}</div>
             </div>
           ) : (
             <div
@@ -235,7 +259,7 @@ const MainMenuModal = ({
                 src={imgSignIn.src}
                 alt=''
               />
-              <div className={styles.rowTitle}>{t('user.logout')}</div>
+              <div className={styles.rowTitle}>{t('module.user.logout')}</div>
             </div>
           )}
         </div>

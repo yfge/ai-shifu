@@ -3,12 +3,14 @@ import { debounce } from 'lodash';
 import { Input } from '../ui/Input';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
+import { TITLE_MAX_LENGTH } from '@/c-constants/uiConstants';
 interface InlineInputProps {
   isEdit?: boolean;
   value: string;
   onChange: (value: string) => void;
   className?: string;
   onFocus?: () => void;
+  disabled?: boolean;
 }
 
 export const InlineInput: React.FC<InlineInputProps> = ({
@@ -16,6 +18,7 @@ export const InlineInput: React.FC<InlineInputProps> = ({
   value,
   onChange,
   className,
+  disabled,
   onFocus,
 }) => {
   const { t } = useTranslation();
@@ -33,6 +36,7 @@ export const InlineInput: React.FC<InlineInputProps> = ({
   }, [isEdit]);
 
   const handleDoubleClick = () => {
+    if (disabled) return;
     setIsEditing(true);
     onFocus?.();
   };
@@ -50,7 +54,7 @@ export const InlineInput: React.FC<InlineInputProps> = ({
       if (value === '') {
         return;
       }
-      onChange(value || t('inlineInput.unnamed'));
+      onChange(value || t('module.renderUi.inlineInput.unnamed'));
     }, 300),
     [onChange, t],
   );
@@ -81,12 +85,13 @@ export const InlineInput: React.FC<InlineInputProps> = ({
     <div className={cn('inline-block w-full', className)}>
       {isEditing ? (
         <Input
-          maxLength={20}
+          maxLength={TITLE_MAX_LENGTH}
           ref={inputRef}
           value={inputValue}
           onChange={handleChange}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
+          disabled={disabled}
           className='w-full h-6 border-none focus:outline-none focus:ring-0 px-2'
           onClick={e => e.stopPropagation()}
           onDrag={e => e.stopPropagation()}
@@ -96,7 +101,7 @@ export const InlineInput: React.FC<InlineInputProps> = ({
       ) : (
         <span
           title={value}
-          className='w-full block whitespace-nowrap  max-w-52 2xl:max-w-72 overflow-hidden text-ellipsis'
+          className='w-full block whitespace-nowrap max-w-full overflow-hidden text-ellipsis'
           onDoubleClick={handleDoubleClick}
         >
           {value}

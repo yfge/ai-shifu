@@ -17,17 +17,15 @@ from .consts import (
     UNIT_TYPE_VALUES_REVERSE,
     UNIT_TYPE_VALUES,
     UNIT_TYPE_VALUE_TRIAL,
-    UNIT_TYPE_NORMAL,
     UNIT_TYPE_TRIAL,
+    UNIT_TYPE_GUEST,
 )
 from .models import DraftOutlineItem
 from ...dao import db
 from ...util import generate_id
-from .adapter import html_2_markdown, markdown_2_html
 from ..common.models import raise_error
 from flaskr.service.check_risk.funcs import check_text_with_risk_control
 from decimal import Decimal
-from .adapter import convert_outline_to_reorder_outline_item_dto
 from .shifu_history_manager import (
     save_new_outline_history,
     save_outline_tree_history,
@@ -36,6 +34,30 @@ from .shifu_history_manager import (
     delete_outline_history,
 )
 from datetime import datetime
+from markdown_flow import MarkdownFlow
+
+from flaskr.common.i18n_utils import get_markdownflow_output_language
+
+
+def convert_outline_to_reorder_outline_item_dto(
+    json_array: list[dict],
+) -> ReorderOutlineItemDto:
+    """
+    convert outline to reorder outline item dto
+    Args:
+        json_array: The json array to convert
+    Returns:
+        The reorder outline item dto
+    """
+    return [
+        ReorderOutlineItemDto(
+            bid=item.get("bid"),
+            children=convert_outline_to_reorder_outline_item_dto(
+                item.get("children", [])
+            ),
+        )
+        for item in json_array
+    ]
 
 
 def __get_existing_outline_items(shifu_bid: str) -> list[DraftOutlineItem]:
@@ -110,8 +132,23 @@ def get_outline_tree_dto(
     """
     result = []
     for node in outline_tree:
+        node_outline = node.outline
+        outline_title = node_outline.title if node_outline else ""
+        outline_type = (
+            UNIT_TYPE_VALUES_REVERSE.get(node_outline.type, UNIT_TYPE_TRIAL)
+            if node_outline
+            else UNIT_TYPE_TRIAL
+        )
+        is_hidden = bool(node_outline.hidden) if node_outline else False
         result.append(
-            SimpleOutlineDto(node.outline_id, node.position, node.outline.title, [])
+            SimpleOutlineDto(
+                node.outline_id,
+                node.position,
+                outline_title,
+                [],
+                outline_type,
+                is_hidden,
+            )
         )
         if node.children:
             result[-1].children = get_outline_tree_dto(node.children)
@@ -148,7 +185,7 @@ def create_outline(
     outline_name: str,
     outline_description: str,
     outline_index: int = 0,
-    outline_type: str = UNIT_TYPE_TRIAL,
+    outline_type: str = UNIT_TYPE_GUEST,
     system_prompt: str = None,
     is_hidden: bool = False,
 ):
@@ -175,7 +212,7 @@ def create_outline(
 
         # validate name length
         if len(outline_name) > 100:
-            raise_error("SHIFU.OUTLINE_NAME_TOO_LONG")
+            raise_error("server.shifu.outlineNameTooLong")
 
         # determine position
         existing_items = __get_existing_outline_items(shifu_id)
@@ -186,7 +223,7 @@ def create_outline(
                 None,
             )
             if not parent_item:
-                raise_error("SHIFU.PARENT_OUTLINE_NOT_FOUND")
+                raise_error("server.shifu.parentOutlineNotFound")
 
             # find max index of same level
             siblings = [item for item in existing_items if item.parent_bid == parent_id]
@@ -201,7 +238,10 @@ def create_outline(
                 max([int(item.position) for item in root_items]) if root_items else 0
             )
             new_position = f"{max_index + 1:02d}"
-        type = UNIT_TYPE_VALUES.get(outline_type, UNIT_TYPE_VALUE_TRIAL)
+        type_value = UNIT_TYPE_VALUES.get(outline_type, UNIT_TYPE_VALUE_TRIAL)
+        type_label = UNIT_TYPE_VALUES_REVERSE.get(
+            type_value, outline_type or UNIT_TYPE_TRIAL
+        )
 
         # create new outline
         new_outline = DraftOutlineItem(
@@ -223,7 +263,7 @@ def create_outline(
             updated_at=now_time,
             created_user_bid=user_id,
             updated_user_bid=user_id,
-            type=type,
+            type=type_value,
             hidden=is_hidden,
         )
 
@@ -241,7 +281,12 @@ def create_outline(
         db.session.commit()
 
         return SimpleOutlineDto(
-            bid=outline_bid, position=new_position, name=outline_name, children=[]
+            bid=outline_bid,
+            position=new_position,
+            name=outline_name,
+            children=[],
+            type=type_label,
+            is_hidden=is_hidden,
         )
 
 
@@ -253,7 +298,7 @@ def modify_outline(
     outline_name: str,
     outline_description: str,
     outline_index: int = 0,
-    outline_type: str = UNIT_TYPE_TRIAL,
+    outline_type: str = UNIT_TYPE_GUEST,
     system_prompt: str = None,
     is_hidden: bool = False,
 ):
@@ -286,14 +331,14 @@ def modify_outline(
         )
 
         if not existing_outline:
-            raise_error("SHIFU.OUTLINE_NOT_FOUND")
+            raise_error("server.shifu.outlineNotFound")
 
         if existing_outline.deleted == 1:
-            raise_error("SHIFU.OUTLINE_DELETED")
+            raise_error("server.shifu.outlineDeleted")
 
         # validate name length
         if len(outline_name) > 100:
-            raise_error("SHIFU.OUTLINE_NAME_TOO_LONG")
+            raise_error("server.shifu.outlineNameTooLong")
 
         # check if needs update
         old_check_str = existing_outline.get_str_to_check()
@@ -315,11 +360,19 @@ def modify_outline(
             save_outline_history(app, user_id, shifu_id, outline_id, new_outline.id)
             db.session.commit()
 
+        outline_type_value = existing_outline.type
+        type_label = UNIT_TYPE_VALUES_REVERSE.get(
+            outline_type_value, outline_type or UNIT_TYPE_TRIAL
+        )
+        hidden_flag = bool(existing_outline.hidden)
+
         return SimpleOutlineDto(
             bid=outline_id,
             position=existing_outline.position,
             name=outline_name,
             children=[],
+            type=type_label,
+            is_hidden=hidden_flag,
         )
 
 
@@ -348,7 +401,7 @@ def delete_outline(app, user_id: str, shifu_id: str, outline_id: str):
         )
 
         if not outline_to_delete:
-            raise_error("SHIFU.OUTLINE_NOT_FOUND")
+            raise_error("server.shifu.outlineNotFound")
 
         # build outline tree to find all children
         outline_tree = build_outline_tree(app, shifu_id)
@@ -366,7 +419,7 @@ def delete_outline(app, user_id: str, shifu_id: str, outline_id: str):
 
         node_to_delete = find_node_by_id(outline_tree, outline_id)
         if not node_to_delete:
-            raise_error("SHIFU.OUTLINE_NOT_FOUND")
+            raise_error("server.shifu.outlineNotFound")
 
         # collect all node ids to delete (including children)
         def collect_all_node_ids(node):
@@ -437,7 +490,6 @@ def reorder_outline_tree(
                 if outline_dto.bid in existing_items_map:
                     item = existing_items_map[outline_dto.bid]
                     new_position = f"{parent_position}{i + 1:02d}"
-
                     if item.position != new_position:
                         # create new version
                         new_item: DraftOutlineItem = item.clone()
@@ -457,6 +509,12 @@ def reorder_outline_tree(
                         history_info = HistoryItem(
                             bid=outline_dto.bid, id=item.id, type="outline", children=[]
                         )
+                    if history_info.child_count == 0 and bool(item.content):
+                        mdflow = MarkdownFlow(item.content).set_output_language(
+                            get_markdownflow_output_language()
+                        )
+                        block_list = mdflow.get_all_blocks()
+                        history_info.child_count = len(block_list)
 
                     history_infos.append(history_info)
 
@@ -495,7 +553,7 @@ def get_unit_by_id(app, user_id: str, unit_id: str):
         )
 
         if not unit:
-            raise_error("SHIFU.UNIT_NOT_FOUND")
+            raise_error("server.shifu.unitNotFound")
         unit_type: str = UNIT_TYPE_VALUES_REVERSE.get(unit.type, UNIT_TYPE_TRIAL)
         is_hidden: bool = True if unit.hidden == 1 else False
 
@@ -506,9 +564,9 @@ def get_unit_by_id(app, user_id: str, unit_id: str):
             description=unit.title,
             index=unit.position,
             type=unit_type,
-            system_prompt=markdown_2_html(
-                unit.llm_system_prompt if unit.llm_system_prompt is not None else "", []
-            ),
+            system_prompt=unit.llm_system_prompt
+            if unit.llm_system_prompt is not None
+            else "",
             is_hidden=is_hidden,
         )
 
@@ -522,7 +580,7 @@ def modify_unit(
     unit_index: int = 0,
     unit_system_prompt: str = None,
     unit_is_hidden: bool = False,
-    unit_type: str = UNIT_TYPE_NORMAL,
+    unit_type: str = UNIT_TYPE_GUEST,
 ):
     """
     Modify unit
@@ -553,11 +611,11 @@ def modify_unit(
         )
 
         if not existing_unit:
-            raise_error("SHIFU.UNIT_NOT_FOUND")
+            raise_error("server.shifu.unitNotFound")
 
         # validate name length
         if unit_name and len(unit_name) > 100:
-            raise_error("SHIFU.UNIT_NAME_TOO_LONG")
+            raise_error("server.shifu.unitNameTooLong")
 
         # check if needs update
         old_check_str = existing_unit.get_str_to_check()
@@ -567,8 +625,8 @@ def modify_unit(
 
         if unit_name:
             new_unit.title = unit_name
-        if unit_system_prompt:
-            new_unit.llm_system_prompt = html_2_markdown(unit_system_prompt, [])
+        if unit_system_prompt is not None:
+            new_unit.llm_system_prompt = unit_system_prompt
         if unit_is_hidden is True:
             new_unit.hidden = 1
         elif unit_is_hidden is False:
@@ -600,7 +658,7 @@ def modify_unit(
             description=unit_description or "",
             type=unit_type,
             index=int(existing_unit.position),
-            system_prompt=markdown_2_html(existing_unit.llm_system_prompt or "", []),
+            system_prompt=existing_unit.llm_system_prompt or "",
             is_hidden=unit_is_hidden,
         )
 
@@ -630,7 +688,7 @@ def delete_unit(app, user_id: str, unit_id: str):
         )
 
         if not unit_to_delete:
-            raise_error("SHIFU.UNIT_NOT_FOUND")
+            raise_error("server.shifu.unitNotFound")
 
         # build outline tree to find all children
         outline_tree = build_outline_tree(app, unit_to_delete.shifu_bid)
@@ -648,7 +706,7 @@ def delete_unit(app, user_id: str, unit_id: str):
 
         node_to_delete = find_node_by_id(outline_tree, unit_id)
         if not node_to_delete:
-            raise_error("SHIFU.UNIT_NOT_FOUND")
+            raise_error("server.shifu.unitNotFound")
 
         # collect all node ids to delete (including children)
         def collect_all_node_ids(node: ShifuOutlineTreeNode):

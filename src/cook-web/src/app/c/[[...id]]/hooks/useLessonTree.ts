@@ -1,10 +1,14 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { produce } from 'immer';
 import { getLessonTree } from '@/c-api/lesson';
 import { LESSON_STATUS_VALUE } from '@/c-constants/courseConstants';
 import { useTracking, EVENT_NAMES } from '@/c-common/hooks/useTracking';
 import { useEnvStore } from '@/c-store/envStore';
 import { useSystemStore } from '@/c-store/useSystemStore';
+import { LEARNING_PERMISSION } from '@/c-api/studyV2';
+import { useUserStore } from '@/store';
+import { useCourseStore } from '@/c-store/useCourseStore';
+import { useShallow } from 'zustand/react/shallow';
 
 export const checkChapterCanLearning = ({ status_value }) => {
   const canLearn =
@@ -14,14 +18,28 @@ export const checkChapterCanLearning = ({ status_value }) => {
   return canLearn;
 };
 
+type LessonTree = {
+  bannerInfo?: any;
+  catalogs: any[];
+} | null;
+
 export const useLessonTree = () => {
-  const [tree, setTree] = useState<{
-    bannerInfo?: any;
-    catalogs: any[];
-  } | null>(null);
+  const [tree, setTree] = useState<LessonTree>(null);
+  const treeRef = useRef<LessonTree>(tree);
+
+  useEffect(() => {
+    treeRef.current = tree;
+  }, [tree]);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const { trackEvent } = useTracking();
   const { updateCourseId } = useEnvStore.getState();
+  const isLoggedIn = useUserStore(state => state.isLoggedIn);
+  const previewMode = useSystemStore(state => state.previewMode);
+  const { openPayModal } = useCourseStore(
+    useShallow(state => ({
+      openPayModal: state.openPayModal,
+    })),
+  );
 
   const getCurrElement = useCallback(async () => {
     if (!tree || !selectedLessonId) {
@@ -37,43 +55,75 @@ export const useLessonTree = () => {
     return { catalog: null, lesson: null };
   }, [selectedLessonId, tree]);
 
-  const initialSelectedChapter = useCallback(tree => {
-    let catalog = tree.catalogs.find(
-      v => v.status_value === LESSON_STATUS_VALUE.LEARNING,
-    );
-    if (catalog) {
-      const lesson = catalog.lessons.find(
-        v =>
-          v.status_value === LESSON_STATUS_VALUE.LEARNING ||
-          v.status_value === LESSON_STATUS_VALUE.PREPARE_LEARNING,
+  const initialSelectedChapter = useCallback(
+    tree => {
+      let catalog = tree.catalogs.find(
+        v => v.status_value === LESSON_STATUS_VALUE.LEARNING,
       );
-      // lesson && setSelectedLessonId(lesson.id);
-      if (lesson) {
-        setSelectedLessonId(lesson.id);
-      }
-    } else {
-      catalog = tree.catalogs.find(
-        v => v.status_value === LESSON_STATUS_VALUE.PREPARE_LEARNING,
-      );
+      let lesson;
       if (catalog) {
-        const lesson = catalog.lessons.find(
+        lesson = catalog.lessons.find(
           v =>
             v.status_value === LESSON_STATUS_VALUE.LEARNING ||
             v.status_value === LESSON_STATUS_VALUE.PREPARE_LEARNING,
         );
-        // lesson && setSelectedLessonId(lesson.id);
-        if (lesson) {
-          setSelectedLessonId(lesson.id);
+      } else {
+        catalog = tree.catalogs.find(
+          v => v.status_value === LESSON_STATUS_VALUE.PREPARE_LEARNING,
+        );
+        if (catalog) {
+          lesson = catalog.lessons.find(
+            v =>
+              v.status_value === LESSON_STATUS_VALUE.LEARNING ||
+              v.status_value === LESSON_STATUS_VALUE.PREPARE_LEARNING,
+          );
         }
       }
-    }
-  }, []);
+      if (lesson) {
+        const needsLogin =
+          (lesson.type === LEARNING_PERMISSION.TRIAL ||
+            lesson.type === LEARNING_PERMISSION.NORMAL) &&
+          !isLoggedIn;
+        if (!previewMode && needsLogin) {
+          window.location.href = `/login?redirect=${encodeURIComponent(location.pathname + location.search)}`;
+          return;
+        }
+
+        if (
+          !previewMode &&
+          lesson.type === LEARNING_PERMISSION.NORMAL &&
+          !lesson.is_paid
+        ) {
+          openPayModal({
+            type: lesson.type,
+            payload: {
+              chapterId: lesson.chapterId,
+              lessonId: lesson.id,
+            },
+          });
+          return;
+        }
+        setSelectedLessonId(lesson.id);
+      } else {
+        // find the last chapter that is completed
+        const lastChapter = tree.catalogs.findLast(
+          v => v.status_value === LESSON_STATUS_VALUE.COMPLETED,
+        );
+        if (lastChapter) {
+          setSelectedLessonId(
+            lastChapter.lessons[lastChapter.lessons.length - 1].id,
+          );
+        }
+      }
+    },
+    [isLoggedIn, openPayModal, previewMode],
+  );
 
   const loadTreeInner = useCallback(async () => {
     setSelectedLessonId(null);
     const resp = await getLessonTree(
       useEnvStore.getState().courseId,
-      useSystemStore.getState().previewMode,
+      previewMode,
     );
 
     const treeData = resp;
@@ -86,14 +136,14 @@ export const useLessonTree = () => {
     //   await updateCourseId(treeData.course_id);
     // }
 
-    let lessonCount = 0;
     const catalogs = (treeData.outline_items || []).map(l => {
       const lessons = l.children.map(c => {
-        lessonCount += 1;
         return {
           id: c.bid,
           name: c.title,
           status: c.status,
+          type: c.type,
+          is_paid: c.is_paid,
           status_value: c.status, // TODO: DELETE status_value
           canLearning: checkChapterCanLearning({ status_value: c.status }),
         };
@@ -103,7 +153,9 @@ export const useLessonTree = () => {
         id: l.bid,
         name: l.title,
         status: l.status,
+        is_paid: l.is_paid,
         status_value: l.status,
+        type: l.type,
         lessons,
         collapse: false,
       };
@@ -112,16 +164,14 @@ export const useLessonTree = () => {
     const newTree = {
       catalogCount: catalogs.length,
       catalogs,
-      lessonCount,
       bannerInfo: treeData.banner_info,
     };
 
     return newTree;
-  }, [updateCourseId]);
+  }, [previewMode, updateCourseId]);
 
   const setSelectedState = useCallback((tree, chapterId, lessonId) => {
     const chapter = tree.catalogs.find(v => v.id === chapterId);
-
     if (!chapter) {
       return false;
     }
@@ -156,9 +206,10 @@ export const useLessonTree = () => {
       } else {
         setSelectedState(newTree, chapterId, lessonId);
       }
-      // Restore each catalog's collapse state
-      await newTree?.catalogs.forEach(c => {
-        const oldCatalog = tree?.catalogs.find(oc => oc.id === c.id);
+      // Restore each catalog's collapse state using the previous snapshot
+      const previousTree = treeRef.current;
+      newTree?.catalogs.forEach(c => {
+        const oldCatalog = previousTree?.catalogs.find(oc => oc.id === c.id);
 
         if (oldCatalog) {
           c.collapse = oldCatalog.collapse;
@@ -168,7 +219,7 @@ export const useLessonTree = () => {
       setTree(newTree);
       return newTree;
     },
-    [loadTreeInner, tree, initialSelectedChapter, setSelectedState],
+    [loadTreeInner, initialSelectedChapter, setSelectedState],
   );
 
   const loadTree = useCallback(
@@ -325,6 +376,17 @@ export const useLessonTree = () => {
         }
 
         for (
+          let nextLessonIndex = lessonIndex + 1;
+          nextLessonIndex < catalog.lessons.length;
+          nextLessonIndex += 1
+        ) {
+          const nextLesson = catalog.lessons[nextLessonIndex];
+          if (nextLesson) {
+            return nextLesson.id ?? null;
+          }
+        }
+
+        for (
           let nextCatalogIndex = catalogIndex + 1;
           nextCatalogIndex < tree.catalogs.length;
           nextCatalogIndex += 1
@@ -369,7 +431,6 @@ export const useLessonTree = () => {
       from,
       to,
     };
-
     trackEvent(EVENT_NAMES.NAV_SECTION_SWITCH, eventData);
   };
 

@@ -14,7 +14,7 @@ import {
 import { PhoneLogin } from '@/components/auth/PhoneLogin';
 import { EmailLogin } from '@/components/auth/EmailLogin';
 import { FeedbackForm } from '@/components/auth/FeedbackForm';
-import Image from 'next/image';
+import Image, { type StaticImageData } from 'next/image';
 import logoHorizontal from '@/c-assets/logos/ai-shifu-logo-horizontal.png';
 import LanguageSelect from '@/components/language-select';
 import { useTranslation } from 'react-i18next';
@@ -22,9 +22,11 @@ import i18n, { browserLanguage, normalizeLanguage } from '@/i18n';
 import { environment } from '@/config/environment';
 import { GoogleLoginButton } from '@/components/auth/GoogleLoginButton';
 import { TermsCheckbox } from '@/components/TermsCheckbox';
-import { useToast } from '@/hooks/useToast';
+import { TermsConfirmDialog } from '@/components/auth/TermsConfirmDialog';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { useUserStore } from '@/store';
+import { useEnvStore } from '@/c-store';
+import { EnvStoreState } from '@/c-types/store';
 
 type LoginMethod = 'phone' | 'email' | 'google';
 
@@ -33,67 +35,50 @@ export default function AuthPage() {
   const [authMode, setAuthMode] = useState<'login' | 'feedback'>('login');
   const [isI18nReady, setIsI18nReady] = useState(false);
   const userInfo = useUserStore(state => state.userInfo);
+  const [logoSrc, setLogoSrc] = useState<string | StaticImageData>(
+    environment.logoWideUrl || logoHorizontal,
+  );
 
-  const [loginConfig, setLoginConfig] = useState(() => ({
-    methods: environment.loginMethodsEnabled,
-    defaultMethod: environment.defaultLoginMethod,
-  }));
+  const logoWideUrl = useEnvStore((state: EnvStoreState) => state.logoWideUrl);
+  const runtimeLoginMethods = useEnvStore(
+    (state: EnvStoreState) => state.loginMethodsEnabled,
+  );
+  const runtimeDefaultLoginMethod = useEnvStore(
+    (state: EnvStoreState) => state.defaultLoginMethod,
+  );
 
   useEffect(() => {
-    let isActive = true;
+    setLogoSrc(logoWideUrl || environment.logoWideUrl || logoHorizontal);
+  }, [logoWideUrl]);
 
-    const loadLoginConfig = async () => {
-      try {
-        const response = await fetch('/api/config', { cache: 'no-store' });
-        if (!response.ok) {
-          throw new Error(`Failed to load config: ${response.status}`);
-        }
+  const normalizedMethods = useMemo(() => {
+    const fallback = environment.loginMethodsEnabled;
+    const runtimeValue = runtimeLoginMethods as string | string[] | undefined;
 
-        const data = await response.json();
-        const rawMethods =
-          data?.loginMethodsEnabled ?? environment.loginMethodsEnabled;
-        const normalizedMethods = Array.isArray(rawMethods)
-          ? rawMethods
-          : typeof rawMethods === 'string'
-            ? rawMethods
-                .split(',')
-                .map(method => method.trim())
-                .filter(Boolean)
-            : environment.loginMethodsEnabled;
-
-        if (!isActive) {
-          return;
-        }
-
-        setLoginConfig({
-          methods:
-            normalizedMethods.length > 0
-              ? normalizedMethods
-              : environment.loginMethodsEnabled,
-          defaultMethod:
-            typeof data?.defaultLoginMethod === 'string' &&
-            data.defaultLoginMethod.trim() !== ''
-              ? data.defaultLoginMethod
-              : environment.defaultLoginMethod,
-        });
-      } catch (error) {
-        console.error('Failed to load login config', error);
+    if (Array.isArray(runtimeValue) && runtimeValue.length > 0) {
+      return runtimeValue;
+    }
+    if (typeof runtimeValue === 'string') {
+      const parsed = runtimeValue
+        .split(',')
+        .map(method => method.trim())
+        .filter(Boolean);
+      if (parsed.length > 0) {
+        return parsed;
       }
-    };
+    }
+    return fallback;
+  }, [runtimeLoginMethods]);
 
-    void loadLoginConfig();
+  const defaultMethod =
+    typeof runtimeDefaultLoginMethod === 'string' &&
+    runtimeDefaultLoginMethod.trim() !== ''
+      ? runtimeDefaultLoginMethod
+      : environment.defaultLoginMethod;
 
-    return () => {
-      isActive = false;
-    };
-  }, []);
-
-  const enabledMethods = loginConfig.methods;
-  const defaultMethod = loginConfig.defaultMethod;
-
-  const isPhoneEnabled = enabledMethods.includes('phone');
-  const isEmailEnabled = enabledMethods.includes('email');
-  const isGoogleEnabled = enabledMethods.includes('google');
+  const isPhoneEnabled = normalizedMethods.includes('phone');
+  const isEmailEnabled = normalizedMethods.includes('email');
+  const isGoogleEnabled = normalizedMethods.includes('google');
 
   const availableMethods = useMemo<LoginMethod[]>(() => {
     const methods: LoginMethod[] = [];
@@ -121,17 +106,26 @@ export default function AuthPage() {
   }, [initialLoginMethod]);
 
   const searchParams = useSearchParams();
-  const { toast } = useToast();
   const isInitialized = useUserStore(state => state.isInitialized);
   const isLoggedIn = useUserStore(state => state.isLoggedIn);
 
   const resolveRedirectPath = useCallback(() => {
-    let redirect = searchParams.get('redirect');
+    const fallback = '/admin';
+    const redirect = searchParams.get('redirect');
     if (!redirect || redirect.charAt(0) !== '/') {
-      redirect = '/main';
+      return fallback;
+    }
+    // Default to course tab rather than orders when no explicit redirect
+    if (redirect === '/admin/orders') {
+      return fallback;
     }
     return redirect;
   }, [searchParams]);
+
+  const loginContext = useMemo(() => {
+    const redirectPath = resolveRedirectPath();
+    return redirectPath.startsWith('/admin') ? 'admin' : 'default';
+  }, [resolveRedirectPath]);
 
   const handleAuthSuccess = () => {
     router.replace(resolveRedirectPath());
@@ -219,7 +213,11 @@ export default function AuthPage() {
     }
 
     const resolvedLanguage = i18n.resolvedLanguage ?? i18n.language;
-    const hasBundle = i18n.hasResourceBundle(language, 'translation');
+    const defaultNamespaceOption = i18n.options.defaultNS;
+    const defaultNamespace = Array.isArray(defaultNamespaceOption)
+      ? defaultNamespaceOption[0]
+      : (defaultNamespaceOption ?? 'common');
+    const hasBundle = i18n.hasResourceBundle(language, defaultNamespace);
 
     if (!ready || resolvedLanguage !== language) {
       return;
@@ -231,18 +229,32 @@ export default function AuthPage() {
   }, [language, ready]);
 
   useEffect(() => {
-    if (!isInitialized || !isLoggedIn) {
+    if (!language || !ready) {
       return;
     }
 
-    const target = resolveRedirectPath();
-    if (window.location.pathname !== target) {
-      router.replace(target);
+    const resolvedLanguage = i18n.resolvedLanguage ?? i18n.language;
+    if (resolvedLanguage !== language) {
+      return;
     }
-  }, [isInitialized, isLoggedIn, resolveRedirectPath, router]);
+
+    document.title = t('module.auth.title');
+  }, [language, ready, t]);
+
+  // useEffect(() => {
+  //   if (!isInitialized || !isLoggedIn) {
+  //     return;
+  //   }
+
+  // const target = resolveRedirectPath();
+  // if (window.location.pathname !== target) {
+  //   router.replace(target);
+  // }
+  // }, [isInitialized, isLoggedIn, resolveRedirectPath, router]);
 
   const [googleTermsAccepted, setGoogleTermsAccepted] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [showTermsDialog, setShowTermsDialog] = useState(false);
 
   const { startGoogleLogin } = useGoogleAuth({
     onSuccess: (_, redirectPath) => {
@@ -253,39 +265,52 @@ export default function AuthPage() {
     },
   });
 
+  const doGoogleLogin = useCallback(async () => {
+    try {
+      setIsGoogleLoading(true);
+      await startGoogleLogin({
+        redirectPath: resolveRedirectPath(),
+        language: language ?? undefined,
+      });
+    } catch (error) {
+      setIsGoogleLoading(false);
+    }
+  }, [language, resolveRedirectPath, startGoogleLogin]);
+
   const handleGoogleSignIn = useCallback(async () => {
     if (!isGoogleEnabled) {
       return;
     }
 
     if (!googleTermsAccepted) {
-      toast({
-        title: t('auth.termsError'),
-        variant: 'destructive',
-      });
+      setShowTermsDialog(true);
       return;
     }
 
-    try {
-      setIsGoogleLoading(true);
-      await startGoogleLogin({ redirectPath: resolveRedirectPath() });
-    } catch (error) {
-      setIsGoogleLoading(false);
-    }
-  }, [
-    googleTermsAccepted,
-    isGoogleEnabled,
-    resolveRedirectPath,
-    startGoogleLogin,
-    t,
-    toast,
-  ]);
+    await doGoogleLogin();
+  }, [doGoogleLogin, googleTermsAccepted, isGoogleEnabled]);
+
+  const handleTermsConfirm = useCallback(async () => {
+    setGoogleTermsAccepted(true);
+    setShowTermsDialog(false);
+    // Auto start Google login after terms accepted
+    await doGoogleLogin();
+  }, [doGoogleLogin]);
+
+  const handleTermsCancel = useCallback(() => {
+    setShowTermsDialog(false);
+  }, []);
 
   const renderLoginContent = useCallback(
     (method: LoginMethod) => {
       switch (method) {
         case 'phone':
-          return <PhoneLogin onLoginSuccess={handleAuthSuccess} />;
+          return (
+            <PhoneLogin
+              onLoginSuccess={handleAuthSuccess}
+              loginContext={loginContext}
+            />
+          );
         case 'email':
           return <EmailLogin onLoginSuccess={handleAuthSuccess} />;
         case 'google':
@@ -312,10 +337,12 @@ export default function AuthPage() {
       handleGoogleSignIn,
       googleTermsAccepted,
       isGoogleLoading,
+      loginContext,
     ],
   );
 
   const shouldShowTabs = availableMethods.length > 1;
+  const resolvedLogo = logoSrc || logoHorizontal;
 
   // Show loading state until translations are ready
   if (!isI18nReady || !language) {
@@ -325,7 +352,7 @@ export default function AuthPage() {
           <div className='flex flex-col items-center'>
             <Image
               className='dark:invert'
-              src={logoHorizontal}
+              src={resolvedLogo}
               alt='AI-Shifu'
               width={180}
               height={40}
@@ -342,130 +369,137 @@ export default function AuthPage() {
     );
   }
   return (
-    <div className='min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4'>
-      <div className='w-full max-w-md space-y-2'>
-        <div className='flex flex-col items-center relative'>
-          <h2 className='text-primary flex items-center font-semibold pb-2  w-full justify-center'>
-            <Image
-              className='dark:invert'
-              src={logoHorizontal}
-              alt='AI-Shifu'
-              width={180}
-              height={40}
-              priority
-            />
-
-            <div className='absolute top-0 right-0'>
+    <>
+      <TermsConfirmDialog
+        open={showTermsDialog}
+        onOpenChange={setShowTermsDialog}
+        onConfirm={handleTermsConfirm}
+        onCancel={handleTermsCancel}
+      />
+      <div className='min-h-screen flex items-center justify-center p-4'>
+        <div className='w-full max-w-md space-y-2'>
+          <div className='flex flex-col items-center relative'>
+            <h2 className='flex items-center font-semibold pb-2 w-full justify-center'>
+              <Image
+                className='dark:invert'
+                src={resolvedLogo}
+                alt='AI-Shifu'
+                width={180}
+                height={40}
+                priority
+              />
+            </h2>
+            <div className='absolute top-0 right-0 z-10'>
               <LanguageSelect
                 language={language}
                 onSetLanguage={handleManualLanguageChange}
                 variant='login'
               />
             </div>
-          </h2>
-        </div>
-        <Card>
-          <CardHeader>
-            {authMode === 'login' && (
-              <CardTitle className='text-xl text-center'>
-                {t('auth.title')}
-              </CardTitle>
-            )}
-            {authMode === 'feedback' && (
-              <>
+          </div>
+          <Card>
+            <CardHeader>
+              {authMode === 'login' && (
                 <CardTitle className='text-xl text-center'>
-                  {t('auth.feedback')}
+                  {t('module.auth.title')}
                 </CardTitle>
-                <CardDescription className='text-sm text-center'>
-                  {t('auth.feedback')}
-                </CardDescription>
-              </>
-            )}
-          </CardHeader>
+              )}
+              {authMode === 'feedback' && (
+                <>
+                  <CardTitle className='text-xl text-center'>
+                    {t('module.auth.feedback')}
+                  </CardTitle>
+                  <CardDescription className='text-sm text-center'>
+                    {t('module.auth.feedback')}
+                  </CardDescription>
+                </>
+              )}
+            </CardHeader>
 
-          <CardContent>
-            {authMode === 'login' && (
-              <div className='space-y-6'>
-                {availableMethods.length > 0 ? (
-                  shouldShowTabs ? (
-                    <Tabs
-                      value={loginMethod}
-                      onValueChange={value =>
-                        setLoginMethod(value as LoginMethod)
-                      }
-                      className='w-full'
-                    >
-                      <TabsList
-                        className='grid w-full'
-                        style={{
-                          gridTemplateColumns: `repeat(${availableMethods.length}, minmax(0, 1fr))`,
-                        }}
+            <CardContent>
+              {authMode === 'login' && (
+                <div className='space-y-6'>
+                  {availableMethods.length > 0 ? (
+                    shouldShowTabs ? (
+                      <Tabs
+                        value={loginMethod}
+                        onValueChange={value =>
+                          setLoginMethod(value as LoginMethod)
+                        }
+                        className='w-full'
                       >
+                        <TabsList
+                          className='grid w-full'
+                          style={{
+                            gridTemplateColumns: `repeat(${availableMethods.length}, minmax(0, 1fr))`,
+                          }}
+                        >
+                          {availableMethods.map(method => (
+                            <TabsTrigger
+                              key={method}
+                              value={method}
+                            >
+                              {method === 'phone'
+                                ? t('module.auth.phone')
+                                : method === 'email'
+                                  ? t('module.auth.email')
+                                  : t('module.auth.googleTab')}
+                            </TabsTrigger>
+                          ))}
+                        </TabsList>
+
                         {availableMethods.map(method => (
-                          <TabsTrigger
+                          <TabsContent
                             key={method}
                             value={method}
                           >
-                            {method === 'phone'
-                              ? t('auth.phone')
-                              : method === 'email'
-                                ? t('auth.email')
-                                : t('auth.googleTab')}
-                          </TabsTrigger>
+                            {renderLoginContent(method)}
+                          </TabsContent>
                         ))}
-                      </TabsList>
-
-                      {availableMethods.map(method => (
-                        <TabsContent
-                          key={method}
-                          value={method}
-                        >
-                          {renderLoginContent(method)}
-                        </TabsContent>
-                      ))}
-                    </Tabs>
+                      </Tabs>
+                    ) : (
+                      <div className='w-full'>
+                        {availableMethods[0]
+                          ? renderLoginContent(availableMethods[0])
+                          : null}
+                      </div>
+                    )
                   ) : (
-                    <div className='w-full'>
-                      {availableMethods[0]
-                        ? renderLoginContent(availableMethods[0])
-                        : null}
-                    </div>
-                  )
-                ) : (
-                  <p className='text-sm text-muted-foreground text-center'>
-                    {t('auth.noLoginMethods')}
-                  </p>
-                )}
-              </div>
-            )}
+                    <p className='text-sm text-muted-foreground text-center'>
+                      {t('module.auth.noLoginMethods')}
+                    </p>
+                  )}
+                </div>
+              )}
 
-            {authMode === 'feedback' && (
-              <FeedbackForm onComplete={handleBackToLogin} />
-            )}
-          </CardContent>
-          <CardFooter className='flex flex-col items-center space-y-2'>
-            {authMode === 'feedback' && (
-              <button
-                onClick={handleBackToLogin}
-                className='text-primary hover:underline'
-              >
-                {t('auth.backToLogin')}
-              </button>
-            )}
-            {authMode !== 'feedback' && (
-              <p className='text-sm text-muted-foreground'>
-                {t('auth.problem')}
+              {authMode === 'feedback' && (
+                <FeedbackForm onComplete={handleBackToLogin} />
+              )}
+            </CardContent>
+            <CardFooter className='flex flex-col items-center space-y-2'>
+              {authMode === 'feedback' && (
                 <button
-                  onClick={handleFeedback}
+                  onClick={handleBackToLogin}
                   className='text-primary hover:underline'
                 >
-                  {t('auth.submitFeedback')}
+                  {t('module.auth.backToLogin')}
                 </button>
-              </p>
-            )}
-          </CardFooter>
-        </Card>
+              )}
+              {authMode !== 'feedback' && (
+                <p className='text-sm text-muted-foreground'>
+                  {t('module.auth.problem')}
+                  <button
+                    onClick={handleFeedback}
+                    className='hover:underline'
+                  >
+                    {t('module.auth.submitFeedback')}
+                  </button>
+                </p>
+              )}
+            </CardFooter>
+          </Card>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

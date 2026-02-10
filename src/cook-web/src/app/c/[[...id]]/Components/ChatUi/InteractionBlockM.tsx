@@ -9,6 +9,8 @@ import {
 import type { LikeStatus } from '@/c-api/studyV2';
 import { postGeneratedContentAction, LIKE_STATUS } from '@/c-api/studyV2';
 import { cn } from '@/lib/utils';
+import type { AudioSegment } from '@/c-utils/audio-utils';
+import { AudioPlayer } from '@/components/audio/AudioPlayer';
 import {
   Dialog,
   DialogContent,
@@ -28,6 +30,11 @@ export interface InteractionBlockMProps {
   readonly?: boolean;
   disabled?: boolean;
   onRefresh?: (generatedBlockBid: string) => void;
+  audioUrl?: string;
+  streamingSegments?: AudioSegment[];
+  isStreaming?: boolean;
+  onRequestAudio?: () => Promise<any>;
+  showAudioAction?: boolean;
 }
 
 /**
@@ -44,6 +51,11 @@ export default function InteractionBlockM({
   readonly = false,
   disabled = false,
   onRefresh,
+  audioUrl,
+  streamingSegments,
+  isStreaming,
+  onRequestAudio,
+  showAudioAction = true,
 }: InteractionBlockMProps) {
   const { t } = useTranslation();
   const [status, setStatus] = useState<LikeStatus>(() => {
@@ -53,6 +65,12 @@ export default function InteractionBlockM({
 
   const isLike = status === LIKE_STATUS.LIKE;
   const isDislike = status === LIKE_STATUS.DISLIKE;
+  const hasAudioAction =
+    Boolean(audioUrl) ||
+    Boolean(isStreaming) ||
+    Boolean(onRequestAudio) ||
+    Boolean(streamingSegments && streamingSegments.length > 0);
+  const shouldShowAudioAction = Boolean(showAudioAction) && hasAudioAction;
 
   useEffect(() => {
     setStatus((like_status as LikeStatus) ?? LIKE_STATUS.NONE);
@@ -63,7 +81,7 @@ export default function InteractionBlockM({
       shifu_bid,
       generated_block_bid,
       action,
-    }).catch(e => {
+    }).catch(() => {
       // errors handled by request layer toast; ignore here
     });
   };
@@ -122,6 +140,7 @@ export default function InteractionBlockM({
         <PopoverContent
           className='w-auto p-2 bg-white shadow-lg rounded-lg border border-gray-200'
           align='start'
+          forceMount
         >
           <div className='flex flex-col'>
             <button
@@ -133,8 +152,21 @@ export default function InteractionBlockM({
                 size={16}
                 className='text-gray-500'
               />
-              <span>{t('chat.regenerate')}</span>
+              <span>{t('module.chat.regenerate')}</span>
             </button>
+            {shouldShowAudioAction ? (
+              <div className='flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700'>
+                <AudioPlayer
+                  audioUrl={audioUrl}
+                  streamingSegments={streamingSegments}
+                  isStreaming={isStreaming}
+                  alwaysVisible={true}
+                  onRequestAudio={onRequestAudio}
+                  size={16}
+                />
+                <span>{t('module.chat.playAudio')}</span>
+              </div>
+            ) : null}
             <button
               onClick={handleLike}
               disabled={disabled || readonly}
@@ -144,7 +176,7 @@ export default function InteractionBlockM({
                 size={16}
                 className={cn(isLike ? 'text-blue-500' : 'text-gray-500')}
               />
-              <span>{t('chat.like')}</span>
+              <span>{t('module.chat.like')}</span>
             </button>
             <button
               onClick={handleDislike}
@@ -155,7 +187,7 @@ export default function InteractionBlockM({
                 size={16}
                 className={cn(isDislike ? 'text-blue-500' : 'text-gray-500')}
               />
-              <span>{t('chat.dislike')}</span>
+              <span>{t('module.chat.dislike')}</span>
             </button>
           </div>
         </PopoverContent>
@@ -167,9 +199,9 @@ export default function InteractionBlockM({
       >
         <DialogContent className='sm:max-w-md'>
           <DialogHeader>
-            <DialogTitle>{t('chat.regenerateConfirmTitle')}</DialogTitle>
+            <DialogTitle>{t('module.chat.regenerateConfirmTitle')}</DialogTitle>
             <DialogDescription>
-              {t('chat.regenerateConfirmDescription')}
+              {t('module.chat.regenerateConfirmDescription')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className='flex gap-2 sm:gap-2'>
@@ -178,14 +210,14 @@ export default function InteractionBlockM({
               onClick={() => setShowRegenerateDialog(false)}
               className='px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50'
             >
-              {t('common.cancel')}
+              {t('common.core.cancel')}
             </button>
             <button
               type='button'
               onClick={handleConfirmRegenerate}
               className='px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary-lighter'
             >
-              {t('common.ok')}
+              {t('common.core.ok')}
             </button>
           </DialogFooter>
         </DialogContent>

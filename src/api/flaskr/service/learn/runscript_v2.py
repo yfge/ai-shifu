@@ -1,18 +1,19 @@
 import traceback
-from typing import Generator
+import threading
+import queue
+import contextlib
+from typing import Any, Generator, Optional
 from flask import Flask
 
 from flaskr.service.common.models import AppException, raise_error
-from flaskr.service.user.models import User
+from flaskr.service.user.repository import load_user_aggregate
 from flaskr.i18n import _
 import json
 
 
-from flaskr.service.learn.learn_dtos import RunMarkdownFlowDTO
-from flaskr.dao import db, redis_client
-from flaskr.service.learn.utils import (
-    make_script_dto,
-)
+from flaskr.service.learn.learn_dtos import RunMarkdownFlowDTO, RunStatusDTO
+from flaskr.common.cache_provider import cache as cache_provider
+from flaskr.dao import db
 from flaskr.service.shifu.shifu_struct_manager import (
     get_shifu_dto,
     get_outline_item_dto,
@@ -25,9 +26,15 @@ from flaskr.service.shifu.shifu_history_manager import HistoryItem
 from flaskr.service.order.models import Order
 from flaskr.service.order.consts import ORDER_STATUS_SUCCESS
 from flaskr.service.learn.context_v2 import RunScriptContextV2
-from flaskr.service.learn.input_funcs import BreakException
 from flaskr.service.learn.learn_dtos import GeneratedType
 import datetime
+from flaskr.common.log import thread_local as log_thread_local
+from flaskr.service.learn.exceptions import BreakException
+from flaskr.i18n import get_current_language, set_language
+from flaskr.common.shifu_context import (
+    get_shifu_context_snapshot,
+    apply_shifu_context_snapshot,
+)
 
 
 def run_script_inner(
@@ -38,14 +45,18 @@ def run_script_inner(
     input: str | dict = None,
     input_type: str = None,
     reload_generated_block_bid: str = None,
+    listen: bool = True,
     preview_mode: bool = False,
+    stop_event: threading.Event | None = None,
 ) -> Generator[RunMarkdownFlowDTO, None, None]:
     """
     Core function for running course scripts
     """
     with app.app_context():
         try:
-            user_info = User.query.filter(User.user_id == user_bid).first()
+            user_info = load_user_aggregate(user_bid)
+            if not user_info:
+                raise_error("USER.USER_NOT_FOUND")
             shifu_info: ShifuInfoDto = None
             outline_item_info: ShifuOutlineItemDto = None
             struct_info: HistoryItem = None
@@ -56,20 +67,20 @@ def run_script_inner(
                 else:
                     shifu_info = get_shifu_dto(app, shifu_bid, preview_mode)
                 if not shifu_info:
-                    raise_error("LESSON.HAS_NOT_LESSON")
+                    raise_error("server.outline.hasNotLesson")
                 shifu_bid = shifu_info.bid
             else:
                 outline_item_info = get_outline_item_dto(app, outline_bid, preview_mode)
                 if not outline_item_info:
-                    raise_error("LESSON.LESSON_NOT_FOUND_IN_COURSE")
+                    raise_error("server.shifu.lessonNotFoundInCourse")
                 shifu_bid = outline_item_info.shifu_bid
                 shifu_info = get_shifu_dto(app, shifu_bid, preview_mode)
                 if not shifu_info:
-                    raise_error("LESSON.COURSE_NOT_FOUND")
+                    raise_error("server.shifu.courseNotFound")
 
             struct_info = get_shifu_struct(app, shifu_info.bid, preview_mode)
             if not struct_info:
-                raise_error("LESSON.SHIFU_NOT_FOUND")
+                raise_error("server.shifu.shifuNotFound")
             if not outline_item_info:
                 lesson_info = None
             else:
@@ -101,14 +112,27 @@ def run_script_inner(
                 outline_item_info=outline_item_info,
                 user_info=user_info,
                 is_paid=is_paid,
+                listen=listen,
                 preview_mode=preview_mode,
             )
 
             run_script_context.set_input(input, input_type)
             if reload_generated_block_bid:
+                if stop_event and stop_event.is_set():
+                    app.logger.info("run_script_inner cancelled before reload")
+                    db.session.rollback()
+                    return
                 yield from run_script_context.reload(app, reload_generated_block_bid)
                 db.session.commit()
             while run_script_context.has_next():
+                app.logger.warning(
+                    f"run_script_context.has_next(): {run_script_context.has_next()}"
+                )
+                if stop_event and stop_event.is_set():
+                    app.logger.info("run_script_inner cancelled by stop_event")
+                    db.session.rollback()
+                    return
+                app.logger.info("run_script_context.run")
                 yield from run_script_context.run(app)
             db.session.commit()
         except BreakException:
@@ -134,91 +158,256 @@ def run_script(
     input: str | dict = None,
     input_type: str = None,
     reload_generated_block_bid: str = None,
+    listen: bool = True,
     preview_mode: bool = False,
+    shifu_context_snapshot: Optional[dict[str, Any]] = None,
 ) -> Generator[str, None, None]:
     timeout = 5 * 60
     blocking_timeout = 1
-    lock_key = app.config.get("REDIS_KEY_PREFIX") + ":run_script:" + user_bid
-    lock = redis_client.lock(
+    heartbeat_interval = float(app.config.get("SSE_HEARTBEAT_INTERVAL", 0.1))
+    lock_key = (
+        app.config.get("REDIS_KEY_PREFIX")
+        + ":run_script:"
+        + user_bid
+        + ":"
+        + outline_bid
+    )
+    lock = cache_provider.lock(
         lock_key, timeout=timeout, blocking_timeout=blocking_timeout
     )
     if lock.acquire(blocking=True):
-        try:
-            res = run_script_inner(
-                app=app,
-                user_bid=user_bid,
-                shifu_bid=shifu_bid,
-                outline_bid=outline_bid,
-                input=input,
-                input_type=input_type,
-                reload_generated_block_bid=reload_generated_block_bid,
-                preview_mode=preview_mode,
-            )
-            for item in res:
-                yield (
-                    "data: "
-                    + json.dumps(item, default=fmt, ensure_ascii=False)
-                    + "\n\n".encode("utf-8").decode("utf-8")
-                )
-        except Exception as e:
-            app.logger.error("run_script error")
-            app.logger.error(e)
-            error_info = {
-                "name": type(e).__name__,
-                "description": str(e),
-                "traceback": traceback.format_exc(),
-            }
+        stop_event = threading.Event()
+        output_queue: queue.Queue[tuple[str, object]] = queue.Queue()
+        # Capture logging context from the request thread so logs in the producer thread keep the same identifiers
+        parent_request_id = getattr(log_thread_local, "request_id", None)
+        parent_url = getattr(log_thread_local, "url", None)
+        parent_client_ip = getattr(log_thread_local, "client_ip", None)
+        # Capture language context from the request thread so i18n works in the producer thread
+        parent_language = get_current_language()
+        # Capture shifu context so background thread can reuse it (may be provided by caller)
+        parent_shifu_context = shifu_context_snapshot or get_shifu_context_snapshot()
+        res = run_script_inner(
+            app=app,
+            user_bid=user_bid,
+            shifu_bid=shifu_bid,
+            outline_bid=outline_bid,
+            input=input,
+            input_type=input_type,
+            reload_generated_block_bid=reload_generated_block_bid,
+            listen=listen,
+            preview_mode=preview_mode,
+            stop_event=stop_event,
+        )
 
-            if isinstance(e, AppException):
-                app.logger.info(error_info)
-                yield (
-                    "data: "
-                    + json.dumps(
-                        RunMarkdownFlowDTO(
-                            outline_bid=outline_bid,
-                            generated_block_bid="",
-                            type=GeneratedType.CONTENT,
-                            content=str(e),
-                        ),
-                        default=fmt,
-                        ensure_ascii=False,
+        def producer():
+            # Propagate logging thread-local context into this background thread
+            if parent_request_id:
+                log_thread_local.request_id = parent_request_id
+            if parent_url:
+                log_thread_local.url = parent_url
+            if parent_client_ip:
+                log_thread_local.client_ip = parent_client_ip
+            # Propagate language context into this background thread
+            set_language(parent_language)
+            # Propagate shifu context into this background thread
+            apply_shifu_context_snapshot(parent_shifu_context)
+            try:
+                for item in res:
+                    if stop_event.is_set():
+                        break
+                    output_queue.put(("data", item))
+            except Exception as exc:
+                if stop_event.is_set():
+                    app.logger.info(
+                        "run_script producer stopped due to client disconnect: %s",
+                        type(exc).__name__,
                     )
-                    + "\n\n".encode("utf-8").decode("utf-8")
-                )
-            else:
-                app.logger.error(error_info)
-                yield (
-                    "data: "
-                    + json.dumps(
-                        RunMarkdownFlowDTO(
-                            outline_bid=outline_bid,
-                            generated_block_bid="",
-                            type=GeneratedType.CONTENT,
-                            content=str(_("COMMON.UNKNOWN_ERROR")),
-                        ),
-                        default=fmt,
-                        ensure_ascii=False,
-                    )
-                    + "\n\n".encode("utf-8").decode("utf-8")
-                )
-            yield (
-                "data: "
-                + json.dumps(
-                    RunMarkdownFlowDTO(
-                        outline_bid=outline_bid,
-                        generated_block_bid="",
-                        type=GeneratedType.BREAK,
-                        content=None,
-                    ),
-                    default=fmt,
-                    ensure_ascii=False,
-                )
-                + "\n\n".encode("utf-8").decode("utf-8")
-            )
+                    return
+                output_queue.put(("error", exc))
+            finally:
+                with contextlib.suppress(Exception):
+                    res.close()
+                output_queue.put(("done", None))
+
+        producer_thread = threading.Thread(
+            target=producer, name="run_script_stream_producer", daemon=True
+        )
+        producer_thread.start()
+
+        stream_error: Exception | None = None
+        client_disconnected = False
+        done_received = False
+        try:
+            while True:
+                try:
+                    kind, payload = output_queue.get(timeout=heartbeat_interval)
+                except queue.Empty:
+                    if done_received or client_disconnected:
+                        break
+                    try:
+                        yield (
+                            "data: "
+                            + json.dumps(
+                                {"type": "heartbeat"}, default=fmt, ensure_ascii=False
+                            )
+                            + "\n\n".encode("utf-8").decode("utf-8")
+                        )
+                    except GeneratorExit:
+                        client_disconnected = True
+                        stop_event.set()
+                        app.logger.info(
+                            "Client disconnected from SSE stream during heartbeat"
+                        )
+                        break
+                    except (ConnectionError, BrokenPipeError, OSError) as exc:
+                        client_disconnected = True
+                        stop_event.set()
+                        app.logger.info(
+                            "Client disconnected from SSE stream during heartbeat: %s",
+                            repr(exc),
+                        )
+                        break
+                    continue
+
+                if kind == "data":
+                    try:
+                        yield (
+                            "data: "
+                            + json.dumps(payload, default=fmt, ensure_ascii=False)
+                            + "\n\n".encode("utf-8").decode("utf-8")
+                        )
+                    except GeneratorExit:
+                        client_disconnected = True
+                        stop_event.set()
+                        app.logger.info(
+                            "Client disconnected from SSE stream (GeneratorExit)"
+                        )
+                        break
+                    except (ConnectionError, BrokenPipeError, OSError) as exc:
+                        client_disconnected = True
+                        stop_event.set()
+                        app.logger.info(
+                            "Client disconnected from SSE stream: %s", repr(exc)
+                        )
+                        break
+                elif kind == "error":
+                    if isinstance(payload, Exception):
+                        stream_error = payload
+                    else:
+                        stream_error = Exception(str(payload))
+                    break
+                elif kind == "done":
+                    done_received = True
+                    break
         finally:
+            stop_event.set()
+            producer_thread.join(timeout=0.1)
+            if producer_thread.is_alive():
+                app.logger.warning("run_script producer thread did not stop in time")
+
             lock.release()
-        return
+
+        if stream_error and not client_disconnected:
+            if isinstance(stream_error, Exception):
+                app.logger.error("run_script error")
+                app.logger.error(stream_error)
+                error_traceback = "".join(
+                    traceback.format_exception(
+                        type(stream_error),
+                        stream_error,
+                        stream_error.__traceback__,
+                    )
+                )
+                error_info = {
+                    "name": type(stream_error).__name__,
+                    "description": str(stream_error),
+                    "traceback": error_traceback,
+                }
+
+                if isinstance(stream_error, AppException):
+                    app.logger.info(error_info)
+                    yield (
+                        "data: "
+                        + json.dumps(
+                            RunMarkdownFlowDTO(
+                                outline_bid=outline_bid,
+                                generated_block_bid="",
+                                type=GeneratedType.CONTENT,
+                                content=str(stream_error),
+                            ),
+                            default=fmt,
+                            ensure_ascii=False,
+                        )
+                        + "\n\n".encode("utf-8").decode("utf-8")
+                    )
+                else:
+                    app.logger.error(error_info)
+                    yield (
+                        "data: "
+                        + json.dumps(
+                            RunMarkdownFlowDTO(
+                                outline_bid=outline_bid,
+                                generated_block_bid="",
+                                type=GeneratedType.CONTENT,
+                                content=str(_("server.common.unknownError")),
+                            ),
+                            default=fmt,
+                            ensure_ascii=False,
+                        )
+                        + "\n\n".encode("utf-8").decode("utf-8")
+                    )
+                yield (
+                    "data: "
+                    + json.dumps(
+                        RunMarkdownFlowDTO(
+                            outline_bid=outline_bid,
+                            generated_block_bid="",
+                            type=GeneratedType.BREAK,
+                            content="",
+                        ),
+                        default=fmt,
+                        ensure_ascii=False,
+                    )
+                    + "\n\n".encode("utf-8").decode("utf-8")
+                )
+
+        yield (
+            "data: "
+            + json.dumps(
+                RunMarkdownFlowDTO(
+                    outline_bid=outline_bid,
+                    generated_block_bid="",
+                    type=GeneratedType.DONE,
+                    content="",
+                ),
+                default=fmt,
+                ensure_ascii=False,
+            )
+            + "\n\n".encode("utf-8").decode("utf-8")
+        )
     else:
         app.logger.warning("lockfail")
-        yield make_script_dto("text_end", "", None)
-    return
+
+
+def get_run_status(
+    app: Flask,
+    shifu_bid: str,
+    outline_bid: str,
+    user_bid: str,
+) -> RunStatusDTO:
+    lock_key = (
+        app.config.get("REDIS_KEY_PREFIX")
+        + ":run_script:"
+        + user_bid
+        + ":"
+        + outline_bid
+    )
+    lock = cache_provider.lock(lock_key, timeout=300, blocking_timeout=0)
+    if lock.acquire(blocking=False):
+        # Lock acquired successfully, so no other process is running
+        lock.release()
+        return RunStatusDTO(is_running=False, running_time=0)
+    else:
+        # Lock is held by another process
+        # We can't get the exact running time without additional metadata
+        return RunStatusDTO(is_running=True, running_time=0)

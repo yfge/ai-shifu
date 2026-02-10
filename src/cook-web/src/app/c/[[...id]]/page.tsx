@@ -2,7 +2,7 @@
 
 import styles from './page.module.scss';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import clsx from 'clsx';
 import { useShallow } from 'zustand/react/shallow';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +27,7 @@ import { useDisclosure } from '@/c-common/hooks/useDisclosure';
 import { useLessonTree } from './hooks/useLessonTree';
 import { updateWxcode } from '@/c-api/user';
 import { shifu } from '@/c-service/Shifu';
+import { buildLoginRedirectPath } from '@/c-utils/urlUtils';
 
 import { Skeleton } from '@/components/ui/Skeleton';
 import { AppContext } from './Components/AppContext';
@@ -43,36 +44,49 @@ import PayModal from './Components/Pay/PayModal';
 
 // the main page of course learning
 export default function ChatPage() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   /**
    * User info and init part
    */
   const userInfo = useUserStore(state => state.userInfo);
-  const { isLoggedIn, initUser } = useUserStore(state => state);
-  const [initialized, setInitialized] = useState(false);
+  const isLoggedIn = useUserStore(state => state.isLoggedIn);
+  const isUserInitialized = useUserStore(state => state.isInitialized);
+  const initialized = isUserInitialized;
 
-  const { wechatCode } = useSystemStore(
-    useShallow(state => ({ wechatCode: state.wechatCode })),
+  const { wechatCode, previewMode } = useSystemStore(
+    useShallow(state => ({
+      wechatCode: state.wechatCode,
+      previewMode: state.previewMode,
+    })),
   );
 
-  const initAndCheckLogin = useCallback(async () => {
-    // Initialize user state (automatically handles guest or auth)
-    await initUser();
-
-    if (inWechat() && wechatCode && isLoggedIn) {
-      await updateWxcode({ wxcode: wechatCode });
-    }
-    setInitialized(true);
-  }, [wechatCode, isLoggedIn, initUser]);
-
   useEffect(() => {
-    initAndCheckLogin();
-  }, [initAndCheckLogin]);
+    if (!initialized) {
+      return;
+    }
+    if (!isLoggedIn) {
+      return;
+    }
+    if (!wechatCode || !inWechat()) {
+      return;
+    }
+
+    const token = useUserStore.getState().getToken();
+    if (!token) {
+      return;
+    }
+
+    void updateWxcode({ wxcode: wechatCode }).catch(err => {
+      // eslint-disable-next-line no-console
+      console.warn('Failed to update WeChat OpenID:', err);
+    });
+  }, [initialized, isLoggedIn, wechatCode]);
 
   // NOTE: User-related features should be organized into one module
   function gotoLogin() {
-    window.location.href = `/login?redirect=${encodeURIComponent(location.pathname)}`;
+    const redirectPath = buildLoginRedirectPath(window.location.href);
+    window.location.href = `/login?redirect=${encodeURIComponent(redirectPath)}`;
   }
   // NOTE: Probably don't need this.
   // const [loginModalOpen, setLoginModalOpen] = useState(false);
@@ -151,16 +165,34 @@ export default function ChatPage() {
     }
   }, [i18n.language, tree, currentLanguage, reloadTree]);
 
-  const { lessonId, updateLessonId, chapterId, updateChapterId, courseName } =
-    useCourseStore(
-      useShallow(state => ({
-        courseName: state.courseName,
-        lessonId: state.lessonId,
-        updateLessonId: state.updateLessonId,
-        chapterId: state.chapterId,
-        updateChapterId: state.updateChapterId,
-      })),
-    );
+  const {
+    lessonId,
+    updateLessonId,
+    chapterId,
+    updateChapterId,
+    courseName,
+    courseAvatar,
+  } = useCourseStore(
+    useShallow(state => ({
+      courseName: state.courseName,
+      courseAvatar: state.courseAvatar,
+      lessonId: state.lessonId,
+      updateLessonId: state.updateLessonId,
+      chapterId: state.chapterId,
+      updateChapterId: state.updateChapterId,
+    })),
+  );
+
+  useEffect(() => {
+    if (!courseName) {
+      return;
+    }
+    if (previewMode) {
+      document.title = `${t('module.preview.previewAll')} - ${courseName}`;
+      return;
+    }
+    document.title = courseName;
+  }, [courseName, previewMode, t]);
 
   useEffect(() => {
     if (selectedLessonId) {
@@ -180,17 +212,21 @@ export default function ChatPage() {
     }
   }, [chapterId, initialized, loadData, loadedChapterId]);
 
-  // TODO: REMOVE
-  // console.log(
-  //   'chapterId: ',
-  //   chapterId,
-  //   'lessonId: ',
-  //   lessonId,
-  //   'initialized: ',
-  //   initialized,
-  //   'loadedChapterId: ',
-  //   loadedChapterId,
-  // );
+  const resolvedLessonId = selectedLessonId || lessonId;
+  const currentLessonTitle = useMemo(() => {
+    if (!tree || !resolvedLessonId) {
+      return '';
+    }
+    for (const catalog of tree.catalogs || []) {
+      const lesson = (catalog.lessons || []).find(
+        entry => entry.id === resolvedLessonId,
+      );
+      if (lesson) {
+        return lesson.name || '';
+      }
+    }
+    return '';
+  }, [resolvedLessonId, tree]);
 
   const onLessonSelect = ({ id }) => {
     const chapter = getChapterByLesson(id);
@@ -259,25 +295,42 @@ export default function ChatPage() {
    * Pay part
    */
 
-  const [payModalOpen, setPayModalOpen] = useState(false);
-  const [payModalState, setPayModalState] = useState({
-    type: '',
-    payload: {},
-  });
+  const {
+    payModalOpen,
+    payModalState,
+    openPayModal,
+    closePayModal,
+    setPayModalResult,
+  } = useCourseStore(
+    useShallow(state => ({
+      payModalOpen: state.payModalOpen,
+      payModalState: state.payModalState,
+      openPayModal: state.openPayModal,
+      closePayModal: state.closePayModal,
+      setPayModalResult: state.setPayModalResult,
+    })),
+  );
 
   const onPurchased = useCallback(() => {
     reloadTree();
   }, [reloadTree]);
 
-  const _onPayModalCancel = useCallback(e => {
-    setPayModalOpen(false);
-    shifu.payTools.emitPayModalCancel(e);
-  }, []);
+  const _onPayModalCancel = useCallback(
+    (_?: unknown) => {
+      closePayModal();
+      setPayModalResult('cancel');
+    },
+    [closePayModal, setPayModalResult],
+  );
 
-  const _onPayModalOk = useCallback(e => {
-    setPayModalOpen(false);
-    shifu.payTools.emitPayModalOk(e);
-  }, []);
+  const _onPayModalOk = useCallback(
+    (_?: unknown) => {
+      closePayModal();
+      setPayModalResult('ok');
+      onPurchased();
+    },
+    [closePayModal, onPurchased, setPayModalResult],
+  );
 
   /**
    * Misc part
@@ -331,29 +384,17 @@ export default function ChatPage() {
   // listen global event
   useEffect(() => {
     const resetChapterEventHandler = async e => {
-      await reloadTree(e.detail.chapter_id);
-      onGoChapter(e.detail.chapter_id);
+      await reloadTree(e.detail.chapter_id, e.detail.lesson_id);
+      onGoChapter(e.detail.lesson_id);
     };
     const eventHandler = () => {
       // setLoginModalOpen(true);
       gotoLogin();
     };
 
-    const payEventHandler = e => {
-      const { type = '', payload = {} } = e.detail;
-      setPayModalState({ type, payload });
-      setPayModalOpen(true);
-      // setLoginOkHandlerData({ type: 'pay', payload: {} });
-    };
-
     shifu.events.addEventListener(
       shifu.EventTypes.OPEN_LOGIN_MODAL,
       eventHandler,
-    );
-
-    shifu.events.addEventListener(
-      shifu.EventTypes.OPEN_PAY_MODAL,
-      payEventHandler,
     );
 
     shifu.events.addEventListener(
@@ -368,21 +409,32 @@ export default function ChatPage() {
       );
 
       shifu.events.removeEventListener(
-        shifu.EventTypes.OPEN_PAY_MODAL,
-        payEventHandler,
-      );
-
-      shifu.events.removeEventListener(
         shifu.EventTypes.RESET_CHAPTER,
         resetChapterEventHandler,
       );
     };
-  }, []);
+  }, [gotoLogin, onGoChapter, reloadTree]);
+
   return (
-    <div className={clsx(styles.newChatPage)}>
+    <div
+      className={clsx(
+        styles.newChatPage,
+        mobileStyle ? 'flex-col' : 'h-screen flex-row',
+        'flex',
+      )}
+    >
       <AppContext.Provider
         value={{ frameLayout, mobileStyle, isLoggedIn, userInfo, theme: '' }}
       >
+        {mobileStyle ? (
+          <ChatMobileHeader
+            navOpen={navOpen}
+            className={styles.chatMobileHeader}
+            iconPopoverPayload={tree?.bannerInfo}
+            onSettingClick={onNavToggle}
+          />
+        ) : null}
+
         {!initialized ? (
           <div className='flex flex-col space-y-6 p-6 container mx-auto'>
             <Skeleton className='h-[125px] rounded-xl' />
@@ -401,6 +453,7 @@ export default function ChatPage() {
         {initialized && navOpen ? (
           <NavDrawer
             courseName={courseName}
+            courseAvatar={courseAvatar}
             onLoginClick={() => {
               // setLoginModalOpen(true)
               gotoLogin();
@@ -419,6 +472,7 @@ export default function ChatPage() {
           <ChatUi
             lessonId={lessonId}
             chapterId={chapterId}
+            lessonTitle={currentLessonTitle}
             lessonUpdate={onLessonUpdate}
             onGoChapter={onGoChapter}
             onPurchased={onPurchased}
@@ -428,6 +482,7 @@ export default function ChatPage() {
             userSettingBasicInfo={userSettingBasicInfo}
             updateSelectedLesson={updateSelectedLesson}
             getNextLessonId={getNextLessonId}
+            isNavOpen={navOpen}
           />
         ) : null}
 
@@ -463,15 +518,6 @@ export default function ChatPage() {
         ) : null}
 
         {initialized ? <TrackingVisit /> : null}
-
-        {mobileStyle ? (
-          <ChatMobileHeader
-            navOpen={navOpen}
-            className={styles.chatMobileHeader}
-            iconPopoverPayload={tree?.bannerInfo}
-            onSettingClick={onNavToggle}
-          />
-        ) : null}
 
         <FeedbackModal
           open={feedbackModalOpen}

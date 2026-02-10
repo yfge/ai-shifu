@@ -5,11 +5,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/Select';
-import { GlobeIcon } from 'lucide-react';
-import languages from '../../../public/locales/languages.json';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 import { browserLanguage, normalizeLanguage } from '@/i18n';
+import { localeEntries } from '@/lib/i18n-locales';
 
 import { type ClassValue } from 'clsx';
 import { cn } from '@/lib/utils';
@@ -26,7 +25,7 @@ export default function LanguageSelect(props: languageProps) {
   const triggerClass =
     props.variant === 'login'
       ? 'w-[80px] h-[35px] rounded-lg p-0 flex items-center justify-center border-none shadow-none focus:outline-none'
-      : 'flex items-center justify-start space-x-2 px-3 py-2 rounded-lg border-none hover:bg-gray-100 focus:ring-0 focus:ring-offset-0';
+      : 'w-full flex items-center justify-between px-3 py-2 rounded-lg border-none hover:bg-gray-100 focus:ring-0 focus:ring-offset-0';
 
   const language = normalizeLanguage(
     props?.language || i18nInstance.language || browserLanguage,
@@ -44,19 +43,15 @@ export default function LanguageSelect(props: languageProps) {
       onValueChange={handleSetLanguage}
     >
       <SelectTrigger className={triggerClass}>
-        <GlobeIcon className='w-4 h-4 mr-1' />
-        <SelectValue
-          className='hidden'
-          placeholder={t('langName')}
-        />
+        <SelectValue placeholder={t('common.language.name')} />
       </SelectTrigger>
       <SelectContent className={cn(props.contentClassName)}>
-        {Object.entries(languages).map(([code, label]) => (
+        {localeEntries.map(([code, info]) => (
           <SelectItem
             key={code}
             value={code}
           >
-            {label}
+            {info.label ?? code}
           </SelectItem>
         ))}
       </SelectContent>

@@ -11,7 +11,6 @@ import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
 import { inWechat, wechatLogin } from '@/c-constants/uiConstants';
-import { getBoolEnv } from '@/c-utils/envUtils';
 import { getCourseInfo } from '@/c-api/course';
 import {
   EnvStoreState,
@@ -22,71 +21,6 @@ import {
 import { useEnvStore, useCourseStore } from '@/c-store';
 import { UserProvider, useUserStore } from '@/store';
 
-const initializeEnvData = async (): Promise<void> => {
-  const {
-    updateAppId,
-    updateCourseId,
-    updateAlwaysShowLessonTree,
-    updateUmamiWebsiteId,
-    updateUmamiScriptSrc,
-    updateEruda,
-    updateBaseURL,
-    updateLogoHorizontal,
-    updateLogoVertical,
-    updateEnableWxcode,
-    updateSiteUrl,
-  } = useEnvStore.getState() as EnvStoreState;
-
-  const fetchEnvData = async (): Promise<void> => {
-    try {
-      const res = await fetch('/api/config', {
-        method: 'GET',
-        referrer: 'no-referrer',
-      });
-      if (res.ok) {
-        const data = await res.json();
-
-        // await updateCourseId(data?.courseId || '');
-        await updateAppId(data?.wechatAppId || '');
-        await updateAlwaysShowLessonTree(data?.alwaysShowLessonTree || 'false');
-        await updateUmamiWebsiteId(data?.umamiWebsiteId || '');
-        await updateUmamiScriptSrc(data?.umamiScriptSrc || '');
-        await updateEruda(data?.enableEruda || 'false');
-        await updateBaseURL(data?.apiBaseUrl || '');
-        await updateLogoHorizontal(data?.logoHorizontal || '');
-        await updateLogoVertical(data?.logoVertical || '');
-        await updateEnableWxcode(data?.enableWechatCode?.toString() || 'true');
-        await updateSiteUrl(data?.siteHost || '');
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      const { umamiWebsiteId, umamiScriptSrc } =
-        useEnvStore.getState() as EnvStoreState;
-      if (getBoolEnv('eruda')) {
-        import('eruda').then(eruda => eruda.default.init());
-      }
-
-      const loadUmamiScript = (): void => {
-        if (umamiScriptSrc && umamiWebsiteId) {
-          const script = document.createElement('script');
-          script.defer = true;
-          script.src = umamiScriptSrc;
-          script.setAttribute('data-website-id', umamiWebsiteId);
-          document.head.appendChild(script);
-        }
-      };
-
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', loadUmamiScript);
-      } else {
-        loadUmamiScript();
-      }
-    }
-  };
-  await fetchEnvData();
-};
-
 export default function ChatLayout({
   children,
 }: {
@@ -94,16 +28,10 @@ export default function ChatLayout({
 }) {
   const { i18n } = useTranslation();
 
-  const [envDataInitialized, setEnvDataInitialized] = useState<boolean>(false);
   const [checkWxcode, setCheckWxcode] = useState<boolean>(false);
-
-  useEffect(() => {
-    const initialize = async (): Promise<void> => {
-      await initializeEnvData();
-      setEnvDataInitialized(true);
-    };
-    initialize();
-  }, []);
+  const envDataInitialized = useEnvStore(
+    (state: EnvStoreState) => state.runtimeConfigLoaded,
+  );
 
   const {
     updateChannel,
@@ -112,8 +40,12 @@ export default function ChatLayout({
     updateWechatCode,
     setShowVip,
     updateLanguage,
+    previewMode,
+    skip,
     updatePreviewMode,
     updateSkip,
+    updateShowLearningModeToggle,
+    updateLearningMode,
   } = useSystemStore() as SystemStoreState;
 
   // Use the original browser language without conversion
@@ -129,11 +61,14 @@ export default function ChatLayout({
     (state: EnvStoreState) => state.enableWxcode,
   );
 
-  const { updateCourseName } = useCourseStore(
-    useShallow((state: CourseStoreState) => ({
-      updateCourseName: state.updateCourseName,
-    })),
-  );
+  const { updateCourseName, updateCourseAvatar, updateCourseTtsEnabled } =
+    useCourseStore(
+      useShallow((state: CourseStoreState) => ({
+        updateCourseName: state.updateCourseName,
+        updateCourseAvatar: state.updateCourseAvatar,
+        updateCourseTtsEnabled: state.updateCourseTtsEnabled,
+      })),
+    );
 
   const { userInfo, initUser } = useUserStore();
 
@@ -153,31 +88,53 @@ export default function ChatLayout({
     ? params.preview.toLowerCase() === 'true'
     : false;
   const isSkipMode = params.skip ? params.skip.toLowerCase() === 'true' : false;
+  const listenModeEnabled = params.listen
+    ? params.listen.toLowerCase() === 'true'
+    : false;
 
   if (channel !== currChannel) {
     updateChannel(currChannel);
   }
 
+  // Apply preview/skip flags eagerly so child components (and their effects) see
+  // the correct mode on the first render.
+  if (previewMode !== isPreviewMode) {
+    updatePreviewMode(isPreviewMode);
+  }
+
+  if (skip !== isSkipMode) {
+    updateSkip(isSkipMode);
+  }
+
   useEffect(() => {
     if (!envDataInitialized) return;
-    if (enableWxcode && inWechat()) {
-      const { appId } = useEnvStore.getState() as EnvStoreState;
-      // setLoading(true);
-      const currCode = params.code;
-      if (!currCode) {
-        wechatLogin({
-          appId,
-        });
-        return;
-      }
-      if (currCode !== wechatCode) {
-        updateWechatCode(currCode);
-        setCheckWxcode(true);
-      }
-    } else {
+    const wxcodeEnabled =
+      typeof enableWxcode === 'string' && enableWxcode.toLowerCase() === 'true';
+    if (!wxcodeEnabled || !inWechat()) {
       setCheckWxcode(true);
+      return;
     }
-    // setLoading(false);
+
+    const { appId } = useEnvStore.getState() as EnvStoreState;
+    const currCode = params.code;
+
+    if (!appId) {
+      console.warn('WeChat appId missing, skip OAuth redirect');
+      setCheckWxcode(true);
+      return;
+    }
+
+    if (!currCode) {
+      wechatLogin({
+        appId,
+      });
+      return;
+    }
+
+    if (currCode !== wechatCode) {
+      updateWechatCode(currCode);
+    }
+    setCheckWxcode(true);
   }, [
     params.code,
     updateWechatCode,
@@ -199,7 +156,17 @@ export default function ChatLayout({
   useEffect(() => {
     updatePreviewMode(isPreviewMode);
     updateSkip(isSkipMode);
-  }, [isPreviewMode, isSkipMode, updatePreviewMode, updateSkip]);
+    updateShowLearningModeToggle(listenModeEnabled);
+    updateLearningMode(listenModeEnabled ? 'listen' : 'read');
+  }, [
+    isPreviewMode,
+    isSkipMode,
+    listenModeEnabled,
+    updatePreviewMode,
+    updateSkip,
+    updateShowLearningModeToggle,
+    updateLearningMode,
+  ]);
 
   useEffect(() => {
     const fetchCourseInfo = async () => {
@@ -210,6 +177,8 @@ export default function ChatLayout({
           if (resp) {
             setShowVip(resp.course_price > 0);
             updateCourseName(resp.course_name);
+            updateCourseAvatar(resp.course_avatar);
+            updateCourseTtsEnabled(resp.course_tts_enabled ?? null);
             document.title = resp.course_name + ' - AI 师傅';
             const metaDescription = document.querySelector(
               'meta[name="description"]',
@@ -237,7 +206,6 @@ export default function ChatLayout({
             window.location.href = '/404';
           }
         } catch (error) {
-          console.log(error);
           window.location.href = '/404';
         }
       }
@@ -248,6 +216,8 @@ export default function ChatLayout({
     envDataInitialized,
     setShowVip,
     updateCourseName,
+    updateCourseAvatar,
+    updateCourseTtsEnabled,
     isPreviewMode,
   ]);
 

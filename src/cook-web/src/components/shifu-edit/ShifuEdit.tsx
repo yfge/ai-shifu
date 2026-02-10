@@ -1,551 +1,826 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { DndProvider, useDrag, useDrop } from 'react-dnd';
-import type { DropTargetMonitor } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from 'react';
 import { Button } from '@/components/ui/Button';
-import {
-  Plus,
-  GripVertical,
-  Trash2,
-  SquarePen,
-  BugPlay,
-  Settings2,
-  ListCollapse,
-} from 'lucide-react';
+import { Columns2, ListCollapse, Loader2, Plus, Sparkles } from 'lucide-react';
 import { useShifu } from '@/store';
 import { useUserStore } from '@/store';
 import OutlineTree from '@/components/outline-tree';
-import '@mdxeditor/editor/style.css';
+import ChapterSettingsDialog from '@/components/chapter-setting';
+import { MdfConvertDialog } from '@/components/mdf-convert';
 import Header from '../header';
-import { BlockDTO, BlockType, ContentDTO } from '@/types/shifu';
-import RenderBlockUI from '../render-ui';
-import AIDebugDialog from '@/components/ai-debug';
-
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '../ui/AlertDialog';
-import AddBlock from '@/components/add-block';
+// import MarkdownFlowEditor from '../../../../../../markdown-flow-ui/src/components/MarkdownFlowEditor';
+import { UploadProps, EditMode } from 'markdown-flow-ui/editor';
+import dynamic from 'next/dynamic';
+import { cn } from '@/lib/utils';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import './shifuEdit.scss';
 import Loading from '../loading';
 import { useTranslation } from 'react-i18next';
-import i18n from '@/i18n';
-interface DragItem {
-  id: string;
-  index: number;
-}
 
-interface DraggableBlockProps {
-  id: string;
-  type: BlockType;
-  index: number;
-  block: BlockDTO;
-  moveBlock: (dragIndex: number, hoverIndex: number) => void;
-  onClickDebug?: (id: string) => void;
-  onClickRemove?: (id: string) => void;
-  onClickChangeType?: (id: string, llm_enabled: boolean) => void;
-  children: React.ReactNode;
-  disabled?: boolean;
-  error?: string | null;
-}
-
-const DraggableBlock = ({
-  id,
-  type,
-  index,
-  block,
-  moveBlock,
-  onClickDebug,
-  onClickRemove,
-  onClickChangeType,
-  children,
-  disabled = false,
-  error,
-}: DraggableBlockProps) => {
-  const { t } = useTranslation();
-  const ref = React.useRef<HTMLDivElement>(null);
-
-  const [llmEnabled, setLlmEnabled] = useState(
-    (block.properties as ContentDTO).llm_enabled,
-  );
-
-  const [{ handlerId }, drop] = useDrop<
-    DragItem,
-    void,
-    { handlerId: string | symbol | null }
-  >({
-    accept: 'BLOCK',
-    collect(monitor) {
-      return {
-        handlerId: monitor.getHandlerId(),
-      };
-    },
-    hover(item: DragItem, monitor: DropTargetMonitor) {
-      if (!ref.current || disabled) {
-        return;
-      }
-
-      const dragIndex = item.index;
-      const hoverIndex = index;
-
-      if (dragIndex === hoverIndex) {
-        return;
-      }
-
-      const hoverBoundingRect = ref.current?.getBoundingClientRect();
-      const hoverMiddleY =
-        (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
-      const clientOffset = monitor.getClientOffset();
-      const hoverClientY = clientOffset!.y - hoverBoundingRect.top;
-
-      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
-        return;
-      }
-      if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
-        return;
-      }
-
-      moveBlock(dragIndex, hoverIndex);
-      item.index = hoverIndex;
-    },
-  });
-
-  const [{ isDragging }, drag] = useDrag<
-    DragItem,
-    void,
-    { isDragging: boolean }
-  >({
-    type: 'BLOCK',
-    item: () => {
-      return { id, index };
-    },
-    canDrag: !disabled,
-    collect: monitor => ({
-      isDragging: monitor.isDragging(),
-    }),
-  });
-
-  const [showMenu, setShowMenu] = useState(false);
-
-  const handleMouseEnter = () => {
-    setShowMenu(true);
-  };
-
-  const handleMouseLeave = () => {
-    setShowMenu(false);
-  };
-
-  const dragRef = React.useRef<HTMLDivElement>(null);
-  drop(ref);
-  drag(dragRef);
-
-  return (
-    <div
-      ref={ref}
-      style={{ opacity: isDragging ? 0.5 : 1 }}
-      data-handler-id={handlerId}
-      className='group'
-    >
-      <div
-        ref={dragRef}
-        style={{
-          border: error ? '1px solid #ff4d4f' : '1px solid #ddd',
-          padding: '1rem',
-          backgroundColor: '#fff',
-          borderRadius: '8px',
-          position: 'relative',
-        }}
-      >
-        <div
-          onMouseLeave={handleMouseLeave}
-          className='group-hover:opacity-100 opacity-0 cursor-grab'
-          style={{
-            zIndex: 100,
-            position: 'absolute',
-            top: '0',
-            left: '-56px',
-          }}
-        >
-          <div className='p-2 h-8 w-16 flex items-center justify-center border color-[#999] rounded'>
-            <SquarePen
-              className='text-gray-500'
-              onMouseEnter={handleMouseEnter}
-            />
-            <GripVertical
-              className='text-gray-500'
-              onMouseEnter={handleMouseEnter}
-            />
-          </div>
-
-          <div
-            className='shadow-md rounded-lg w-48 p-2 transition-all'
-            style={{
-              position: 'absolute',
-              left: '0px',
-              zIndex: 51,
-              display: `${showMenu ? 'block' : 'none'}`,
-              border: '1px solid #f3f4f6',
-              backgroundColor: '#fff',
-            }}
-          >
-            <div className='flex flex-col gap-2 text-sm'>
-              {type === 'content' && (
-                <div className='px-3 py-1.5 text-gray-500 text-lg'>
-                  {llmEnabled ? t('shifu.aiBlock') : t('shifu.regularBlock')}
-                </div>
-              )}
-              {type === 'content' && (
-                <div
-                  className='flex items-center gap-2 px-3 py-1.5 rounded hover:bg-gray-50 cursor-pointer'
-                  onClick={() => {
-                    onClickChangeType?.(id, !llmEnabled);
-                    setLlmEnabled(!llmEnabled);
-                  }}
-                >
-                  <Settings2 className='h-4 w-4' />
-                  {llmEnabled
-                    ? t('shifu.setAsRegularBlock')
-                    : t('shifu.setAsAiBlock')}
-                </div>
-              )}
-              {type === 'content' && llmEnabled && (
-                <div
-                  className='flex items-center gap-2 px-3 py-1.5 rounded hover:bg-gray-50 cursor-pointer'
-                  onClick={() => onClickDebug?.(id)}
-                >
-                  <BugPlay className='h-4 w-4' />
-                  {t('shifu.debug')}
-                </div>
-              )}
-              <div
-                className='flex items-center gap-2 px-3 py-1.5 rounded hover:bg-red-50 text-red-600 cursor-pointer'
-                onClick={() => onClickRemove?.(id)}
-              >
-                <Trash2 className='h-4 w-4' />
-                {t('shifu.delete')}
-              </div>
-            </div>
-          </div>
-        </div>
-        {error && (
-          <div
-            className='mb-2 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm'
-            role='alert'
-            aria-live='polite'
-          >
-            {error}
-          </div>
-        )}
-        {children}
+const MarkdownFlowEditor = dynamic(
+  () => import('markdown-flow-ui/editor').then(mod => mod.MarkdownFlowEditor),
+  {
+    ssr: false,
+    loading: () => (
+      <div className='h-40 flex items-center justify-center'>
+        <Loading />
       </div>
-    </div>
-  );
+    ),
+  },
+);
+import i18n, { normalizeLanguage } from '@/i18n';
+import { useEnvStore } from '@/c-store';
+import { EnvStoreState } from '@/c-types/store';
+import LessonPreview from '@/components/lesson-preview';
+import { usePreviewChat } from '@/components/lesson-preview/usePreviewChat';
+import { Rnd } from 'react-rnd';
+import { useTracking } from '@/c-common/hooks/useTracking';
+import MarkdownFlowLink from '@/components/ui/MarkdownFlowLink';
+import { LessonCreationSettings } from '@/types/shifu';
+
+const OUTLINE_DEFAULT_WIDTH = 256;
+const OUTLINE_COLLAPSED_WIDTH = 60;
+const OUTLINE_STORAGE_KEY = 'shifu-outline-panel-width';
+const TOOLBAR_ICON_SIZE = 18; // Match markdown-flow-ui toolbar icon size
+
+const VARIABLE_NAME_REGEXP = /\{\{([\p{L}\p{N}_]+)\}\}/gu;
+
+// Collect variable names that truly exist in current markdown content
+const extractVariableNames = (text?: string | null) => {
+  if (!text) {
+    return [];
+  }
+  const collected = new Set<string>();
+  let match: RegExpExecArray | null;
+  while ((match = VARIABLE_NAME_REGEXP.exec(text)) !== null) {
+    if (match[1]) {
+      collected.add(match[1]);
+    }
+    if (VARIABLE_NAME_REGEXP.lastIndex === match.index) {
+      VARIABLE_NAME_REGEXP.lastIndex += 1;
+    }
+  }
+  VARIABLE_NAME_REGEXP.lastIndex = 0;
+  return Array.from(collected);
 };
 
 const ScriptEditor = ({ id }: { id: string }) => {
   const { t } = useTranslation();
+  const { trackEvent } = useTracking();
   const profile = useUserStore(state => state.userInfo);
-  const [expandedBlocks, setExpandedBlocks] = useState<Record<string, boolean>>(
-    {},
-  );
+  const isInitialized = useUserStore(state => state.isInitialized);
+  const isGuest = useUserStore(state => state.isGuest);
   const [foldOutlineTree, setFoldOutlineTree] = useState(false);
-
-  useEffect(() => {
-    if (profile) {
-      i18n.changeLanguage(profile.language);
-    }
-  }, [profile]);
+  const [outlineWidth, setOutlineWidth] = useState(OUTLINE_DEFAULT_WIDTH);
+  const previousOutlineWidthRef = useRef(OUTLINE_DEFAULT_WIDTH);
+  const [editMode, setEditMode] = useState<EditMode>('quickEdit' as EditMode);
+  const [isPreviewPanelOpen, setIsPreviewPanelOpen] = useState(false);
+  const [isPreviewPreparing, setIsPreviewPreparing] = useState(false);
+  const [addChapterDialogOpen, setAddChapterDialogOpen] = useState(false);
+  const [isMdfConvertDialogOpen, setIsMdfConvertDialogOpen] = useState(false);
+  const [recentVariables, setRecentVariables] = useState<string[]>([]);
+  const seenVariableNamesRef = useRef<Set<string>>(new Set());
+  const currentNodeBidRef = useRef<string | null>(null); // Keep latest node bid while async preview is pending
   const {
-    blocks,
+    mdflow,
     chapters,
     actions,
-    blockContentTypes,
-    blockProperties,
-    // blockUIProperties,
-    // blockUITypes,
-    currentNode,
     isLoading,
+    variables,
+    systemVariables,
+    hiddenVariables,
+    unusedVariables,
+    hideUnusedMode,
     currentShifu,
-    blockErrors,
+    currentNode,
   } = useShifu();
 
-  const [debugBlockInfo, setDebugBlockInfo] = useState({
-    blockId: '',
-    visible: false,
-  });
+  const {
+    items: previewItems,
+    isLoading: previewLoading,
+    error: previewError,
+    startPreview,
+    stopPreview,
+    resetPreview,
+    onRefresh,
+    onSend,
+    persistVariables,
+    onVariableChange,
+    variables: previewVariables,
+    requestAudioForBlock: requestPreviewAudioForBlock,
+    reGenerateConfirm,
+  } = usePreviewChat();
+  const editModeOptions = useMemo(
+    () => [
+      {
+        label: t('module.shifu.creationArea.modeText'),
+        value: 'quickEdit' as EditMode,
+      },
+      {
+        label: t('module.shifu.creationArea.modeCode'),
+        value: 'codeEdit' as EditMode,
+      },
+    ],
+    [t],
+  );
 
-  const [removeBlockInfo, setRemoveBlockInfo] = useState({
-    blockId: '',
-    visible: false,
-  });
+  useEffect(() => {
+    if (profile && profile.language) {
+      const next = normalizeLanguage(profile.language);
+      if ((i18n.resolvedLanguage ?? i18n.language) !== next) {
+        i18n.changeLanguage(next);
+      }
+    }
+  }, [profile]);
 
-  const [newBlockId, setNewBlockId] = useState('');
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const storedWidth = window.localStorage.getItem(OUTLINE_STORAGE_KEY);
+    const parsedWidth = storedWidth ? Number.parseInt(storedWidth, 10) : NaN;
+    if (!Number.isNaN(parsedWidth) && parsedWidth >= OUTLINE_DEFAULT_WIDTH) {
+      setOutlineWidth(parsedWidth);
+      previousOutlineWidthRef.current = parsedWidth;
+    }
+  }, []);
 
-  const onAddChapter = () => {
-    actions.addChapter({
-      parent_bid: '',
-      bid: 'new_chapter',
-      id: 'new_chapter',
-      name: ``,
-      children: [],
-      position: '',
-      depth: 0,
-    });
-    setTimeout(() => {
-      document.getElementById('new_chapter')?.scrollIntoView({
-        behavior: 'smooth',
-      });
-    }, 800);
+  useEffect(() => {
+    const baseTitle = t('common.core.adminTitle');
+    const suffix = currentShifu?.name ? ` - ${currentShifu.name}` : '';
+    document.title = `${baseTitle}${suffix}`;
+  }, [t, currentShifu?.name]);
+
+  const token = useUserStore(state => state.getToken());
+  const baseURL = useEnvStore((state: EnvStoreState) => state.baseURL);
+
+  useEffect(() => {
+    return () => {
+      stopPreview();
+      resetPreview();
+    };
+  }, [resetPreview, stopPreview]);
+
+  useEffect(() => {
+    if (!currentNode?.bid) {
+      return;
+    }
+    stopPreview();
+    resetPreview();
+  }, [currentNode?.bid, resetPreview, stopPreview]);
+
+  const handleAddChapterClick = () => {
+    if (currentShifu?.readonly) {
+      return;
+    }
+    actions.insertPlaceholderChapter();
+    // setAddChapterDialogOpen(true);
   };
 
-  const onDebugBlock = (id: string) => {
-    setDebugBlockInfo({ blockId: id, visible: true });
-  };
-
-  const onDebugBlockClose = () => {
-    setDebugBlockInfo({ blockId: '', visible: false });
-  };
-
-  const onRemove = async (id: string) => {
-    setRemoveBlockInfo({ blockId: id, visible: true });
-  };
-
-  const handleConfirmDelete = async (id: string | undefined) => {
-    if (!id) return;
+  const handleAddChapterConfirm = async (settings: LessonCreationSettings) => {
     try {
-      await actions.removeBlock(id, currentShifu?.bid || '');
-      setRemoveBlockInfo({ blockId: '', visible: false });
+      await actions.addRootOutline(settings);
+      setAddChapterDialogOpen(false);
     } catch (error) {
       console.error(error);
     }
   };
 
-  const onAddBlock = async (index: number, type: BlockType, bid: string) => {
-    const blockId = await actions.addBlock(index, type, bid);
-    if (blockId && ['content', 'input', 'goto', 'options'].includes(type)) {
-      setNewBlockId(blockId);
-      setExpandedBlocks(prev => ({
-        ...prev,
-        [blockId]: true,
-      }));
+  useEffect(() => {
+    if (!isInitialized) {
+      return;
     }
-  };
 
-  useEffect(() => {
-    console.log('newBlockId', newBlockId);
-    if (newBlockId && expandedBlocks[newBlockId] === false) {
-      console.log('setExpandedBlocks', newBlockId);
-      setExpandedBlocks(prev => ({
-        ...prev,
-        [newBlockId]: true,
-      }));
-      setNewBlockId('');
+    if (isGuest) {
+      const currentPath = encodeURIComponent(
+        window.location.pathname + window.location.search,
+      );
+      window.location.href = `/login?redirect=${currentPath}`;
+      return;
     }
-  }, [newBlockId, expandedBlocks]);
 
-  useEffect(() => {
-    console.log('expandedBlocks', expandedBlocks);
-  }, [expandedBlocks]);
-
-  const onChangeBlockType = async (id: string, llm_enabled: boolean) => {
-    const p = blockProperties[id].properties as ContentDTO;
-    await actions.updateBlockProperties(id, {
-      ...blockProperties[id],
-      properties: {
-        ...p,
-        llm_enabled: llm_enabled,
-      },
-    });
-
-    actions.saveBlocks(currentShifu?.bid || '');
-  };
-
-  useEffect(() => {
     actions.loadModels();
     if (id) {
       actions.loadChapters(id);
     }
-  }, [id]);
+  }, [id, isGuest, isInitialized]);
+
+  const handleTogglePreviewPanel = () => {
+    setIsPreviewPanelOpen(prev => !prev);
+  };
+
+  const handleHideUnusedVariables = useCallback(async () => {
+    if (!currentShifu?.bid) return;
+    try {
+      await actions.hideUnusedVariables(currentShifu.bid);
+    } catch (error) {
+      console.error('Failed to hide unused variables', error);
+    }
+  }, [actions, currentShifu?.bid]);
+
+  const handleRestoreHiddenVariables = useCallback(async () => {
+    if (!currentShifu?.bid) return;
+    try {
+      await actions.restoreHiddenVariables(currentShifu.bid);
+    } catch (error) {
+      console.error('Failed to restore hidden variables', error);
+    }
+  }, [actions, currentShifu?.bid]);
+
+  const handleHideSingleVariable = useCallback(
+    async (name: string) => {
+      if (!currentShifu?.bid) return;
+      try {
+        await actions.hideVariableByKey(currentShifu.bid, name);
+      } catch (error) {
+        console.error('Failed to hide variable', error);
+      }
+    },
+    [actions, currentShifu?.bid],
+  );
+
+  useEffect(() => {
+    currentNodeBidRef.current = currentNode?.bid ?? null;
+  }, [currentNode?.bid]);
+
+  const handleChapterSelect = useCallback(() => {
+    if (!isPreviewPanelOpen) {
+      return;
+    }
+    setIsPreviewPanelOpen(false);
+    stopPreview();
+    resetPreview();
+  }, [isPreviewPanelOpen, stopPreview, resetPreview]);
+
+  const handlePreview = async () => {
+    if (!canPreview || !currentShifu?.bid || !currentNode?.bid) {
+      return;
+    }
+    const targetOutline = currentNode.bid;
+    const targetShifu = currentShifu.bid;
+    const targetMdflow = mdflow;
+    const outlineChanged = () => {
+      // `currentNodeBidRef.current` holds the latest outline bid, updated via useEffect.
+      // This check correctly detects if the user has navigated to a different outline item
+      // since the preview was initiated.
+      return targetOutline !== currentNodeBidRef.current;
+    };
+    trackEvent('creator_lesson_preview_click', {
+      shifu_bid: targetShifu,
+      outline_bid: targetOutline,
+    });
+    setIsPreviewPanelOpen(true);
+    setIsPreviewPreparing(true);
+    resetPreview();
+
+    try {
+      if (!currentShifu?.readonly) {
+        await actions.saveMdflow({
+          shifu_bid: targetShifu,
+          outline_bid: targetOutline,
+          data: targetMdflow,
+        });
+        if (outlineChanged()) {
+          return;
+        }
+      }
+      const {
+        variables: parsedVariablesMap,
+        blocksCount,
+        systemVariableKeys,
+        allVariableKeys,
+        unusedKeys,
+      } = await actions.previewParse(targetMdflow, targetShifu, targetOutline);
+
+      if (hideUnusedMode) {
+        // In "hide unused" mode, refresh hidden list from full-course usage.
+        await actions.syncHiddenVariablesToUsage(targetShifu, { unusedKeys });
+        if (outlineChanged()) {
+          return;
+        }
+      } else {
+        // Auto-unhide only the hidden variables that are actually used in current prompts (use parsed keys)
+        const parsedVariableKeys =
+          allVariableKeys || Object.keys(parsedVariablesMap || {});
+        const mdflowVariableNames = new Set(extractVariableNames(targetMdflow));
+        const usedHiddenKeys = hiddenVariables.filter(
+          key =>
+            parsedVariableKeys.includes(key) && mdflowVariableNames.has(key),
+        );
+        if (usedHiddenKeys.length) {
+          try {
+            await actions.unhideVariablesByKeys(targetShifu, usedHiddenKeys);
+            if (outlineChanged()) {
+              return;
+            }
+            // refresh local visible/hidden lists to reflect the change
+            await actions.refreshProfileDefinitions(targetShifu);
+          } catch (unhideError) {
+            console.error('Failed to auto-unhide variables:', unhideError);
+          }
+        }
+      }
+      if (outlineChanged()) {
+        return;
+      }
+      const previewVariablesMap = {
+        ...parsedVariablesMap,
+        ...previewVariables,
+      };
+      persistVariables({
+        shifuBid: targetShifu,
+        systemVariableKeys,
+        variables: previewVariablesMap,
+      });
+      void startPreview({
+        shifuBid: targetShifu,
+        outlineBid: targetOutline,
+        mdflow: targetMdflow,
+        variables: previewVariablesMap,
+        max_block_count: blocksCount,
+        systemVariableKeys,
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsPreviewPreparing(false);
+    }
+  };
+
+  const mdflowVariableNames = useMemo(
+    () => extractVariableNames(mdflow),
+    [mdflow],
+  );
+
+  const resolvedPreviewVariables = useMemo(() => {
+    const candidates = [previewVariables, previewItems[0]?.variables];
+    for (const candidate of candidates) {
+      if (candidate && Object.keys(candidate).length) {
+        return candidate;
+      }
+    }
+    return undefined;
+  }, [previewItems, previewVariables]);
+  useEffect(() => {
+    const previousSeen = seenVariableNamesRef.current;
+    const currentSet = new Set<string>();
+    const newNames: string[] = [];
+    mdflowVariableNames.forEach(name => {
+      if (!name) {
+        return;
+      }
+      currentSet.add(name);
+      if (!previousSeen.has(name)) {
+        newNames.push(name);
+      }
+    });
+    seenVariableNamesRef.current = currentSet;
+    const currentNamesSet = new Set(mdflowVariableNames);
+    if (!newNames.length) {
+      setRecentVariables(prev =>
+        prev.filter(name => currentNamesSet.has(name)),
+      );
+      return;
+    }
+    setRecentVariables(prev => {
+      const filteredPrev = prev.filter(
+        name => !newNames.includes(name) && currentNamesSet.has(name),
+      );
+      return [...newNames, ...filteredPrev];
+    });
+  }, [mdflowVariableNames]);
+
+  const variablesList = useMemo(() => {
+    return (variables || []).map(name => ({ name }));
+  }, [variables]);
+
+  const systemVariablesList = useMemo(() => {
+    return systemVariables.map((variable: Record<string, string>) => ({
+      name: variable.name,
+      label: variable.label,
+    }));
+  }, [systemVariables]);
+
+  const variableOrder = useMemo(() => {
+    return [
+      ...systemVariablesList.map(variable => variable.name),
+      ...variablesList.map(variable => variable.name),
+    ];
+  }, [systemVariablesList, variablesList]);
+
+  // Course-level visible variables (system + custom, excluding hidden)
+  const courseVisibleVariableKeys = useMemo(() => {
+    const systemSet = systemVariablesList.map(item => item.name);
+    const customVisible = (variables || []).filter(
+      key => !hiddenVariables.includes(key),
+    );
+    return [...systemSet, ...customVisible];
+  }, [hiddenVariables, systemVariablesList, variables]);
+
+  // Preview variables: start from parsed variables and fill missing course-visible keys with empty values
+  const mergedPreviewVariables = useMemo(() => {
+    const base = resolvedPreviewVariables
+      ? { ...resolvedPreviewVariables }
+      : {};
+    courseVisibleVariableKeys.forEach(key => {
+      if (!(key in base)) {
+        base[key] = '';
+      }
+    });
+    return base;
+  }, [courseVisibleVariableKeys, resolvedPreviewVariables]);
+
+  const unusedVisibleVariables = useMemo(() => {
+    const hiddenSet = new Set(hiddenVariables);
+    return (unusedVariables || []).filter(key => !hiddenSet.has(key));
+  }, [hiddenVariables, unusedVariables]);
+
+  const hasUnusedVisibleVariables = unusedVisibleVariables.length > 0;
+
+  const hasHiddenVariables = hiddenVariables.length > 0;
+  const hideRestoreActionType: 'hide' | 'restore' = hasUnusedVisibleVariables
+    ? 'hide'
+    : hasHiddenVariables
+      ? 'restore'
+      : 'hide';
+  const hideRestoreActionDisabled =
+    hideRestoreActionType === 'hide'
+      ? !hasUnusedVisibleVariables
+      : !hasHiddenVariables;
+
+  const onChangeMdflow = (value: string) => {
+    actions.setCurrentMdflow(value);
+    // Pass snapshot so autosave persists pre-switch content + chapter id
+    actions.autoSaveBlocks({
+      shifu_bid: currentShifu?.bid || '',
+      outline_bid: currentNode?.bid || '',
+      data: value,
+    });
+  };
+
+  const uploadProps: UploadProps = useMemo(() => {
+    const endpoint = baseURL || window.location.origin;
+    return {
+      action: `${endpoint}/api/shifu/upfile`,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Token: token,
+      },
+    };
+  }, [token, baseURL]);
+
+  // Handle applying MDF converted content to editor
+  const handleApplyMdfContent = useCallback(
+    (contentPrompt: string) => {
+      actions.setCurrentMdflow(contentPrompt);
+      actions.autoSaveBlocks({
+        shifu_bid: currentShifu?.bid || '',
+        outline_bid: currentNode?.bid || '',
+        data: contentPrompt,
+      });
+    },
+    [actions, currentShifu?.bid, currentNode?.bid],
+  );
+
+  // Toolbar actions for MDF conversion
+  const toolbarActionsRight = useMemo(
+    () => [
+      {
+        key: 'mdfConvert',
+        label: '',
+        icon: (
+          <svg
+            aria-hidden='true'
+            viewBox='0 0 1024 1024'
+            width={TOOLBAR_ICON_SIZE}
+            height={TOOLBAR_ICON_SIZE}
+            className='fill-foreground'
+          >
+            <path d='M633.6 358.4l-473.6 460.8c0 12.8 6.4 19.2 12.8 19.2l51.2 51.2c6.4 6.4 12.8 6.4 19.2 12.8L704 441.6 633.6 358.4zM780.8 384c0 6.4 6.4 6.4 0 0l6.4 6.4h12.8l121.6-121.6c12.8-12.8 12.8-44.8-12.8-64l-51.2-51.2c-19.2-19.2-51.2-25.6-64-12.8l-121.6 121.6-6.4 6.4c0 6.4 0 6.4 6.4 6.4L780.8 384zM313.6 224l64 25.6c6.4 0 6.4 6.4 12.8 19.2l25.6 57.6h12.8l25.6-57.6c0-6.4 6.4-12.8 12.8-12.8l57.6-25.6v-6.4-6.4l-57.6-32c-6.4 0-12.8-6.4-12.8-12.8l-25.6-64h-12.8l-25.6 64c-6.4 6.4-6.4 12.8-19.2 12.8l-57.6 25.6-6.4 6.4 6.4 6.4zM166.4 531.2s6.4 0 0 0c6.4 0 6.4-6.4 0 0l25.6-51.2c0-6.4 6.4-12.8 12.8-12.8l44.8-19.2v-6.4l-44.8-19.2-12.8-12.8-19.2-44.8h-6.4l-19.2 44.8c0 6.4-6.4 12.8-12.8 12.8l-44.8 19.2 44.8 19.2c6.4 0 6.4 6.4 12.8 12.8l19.2 57.6c0-6.4 0 0 0 0zM934.4 774.4l-89.6-38.4c-12.8-6.4-19.2-12.8-25.6-25.6l-38.4-83.2s0-6.4-6.4-6.4H768s-6.4 0-6.4 6.4l-38.4 83.2c-6.4 12.8-12.8 19.2-19.2 25.6l-83.2 38.4h-6.4v12.8h6.4l83.2 38.4c12.8 6.4 19.2 12.8 25.6 25.6l38.4 83.2s0 6.4 6.4 6.4h6.4s6.4 0 6.4-6.4l38.4-83.2c6.4-12.8 12.8-19.2 19.2-25.6l83.2-38.4h6.4c6.4 0 6.4-6.4 0-12.8 6.4 6.4 6.4 6.4 0 0z' />
+          </svg>
+        ),
+        tooltip: t('component.mdfConvert.dialogTitle'),
+        onClick: () => {
+          trackEvent('creator_mdf_dialog_open', {});
+          setIsMdfConvertDialogOpen(true);
+        },
+      },
+    ],
+    [t, trackEvent],
+  );
+
+  const canPreview = Boolean(
+    currentNode?.depth && currentNode.depth > 0 && currentShifu?.bid,
+  );
+
+  const previewToggleLabel = isPreviewPanelOpen
+    ? t('module.shifu.previewArea.close')
+    : t('module.shifu.previewArea.open');
+
+  const previewDisabledReason = t('module.shifu.previewArea.disabled');
+
+  const persistOutlineWidth = useCallback((width: number) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const normalizedWidth = Math.max(OUTLINE_DEFAULT_WIDTH, Math.round(width));
+    window.localStorage.setItem(
+      OUTLINE_STORAGE_KEY,
+      normalizedWidth.toString(),
+    );
+  }, []);
+
+  const updateOutlineWidthFromElement = useCallback((element: HTMLElement) => {
+    const width = Math.round(element.getBoundingClientRect().width);
+    const normalizedWidth = Math.max(OUTLINE_DEFAULT_WIDTH, width);
+    setOutlineWidth(normalizedWidth);
+    return normalizedWidth;
+  }, []);
+
+  const handleOutlineResize = useCallback(
+    (_event: unknown, _direction: unknown, ref: HTMLElement) => {
+      updateOutlineWidthFromElement(ref);
+    },
+    [updateOutlineWidthFromElement],
+  );
+
+  const handleOutlineResizeStop = useCallback(
+    (_event: unknown, _direction: unknown, ref: HTMLElement) => {
+      const width = updateOutlineWidthFromElement(ref);
+      previousOutlineWidthRef.current = width;
+      persistOutlineWidth(width);
+    },
+    [persistOutlineWidth, updateOutlineWidthFromElement],
+  );
+
+  // Toggle outline tree collapse/expand
+  const toggle = () => {
+    setFoldOutlineTree(prev => {
+      const next = !prev;
+      if (next) {
+        previousOutlineWidthRef.current =
+          outlineWidth > OUTLINE_COLLAPSED_WIDTH
+            ? outlineWidth
+            : OUTLINE_DEFAULT_WIDTH;
+        setOutlineWidth(OUTLINE_COLLAPSED_WIDTH);
+      } else {
+        const restoredWidth =
+          previousOutlineWidthRef.current > OUTLINE_COLLAPSED_WIDTH
+            ? previousOutlineWidthRef.current
+            : OUTLINE_DEFAULT_WIDTH;
+        setOutlineWidth(restoredWidth);
+      }
+      return next;
+    });
+  };
 
   return (
     <div className='flex flex-col h-screen bg-gray-50'>
       <Header />
-      <div
-        className='flex-1 container mx-auto px-10'
-        style={{
-          height: 'calc(100vh - 50px)',
-          overflowY: 'auto',
-        }}
-      >
-        <div
-          className='my-2'
-          style={{
-            position: 'fixed',
-            borderRadius: '8px',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-            top: 48,
-            bottom: 0,
-            zIndex: 1,
+      <div className='flex flex-1 overflow-hidden'>
+        <Rnd
+          id='outline-panel'
+          disableDragging
+          enableResizing={{
+            bottom: false,
+            bottomLeft: false,
+            bottomRight: false,
+            left: false,
+            right: !foldOutlineTree,
+            top: false,
+            topLeft: false,
+            topRight: false,
           }}
-        >
-          <div className='px-3 flex items-center justify-between gap-3'>
-            <div
-              onClick={() => setFoldOutlineTree(!foldOutlineTree)}
-              className='rounded border bg-white p-1 cursor-pointer text-sm hover:bg-gray-200'
-            >
-              <ListCollapse className='h-5 w-5' />
-            </div>
-            {!foldOutlineTree && (
-              <Button
-                variant='outline'
-                className='h-8 bottom-0 left-4 flex-1'
-                size='sm'
-                onClick={onAddChapter}
-              >
-                <Plus />
-                {t('shifu.newChapter')}
-              </Button>
-            )}
-          </div>
-
-          {!foldOutlineTree && (
-            <div className='p-2 flex-1 h-full overflow-y-auto overflow-x-hidden pr-4 w-[240px]'>
-              <ol className=' text-sm'>
-                <OutlineTree
-                  items={chapters}
-                  onChange={newChapters => {
-                    actions.setChapters([...newChapters]);
-                  }}
-                />
-              </ol>
-            </div>
+          size={{
+            width: `${outlineWidth}px`,
+            height: '100%',
+          }}
+          minWidth={`${
+            foldOutlineTree ? OUTLINE_COLLAPSED_WIDTH : OUTLINE_DEFAULT_WIDTH
+          }px`}
+          onResize={handleOutlineResize}
+          onResizeStop={handleOutlineResizeStop}
+          className={cn(
+            'bg-white h-full transition-[width] duration-200 border-r flex-shrink-0 overflow-hidden',
           )}
-        </div>
-
-        <div
-          className='flex-1 overflow-auto relative text-sm'
-          style={{
-            paddingLeft: foldOutlineTree ? 80 : 260,
-          }}
+          style={{ position: 'relative' }}
         >
-          <div className='my-2 bg-white p-8 gap-4 flex flex-col rounded shadow-md'>
-            {isLoading ? (
-              <div className='h-40 flex items-center justify-center'>
-                <Loading />
+          <div className='p-4 flex flex-col h-full'>
+            <div className='flex items-center justify-between gap-3'>
+              <div
+                onClick={toggle}
+                className='rounded border bg-white p-1 cursor-pointer text-sm hover:bg-gray-200'
+              >
+                <ListCollapse className='h-5 w-5' />
               </div>
-            ) : (
-              <>
-                <DndProvider backend={HTML5Backend}>
-                  {blocks.map((block, index) => (
-                    <DraggableBlock
-                      key={block.bid}
-                      id={block.bid}
-                      block={block}
-                      type={block.type as BlockType}
-                      index={index}
-                      moveBlock={(dragIndex: number, hoverIndex: number) => {
-                        const dragBlock = blocks[dragIndex];
-                        const newBlocks = [...blocks];
-                        newBlocks.splice(dragIndex, 1);
-                        newBlocks.splice(hoverIndex, 0, dragBlock);
-                        actions.setBlocks(newBlocks);
-                        actions.autoSaveBlocks(
-                          currentNode!.bid,
-                          newBlocks,
-                          blockContentTypes,
-                          blockProperties,
-                          currentShifu?.bid || '',
-                        );
-                      }}
-                      onClickChangeType={onChangeBlockType}
-                      onClickDebug={onDebugBlock}
-                      onClickRemove={onRemove}
-                      disabled={expandedBlocks[block.bid]}
-                      error={blockErrors[block.bid]}
-                    >
-                      <div
-                        id={block.bid}
-                        className='relative flex flex-col gap-2 '
-                      >
-                        <RenderBlockUI
-                          block={block}
-                          onExpandChange={expanded => {
-                            setExpandedBlocks(prev => ({
-                              ...prev,
-                              [block.bid]: expanded,
-                            }));
-                          }}
-                          expanded={expandedBlocks[block.bid]}
-                        />
-                        <div>
-                          <AddBlock
-                            onAdd={(type: BlockType) => {
-                              onAddBlock(index + 1, type, id);
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </DraggableBlock>
-                  ))}
-                </DndProvider>
-                {(currentNode?.depth || 0) > 0 && blocks.length === 0 && (
-                  <div className='flex flex-row items-center justify-start h-6'>
-                    <AddBlock
-                      onAdd={(type: BlockType) => {
-                        onAddBlock(1, type, id);
-                      }}
-                    />
-                  </div>
-                )}
-              </>
+              {!foldOutlineTree && (
+                <Button
+                  variant='outline'
+                  className='h-8 bottom-0 left-4 flex-1'
+                  size='sm'
+                  disabled={currentShifu?.readonly}
+                  onClick={handleAddChapterClick}
+                >
+                  <Plus />
+                  {t('module.shifu.newChapter')}
+                </Button>
+              )}
+            </div>
+
+            {!foldOutlineTree && (
+              <div className='mt-4 flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-10'>
+                <ol className='text-sm'>
+                  <OutlineTree
+                    items={chapters}
+                    onChange={newChapters => {
+                      actions.setChapters([...newChapters]);
+                    }}
+                    onChapterSelect={handleChapterSelect}
+                  />
+                </ol>
+              </div>
             )}
           </div>
-        </div>
-      </div>
-      {debugBlockInfo.visible && (
-        <AIDebugDialog
-          blockId={debugBlockInfo.blockId}
-          open={true}
-          onOpenChange={onDebugBlockClose}
-        />
-      )}
+        </Rnd>
 
-      <AlertDialog
-        open={removeBlockInfo.visible}
-        onOpenChange={(visible: boolean) => {
-          setRemoveBlockInfo({
-            ...removeBlockInfo,
-            visible,
-          });
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t('renderBlock.confirmDelete')}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('renderBlock.confirmDeleteDescription')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('renderBlock.cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => handleConfirmDelete(removeBlockInfo.blockId)}
+        <ChapterSettingsDialog
+          outlineBid=''
+          open={addChapterDialogOpen}
+          onOpenChange={setAddChapterDialogOpen}
+          variant='chapter'
+          footerActionLabel={t('module.shifu.newChapter')}
+          onFooterAction={handleAddChapterConfirm}
+        />
+
+        <div className='flex flex-1 h-full overflow-hidden text-sm'>
+          <div
+            className={cn(
+              'flex-1 overflow-auto',
+              !isPreviewPanelOpen && 'relative',
+            )}
+          >
+            <div
+              className={cn(
+                'pt-5 px-6 pb-10 flex flex-col h-full w-full mx-auto',
+                isPreviewPanelOpen ? 'pr-0' : 'max-w-[900px] relative',
+              )}
             >
-              {t('renderBlock.confirm')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              {currentNode?.depth && currentNode.depth > 0 ? (
+                <>
+                  <div className='flex items-center gap-3 pb-2'>
+                    <div className='flex flex-1 min-w-0 items-baseline gap-2'>
+                      <h2 className='text-base font-semibold text-foreground whitespace-nowrap shrink-0'>
+                        {t('module.shifu.creationArea.title')}
+                      </h2>
+                      <p className='flex-1 min-w-0 text-xs leading-5 text-[rgba(0,0,0,0.45)] truncate'>
+                        <MarkdownFlowLink
+                          prefix={t(
+                            'module.shifu.creationArea.descriptionPrefix',
+                          )}
+                          suffix={t(
+                            'module.shifu.creationArea.descriptionSuffix',
+                          )}
+                          linkText='MarkdownFlow'
+                          title={`${t('module.shifu.creationArea.descriptionPrefix')} MarkdownFlow ${t('module.shifu.creationArea.descriptionSuffix')}`}
+                          targetUrl='https://markdownflow.ai/docs'
+                        />
+                      </p>
+                    </div>
+                    <div className='ml-auto flex flex-nowrap items-center gap-2 relative shrink-0'>
+                      <Tabs
+                        value={editMode}
+                        onValueChange={value => setEditMode(value as EditMode)}
+                        className='shrink-0'
+                      >
+                        <TabsList className='h-8 rounded-full bg-muted/60 p-0 text-xs'>
+                          {editModeOptions.map(option => (
+                            <TabsTrigger
+                              key={option.value}
+                              value={option.value}
+                              className={cn(
+                                'mode-btn rounded-full px-3 py-1.5 data-[state=active]:bg-background data-[state=active]:text-foreground',
+                              )}
+                            >
+                              {option.label}
+                            </TabsTrigger>
+                          ))}
+                        </TabsList>
+                      </Tabs>
+                      <Button
+                        type='button'
+                        size='sm'
+                        className='h-8 px-3 text-xs font-semibold text-[14px] shrink-0'
+                        onClick={handlePreview}
+                        disabled={!canPreview || isPreviewPreparing}
+                        title={!canPreview ? previewDisabledReason : undefined}
+                      >
+                        {isPreviewPreparing ? (
+                          <Loader2 className='h-4 w-4 animate-spin' />
+                        ) : (
+                          <Sparkles className='h-4 w-4' />
+                        )}
+                        {t('module.shifu.previewArea.action')}
+                      </Button>
+                    </div>
+                  </div>
+                  {!isPreviewPanelOpen && (
+                    <Button
+                      type='button'
+                      variant='outline'
+                      size='icon'
+                      className='h-8 w-8 absolute top-[60px] right-[-13px] z-10'
+                      onClick={handleTogglePreviewPanel}
+                      aria-label={previewToggleLabel}
+                      title={previewToggleLabel}
+                    >
+                      <Columns2 className='h-4 w-4' />
+                    </Button>
+                  )}
+                  {isLoading ? (
+                    <div className='h-40 flex items-center justify-center'>
+                      <Loading />
+                    </div>
+                  ) : (
+                    <MarkdownFlowEditor
+                      locale={
+                        normalizeLanguage(
+                          (i18n.resolvedLanguage ?? i18n.language) as string,
+                        ) as 'en-US' | 'zh-CN'
+                      }
+                      disabled={currentShifu?.readonly}
+                      content={mdflow}
+                      variables={variablesList}
+                      systemVariables={systemVariablesList as any[]}
+                      onChange={onChangeMdflow}
+                      editMode={editMode}
+                      uploadProps={uploadProps}
+                      toolbarActionsRight={toolbarActionsRight}
+                    />
+                  )}
+                </>
+              ) : null}
+            </div>
+          </div>
+
+          {isPreviewPanelOpen ? (
+            <div className='shrink-0 px-1 pt-[60px]'>
+              <Button
+                type='button'
+                variant='outline'
+                size='icon'
+                className='h-8 w-8'
+                onClick={handleTogglePreviewPanel}
+                aria-label={previewToggleLabel}
+                title={previewToggleLabel}
+              >
+                <Columns2 className='h-4 w-4' />
+              </Button>
+            </div>
+          ) : null}
+          {isPreviewPanelOpen ? (
+            <div className='flex-1 overflow-auto pt-5 px-6 pb-10 pl-0'>
+              <div className='h-full'>
+                <LessonPreview
+                  loading={previewLoading}
+                  errorMessage={previewError || undefined}
+                  items={previewItems}
+                  variables={mergedPreviewVariables}
+                  hiddenVariableKeys={hiddenVariables}
+                  shifuBid={currentShifu?.bid || ''}
+                  onRefresh={onRefresh}
+                  onSend={onSend}
+                  onVariableChange={onVariableChange}
+                  variableOrder={variableOrder}
+                  onRequestAudioForBlock={requestPreviewAudioForBlock}
+                  reGenerateConfirm={reGenerateConfirm}
+                  customVariableKeys={variables}
+                  unusedVariableKeys={unusedVisibleVariables}
+                  onHideVariable={handleHideSingleVariable}
+                  onHideOrRestore={
+                    hideRestoreActionType === 'hide'
+                      ? handleHideUnusedVariables
+                      : handleRestoreHiddenVariables
+                  }
+                  actionType={hideRestoreActionType}
+                  actionDisabled={hideRestoreActionDisabled}
+                />
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        <MdfConvertDialog
+          open={isMdfConvertDialogOpen}
+          onOpenChange={setIsMdfConvertDialogOpen}
+          onApplyContent={handleApplyMdfContent}
+        />
+      </div>
     </div>
   );
 };

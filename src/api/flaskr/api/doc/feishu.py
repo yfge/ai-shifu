@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 import pytz
 import urllib.parse
-from flaskr.common.config import get_config
+from flaskr.service.config import get_config
 
 # feishu api
 # ref: https://open.feishu.cn/document/server-docs/docs/docs-overview
@@ -19,7 +19,7 @@ TIME_ZONE = pytz.timezone("Asia/Shanghai")
 
 
 def get_tenant_token(app: Flask, app_id=APPID, app_secret=APP_SECRET):
-    from ...dao import redis_client as redis
+    from flaskr.common.cache_provider import cache as redis
 
     token = redis.get(REDIS_KEY_PREFIX + app_id + "token")
     if token:
