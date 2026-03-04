@@ -29,24 +29,24 @@
 
 ## Backend: Ask Runtime Routing
 
-- [ ] Extend `FollowUpInfo` to carry `ask_provider_config`.
-- [ ] Add ask provider schema registry (provider list + json_schema + defaults).
-- [ ] Add ask config metadata API (`GET /api/shifu/ask/config`) similar to TTS config style.
-- [ ] Add provider adapter interface for ask KB streaming.
-- [ ] Implement Dify ask provider adapter.
-- [ ] Implement Coze ask provider adapter.
-- [ ] Add routing in `handle_input_ask` by `ask_provider_config.provider`.
-- [ ] Support mode in `ask_provider_config.mode`:
-- [ ] `provider_only`
-- [ ] `provider_then_llm` fallback to ask_llm
-- [ ] Preserve existing ask persistence and SSE output format.
-- [ ] Add timeout and fallback handling with i18n error messages.
+- [x] Extend `FollowUpInfo` to carry `ask_provider_config`.
+- [x] Add ask provider schema registry (provider list + json_schema + defaults).
+- [x] Add ask config metadata API (`GET /api/shifu/ask/config`) similar to TTS config style.
+- [x] Add provider adapter interface for ask KB streaming.
+- [x] Implement Dify ask provider adapter.
+- [x] Implement Coze ask provider adapter.
+- [x] Add routing in `handle_input_ask` by `ask_provider_config.provider`.
+- [x] Support mode in `ask_provider_config.mode`:
+- [x] `provider_only`
+- [x] `provider_then_llm` fallback to ask_llm
+- [x] Preserve existing ask persistence and SSE output format.
+- [x] Add timeout and fallback handling with i18n error messages.
 
 ## Backend: Configuration and Security
 
-- [ ] Add env/config definitions for Coze credentials/endpoints.
-- [ ] Add `ASK_PROVIDER_ENABLED` feature flag and default to disabled.
-- [ ] Ensure provider secrets are read from env/config only (not `ask_provider_config`).
+- [x] Add env/config definitions for Coze credentials/endpoints.
+- [x] Add `ASK_PROVIDER_ENABLED` feature flag and default to disabled.
+- [x] Ensure provider secrets are read from env/config only (not `ask_provider_config`).
 
 ## Frontend: Shifu Settings UI
 

@@ -116,6 +116,10 @@ from flaskr.service.shifu.permissions import (
     _auth_types_to_permissions,
     _normalize_auth_types,
 )
+from flaskr.service.shifu.ask_provider_registry import (
+    get_ask_provider_metadata,
+    validate_ask_provider_specific_config,
+)
 
 
 class ShifuPermission(Enum):
@@ -322,7 +326,15 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         if "config" in parsed and not isinstance(parsed.get("config"), dict):
             raise_param_error("ask_provider_config.config")
 
-        return normalize_ask_provider_config(parsed)
+        normalized = normalize_ask_provider_config(parsed)
+        is_valid, field = validate_ask_provider_specific_config(
+            normalized.get("provider", ""),
+            normalized.get("config", {}),
+        )
+        if not is_valid:
+            raise_param_error(f"ask_provider_config.config.{field or 'invalid'}")
+
+        return normalized
 
     @app.route(path_prefix + "/shifus", methods=["GET"])
     @ShifuTokenValidation(ShifuPermission.VIEW, is_creator=True)
@@ -1934,6 +1946,33 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
             as_attachment=True,
             download_name=f"{shifu_bid}.json",
         )
+
+    @app.route(path_prefix + "/ask/config", methods=["GET"])
+    @bypass_token_validation
+    def ask_config_api():
+        """
+        Get ask provider configuration metadata
+        ---
+        tags:
+            - ask
+        responses:
+            200:
+                description: Ask provider configuration metadata
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                feature_enabled:
+                                    type: boolean
+                                default:
+                                    type: object
+                                modes:
+                                    type: array
+                                providers:
+                                    type: array
+        """
+        return make_common_response(get_ask_provider_metadata())
 
     @app.route(path_prefix + "/tts/config", methods=["GET"])
     @bypass_token_validation

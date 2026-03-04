@@ -1,0 +1,185 @@
+"""Ask provider registry and schema metadata."""
+
+from typing import Any
+
+from flaskr.service.config import get_config
+from flaskr.service.shifu.shifu_draft_funcs import (
+    ASK_PROVIDER_LLM,
+    ASK_PROVIDER_DIFY,
+    ASK_PROVIDER_COZE,
+    ASK_PROVIDER_MODE_PROVIDER_ONLY,
+    ASK_PROVIDER_MODE_PROVIDER_THEN_LLM,
+    normalize_ask_provider_config,
+)
+
+
+def _to_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on"}
+    if isinstance(value, (int, float)):
+        return value != 0
+    return False
+
+
+def is_ask_provider_enabled() -> bool:
+    """Whether external ask providers are enabled."""
+    return _to_bool(get_config("ASK_PROVIDER_ENABLED"))
+
+
+def get_default_ask_provider_config() -> dict[str, Any]:
+    return {
+        "provider": ASK_PROVIDER_LLM,
+        "mode": ASK_PROVIDER_MODE_PROVIDER_THEN_LLM,
+        "config": {},
+    }
+
+
+def get_ask_provider_schema_registry() -> dict[str, dict[str, Any]]:
+    """Return schema metadata for all supported ask providers."""
+    return {
+        ASK_PROVIDER_LLM: {
+            "title": "LLM",
+            "description": "Use built-in ask LLM only.",
+            "default_config": {},
+            "json_schema": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": False,
+            },
+        },
+        ASK_PROVIDER_DIFY: {
+            "title": "Dify",
+            "description": "Route ask to Dify chat app.",
+            "default_config": {
+                "conversation_id": "",
+                "inputs": {},
+            },
+            "json_schema": {
+                "type": "object",
+                "properties": {
+                    "conversation_id": {
+                        "type": "string",
+                        "title": "Conversation ID",
+                        "description": "Optional existing Dify conversation_id.",
+                    },
+                    "inputs": {
+                        "type": "object",
+                        "title": "Inputs",
+                        "description": "Optional Dify workflow inputs object.",
+                    },
+                },
+                "additionalProperties": True,
+            },
+        },
+        ASK_PROVIDER_COZE: {
+            "title": "Coze",
+            "description": "Route ask to Coze bot chat API.",
+            "default_config": {
+                "bot_id": "",
+                "conversation_id": "",
+                "api_path": "/v3/chat",
+                "extra_body": {},
+            },
+            "json_schema": {
+                "type": "object",
+                "properties": {
+                    "bot_id": {
+                        "type": "string",
+                        "title": "Bot ID",
+                        "description": "Coze bot identifier.",
+                    },
+                    "conversation_id": {
+                        "type": "string",
+                        "title": "Conversation ID",
+                        "description": "Optional existing Coze conversation id.",
+                    },
+                    "api_path": {
+                        "type": "string",
+                        "title": "API Path",
+                        "description": "Relative API path on COZE_URL.",
+                    },
+                    "extra_body": {
+                        "type": "object",
+                        "title": "Extra Body",
+                        "description": "Optional extra request body fields.",
+                    },
+                },
+                "required": ["bot_id"],
+                "additionalProperties": True,
+            },
+        },
+    }
+
+
+def validate_ask_provider_specific_config(
+    provider: str, config: Any
+) -> tuple[bool, str | None]:
+    """Lightweight validation against provider schema required fields."""
+    registry = get_ask_provider_schema_registry()
+    if provider not in registry:
+        return False, "provider"
+    if not isinstance(config, dict):
+        return False, "config"
+
+    schema = registry[provider].get("json_schema", {})
+    required_fields = schema.get("required", [])
+    for field in required_fields:
+        value = config.get(field)
+        if isinstance(value, str):
+            if not value.strip():
+                return False, field
+        elif value is None:
+            return False, field
+
+    return True, None
+
+
+def get_effective_ask_provider_config(raw_config: Any) -> dict[str, Any]:
+    """
+    Normalize persisted config and apply feature-flag gating.
+
+    If ASK_PROVIDER_ENABLED=false, force llm provider.
+    """
+    normalized = normalize_ask_provider_config(raw_config)
+    if not is_ask_provider_enabled() and normalized.get("provider") != ASK_PROVIDER_LLM:
+        return get_default_ask_provider_config()
+    return normalized
+
+
+def get_ask_provider_metadata() -> dict[str, Any]:
+    """Metadata endpoint payload for ask provider schema-driven UI."""
+    feature_enabled = is_ask_provider_enabled()
+    registry = get_ask_provider_schema_registry()
+
+    providers: list[dict[str, Any]] = []
+    for provider in [ASK_PROVIDER_LLM, ASK_PROVIDER_DIFY, ASK_PROVIDER_COZE]:
+        if provider != ASK_PROVIDER_LLM and not feature_enabled:
+            continue
+        item = registry[provider]
+        providers.append(
+            {
+                "provider": provider,
+                "title": item.get("title", provider),
+                "description": item.get("description", ""),
+                "default_config": item.get("default_config", {}),
+                "json_schema": item.get("json_schema", {}),
+            }
+        )
+
+    return {
+        "feature_enabled": feature_enabled,
+        "default": get_default_ask_provider_config(),
+        "modes": [
+            {
+                "value": ASK_PROVIDER_MODE_PROVIDER_ONLY,
+                "title": "Provider Only",
+            },
+            {
+                "value": ASK_PROVIDER_MODE_PROVIDER_THEN_LLM,
+                "title": "Provider Then LLM",
+            },
+        ],
+        "providers": providers,
+    }
