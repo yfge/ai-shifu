@@ -2,6 +2,11 @@ import pytest
 import requests
 
 from flaskr.service.learn import ask_provider_adapters as module
+from flaskr.service.learn.ask_provider_adapters import (
+    common,
+    coze_adapter,
+    dify_adapter,
+)
 
 
 class _FakeResponse:
@@ -25,7 +30,7 @@ def test_dify_adapter_streams_success_content(app, monkeypatch):
     adapter = module.DifyAskProviderAdapter()
 
     monkeypatch.setattr(
-        module,
+        dify_adapter,
         "get_config",
         lambda key: {
             "DIFY_URL": "https://dify.example.com",
@@ -34,7 +39,14 @@ def test_dify_adapter_streams_success_content(app, monkeypatch):
         }.get(key),
     )
     monkeypatch.setattr(
-        module.requests,
+        common,
+        "get_config",
+        lambda key: {
+            "ASK_PROVIDER_TIMEOUT_SECONDS": 20,
+        }.get(key),
+    )
+    monkeypatch.setattr(
+        dify_adapter.requests,
         "post",
         lambda *_args, **_kwargs: _FakeResponse(
             lines=[
@@ -62,7 +74,7 @@ def test_coze_adapter_timeout_raises_timeout_error(app, monkeypatch):
     adapter = module.CozeAskProviderAdapter()
 
     monkeypatch.setattr(
-        module,
+        coze_adapter,
         "get_config",
         lambda key: {
             "COZE_URL": "https://coze.example.com",
@@ -70,11 +82,18 @@ def test_coze_adapter_timeout_raises_timeout_error(app, monkeypatch):
             "ASK_PROVIDER_TIMEOUT_SECONDS": 20,
         }.get(key),
     )
+    monkeypatch.setattr(
+        common,
+        "get_config",
+        lambda key: {
+            "ASK_PROVIDER_TIMEOUT_SECONDS": 20,
+        }.get(key),
+    )
 
     def _raise_timeout(*_args, **_kwargs):
         raise requests.Timeout("timeout")
 
-    monkeypatch.setattr(module.requests, "post", _raise_timeout)
+    monkeypatch.setattr(coze_adapter.requests, "post", _raise_timeout)
 
     with pytest.raises(module.AskProviderTimeoutError):
         list(
@@ -106,7 +125,7 @@ def test_coze_adapter_http_error_raises_provider_error(app, monkeypatch):
     adapter = module.CozeAskProviderAdapter()
 
     monkeypatch.setattr(
-        module,
+        coze_adapter,
         "get_config",
         lambda key: {
             "COZE_URL": "https://coze.example.com",
@@ -114,10 +133,17 @@ def test_coze_adapter_http_error_raises_provider_error(app, monkeypatch):
             "ASK_PROVIDER_TIMEOUT_SECONDS": 20,
         }.get(key),
     )
+    monkeypatch.setattr(
+        common,
+        "get_config",
+        lambda key: {
+            "ASK_PROVIDER_TIMEOUT_SECONDS": 20,
+        }.get(key),
+    )
 
     http_error = requests.HTTPError("boom")
     monkeypatch.setattr(
-        module.requests,
+        coze_adapter.requests,
         "post",
         lambda *_args, **_kwargs: _FakeResponse(
             text="coze bad request",
