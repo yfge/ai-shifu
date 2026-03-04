@@ -45,9 +45,9 @@
 
 ## Backend: Configuration and Security
 
-- [x] Add env/config definitions for Coze credentials/endpoints.
+- [x] Keep Dify/Coze connection settings in shifu-level `ask_provider_config` (not required from `.env` in ask runtime).
 - [x] Add `ASK_PROVIDER_ENABLED` feature flag and default to disabled.
-- [x] Ensure provider secrets are read from env/config only (not `ask_provider_config`).
+- [x] Ensure ask provider runtime reads provider connection fields from `ask_provider_config.config`.
 
 ## Frontend: Shifu Settings UI
 
