@@ -67,7 +67,7 @@ Notes:
 
 1. `mode` lives in `ask_provider_config` as requested.
 2. `config` is provider-specific payload validated by provider schema.
-3. No secrets are stored in this field.
+3. Provider connection values (for example `api_key`) are stored per shifu in this field.
 
 ### 4.3 Provider secret strategy
 
