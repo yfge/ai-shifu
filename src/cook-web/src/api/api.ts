@@ -93,6 +93,7 @@ const api = {
   // resource api end
 
   // TTS api
+  askConfig: 'GET /shifu/ask/config',
   ttsPreview: 'POST /shifu/tts/preview',
   ttsConfig: 'GET /shifu/tts/config',
   // admin order api

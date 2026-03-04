@@ -50,18 +50,18 @@
 
 ## Frontend: Shifu Settings UI
 
-- [ ] Extend Shifu setting form schema to include ask model fields.
-- [ ] Add UI controls for ask mode/model/temperature/system prompt.
-- [ ] Add provider selector + mode selector and dynamic provider form by json_schema.
-- [ ] Map API response -> form initial values for `ask_provider_config`.
-- [ ] Map form submit -> API payload for `ask_provider_config`.
-- [ ] Add frontend validation driven by provider schema.
+- [x] Extend Shifu setting form schema to include ask model fields.
+- [x] Add UI controls for ask mode/model/temperature/system prompt.
+- [x] Add provider selector + mode selector and dynamic provider form by json_schema.
+- [x] Map API response -> form initial values for `ask_provider_config`.
+- [x] Map form submit -> API payload for `ask_provider_config`.
+- [x] Add frontend validation driven by provider schema.
 
 ## i18n
 
-- [ ] Add `en-US` translation keys for new ask/provider settings labels and hints.
-- [ ] Add `zh-CN` translation keys for new ask/provider settings labels and hints.
-- [ ] Run translation validation scripts and fix missing keys/usages.
+- [x] Add `en-US` translation keys for new ask/provider settings labels and hints.
+- [x] Add `zh-CN` translation keys for new ask/provider settings labels and hints.
+- [x] Run translation validation scripts and fix missing keys/usages.
 
 ## Testing
 
