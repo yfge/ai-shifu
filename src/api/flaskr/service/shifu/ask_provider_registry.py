@@ -125,7 +125,7 @@ def get_ask_provider_schema_registry() -> dict[str, dict[str, Any]]:
                     "api_path": {
                         "type": "string",
                         "title": "API Path",
-                        "description": "Relative API path on COZE_URL.",
+                        "description": "Relative API path on base_url.",
                     },
                     "extra_body": {
                         "type": "object",
