@@ -54,6 +54,7 @@
 - [x] Extend Shifu setting form schema to include ask model fields.
 - [x] Add UI controls for ask mode/model/temperature/system prompt.
 - [x] Add provider selector + mode selector and dynamic provider form by json_schema.
+- [x] Render sensitive ask provider fields (for example `api_key`) as password inputs via schema format.
 - [x] Map API response -> form initial values for `ask_provider_config`.
 - [x] Map form submit -> API payload for `ask_provider_config`.
 - [x] Add frontend validation driven by provider schema.

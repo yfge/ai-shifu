@@ -1,5 +1,6 @@
 export type AskProviderSchemaField = {
   type?: string;
+  format?: string;
   title?: string;
   description?: string;
 };

@@ -68,6 +68,7 @@ def get_ask_provider_schema_registry() -> dict[str, dict[str, Any]]:
                     },
                     "api_key": {
                         "type": "string",
+                        "format": "password",
                         "title": "API Key",
                         "description": "Dify app API key.",
                     },
@@ -107,6 +108,7 @@ def get_ask_provider_schema_registry() -> dict[str, dict[str, Any]]:
                     },
                     "api_key": {
                         "type": "string",
+                        "format": "password",
                         "title": "API Key",
                         "description": "Coze personal access token.",
                     },

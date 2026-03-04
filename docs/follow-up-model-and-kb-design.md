@@ -94,6 +94,7 @@ Returned data contains:
 2. Default values
 3. `json_schema` for each provider config
 4. Optional UI hints (`title`, `description`, field order)
+5. Sensitive fields can use schema format hints (for example `api_key` with `format: password`) for masked inputs
 
 Backend validation path:
 

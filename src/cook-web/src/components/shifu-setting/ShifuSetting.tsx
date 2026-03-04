@@ -2758,6 +2758,9 @@ export default function ShifuSettingDialog({
                     const schemaType = String(
                       (fieldSchema as any)?.type || 'string',
                     );
+                    const schemaFormat = String(
+                      (fieldSchema as any)?.format || '',
+                    ).toLowerCase();
                     const fieldLabel =
                       (fieldSchema as any)?.title || fieldName || '';
                     const fieldHint = (fieldSchema as any)?.description || '';
@@ -2890,7 +2893,9 @@ export default function ShifuSettingDialog({
                           type={
                             schemaType === 'number' || schemaType === 'integer'
                               ? 'number'
-                              : 'text'
+                              : schemaFormat === 'password'
+                                ? 'password'
+                                : 'text'
                           }
                           value={rawFieldValue ?? ''}
                           onChange={e =>

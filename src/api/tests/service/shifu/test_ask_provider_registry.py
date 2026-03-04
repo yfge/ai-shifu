@@ -54,3 +54,30 @@ def test_ask_provider_metadata_contains_shifu_level_defaults(monkeypatch):
     assert "api_key" in dify.get("default_config", {})
     assert "base_url" in coze.get("default_config", {})
     assert "api_key" in coze.get("default_config", {})
+
+
+def test_ask_provider_metadata_marks_api_key_as_password(monkeypatch):
+    monkeypatch.setattr(
+        module,
+        "get_config",
+        lambda key: "true" if key == "ASK_PROVIDER_ENABLED" else None,
+    )
+
+    metadata = module.get_ask_provider_metadata()
+    providers = {item["provider"]: item for item in metadata.get("providers", [])}
+
+    dify_api_key = (
+        providers.get("dify", {})
+        .get("json_schema", {})
+        .get("properties", {})
+        .get("api_key", {})
+    )
+    coze_api_key = (
+        providers.get("coze", {})
+        .get("json_schema", {})
+        .get("properties", {})
+        .get("api_key", {})
+    )
+
+    assert dify_api_key.get("format") == "password"
+    assert coze_api_key.get("format") == "password"
