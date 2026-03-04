@@ -1,7 +1,7 @@
 """Base contracts and errors for ask provider adapters."""
 
 from dataclasses import dataclass
-from typing import Any, Generator, Protocol
+from typing import Any, Callable, Generator, Protocol
 
 from flask import Flask
 
@@ -9,6 +9,17 @@ from flask import Flask
 @dataclass
 class AskProviderChunk:
     content: str
+
+
+@dataclass
+class AskProviderRuntime:
+    """
+    Runtime-only data injected by caller.
+
+    Primarily used by the built-in LLM adapter.
+    """
+
+    llm_stream_factory: Callable[[], Generator[Any, None, None]] | None = None
 
 
 class AskProviderError(Exception):
@@ -33,4 +44,5 @@ class AskProviderAdapter(Protocol):
         user_query: str,
         messages: list[dict[str, Any]],
         provider_config: dict[str, Any],
+        runtime: AskProviderRuntime | None = None,
     ) -> Generator[AskProviderChunk, None, None]: ...

@@ -5,10 +5,12 @@ from .base import (
     AskProviderChunk,
     AskProviderConfigError,
     AskProviderError,
+    AskProviderRuntime,
     AskProviderTimeoutError,
 )
 from .coze_adapter import CozeAskProviderAdapter
 from .dify_adapter import DifyAskProviderAdapter
+from .llm_adapter import LlmAskProviderAdapter
 from .registry import get_ask_provider_adapter, stream_ask_provider_response
 
 __all__ = [
@@ -16,9 +18,11 @@ __all__ = [
     "AskProviderChunk",
     "AskProviderConfigError",
     "AskProviderError",
+    "AskProviderRuntime",
     "AskProviderTimeoutError",
     "CozeAskProviderAdapter",
     "DifyAskProviderAdapter",
+    "LlmAskProviderAdapter",
     "get_ask_provider_adapter",
     "stream_ask_provider_response",
 ]

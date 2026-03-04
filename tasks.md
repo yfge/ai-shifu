@@ -35,6 +35,7 @@
 - [x] Add provider adapter interface for ask KB streaming.
 - [x] Implement Dify ask provider adapter.
 - [x] Implement Coze ask provider adapter.
+- [x] Fully decouple ask provider handlers (split by provider module and include `llm` as default provider adapter).
 - [x] Add routing in `handle_input_ask` by `ask_provider_config.provider`.
 - [x] Support mode in `ask_provider_config.mode`:
 - [x] `provider_only`

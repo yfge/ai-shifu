@@ -13,6 +13,7 @@ from .base import (
     AskProviderChunk,
     AskProviderConfigError,
     AskProviderError,
+    AskProviderRuntime,
     AskProviderTimeoutError,
 )
 from .common import (
@@ -33,7 +34,9 @@ class CozeAskProviderAdapter:
         user_query: str,
         messages: list[dict[str, Any]],
         provider_config: dict[str, Any],
+        runtime: AskProviderRuntime | None = None,
     ) -> Generator[AskProviderChunk, None, None]:
+        _ = runtime
         base_url = (get_config("COZE_URL") or "").strip()
         api_key = (get_config("COZE_API_KEY") or "").strip()
         if not base_url or not api_key:
