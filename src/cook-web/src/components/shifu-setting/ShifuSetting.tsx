@@ -104,6 +104,10 @@ import { TITLE_MAX_LENGTH } from '@/c-constants/uiConstants';
 import { useShifu, useUserStore } from '@/store';
 import { useTracking } from '@/c-common/hooks/useTracking';
 import { isValidEmail } from '@/lib/validators';
+import {
+  AskProviderSchemaValidationError,
+  buildAskProviderConfigForSubmit as buildAskProviderConfigBySchema,
+} from '@/components/shifu-setting/ask-provider-schema';
 
 interface Shifu {
   description: string;
@@ -1072,87 +1076,36 @@ export default function ShifuSettingDialog({
   }, [askTemperature]);
 
   const buildAskProviderConfigForSubmit = useCallback(() => {
-    const config: Record<string, any> = {};
-    for (const [field, schema] of askProviderFieldEntries) {
-      const fieldType = String((schema as any)?.type || 'string');
-      const required = askProviderRequiredFields.has(field);
+    try {
+      return buildAskProviderConfigBySchema({
+        schema: currentAskProviderMeta?.json_schema,
+        providerConfig: askProviderConfig as Record<string, unknown>,
+        objectInputs: askProviderObjectInputs,
+      });
+    } catch (error) {
+      if (error instanceof AskProviderSchemaValidationError) {
+        const fieldSchema =
+          currentAskProviderMeta?.json_schema?.properties?.[error.field];
+        const fieldLabel = String(fieldSchema?.title || error.field);
 
-      if (fieldType === 'object') {
-        const rawValue =
-          askProviderObjectInputs[field] ??
-          JSON.stringify(askProviderConfig[field] ?? {}, null, 2);
-        const trimmed = String(rawValue || '').trim();
-        if (!trimmed) {
-          if (required) {
-            throw new Error(
-              t('module.shifuSetting.askProviderConfigRequired', { field }),
-            );
-          }
-          continue;
-        }
-        try {
-          const parsed = JSON.parse(trimmed);
-          if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-            throw new Error('invalid object');
-          }
-          config[field] = parsed;
-        } catch {
+        if (error.code === 'required') {
           throw new Error(
-            t('module.shifuSetting.askProviderConfigInvalidJson', { field }),
+            t('module.shifuSetting.askProviderConfigRequired', {
+              field: fieldLabel,
+            }),
           );
         }
-        continue;
+
+        throw new Error(
+          t('module.shifuSetting.askProviderConfigInvalidJson', {
+            field: fieldLabel,
+          }),
+        );
       }
 
-      if (fieldType === 'number' || fieldType === 'integer') {
-        const rawNumber = askProviderConfig[field];
-        if (
-          rawNumber === undefined ||
-          rawNumber === null ||
-          String(rawNumber).trim() === ''
-        ) {
-          if (required) {
-            throw new Error(
-              t('module.shifuSetting.askProviderConfigRequired', { field }),
-            );
-          }
-          continue;
-        }
-        const parsed = Number(rawNumber);
-        if (Number.isNaN(parsed)) {
-          throw new Error(
-            t('module.shifuSetting.askProviderConfigInvalidJson', { field }),
-          );
-        }
-        config[field] = fieldType === 'integer' ? Math.round(parsed) : parsed;
-        continue;
-      }
-
-      if (fieldType === 'boolean') {
-        config[field] = Boolean(askProviderConfig[field]);
-        continue;
-      }
-
-      const value = String(askProviderConfig[field] ?? '').trim();
-      if (!value) {
-        if (required) {
-          throw new Error(
-            t('module.shifuSetting.askProviderConfigRequired', { field }),
-          );
-        }
-        continue;
-      }
-      config[field] = value;
+      throw error;
     }
-
-    return config;
-  }, [
-    askProviderConfig,
-    askProviderFieldEntries,
-    askProviderObjectInputs,
-    askProviderRequiredFields,
-    t,
-  ]);
+  }, [askProviderConfig, askProviderObjectInputs, currentAskProviderMeta, t]);
 
   const clampTemperature = useCallback((value: number) => {
     return Math.min(Math.max(value, 0), 2);
