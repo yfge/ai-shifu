@@ -6,7 +6,6 @@ from typing import Any, Generator
 import requests
 from flask import Flask
 
-from flaskr.service.config import get_config
 from flaskr.service.shifu.shifu_draft_funcs import ASK_PROVIDER_DIFY
 
 from .base import (
@@ -37,14 +36,16 @@ class DifyAskProviderAdapter:
         runtime: AskProviderRuntime | None = None,
     ) -> Generator[AskProviderChunk, None, None]:
         _ = runtime
-        base_url = (get_config("DIFY_URL") or "").strip()
-        api_key = (get_config("DIFY_API_KEY") or "").strip()
-        if not base_url or not api_key:
-            raise AskProviderConfigError("dify credentials not configured")
-
         config = provider_config.get("config") or {}
         if not isinstance(config, dict):
             config = {}
+
+        base_url = str(config.get("base_url") or "").strip()
+        api_key = str(config.get("api_key") or "").strip()
+        if not base_url or not api_key:
+            raise AskProviderConfigError(
+                "dify base_url/api_key are required in ask_provider_config.config"
+            )
 
         payload: dict[str, Any] = {
             "query": user_query,

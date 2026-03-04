@@ -71,10 +71,16 @@ Notes:
 
 ### 4.3 Provider secret strategy
 
-Provider credentials remain in env/system config:
+Provider connection settings are persisted at shifu level inside
+`ask_provider_config.config`:
 
-1. Dify: existing `DIFY_URL`, `DIFY_API_KEY`
-2. Coze: `COZE_URL`, `COZE_API_KEY`
+1. Dify: `base_url`, `api_key`
+2. Coze: `base_url`, `api_key`, `bot_id` (plus optional fields)
+
+Notes:
+
+1. Ask provider runtime does not read Dify/Coze credentials from `.env`.
+2. Existing global env keys can remain for other legacy flows, but are not used by ask provider routing.
 
 ## 5. Schema-Driven Config (TTS-like)
 
@@ -191,7 +197,7 @@ Metering:
 
 ## 10. Security and Reliability
 
-1. Secrets stay in env/system config, never in `ask_provider_config`.
+1. Provider connection fields are managed per shifu in `ask_provider_config`.
 2. Keep existing risk check for user ask input.
 3. Enforce provider timeout and error handling.
 4. Respect mode:

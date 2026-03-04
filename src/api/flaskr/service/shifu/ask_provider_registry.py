@@ -51,14 +51,26 @@ def get_ask_provider_schema_registry() -> dict[str, dict[str, Any]]:
         },
         ASK_PROVIDER_DIFY: {
             "title": "Dify",
-            "description": "Route ask to Dify chat app.",
+            "description": "Route ask to Dify chat app with shifu-level config.",
             "default_config": {
+                "base_url": "",
+                "api_key": "",
                 "conversation_id": "",
                 "inputs": {},
             },
             "json_schema": {
                 "type": "object",
                 "properties": {
+                    "base_url": {
+                        "type": "string",
+                        "title": "Base URL",
+                        "description": "Dify base URL, e.g. https://api.dify.ai/v1",
+                    },
+                    "api_key": {
+                        "type": "string",
+                        "title": "API Key",
+                        "description": "Dify app API key.",
+                    },
                     "conversation_id": {
                         "type": "string",
                         "title": "Conversation ID",
@@ -70,13 +82,16 @@ def get_ask_provider_schema_registry() -> dict[str, dict[str, Any]]:
                         "description": "Optional Dify workflow inputs object.",
                     },
                 },
+                "required": ["base_url", "api_key"],
                 "additionalProperties": True,
             },
         },
         ASK_PROVIDER_COZE: {
             "title": "Coze",
-            "description": "Route ask to Coze bot chat API.",
+            "description": "Route ask to Coze bot chat API with shifu-level config.",
             "default_config": {
+                "base_url": "",
+                "api_key": "",
                 "bot_id": "",
                 "conversation_id": "",
                 "api_path": "/v3/chat",
@@ -85,6 +100,16 @@ def get_ask_provider_schema_registry() -> dict[str, dict[str, Any]]:
             "json_schema": {
                 "type": "object",
                 "properties": {
+                    "base_url": {
+                        "type": "string",
+                        "title": "Base URL",
+                        "description": "Coze base URL, e.g. https://api.coze.com",
+                    },
+                    "api_key": {
+                        "type": "string",
+                        "title": "API Key",
+                        "description": "Coze personal access token.",
+                    },
                     "bot_id": {
                         "type": "string",
                         "title": "Bot ID",
@@ -106,7 +131,7 @@ def get_ask_provider_schema_registry() -> dict[str, dict[str, Any]]:
                         "description": "Optional extra request body fields.",
                     },
                 },
-                "required": ["bot_id"],
+                "required": ["base_url", "api_key", "bot_id"],
                 "additionalProperties": True,
             },
         },

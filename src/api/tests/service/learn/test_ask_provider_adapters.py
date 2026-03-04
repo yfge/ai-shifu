@@ -32,15 +32,6 @@ def test_dify_adapter_streams_success_content(app, monkeypatch):
     adapter = module.DifyAskProviderAdapter()
 
     monkeypatch.setattr(
-        dify_adapter,
-        "get_config",
-        lambda key: {
-            "DIFY_URL": "https://dify.example.com",
-            "DIFY_API_KEY": "test-key",
-            "ASK_PROVIDER_TIMEOUT_SECONDS": 20,
-        }.get(key),
-    )
-    monkeypatch.setattr(
         common,
         "get_config",
         lambda key: {
@@ -65,7 +56,12 @@ def test_dify_adapter_streams_success_content(app, monkeypatch):
             user_id="user-1",
             user_query="hello",
             messages=[],
-            provider_config={"config": {}},
+            provider_config={
+                "config": {
+                    "base_url": "https://dify.example.com",
+                    "api_key": "test-key",
+                }
+            },
         )
     )
 
@@ -75,15 +71,6 @@ def test_dify_adapter_streams_success_content(app, monkeypatch):
 def test_coze_adapter_timeout_raises_timeout_error(app, monkeypatch):
     adapter = module.CozeAskProviderAdapter()
 
-    monkeypatch.setattr(
-        coze_adapter,
-        "get_config",
-        lambda key: {
-            "COZE_URL": "https://coze.example.com",
-            "COZE_API_KEY": "test-key",
-            "ASK_PROVIDER_TIMEOUT_SECONDS": 20,
-        }.get(key),
-    )
     monkeypatch.setattr(
         common,
         "get_config",
@@ -104,7 +91,13 @@ def test_coze_adapter_timeout_raises_timeout_error(app, monkeypatch):
                 user_id="user-1",
                 user_query="hello",
                 messages=[],
-                provider_config={"config": {"bot_id": "bot-1"}},
+                provider_config={
+                    "config": {
+                        "base_url": "https://coze.example.com",
+                        "api_key": "test-key",
+                        "bot_id": "bot-1",
+                    }
+                },
             )
         )
 
@@ -127,15 +120,6 @@ def test_coze_adapter_http_error_raises_provider_error(app, monkeypatch):
     adapter = module.CozeAskProviderAdapter()
 
     monkeypatch.setattr(
-        coze_adapter,
-        "get_config",
-        lambda key: {
-            "COZE_URL": "https://coze.example.com",
-            "COZE_API_KEY": "test-key",
-            "ASK_PROVIDER_TIMEOUT_SECONDS": 20,
-        }.get(key),
-    )
-    monkeypatch.setattr(
         common,
         "get_config",
         lambda key: {
@@ -155,6 +139,42 @@ def test_coze_adapter_http_error_raises_provider_error(app, monkeypatch):
     )
 
     with pytest.raises(module.AskProviderError, match="coze request failed"):
+        list(
+            adapter.stream_answer(
+                app=app,
+                user_id="user-1",
+                user_query="hello",
+                messages=[],
+                provider_config={
+                    "config": {
+                        "base_url": "https://coze.example.com",
+                        "api_key": "test-key",
+                        "bot_id": "bot-1",
+                    }
+                },
+            )
+        )
+
+
+def test_dify_adapter_missing_shifu_config_raises_config_error(app):
+    adapter = module.DifyAskProviderAdapter()
+
+    with pytest.raises(module.AskProviderConfigError, match="base_url/api_key"):
+        list(
+            adapter.stream_answer(
+                app=app,
+                user_id="user-1",
+                user_query="hello",
+                messages=[],
+                provider_config={"config": {}},
+            )
+        )
+
+
+def test_coze_adapter_missing_shifu_config_raises_config_error(app):
+    adapter = module.CozeAskProviderAdapter()
+
+    with pytest.raises(module.AskProviderConfigError, match="base_url/api_key"):
         list(
             adapter.stream_answer(
                 app=app,
