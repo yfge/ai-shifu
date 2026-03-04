@@ -158,13 +158,22 @@ Extend `FollowUpInfo` to include:
 
 Runtime routing by `ask_provider_config.provider`:
 
-1. `llm`: existing `chat_llm` path
-2. `dify|coze`: provider adapter path
+1. `llm`: built-in `llm` provider adapter path
+2. `dify|coze`: external provider adapter paths
 
 Mode handling by `ask_provider_config.mode`:
 
 1. `provider_only`: provider failure returns provider error
 2. `provider_then_llm`: provider failure/empty response falls back to `ask_llm`
+
+### 8.3 Full decoupling (handler architecture)
+
+Ask runtime handlers are fully decoupled by provider:
+
+1. Keep a dedicated adapter file per provider (`llm`, `dify`, `coze`).
+2. Route only through one registry entrypoint (`stream_ask_provider_response`).
+3. Inject runtime-only dependencies (for example `chat_llm` stream factory) via adapter runtime context, not hardcoded branches in `handle_input_ask`.
+4. Ensure fallback to `llm` still goes through the same provider adapter chain.
 
 ## 9. Observability
 

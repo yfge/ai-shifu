@@ -30,6 +30,7 @@ from flaskr.service.learn.langfuse_naming import (
 )
 from flaskr.service.learn.ask_provider_adapters import (
     AskProviderError,
+    AskProviderRuntime,
     AskProviderTimeoutError,
     stream_ask_provider_response,
 )
@@ -251,27 +252,53 @@ def handle_input_ask(
 
     response_text = ""  # Store complete response text
     provider_error: Exception | None = None
+    llm_runtime = AskProviderRuntime(
+        llm_stream_factory=lambda: chat_llm(
+            app,
+            user_info.user_id,
+            span,
+            model=follow_up_model,  # Use configured model
+            json=True,
+            stream=True,  # Enable streaming output
+            temperature=follow_up_info.model_args[
+                "temperature"
+            ],  # Use configured temperature parameter
+            generation_name=generation_name,
+            messages=messages,  # Pass complete conversation history
+            usage_context=usage_context,
+            usage_scene=usage_scene,
+        )
+    )
 
-    if ask_provider != ASK_PROVIDER_LLM:
+    def _emit_provider_stream(
+        provider_name: str,
+    ) -> Generator[RunMarkdownFlowDTO, None, None]:
+        nonlocal response_text
+        provider_resp = stream_ask_provider_response(
+            app=app,
+            provider=provider_name,
+            user_id=user_info.user_id,
+            user_query=user_content,
+            messages=messages,
+            provider_config=ask_provider_config,
+            runtime=llm_runtime,
+        )
+        for chunk in provider_resp:
+            current_content = chunk.content
+            if isinstance(current_content, str) and current_content:
+                response_text += current_content
+                yield RunMarkdownFlowDTO(
+                    outline_bid=outline_item_info.bid,
+                    generated_block_bid=log_script.generated_block_bid,
+                    type=GeneratedType.CONTENT,
+                    content=current_content,
+                )
+
+    if ask_provider == ASK_PROVIDER_LLM:
+        yield from _emit_provider_stream(ASK_PROVIDER_LLM)
+    else:
         try:
-            provider_resp = stream_ask_provider_response(
-                app=app,
-                provider=ask_provider,
-                user_id=user_info.user_id,
-                user_query=user_content,
-                messages=messages,
-                provider_config=ask_provider_config,
-            )
-            for chunk in provider_resp:
-                current_content = chunk.content
-                if isinstance(current_content, str) and current_content:
-                    response_text += current_content
-                    yield RunMarkdownFlowDTO(
-                        outline_bid=outline_item_info.bid,
-                        generated_block_bid=log_script.generated_block_bid,
-                        type=GeneratedType.CONTENT,
-                        content=current_content,
-                    )
+            yield from _emit_provider_stream(ask_provider)
         except AskProviderTimeoutError as exc:
             provider_error = exc
             app.logger.warning(
@@ -292,10 +319,9 @@ def handle_input_ask(
                 exc,
             )
 
-    use_llm = ask_provider == ASK_PROVIDER_LLM
+    use_llm_fallback = False
     if ask_provider != ASK_PROVIDER_LLM and not response_text:
         if ask_provider_mode == ASK_PROVIDER_MODE_PROVIDER_ONLY:
-            use_llm = False
             if isinstance(provider_error, AskProviderTimeoutError):
                 response_text = str(_("server.learn.askProviderTimeout"))
             else:
@@ -307,7 +333,7 @@ def handle_input_ask(
                 content=response_text,
             )
         else:
-            use_llm = True
+            use_llm_fallback = True
             app.logger.info(
                 "ask provider fallback to llm, provider=%s, mode=%s, shifu_bid=%s, outline_bid=%s",
                 ask_provider,
@@ -316,35 +342,8 @@ def handle_input_ask(
                 outline_item_info.bid,
             )
 
-    if use_llm:
-        resp = chat_llm(
-            app,
-            user_info.user_id,
-            span,
-            model=follow_up_model,  # Use configured model
-            json=True,
-            stream=True,  # Enable streaming output
-            temperature=follow_up_info.model_args[
-                "temperature"
-            ],  # Use configured temperature parameter
-            generation_name=generation_name,
-            messages=messages,  # Pass complete conversation history
-            usage_context=usage_context,
-            usage_scene=usage_scene,
-        )
-
-        # Stream process LLM response
-        for i in resp:
-            current_content = i.result
-            if isinstance(current_content, str):
-                response_text += current_content
-                # Return each text fragment in real-time
-                yield RunMarkdownFlowDTO(
-                    outline_bid=outline_item_info.bid,
-                    generated_block_bid=log_script.generated_block_bid,
-                    type=GeneratedType.CONTENT,
-                    content=i.result,
-                )
+    if use_llm_fallback:
+        yield from _emit_provider_stream(ASK_PROVIDER_LLM)
 
     # Log AI response to database
     log_script: LearnGeneratedBlock = init_generated_block(

@@ -189,10 +189,22 @@ def test_handle_input_ask_provider_then_llm_falls_back_to_llm(app, monkeypatch):
         yield _LLMChunk("llm-fallback-answer")
 
     monkeypatch.setattr(module, "chat_llm", _fake_chat_llm)
+
+    def _provider_then_llm_stream(**kwargs):
+        if kwargs.get("provider") == "llm":
+            runtime = kwargs.get("runtime")
+            if runtime is None or runtime.llm_stream_factory is None:
+                return iter([])
+            return (
+                types.SimpleNamespace(content=chunk.result)
+                for chunk in runtime.llm_stream_factory()
+            )
+        raise AskProviderError("provider failed")
+
     monkeypatch.setattr(
         module,
         "stream_ask_provider_response",
-        lambda **_kwargs: (_ for _ in ()).throw(AskProviderError("provider failed")),
+        _provider_then_llm_stream,
     )
 
     events = list(

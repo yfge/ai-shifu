@@ -1,3 +1,5 @@
+import types
+
 import pytest
 import requests
 
@@ -162,3 +164,66 @@ def test_coze_adapter_http_error_raises_provider_error(app, monkeypatch):
                 provider_config={"config": {"bot_id": "bot-1"}},
             )
         )
+
+
+def test_llm_adapter_streams_from_runtime_factory(app):
+    adapter = module.LlmAskProviderAdapter()
+
+    runtime = module.AskProviderRuntime(
+        llm_stream_factory=lambda: iter(
+            [
+                types.SimpleNamespace(result="hello"),
+                types.SimpleNamespace(result=" world"),
+                types.SimpleNamespace(result=""),
+                types.SimpleNamespace(result=None),
+            ]
+        )
+    )
+
+    chunks = list(
+        adapter.stream_answer(
+            app=app,
+            user_id="user-1",
+            user_query="hello",
+            messages=[],
+            provider_config={"config": {}},
+            runtime=runtime,
+        )
+    )
+
+    assert [chunk.content for chunk in chunks] == ["hello", " world"]
+
+
+def test_llm_adapter_missing_runtime_raises_config_error(app):
+    adapter = module.LlmAskProviderAdapter()
+
+    with pytest.raises(module.AskProviderConfigError, match="llm runtime"):
+        list(
+            adapter.stream_answer(
+                app=app,
+                user_id="user-1",
+                user_query="hello",
+                messages=[],
+                provider_config={"config": {}},
+            )
+        )
+
+
+def test_stream_ask_provider_response_uses_llm_adapter_runtime(app):
+    runtime = module.AskProviderRuntime(
+        llm_stream_factory=lambda: iter([types.SimpleNamespace(result="from-llm")])
+    )
+
+    chunks = list(
+        module.stream_ask_provider_response(
+            app=app,
+            provider="llm",
+            user_id="user-1",
+            user_query="hello",
+            messages=[],
+            provider_config={"config": {}},
+            runtime=runtime,
+        )
+    )
+
+    assert [chunk.content for chunk in chunks] == ["from-llm"]
