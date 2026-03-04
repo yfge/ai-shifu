@@ -23,9 +23,9 @@
 
 ## Backend: Publish and Import/Export
 
-- [ ] Ensure draft -> published copy path includes `ask_provider_config`.
-- [ ] Extend shifu import/export payload to include `ask_provider_config`.
-- [ ] Add backward-compatible defaults when imported data does not contain new fields.
+- [x] Ensure draft -> published copy path includes `ask_provider_config`.
+- [x] Extend shifu import/export payload to include `ask_provider_config`.
+- [x] Add backward-compatible defaults when imported data does not contain new fields.
 
 ## Backend: Ask Runtime Routing
 
