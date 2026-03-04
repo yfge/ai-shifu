@@ -66,8 +66,8 @@
 ## Testing
 
 - [x] Add backend tests for shifu detail save/get with `ask_provider_config`.
-- [ ] Add backend tests for ask routing by `provider` and `mode`.
-- [ ] Add provider adapter unit tests (success/timeout/error).
+- [x] Add backend tests for ask routing by `provider` and `mode`.
+- [x] Add provider adapter unit tests (success/timeout/error).
 - [ ] Add frontend tests for Shifu settings ask/provider schema-driven form behavior.
 - [ ] Run relevant test suites and confirm pass.
 
