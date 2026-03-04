@@ -73,9 +73,10 @@
 
 ## Quality Gates
 
-- [ ] Run `pre-commit run`.
-- [ ] Run backend targeted tests under `src/api/tests/service/shifu` and `src/api/tests/service/learn`.
+- [x] Run `pre-commit run`.
+- [x] Run backend targeted tests under `src/api/tests/service/shifu` and `src/api/tests/service/learn`.
 - [ ] Run frontend lint/type-check for `src/cook-web`.
+Status note: `npm run lint` passes (warnings only). `npx tsc --noEmit` fails due local untracked `src/c-utils/listen-parse/*` type errors and missing local `swr` module resolution in this workspace.
 
 ## Rollout
 
