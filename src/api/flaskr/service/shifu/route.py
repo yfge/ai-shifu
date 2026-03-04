@@ -86,6 +86,10 @@ from flaskr.service.shifu.shifu_draft_funcs import (
     save_shifu_draft_info,
     archive_shifu,
     unarchive_shifu,
+    normalize_ask_provider_config,
+    SUPPORTED_ASK_PROVIDERS,
+    SUPPORTED_ASK_PROVIDER_MODES,
+    SUPPORTED_ASK_ENABLED_STATUSES,
 )
 from flaskr.service.shifu.shifu_publish_funcs import (
     publish_shifu_draft,
@@ -281,6 +285,44 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         for prefix in prefixes:
             cache_key = f"{prefix}shifu_permission:{user_id}:{shifu_bid}"
             redis.delete(cache_key)
+
+    def _parse_ask_provider_config(raw_value: object) -> dict | None:
+        """
+        Parse and validate ask_provider_config from request payload.
+        """
+        if raw_value is None:
+            return None
+
+        parsed = raw_value
+        if isinstance(raw_value, str):
+            trimmed = raw_value.strip()
+            if not trimmed:
+                parsed = {}
+            else:
+                try:
+                    parsed = json.loads(trimmed)
+                except json.JSONDecodeError:
+                    raise_param_error("ask_provider_config")
+
+        if not isinstance(parsed, dict):
+            raise_param_error("ask_provider_config")
+
+        provider = parsed.get("provider")
+        if provider is not None:
+            provider = str(provider).strip().lower()
+            if provider and provider not in SUPPORTED_ASK_PROVIDERS:
+                raise_param_error("ask_provider_config.provider")
+
+        mode = parsed.get("mode")
+        if mode is not None:
+            mode = str(mode).strip().lower()
+            if mode and mode not in SUPPORTED_ASK_PROVIDER_MODES:
+                raise_param_error("ask_provider_config.mode")
+
+        if "config" in parsed and not isinstance(parsed.get("config"), dict):
+            raise_param_error("ask_provider_config.config")
+
+        return normalize_ask_provider_config(parsed)
 
     @app.route(path_prefix + "/shifus", methods=["GET"])
     @ShifuTokenValidation(ShifuPermission.VIEW, is_creator=True)
@@ -700,6 +742,21 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                     temperature:
                         type: number
                         description: shifu temperature
+                    ask_enabled_status:
+                        type: integer
+                        description: Ask status (5101=default, 5102=disabled, 5103=enabled)
+                    ask_model:
+                        type: string
+                        description: Ask model name
+                    ask_temperature:
+                        type: number
+                        description: Ask model temperature (0.0 - 2.0)
+                    ask_system_prompt:
+                        type: string
+                        description: Ask model system prompt
+                    ask_provider_config:
+                        type: object
+                        description: Ask provider config ({provider, mode, config})
                     tts_enabled:
                         type: boolean
                         description: TTS enabled
@@ -739,7 +796,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                                     $ref: "#/components/schemas/ShifuDetailDto"
         """
         user_id = request.user.user_id
-        json_data = request.get_json()
+        json_data = request.get_json() or {}
         shifu_name = json_data.get("name")
         shifu_description = json_data.get("description")
         shifu_avatar = json_data.get("avatar")
@@ -748,6 +805,32 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         shifu_price = json_data.get("price")
         shifu_temperature = json_data.get("temperature")
         shifu_system_prompt = json_data.get("system_prompt", None)
+        # Ask configuration
+        ask_enabled_status = json_data.get("ask_enabled_status")
+        if ask_enabled_status is not None:
+            try:
+                ask_enabled_status = int(ask_enabled_status)
+            except (TypeError, ValueError):
+                raise_param_error("ask_enabled_status")
+            if ask_enabled_status not in SUPPORTED_ASK_ENABLED_STATUSES:
+                raise_param_error("ask_enabled_status")
+        ask_model = json_data.get("ask_model")
+        if ask_model is not None:
+            ask_model = str(ask_model)
+        ask_temperature = json_data.get("ask_temperature")
+        if ask_temperature is not None:
+            try:
+                ask_temperature = float(ask_temperature)
+            except (TypeError, ValueError):
+                raise_param_error("ask_temperature")
+            if ask_temperature < 0 or ask_temperature > 2:
+                raise_param_error("ask_temperature")
+        ask_system_prompt = json_data.get("ask_system_prompt")
+        if ask_system_prompt is not None:
+            ask_system_prompt = str(ask_system_prompt)
+        ask_provider_config = _parse_ask_provider_config(
+            json_data.get("ask_provider_config")
+        )
         # TTS Configuration
         tts_enabled = json_data.get("tts_enabled", False)
         tts_provider = json_data.get("tts_provider", "") or ""
@@ -784,6 +867,11 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                 tts_pitch=tts_pitch,
                 tts_emotion=tts_emotion,
                 use_learner_language=use_learner_language,
+                ask_enabled_status=ask_enabled_status,
+                ask_model=ask_model,
+                ask_temperature=ask_temperature,
+                ask_system_prompt=ask_system_prompt,
+                ask_provider_config=ask_provider_config,
             )
         )
 

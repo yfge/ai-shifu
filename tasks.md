@@ -14,12 +14,12 @@
 
 ## Backend: DTO and Route Contract
 
-- [ ] Extend `ShifuDetailDto` to expose ask model fields (`ask_enabled_status`, `ask_model`, `ask_temperature`, `ask_system_prompt`).
-- [ ] Extend `ShifuDetailDto` to expose `ask_provider_config`.
-- [ ] Update `get_shifu_draft_info` response mapping for all ask fields.
-- [ ] Update `save_shifu_draft_info` signature and persistence for all ask fields.
-- [ ] Update `save_shifu_detail_api` request parsing + validation for ask fields + `ask_provider_config`.
-- [ ] Update swagger docs for `GET/POST /api/shifu/shifus/{shifu_bid}/detail`.
+- [x] Extend `ShifuDetailDto` to expose ask model fields (`ask_enabled_status`, `ask_model`, `ask_temperature`, `ask_system_prompt`).
+- [x] Extend `ShifuDetailDto` to expose `ask_provider_config`.
+- [x] Update `get_shifu_draft_info` response mapping for all ask fields.
+- [x] Update `save_shifu_draft_info` signature and persistence for all ask fields.
+- [x] Update `save_shifu_detail_api` request parsing + validation for ask fields + `ask_provider_config`.
+- [x] Update swagger docs for `GET/POST /api/shifu/shifus/{shifu_bid}/detail`.
 
 ## Backend: Publish and Import/Export
 
