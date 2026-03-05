@@ -67,13 +67,7 @@ def test_validate_volc_knowledge_config_success():
     assert field is None
 
 
-def test_ask_provider_metadata_contains_shifu_level_defaults(monkeypatch):
-    monkeypatch.setattr(
-        module,
-        "get_config",
-        lambda key: "true" if key == "ASK_PROVIDER_ENABLED" else None,
-    )
-
+def test_ask_provider_metadata_contains_shifu_level_defaults():
     metadata = module.get_ask_provider_metadata()
     providers = {item["provider"]: item for item in metadata.get("providers", [])}
 
@@ -90,13 +84,7 @@ def test_ask_provider_metadata_contains_shifu_level_defaults(monkeypatch):
     assert "sk" in volc.get("default_config", {})
 
 
-def test_ask_provider_metadata_marks_api_key_as_password(monkeypatch):
-    monkeypatch.setattr(
-        module,
-        "get_config",
-        lambda key: "true" if key == "ASK_PROVIDER_ENABLED" else None,
-    )
-
+def test_ask_provider_metadata_marks_api_key_as_password():
     metadata = module.get_ask_provider_metadata()
     providers = {item["provider"]: item for item in metadata.get("providers", [])}
 
@@ -129,3 +117,11 @@ def test_ask_provider_metadata_marks_api_key_as_password(monkeypatch):
     assert coze_api_key.get("format") == "password"
     assert volc_ak.get("format") == "password"
     assert volc_sk.get("format") == "password"
+
+
+def test_ask_provider_metadata_includes_all_providers():
+    metadata = module.get_ask_provider_metadata()
+    providers = {item["provider"] for item in metadata.get("providers", [])}
+
+    assert metadata.get("feature_enabled") is True
+    assert providers == {"llm", "dify", "coze", "volc_knowledge"}

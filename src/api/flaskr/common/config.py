@@ -394,7 +394,10 @@ Default: "phone".""",
         name="ASK_PROVIDER_ENABLED",
         default=False,
         type=bool,
-        description="Enable external ask providers (dify/coze/volc_knowledge). Default false.",
+        description=(
+            "Deprecated: ask providers are always enabled. "
+            "This flag is ignored and kept only for backward compatibility."
+        ),
         group="llm",
         required=False,
     ),
