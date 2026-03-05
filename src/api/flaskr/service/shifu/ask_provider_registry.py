@@ -32,7 +32,7 @@ def is_ask_provider_enabled() -> bool:
 def get_default_ask_provider_config() -> dict[str, Any]:
     return {
         "provider": ASK_PROVIDER_LLM,
-        "mode": ASK_PROVIDER_MODE_PROVIDER_THEN_LLM,
+        "mode": ASK_PROVIDER_MODE_PROVIDER_ONLY,
         "config": {},
     }
 

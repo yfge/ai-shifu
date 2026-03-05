@@ -2040,6 +2040,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         )
         from flaskr.service.shifu.shifu_draft_funcs import (
             ASK_PROVIDER_LLM,
+            ASK_PROVIDER_MODE_PROVIDER_ONLY,
             ASK_PROVIDER_MODE_PROVIDER_THEN_LLM,
         )
 
@@ -2136,7 +2137,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
             return "".join(chunks).strip()
 
         requested_provider = ask_provider_config.get("provider", ASK_PROVIDER_LLM)
-        mode = ask_provider_config.get("mode", ASK_PROVIDER_MODE_PROVIDER_THEN_LLM)
+        mode = ask_provider_config.get("mode", ASK_PROVIDER_MODE_PROVIDER_ONLY)
 
         used_provider = requested_provider
         fallback_used = False

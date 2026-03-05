@@ -90,7 +90,7 @@ def normalize_ask_provider_config(raw_config: Any) -> dict[str, Any]:
 
     mode = str(parsed.get("mode") or "").strip().lower()
     if mode not in SUPPORTED_ASK_PROVIDER_MODES:
-        mode = ASK_PROVIDER_MODE_PROVIDER_THEN_LLM
+        mode = ASK_PROVIDER_MODE_PROVIDER_ONLY
 
     config = parsed.get("config", {})
     if not isinstance(config, dict):
