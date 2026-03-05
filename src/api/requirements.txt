@@ -111,6 +111,7 @@ tzdata==2024.2
 ujson==5.10.0
 urllib3==2.5.0
 virtualenv==20.26.6
+volcengine==1.0.216
 waitress==3.0.1
 watchdog==6.0.0
 Werkzeug==3.1.4
