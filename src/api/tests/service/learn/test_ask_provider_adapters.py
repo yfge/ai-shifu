@@ -8,15 +8,26 @@ from flaskr.service.learn.ask_provider_adapters import (
     common,
     coze_adapter,
     dify_adapter,
+    volc_knowledge_adapter,
 )
 
 
 class _FakeResponse:
-    def __init__(self, lines=None, status_code=200, text="", http_error=None):
+    def __init__(
+        self,
+        lines=None,
+        status_code=200,
+        text="",
+        http_error=None,
+        json_data=None,
+        json_error=None,
+    ):
         self._lines = lines or []
         self.status_code = status_code
         self.text = text
         self._http_error = http_error
+        self._json_data = json_data
+        self._json_error = json_error
 
     def iter_lines(self, decode_unicode=True):
         _ = decode_unicode
@@ -26,6 +37,11 @@ class _FakeResponse:
     def raise_for_status(self):
         if self._http_error is not None:
             raise self._http_error
+
+    def json(self):
+        if self._json_error is not None:
+            raise self._json_error
+        return self._json_data
 
 
 def test_dify_adapter_streams_success_content(app, monkeypatch):
@@ -182,6 +198,126 @@ def test_coze_adapter_missing_shifu_config_raises_config_error(app):
                 user_query="hello",
                 messages=[],
                 provider_config={"config": {"bot_id": "bot-1"}},
+            )
+        )
+
+
+class _FakeVolcRequest:
+    def __init__(self):
+        self.method = ""
+        self.path = ""
+        self.headers = {}
+        self.body = ""
+        self.host = ""
+
+    def set_shema(self, value):
+        self.schema = value
+
+    def set_method(self, value):
+        self.method = value
+
+    def set_connection_timeout(self, value):
+        self.connection_timeout = value
+
+    def set_socket_timeout(self, value):
+        self.socket_timeout = value
+
+    def set_headers(self, value):
+        self.headers = value
+
+    def set_host(self, value):
+        self.host = value
+
+    def set_path(self, value):
+        self.path = value
+
+    def set_body(self, value):
+        self.body = value
+
+
+class _FakeVolcCredentials:
+    def __init__(self, ak, sk, service, region):
+        self.ak = ak
+        self.sk = sk
+        self.service = service
+        self.region = region
+
+
+class _FakeVolcSigner:
+    @staticmethod
+    def sign(request, credentials):
+        request.headers["Authorization"] = (
+            f"fake-sign {credentials.service}/{credentials.region}"
+        )
+
+
+def test_volc_knowledge_adapter_streams_success_content(app, monkeypatch):
+    adapter = module.VolcKnowledgeAskProviderAdapter()
+
+    monkeypatch.setattr(
+        volc_knowledge_adapter,
+        "_get_volc_signing_components",
+        lambda: (_FakeVolcSigner, _FakeVolcRequest, _FakeVolcCredentials),
+    )
+    monkeypatch.setattr(
+        common,
+        "get_config",
+        lambda key: {
+            "ASK_PROVIDER_TIMEOUT_SECONDS": 20,
+        }.get(key),
+    )
+    monkeypatch.setattr(
+        volc_knowledge_adapter.requests,
+        "request",
+        lambda *_args, **_kwargs: _FakeResponse(
+            json_data={
+                "code": 0,
+                "data": {
+                    "records": [
+                        {"content": "volc-answer-1"},
+                        {"text": "volc-answer-2"},
+                    ]
+                },
+            }
+        ),
+    )
+
+    chunks = list(
+        adapter.stream_answer(
+            app=app,
+            user_id="user-1",
+            user_query="hello",
+            messages=[],
+            provider_config={
+                "config": {
+                    "account_id": "acc-1",
+                    "ak": "ak-1",
+                    "sk": "sk-1",
+                    "collection_name": "collection-1",
+                }
+            },
+        )
+    )
+
+    assert [chunk.content for chunk in chunks] == ["volc-answer-1", "volc-answer-2"]
+
+
+def test_volc_knowledge_adapter_missing_config_raises_error(app):
+    adapter = module.VolcKnowledgeAskProviderAdapter()
+
+    with pytest.raises(module.AskProviderConfigError, match="account_id/ak/sk"):
+        list(
+            adapter.stream_answer(
+                app=app,
+                user_id="user-1",
+                user_query="hello",
+                messages=[],
+                provider_config={
+                    "config": {
+                        "account_id": "acc-1",
+                        "collection_name": "collection-1",
+                    }
+                },
             )
         )
 

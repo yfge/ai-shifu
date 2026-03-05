@@ -8,6 +8,7 @@ from flaskr.service.shifu.shifu_draft_funcs import (
     ASK_PROVIDER_COZE,
     ASK_PROVIDER_DIFY,
     ASK_PROVIDER_LLM,
+    ASK_PROVIDER_VOLC_KNOWLEDGE,
 )
 
 from .base import (
@@ -19,6 +20,7 @@ from .base import (
 from .coze_adapter import CozeAskProviderAdapter
 from .dify_adapter import DifyAskProviderAdapter
 from .llm_adapter import LlmAskProviderAdapter
+from .volc_knowledge_adapter import VolcKnowledgeAskProviderAdapter
 
 
 def get_ask_provider_adapter(provider: str) -> AskProviderAdapter | None:
@@ -29,6 +31,8 @@ def get_ask_provider_adapter(provider: str) -> AskProviderAdapter | None:
         return DifyAskProviderAdapter()
     if provider == ASK_PROVIDER_COZE:
         return CozeAskProviderAdapter()
+    if provider == ASK_PROVIDER_VOLC_KNOWLEDGE:
+        return VolcKnowledgeAskProviderAdapter()
     return None
 
 

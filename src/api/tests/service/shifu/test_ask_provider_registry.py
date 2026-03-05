@@ -37,6 +37,36 @@ def test_validate_coze_requires_base_url_api_key_and_bot_id():
     assert field == "bot_id"
 
 
+def test_validate_volc_knowledge_requires_account_credentials_and_collection():
+    is_valid, field = module.validate_ask_provider_specific_config(
+        "volc_knowledge",
+        {
+            "account_id": "acc-1",
+            "ak": "ak-1",
+            "sk": "",
+            "collection_name": "c1",
+        },
+    )
+
+    assert is_valid is False
+    assert field == "sk"
+
+
+def test_validate_volc_knowledge_config_success():
+    is_valid, field = module.validate_ask_provider_specific_config(
+        "volc_knowledge",
+        {
+            "account_id": "acc-1",
+            "ak": "ak-1",
+            "sk": "sk-1",
+            "collection_name": "c1",
+        },
+    )
+
+    assert is_valid is True
+    assert field is None
+
+
 def test_ask_provider_metadata_contains_shifu_level_defaults(monkeypatch):
     monkeypatch.setattr(
         module,
@@ -49,11 +79,15 @@ def test_ask_provider_metadata_contains_shifu_level_defaults(monkeypatch):
 
     dify = providers.get("dify", {})
     coze = providers.get("coze", {})
+    volc = providers.get("volc_knowledge", {})
 
     assert "base_url" in dify.get("default_config", {})
     assert "api_key" in dify.get("default_config", {})
     assert "base_url" in coze.get("default_config", {})
     assert "api_key" in coze.get("default_config", {})
+    assert "account_id" in volc.get("default_config", {})
+    assert "ak" in volc.get("default_config", {})
+    assert "sk" in volc.get("default_config", {})
 
 
 def test_ask_provider_metadata_marks_api_key_as_password(monkeypatch):
@@ -78,6 +112,20 @@ def test_ask_provider_metadata_marks_api_key_as_password(monkeypatch):
         .get("properties", {})
         .get("api_key", {})
     )
+    volc_ak = (
+        providers.get("volc_knowledge", {})
+        .get("json_schema", {})
+        .get("properties", {})
+        .get("ak", {})
+    )
+    volc_sk = (
+        providers.get("volc_knowledge", {})
+        .get("json_schema", {})
+        .get("properties", {})
+        .get("sk", {})
+    )
 
     assert dify_api_key.get("format") == "password"
     assert coze_api_key.get("format") == "password"
+    assert volc_ak.get("format") == "password"
+    assert volc_sk.get("format") == "password"

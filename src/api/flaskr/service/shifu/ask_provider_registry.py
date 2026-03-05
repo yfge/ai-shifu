@@ -7,6 +7,7 @@ from flaskr.service.shifu.shifu_draft_funcs import (
     ASK_PROVIDER_LLM,
     ASK_PROVIDER_DIFY,
     ASK_PROVIDER_COZE,
+    ASK_PROVIDER_VOLC_KNOWLEDGE,
     ASK_PROVIDER_MODE_PROVIDER_ONLY,
     ASK_PROVIDER_MODE_PROVIDER_THEN_LLM,
     normalize_ask_provider_config,
@@ -137,6 +138,117 @@ def get_ask_provider_schema_registry() -> dict[str, dict[str, Any]]:
                 "additionalProperties": True,
             },
         },
+        ASK_PROVIDER_VOLC_KNOWLEDGE: {
+            "title": "Volcengine Knowledge Base",
+            "description": "Route ask to Volcengine Knowledge Base search API.",
+            "default_config": {
+                "domain": "api-knowledgebase.mlp.cn-beijing.volces.com",
+                "scheme": "https",
+                "path": "/api/knowledge/collection/search_knowledge",
+                "project": "default",
+                "service": "air",
+                "region": "cn-north-1",
+                "account_id": "",
+                "ak": "",
+                "sk": "",
+                "collection_name": "",
+                "limit": 20,
+                "dense_weight": 0.5,
+                "image_query": "",
+                "pre_processing": {},
+                "post_processing": {},
+                "query_param": {},
+            },
+            "json_schema": {
+                "type": "object",
+                "properties": {
+                    "domain": {
+                        "type": "string",
+                        "title": "Domain",
+                        "description": "Volcengine KB domain host.",
+                    },
+                    "scheme": {
+                        "type": "string",
+                        "title": "Scheme",
+                        "description": "Request scheme: http or https.",
+                    },
+                    "path": {
+                        "type": "string",
+                        "title": "Path",
+                        "description": "API path for search endpoint.",
+                    },
+                    "project": {
+                        "type": "string",
+                        "title": "Project",
+                        "description": "Volcengine KB project name.",
+                    },
+                    "service": {
+                        "type": "string",
+                        "title": "Service",
+                        "description": "Signer service name (default: air).",
+                    },
+                    "region": {
+                        "type": "string",
+                        "title": "Region",
+                        "description": "Signer region (default: cn-north-1).",
+                    },
+                    "account_id": {
+                        "type": "string",
+                        "title": "Account ID",
+                        "description": "Volcengine account id for V-Account-Id header.",
+                    },
+                    "ak": {
+                        "type": "string",
+                        "format": "password",
+                        "title": "Access Key",
+                        "description": "Volcengine AK.",
+                    },
+                    "sk": {
+                        "type": "string",
+                        "format": "password",
+                        "title": "Secret Key",
+                        "description": "Volcengine SK.",
+                    },
+                    "collection_name": {
+                        "type": "string",
+                        "title": "Collection Name",
+                        "description": "Knowledge base collection name.",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "title": "Limit",
+                        "description": "Max recall results.",
+                    },
+                    "dense_weight": {
+                        "type": "number",
+                        "title": "Dense Weight",
+                        "description": "Hybrid search dense weight.",
+                    },
+                    "image_query": {
+                        "type": "string",
+                        "title": "Image Query",
+                        "description": "Optional image URL or base64 query.",
+                    },
+                    "pre_processing": {
+                        "type": "object",
+                        "title": "Pre Processing",
+                        "description": "Optional pre_processing object.",
+                    },
+                    "post_processing": {
+                        "type": "object",
+                        "title": "Post Processing",
+                        "description": "Optional post_processing object.",
+                    },
+                    "query_param": {
+                        "type": "object",
+                        "title": "Query Param",
+                        "description": "Optional query_param object.",
+                    },
+                },
+                "required": ["account_id", "ak", "sk", "collection_name"],
+                "additionalProperties": True,
+            },
+        },
     }
 
 
@@ -181,7 +293,12 @@ def get_ask_provider_metadata() -> dict[str, Any]:
     registry = get_ask_provider_schema_registry()
 
     providers: list[dict[str, Any]] = []
-    for provider in [ASK_PROVIDER_LLM, ASK_PROVIDER_DIFY, ASK_PROVIDER_COZE]:
+    for provider in [
+        ASK_PROVIDER_LLM,
+        ASK_PROVIDER_DIFY,
+        ASK_PROVIDER_COZE,
+        ASK_PROVIDER_VOLC_KNOWLEDGE,
+    ]:
         if provider != ASK_PROVIDER_LLM and not feature_enabled:
             continue
         item = registry[provider]
