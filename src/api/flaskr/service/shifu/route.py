@@ -2077,10 +2077,17 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         if ask_provider_config is None:
             ask_provider_config = normalize_ask_provider_config({})
 
+        requested_provider = ask_provider_config.get("provider", ASK_PROVIDER_LLM)
+        mode = ask_provider_config.get("mode", ASK_PROVIDER_MODE_PROVIDER_ONLY)
+        require_llm_model = (
+            requested_provider == ASK_PROVIDER_LLM
+            or mode == ASK_PROVIDER_MODE_PROVIDER_THEN_LLM
+        )
+
         ask_model = str(json_data.get("ask_model") or "").strip()
-        if not ask_model:
+        if not ask_model and require_llm_model:
             ask_model = str(get_config("DEFAULT_LLM_MODEL") or "").strip()
-        if not ask_model:
+        if not ask_model and require_llm_model:
             raise_param_error("ask_model")
 
         ask_temperature = json_data.get("ask_temperature", 0.3)
@@ -2135,9 +2142,6 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                 if isinstance(text, str) and text:
                     chunks.append(text)
             return "".join(chunks).strip()
-
-        requested_provider = ask_provider_config.get("provider", ASK_PROVIDER_LLM)
-        mode = ask_provider_config.get("mode", ASK_PROVIDER_MODE_PROVIDER_ONLY)
 
         used_provider = requested_provider
         fallback_used = False
