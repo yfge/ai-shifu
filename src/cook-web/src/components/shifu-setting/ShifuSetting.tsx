@@ -153,7 +153,6 @@ const ASK_MODE_DEFAULT = 5101;
 const ASK_MODE_DISABLE = 5102;
 const ASK_MODE_ENABLE = 5103;
 const ASK_PROVIDER_MODE_PROVIDER_ONLY = 'provider_only';
-const ASK_PROVIDER_MODE_PROVIDER_THEN_LLM = 'provider_then_llm';
 const ASK_TEMPERATURE_MIN = 0;
 const ASK_TEMPERATURE_MAX = 2;
 type CopyingState = {
@@ -679,9 +678,6 @@ export default function ShifuSettingDialog({
   );
   const [askSystemPrompt, setAskSystemPrompt] = useState('');
   const [askProvider, setAskProvider] = useState('llm');
-  const [askProviderMode, setAskProviderMode] = useState(
-    ASK_PROVIDER_MODE_PROVIDER_THEN_LLM,
-  );
   const [askProviderConfig, setAskProviderConfig] = useState<
     Record<string, any>
   >({});
@@ -1019,19 +1015,6 @@ export default function ShifuSettingDialog({
     askConfigMeta?.providers?.find(
       item => item.provider === resolvedAskProvider,
     ) || askConfigMeta?.providers?.[0];
-  const askModeOptions =
-    askConfigMeta?.modes?.length && askConfigMeta.modes.length > 0
-      ? askConfigMeta.modes
-      : [
-          {
-            value: ASK_PROVIDER_MODE_PROVIDER_ONLY,
-            title: t('module.shifuSetting.askProviderModeProviderOnly'),
-          },
-          {
-            value: ASK_PROVIDER_MODE_PROVIDER_THEN_LLM,
-            title: t('module.shifuSetting.askProviderModeProviderThenLlm'),
-          },
-        ];
   const askProviderFieldEntries = useMemo(
     () => Object.entries(currentAskProviderMeta?.json_schema?.properties || {}),
     [currentAskProviderMeta],
@@ -1341,8 +1324,7 @@ export default function ShifuSettingDialog({
           resolvedProvider || ttsConfig?.providers?.[0]?.name || '';
         const askProviderForSubmit =
           resolvedAskProvider || askConfigMeta?.default?.provider || 'llm';
-        const askModeForSubmit =
-          askProviderMode || ASK_PROVIDER_MODE_PROVIDER_THEN_LLM;
+        const askModeForSubmit = ASK_PROVIDER_MODE_PROVIDER_ONLY;
         const askTemperatureForSubmit = normalizeAskTemperature(
           Number(askTemperatureInput || askTemperature || 0),
         );
@@ -1434,7 +1416,6 @@ export default function ShifuSettingDialog({
       askConfigMeta,
       askEnabledStatus,
       askModel,
-      askProviderMode,
       askSystemPrompt,
       askTemperature,
       askTemperatureInput,
@@ -1485,9 +1466,6 @@ export default function ShifuSettingDialog({
       );
       setAskSystemPrompt(result.ask_system_prompt || '');
       setAskProvider((rawAskProviderConfig.provider || 'llm').toLowerCase());
-      setAskProviderMode(
-        rawAskProviderConfig.mode || ASK_PROVIDER_MODE_PROVIDER_THEN_LLM,
-      );
       setAskProviderConfig(rawAskProviderInnerConfig);
       setAskProviderObjectInputs({});
       setAskPreviewLoading(false);
@@ -1759,8 +1737,7 @@ export default function ShifuSettingDialog({
 
     const askProviderForSubmit =
       resolvedAskProvider || askConfigMeta?.default?.provider || 'llm';
-    const askModeForSubmit =
-      askProviderMode || ASK_PROVIDER_MODE_PROVIDER_THEN_LLM;
+    const askModeForSubmit = ASK_PROVIDER_MODE_PROVIDER_ONLY;
     const askTemperatureForSubmit = normalizeAskTemperature(
       Number(askTemperatureInput || askTemperature || 0),
     );
@@ -1802,7 +1779,6 @@ export default function ShifuSettingDialog({
     askModel,
     askPreviewLoading,
     askPreviewQuery,
-    askProviderMode,
     askSystemPrompt,
     askTemperature,
     askTemperatureInput,
@@ -2810,40 +2786,6 @@ export default function ShifuSettingDialog({
                             value={option.value}
                           >
                             {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className='space-y-2 mb-4'>
-                    <FormLabel className='text-sm font-medium text-foreground'>
-                      {t('module.shifuSetting.askProviderMode')}
-                    </FormLabel>
-                    <Select
-                      value={askProviderMode}
-                      onValueChange={value => setAskProviderMode(value)}
-                      disabled={currentShifu?.readonly}
-                    >
-                      <SelectTrigger className='h-9'>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {askModeOptions.map(option => (
-                          <SelectItem
-                            key={option.value}
-                            value={option.value}
-                          >
-                            {option.value === ASK_PROVIDER_MODE_PROVIDER_ONLY
-                              ? t(
-                                  'module.shifuSetting.askProviderModeProviderOnly',
-                                )
-                              : option.value ===
-                                  ASK_PROVIDER_MODE_PROVIDER_THEN_LLM
-                                ? t(
-                                    'module.shifuSetting.askProviderModeProviderThenLlm',
-                                  )
-                                : option.title}
                           </SelectItem>
                         ))}
                       </SelectContent>
