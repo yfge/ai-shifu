@@ -688,6 +688,14 @@ export default function ShifuSettingDialog({
   const [askProviderObjectInputs, setAskProviderObjectInputs] = useState<
     Record<string, string>
   >({});
+  const [askPreviewLoading, setAskPreviewLoading] = useState(false);
+  const [askPreviewQuery, setAskPreviewQuery] = useState('');
+  const [askPreviewResult, setAskPreviewResult] = useState('');
+  const [askPreviewMeta, setAskPreviewMeta] = useState<{
+    provider: string;
+    requestedProvider: string;
+    fallbackUsed: boolean;
+  } | null>(null);
 
   // TTS Configuration state
   const [ttsEnabled, setTtsEnabled] = useState(false);
@@ -1482,6 +1490,10 @@ export default function ShifuSettingDialog({
       );
       setAskProviderConfig(rawAskProviderInnerConfig);
       setAskProviderObjectInputs({});
+      setAskPreviewLoading(false);
+      setAskPreviewQuery('');
+      setAskPreviewResult('');
+      setAskPreviewMeta(null);
       setKeywords(result.keywords || []);
       setUploadedImageUrl(result.avatar || '');
       // Set TTS Configuration
@@ -1717,6 +1729,90 @@ export default function ShifuSettingDialog({
     setAskTemperature(nextValue);
     setAskTemperatureInput(String(nextValue));
   };
+
+  const handleAskPreview = useCallback(async () => {
+    if (currentShifu?.readonly || askPreviewLoading) {
+      return;
+    }
+    const query = askPreviewQuery.trim();
+    if (!query) {
+      toast({
+        title: t('module.shifuSetting.askPreviewQuestionRequired'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    let askConfigForSubmit: Record<string, unknown> = {};
+    try {
+      askConfigForSubmit = buildAskProviderConfigForSubmit();
+    } catch (error) {
+      toast({
+        title:
+          error instanceof Error
+            ? error.message
+            : t('common.core.unknownError'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const askProviderForSubmit =
+      resolvedAskProvider || askConfigMeta?.default?.provider || 'llm';
+    const askModeForSubmit =
+      askProviderMode || ASK_PROVIDER_MODE_PROVIDER_THEN_LLM;
+    const askTemperatureForSubmit = normalizeAskTemperature(
+      Number(askTemperatureInput || askTemperature || 0),
+    );
+
+    setAskPreviewLoading(true);
+    try {
+      const response = (await api.askPreview({
+        query,
+        ask_model: askModel,
+        ask_temperature: askTemperatureForSubmit,
+        ask_system_prompt: askSystemPrompt,
+        ask_provider_config: {
+          provider: askProviderForSubmit,
+          mode: askModeForSubmit,
+          config: askConfigForSubmit,
+        },
+      })) as {
+        answer?: string;
+        provider?: string;
+        requested_provider?: string;
+        fallback_used?: boolean;
+      };
+
+      const answer = String(response?.answer || '').trim();
+      setAskPreviewResult(answer);
+      setAskPreviewMeta({
+        provider: String(response?.provider || ''),
+        requestedProvider: String(response?.requested_provider || ''),
+        fallbackUsed: Boolean(response?.fallback_used),
+      });
+    } catch {
+      setAskPreviewResult('');
+      setAskPreviewMeta(null);
+    } finally {
+      setAskPreviewLoading(false);
+    }
+  }, [
+    askConfigMeta?.default?.provider,
+    askModel,
+    askPreviewLoading,
+    askPreviewQuery,
+    askProviderMode,
+    askSystemPrompt,
+    askTemperature,
+    askTemperatureInput,
+    buildAskProviderConfigForSubmit,
+    currentShifu?.readonly,
+    normalizeAskTemperature,
+    resolvedAskProvider,
+    t,
+    toast,
+  ]);
 
   const permissionLabelMap = useMemo(() => {
     return permissionOptions.reduce<Record<string, string>>((map, option) => {
@@ -2910,6 +3006,66 @@ export default function ShifuSettingDialog({
                       </div>
                     );
                   })}
+
+                  <div className='space-y-2 mb-4'>
+                    <FormLabel className='text-sm font-medium text-foreground'>
+                      {t('module.shifuSetting.askPreviewQuestion')}
+                    </FormLabel>
+                    <Input
+                      disabled={currentShifu?.readonly || askPreviewLoading}
+                      value={askPreviewQuery}
+                      onChange={e => setAskPreviewQuery(e.target.value)}
+                      placeholder={t(
+                        'module.shifuSetting.askPreviewQuestionPlaceholder',
+                      )}
+                      className='h-9'
+                    />
+                  </div>
+
+                  <div className='pt-2'>
+                    <Button
+                      type='button'
+                      variant='outline'
+                      onClick={handleAskPreview}
+                      disabled={currentShifu?.readonly || askPreviewLoading}
+                      className='w-full'
+                    >
+                      {askPreviewLoading ? (
+                        <>
+                          <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                          {t('module.shifuSetting.askPreviewLoading')}
+                        </>
+                      ) : (
+                        t('module.shifuSetting.askPreview')
+                      )}
+                    </Button>
+                  </div>
+
+                  {askPreviewMeta && (
+                    <p className='mt-3 text-xs text-muted-foreground'>
+                      {askPreviewMeta.fallbackUsed
+                        ? t('module.shifuSetting.askPreviewUsedFallback', {
+                            provider: askPreviewMeta.requestedProvider,
+                          })
+                        : t('module.shifuSetting.askPreviewUsedProvider', {
+                            provider: askPreviewMeta.provider,
+                          })}
+                    </p>
+                  )}
+
+                  {askPreviewResult && (
+                    <div className='space-y-2 mt-3'>
+                      <FormLabel className='text-sm font-medium text-foreground'>
+                        {t('module.shifuSetting.askPreviewResult')}
+                      </FormLabel>
+                      <Textarea
+                        value={askPreviewResult}
+                        readOnly
+                        minRows={3}
+                        maxRows={12}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Language Output Configuration Section */}

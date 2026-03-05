@@ -1974,6 +1974,204 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         """
         return make_common_response(get_ask_provider_metadata())
 
+    @app.route(path_prefix + "/ask/preview", methods=["POST"])
+    @bypass_token_validation
+    def ask_preview_api():
+        """
+        Preview ask provider output with current settings
+        ---
+        tags:
+            - ask
+        requestBody:
+            required: true
+            content:
+                application/json:
+                    schema:
+                        type: object
+                        properties:
+                            query:
+                                type: string
+                                description: Test question content
+                            ask_model:
+                                type: string
+                                description: Ask model used for llm/fallback
+                            ask_temperature:
+                                type: number
+                                description: Ask model temperature (0.0 - 2.0)
+                            ask_system_prompt:
+                                type: string
+                                description: Optional ask system prompt
+                            ask_provider_config:
+                                type: object
+                                description: Ask provider config ({provider, mode, config})
+        responses:
+            200:
+                description: Ask provider preview result
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                answer:
+                                    type: string
+                                    description: Preview output text
+                                provider:
+                                    type: string
+                                    description: Actual provider used
+                                requested_provider:
+                                    type: string
+                                    description: Requested provider in input config
+                                mode:
+                                    type: string
+                                    description: Provider mode
+                                fallback_used:
+                                    type: boolean
+                                    description: Whether fallback to llm happened
+                                provider_error:
+                                    type: string
+                                    description: Provider error before fallback
+        """
+        from flaskr.api.llm import chat_llm
+        from flaskr.service.learn.ask_provider_adapters import (
+            AskProviderError,
+            AskProviderRuntime,
+            AskProviderTimeoutError,
+            stream_ask_provider_response,
+        )
+        from flaskr.service.shifu.shifu_draft_funcs import (
+            ASK_PROVIDER_LLM,
+            ASK_PROVIDER_MODE_PROVIDER_THEN_LLM,
+        )
+
+        class _NoopGeneration:
+            def end(self, **kwargs):
+                _ = kwargs
+
+        class _NoopSpan:
+            trace_id = ""
+
+            def generation(self, **kwargs):
+                _ = kwargs
+                return _NoopGeneration()
+
+            def update(self, **kwargs):
+                _ = kwargs
+
+        json_data = request.get_json() or {}
+
+        query = str(json_data.get("query") or "").strip()
+        if not query or len(query) > 1000:
+            raise_param_error("query")
+
+        raw_ask_provider_config = json_data.get("ask_provider_config")
+        if raw_ask_provider_config is None and any(
+            key in json_data for key in ("provider", "mode", "config")
+        ):
+            raw_ask_provider_config = {
+                "provider": json_data.get("provider"),
+                "mode": json_data.get("mode"),
+                "config": json_data.get("config"),
+            }
+        ask_provider_config = _parse_ask_provider_config(raw_ask_provider_config or {})
+        if ask_provider_config is None:
+            ask_provider_config = normalize_ask_provider_config({})
+
+        ask_model = str(json_data.get("ask_model") or "").strip()
+        if not ask_model:
+            ask_model = str(get_config("DEFAULT_LLM_MODEL") or "").strip()
+        if not ask_model:
+            raise_param_error("ask_model")
+
+        ask_temperature = json_data.get("ask_temperature", 0.3)
+        try:
+            ask_temperature = float(ask_temperature)
+        except (TypeError, ValueError):
+            raise_param_error("ask_temperature")
+        if ask_temperature < 0 or ask_temperature > 2:
+            raise_param_error("ask_temperature")
+
+        ask_system_prompt = str(json_data.get("ask_system_prompt") or "").strip()
+
+        messages: list[dict[str, str]] = []
+        if ask_system_prompt:
+            messages.append({"role": "system", "content": ask_system_prompt})
+        messages.append({"role": "user", "content": query})
+
+        preview_user_id = (
+            str(getattr(getattr(request, "user", None), "user_id", "")).strip()
+            or f"ask-preview-{uuid.uuid4().hex[:8]}"
+        )
+
+        def _build_llm_runtime() -> AskProviderRuntime:
+            return AskProviderRuntime(
+                llm_stream_factory=lambda: chat_llm(
+                    app,
+                    preview_user_id,
+                    _NoopSpan(),
+                    model=ask_model,
+                    messages=messages,
+                    generation_name="ask_provider_preview",
+                    temperature=ask_temperature,
+                    stream=True,
+                )
+            )
+
+        def _invoke_provider(
+            provider_name: str,
+            runtime: AskProviderRuntime | None = None,
+        ) -> str:
+            chunks: list[str] = []
+            for chunk in stream_ask_provider_response(
+                app=app,
+                provider=provider_name,
+                user_id=preview_user_id,
+                user_query=query,
+                messages=messages,
+                provider_config=ask_provider_config,
+                runtime=runtime,
+            ):
+                text = getattr(chunk, "content", "")
+                if isinstance(text, str) and text:
+                    chunks.append(text)
+            return "".join(chunks).strip()
+
+        requested_provider = ask_provider_config.get("provider", ASK_PROVIDER_LLM)
+        mode = ask_provider_config.get("mode", ASK_PROVIDER_MODE_PROVIDER_THEN_LLM)
+
+        used_provider = requested_provider
+        fallback_used = False
+        provider_error = ""
+
+        try:
+            llm_runtime = (
+                _build_llm_runtime() if requested_provider == ASK_PROVIDER_LLM else None
+            )
+            answer = _invoke_provider(requested_provider, runtime=llm_runtime)
+        except (AskProviderError, AskProviderTimeoutError) as error:
+            provider_error = str(error)
+            if (
+                mode != ASK_PROVIDER_MODE_PROVIDER_THEN_LLM
+                or requested_provider == ASK_PROVIDER_LLM
+            ):
+                raise_param_error(provider_error)
+            used_provider = ASK_PROVIDER_LLM
+            fallback_used = True
+            answer = _invoke_provider(ASK_PROVIDER_LLM, runtime=_build_llm_runtime())
+
+        if not answer:
+            raise_param_error("ask preview returned empty response")
+
+        return make_common_response(
+            {
+                "answer": answer,
+                "provider": used_provider,
+                "requested_provider": requested_provider,
+                "mode": mode,
+                "fallback_used": fallback_used,
+                "provider_error": provider_error,
+            }
+        )
+
     @app.route(path_prefix + "/tts/config", methods=["GET"])
     @bypass_token_validation
     def tts_config_api():
