@@ -2,7 +2,6 @@
 
 from typing import Any
 
-from flaskr.service.config import get_config
 from flaskr.service.shifu.shifu_draft_funcs import (
     ASK_PROVIDER_LLM,
     ASK_PROVIDER_DIFY,
@@ -12,21 +11,6 @@ from flaskr.service.shifu.shifu_draft_funcs import (
     ASK_PROVIDER_MODE_PROVIDER_THEN_LLM,
     normalize_ask_provider_config,
 )
-
-
-def _to_bool(value: Any) -> bool:
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, str):
-        return value.strip().lower() in {"1", "true", "yes", "on"}
-    if isinstance(value, (int, float)):
-        return value != 0
-    return False
-
-
-def is_ask_provider_enabled() -> bool:
-    """Whether external ask providers are enabled."""
-    return _to_bool(get_config("ASK_PROVIDER_ENABLED"))
 
 
 def get_default_ask_provider_config() -> dict[str, Any]:
@@ -277,19 +261,13 @@ def validate_ask_provider_specific_config(
 
 def get_effective_ask_provider_config(raw_config: Any) -> dict[str, Any]:
     """
-    Normalize persisted config and apply feature-flag gating.
-
-    If ASK_PROVIDER_ENABLED=false, force llm provider.
+    Normalize persisted ask provider config.
     """
-    normalized = normalize_ask_provider_config(raw_config)
-    if not is_ask_provider_enabled() and normalized.get("provider") != ASK_PROVIDER_LLM:
-        return get_default_ask_provider_config()
-    return normalized
+    return normalize_ask_provider_config(raw_config)
 
 
 def get_ask_provider_metadata() -> dict[str, Any]:
     """Metadata endpoint payload for ask provider schema-driven UI."""
-    feature_enabled = is_ask_provider_enabled()
     registry = get_ask_provider_schema_registry()
 
     providers: list[dict[str, Any]] = []
@@ -299,8 +277,6 @@ def get_ask_provider_metadata() -> dict[str, Any]:
         ASK_PROVIDER_COZE,
         ASK_PROVIDER_VOLC_KNOWLEDGE,
     ]:
-        if provider != ASK_PROVIDER_LLM and not feature_enabled:
-            continue
         item = registry[provider]
         providers.append(
             {
@@ -313,7 +289,7 @@ def get_ask_provider_metadata() -> dict[str, Any]:
         )
 
     return {
-        "feature_enabled": feature_enabled,
+        "feature_enabled": True,
         "default": get_default_ask_provider_config(),
         "modes": [
             {
