@@ -35,6 +35,7 @@
 - [x] Add provider adapter interface for ask KB streaming.
 - [x] Implement Dify ask provider adapter.
 - [x] Implement Coze ask provider adapter.
+- [x] Implement Volcengine Knowledge Base ask provider adapter.
 - [x] Fully decouple ask provider handlers (split by provider module and include `llm` as default provider adapter).
 - [x] Add routing in `handle_input_ask` by `ask_provider_config.provider`.
 - [x] Support mode in `ask_provider_config.mode`:
@@ -45,7 +46,7 @@
 
 ## Backend: Configuration and Security
 
-- [x] Keep Dify/Coze connection settings in shifu-level `ask_provider_config` (not required from `.env` in ask runtime).
+- [x] Keep Dify/Coze/Volcengine Knowledge Base connection settings in shifu-level `ask_provider_config` (not required from `.env` in ask runtime).
 - [x] Add `ASK_PROVIDER_ENABLED` feature flag and default to disabled.
 - [x] Ensure ask provider runtime reads provider connection fields from `ask_provider_config.config`.
 
@@ -83,6 +84,6 @@ Status note: `npm run lint` passes (warnings only). `npx tsc --noEmit` passes af
 ## Rollout
 
 - [ ] Enable behind feature flag in non-production environment.
-- [ ] Perform manual verification for Dify/Coze one by one.
+- [ ] Perform manual verification for Dify/Coze/Volcengine Knowledge Base one by one.
 - [ ] Collect logs/metrics for provider distribution and fallback rate.
 - [ ] Enable in production after acceptance.

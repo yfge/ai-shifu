@@ -11,6 +11,7 @@ from .base import (
 from .coze_adapter import CozeAskProviderAdapter
 from .dify_adapter import DifyAskProviderAdapter
 from .llm_adapter import LlmAskProviderAdapter
+from .volc_knowledge_adapter import VolcKnowledgeAskProviderAdapter
 from .registry import get_ask_provider_adapter, stream_ask_provider_response
 
 __all__ = [
@@ -23,6 +24,7 @@ __all__ = [
     "CozeAskProviderAdapter",
     "DifyAskProviderAdapter",
     "LlmAskProviderAdapter",
+    "VolcKnowledgeAskProviderAdapter",
     "get_ask_provider_adapter",
     "stream_ask_provider_response",
 ]

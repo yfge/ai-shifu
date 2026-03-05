@@ -27,7 +27,7 @@ Use a **hybrid** approach:
 
 1. Expose ask model settings in Shifu settings.
 2. Introduce provider-driven ask configuration through one generic field.
-3. Support Dify/Coze/LLM with a unified runtime interface.
+3. Support Dify/Coze/Volcengine Knowledge Base/LLM with a unified runtime interface.
 4. Keep backward compatibility for existing ask behavior.
 
 ### 3.2 Non-Goals
@@ -57,7 +57,7 @@ Recommended normalized shape:
 
 ```json
 {
-  "provider": "llm|dify|coze",
+  "provider": "llm|dify|coze|volc_knowledge",
   "mode": "provider_only|provider_then_llm",
   "config": {}
 }
@@ -166,7 +166,7 @@ Extend `FollowUpInfo` to include:
 Runtime routing by `ask_provider_config.provider`:
 
 1. `llm`: built-in `llm` provider adapter path
-2. `dify|coze`: external provider adapter paths
+2. `dify|coze|volc_knowledge`: external provider adapter paths
 
 Mode handling by `ask_provider_config.mode`:
 
@@ -177,7 +177,7 @@ Mode handling by `ask_provider_config.mode`:
 
 Ask runtime handlers are fully decoupled by provider:
 
-1. Keep a dedicated adapter file per provider (`llm`, `dify`, `coze`).
+1. Keep a dedicated adapter file per provider (`llm`, `dify`, `coze`, `volc_knowledge`).
 2. Route only through one registry entrypoint (`stream_ask_provider_response`).
 3. Inject runtime-only dependencies (for example `chat_llm` stream factory) via adapter runtime context, not hardcoded branches in `handle_input_ask`.
 4. Ensure fallback to `llm` still goes through the same provider adapter chain.
@@ -226,7 +226,7 @@ Feature flag:
 2. Schema validation tests (provider/mode/config)
 3. Routing tests:
    - `provider=llm`
-   - `provider=dify|coze` + `provider_only`
+   - `provider=dify|coze|volc_knowledge` + `provider_only`
    - `provider_then_llm` fallback
 
 ### 12.2 Frontend
