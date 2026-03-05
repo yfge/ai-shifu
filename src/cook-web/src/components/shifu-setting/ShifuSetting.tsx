@@ -152,6 +152,7 @@ const TEMPERATURE_MAX = 2;
 const ASK_MODE_DEFAULT = 5101;
 const ASK_MODE_DISABLE = 5102;
 const ASK_MODE_ENABLE = 5103;
+const ASK_PROVIDER_LLM = 'llm';
 const ASK_PROVIDER_MODE_PROVIDER_ONLY = 'provider_only';
 const ASK_TEMPERATURE_MIN = 0;
 const ASK_TEMPERATURE_MAX = 2;
@@ -677,7 +678,7 @@ export default function ShifuSettingDialog({
     String(ASK_TEMPERATURE_MIN),
   );
   const [askSystemPrompt, setAskSystemPrompt] = useState('');
-  const [askProvider, setAskProvider] = useState('llm');
+  const [askProvider, setAskProvider] = useState(ASK_PROVIDER_LLM);
   const [askProviderConfig, setAskProviderConfig] = useState<
     Record<string, any>
   >({});
@@ -1001,7 +1002,7 @@ export default function ShifuSettingDialog({
   const resolvedAskProvider = (() => {
     const provider = (askProvider || '').trim().toLowerCase();
     if (!provider) {
-      return askConfigMeta?.providers?.[0]?.provider || 'llm';
+      return askConfigMeta?.providers?.[0]?.provider || ASK_PROVIDER_LLM;
     }
     if (askConfigMeta?.providers?.length) {
       const exists = askConfigMeta.providers.some(p => p.provider === provider);
@@ -1323,7 +1324,9 @@ export default function ShifuSettingDialog({
         const providerForSubmit =
           resolvedProvider || ttsConfig?.providers?.[0]?.name || '';
         const askProviderForSubmit =
-          resolvedAskProvider || askConfigMeta?.default?.provider || 'llm';
+          resolvedAskProvider ||
+          askConfigMeta?.default?.provider ||
+          ASK_PROVIDER_LLM;
         const askModeForSubmit = ASK_PROVIDER_MODE_PROVIDER_ONLY;
         const askTemperatureForSubmit = normalizeAskTemperature(
           Number(askTemperatureInput || askTemperature || 0),
@@ -1465,7 +1468,9 @@ export default function ShifuSettingDialog({
         String(result.ask_temperature ?? ASK_TEMPERATURE_MIN),
       );
       setAskSystemPrompt(result.ask_system_prompt || '');
-      setAskProvider((rawAskProviderConfig.provider || 'llm').toLowerCase());
+      setAskProvider(
+        (rawAskProviderConfig.provider || ASK_PROVIDER_LLM).toLowerCase(),
+      );
       setAskProviderConfig(rawAskProviderInnerConfig);
       setAskProviderObjectInputs({});
       setAskPreviewLoading(false);
@@ -1736,7 +1741,9 @@ export default function ShifuSettingDialog({
     }
 
     const askProviderForSubmit =
-      resolvedAskProvider || askConfigMeta?.default?.provider || 'llm';
+      resolvedAskProvider ||
+      askConfigMeta?.default?.provider ||
+      ASK_PROVIDER_LLM;
     const askModeForSubmit = ASK_PROVIDER_MODE_PROVIDER_ONLY;
     const askTemperatureForSubmit = normalizeAskTemperature(
       Number(askTemperatureInput || askTemperature || 0),
@@ -2681,18 +2688,6 @@ export default function ShifuSettingDialog({
 
                   <div className='space-y-2 mb-4'>
                     <FormLabel className='text-sm font-medium text-foreground'>
-                      {t('module.shifuSetting.askModel')}
-                    </FormLabel>
-                    <ModelList
-                      disabled={currentShifu?.readonly}
-                      className='h-9'
-                      value={askModel}
-                      onChange={setAskModel}
-                    />
-                  </div>
-
-                  <div className='space-y-2 mb-4'>
-                    <FormLabel className='text-sm font-medium text-foreground'>
                       {t('module.shifuSetting.askTemperature')}
                     </FormLabel>
                     <p className='text-xs text-muted-foreground'>
@@ -2790,6 +2785,19 @@ export default function ShifuSettingDialog({
                         ))}
                       </SelectContent>
                     </Select>
+                    {resolvedAskProvider === ASK_PROVIDER_LLM && (
+                      <div className='space-y-2 pt-2'>
+                        <FormLabel className='text-sm font-medium text-foreground'>
+                          {t('module.shifuSetting.askModel')}
+                        </FormLabel>
+                        <ModelList
+                          disabled={currentShifu?.readonly}
+                          className='h-9'
+                          value={askModel}
+                          onChange={setAskModel}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {askProviderFieldEntries.map(([fieldName, fieldSchema]) => {

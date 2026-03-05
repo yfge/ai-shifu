@@ -100,3 +100,43 @@ def test_ask_preview_route_rejects_empty_query(test_client):
 
     assert resp.status_code == 200
     assert payload["code"] == ERROR_CODE["server.common.paramsError"]
+
+
+def test_ask_preview_route_provider_only_does_not_require_ask_model(
+    monkeypatch, test_client
+):
+    def fake_stream_ask_provider_response(*args, **kwargs):
+        _ = args
+        provider = kwargs.get("provider", "")
+        assert provider == "coze"
+        yield SimpleNamespace(content="coze result")
+
+    monkeypatch.setattr(
+        "flaskr.service.learn.ask_provider_adapters.stream_ask_provider_response",
+        fake_stream_ask_provider_response,
+        raising=False,
+    )
+
+    resp = test_client.post(
+        "/api/shifu/ask/preview",
+        json={
+            "query": "hello",
+            "ask_provider_config": {
+                "provider": "coze",
+                "mode": "provider_only",
+                "config": {
+                    "base_url": "https://api.coze.com",
+                    "api_key": "test-api-key",
+                    "bot_id": "bot-1",
+                },
+            },
+        },
+    )
+    payload = resp.get_json(force=True)
+
+    assert resp.status_code == 200
+    assert payload["code"] == 0
+    assert payload["data"]["answer"] == "coze result"
+    assert payload["data"]["provider"] == "coze"
+    assert payload["data"]["requested_provider"] == "coze"
+    assert payload["data"]["fallback_used"] is False
