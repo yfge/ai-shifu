@@ -202,63 +202,9 @@ def test_coze_adapter_missing_shifu_config_raises_config_error(app):
         )
 
 
-class _FakeVolcRequest:
-    def __init__(self):
-        self.method = ""
-        self.path = ""
-        self.headers = {}
-        self.body = ""
-        self.host = ""
-
-    def set_shema(self, value):
-        self.schema = value
-
-    def set_method(self, value):
-        self.method = value
-
-    def set_connection_timeout(self, value):
-        self.connection_timeout = value
-
-    def set_socket_timeout(self, value):
-        self.socket_timeout = value
-
-    def set_headers(self, value):
-        self.headers = value
-
-    def set_host(self, value):
-        self.host = value
-
-    def set_path(self, value):
-        self.path = value
-
-    def set_body(self, value):
-        self.body = value
-
-
-class _FakeVolcCredentials:
-    def __init__(self, ak, sk, service, region):
-        self.ak = ak
-        self.sk = sk
-        self.service = service
-        self.region = region
-
-
-class _FakeVolcSigner:
-    @staticmethod
-    def sign(request, credentials):
-        request.headers["Authorization"] = (
-            f"fake-sign {credentials.service}/{credentials.region}"
-        )
-
-
 def test_volc_knowledge_adapter_streams_success_content(app, monkeypatch):
     adapter = module.VolcKnowledgeAskProviderAdapter()
 
-    monkeypatch.setattr(
-        volc_knowledge_adapter,
-        "_get_volc_signing_components",
-        lambda: (_FakeVolcSigner, _FakeVolcRequest, _FakeVolcCredentials),
-    )
     monkeypatch.setattr(
         common,
         "get_config",
@@ -266,10 +212,14 @@ def test_volc_knowledge_adapter_streams_success_content(app, monkeypatch):
             "ASK_PROVIDER_TIMEOUT_SECONDS": 20,
         }.get(key),
     )
-    monkeypatch.setattr(
-        volc_knowledge_adapter.requests,
-        "request",
-        lambda *_args, **_kwargs: _FakeResponse(
+
+    request_state = {}
+
+    def _fake_request(*_args, **kwargs):
+        request_state["method"] = kwargs.get("method")
+        request_state["headers"] = kwargs.get("headers") or {}
+        request_state["url"] = kwargs.get("url")
+        return _FakeResponse(
             json_data={
                 "code": 0,
                 "data": {
@@ -279,7 +229,12 @@ def test_volc_knowledge_adapter_streams_success_content(app, monkeypatch):
                     ]
                 },
             }
-        ),
+        )
+
+    monkeypatch.setattr(
+        volc_knowledge_adapter.requests,
+        "request",
+        _fake_request,
     )
 
     chunks = list(
@@ -300,6 +255,13 @@ def test_volc_knowledge_adapter_streams_success_content(app, monkeypatch):
     )
 
     assert [chunk.content for chunk in chunks] == ["volc-answer-1", "volc-answer-2"]
+    assert request_state["method"] == "POST"
+    assert request_state["url"].endswith("/api/knowledge/collection/search_knowledge")
+    assert request_state["headers"]["Authorization"].startswith(
+        "HMAC-SHA256 Credential=ak-1/"
+    )
+    assert request_state["headers"]["X-Date"]
+    assert request_state["headers"]["X-Content-Sha256"]
 
 
 def test_volc_knowledge_adapter_missing_config_raises_error(app):
