@@ -1,8 +1,12 @@
 """Volcengine Knowledge Base ask provider adapter."""
 
 import copy
+import hashlib
+import hmac
 import json
+from datetime import datetime, timezone
 from typing import Any, Generator
+from urllib.parse import quote
 
 import requests
 from flask import Flask
@@ -19,16 +23,97 @@ from .base import (
 from .common import extract_text, provider_timeout_seconds, raise_for_provider_response
 
 
-def _get_volc_signing_components():
-    try:
-        from volcengine.Credentials import Credentials
-        from volcengine.auth.SignerV4 import SignerV4
-        from volcengine.base.Request import Request
-    except ImportError as exc:
-        raise AskProviderConfigError(
-            "volcengine sdk is required for volc_knowledge provider"
-        ) from exc
-    return SignerV4, Request, Credentials
+def _hash_sha256(content: str) -> str:
+    return hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+
+def _hmac_sha256(key: bytes, content: str) -> bytes:
+    return hmac.new(key, content.encode("utf-8"), hashlib.sha256).digest()
+
+
+def _normalize_query(params: dict[str, Any] | None) -> str:
+    if not params:
+        return ""
+
+    encoded_parts: list[str] = []
+    for key in sorted(params.keys()):
+        value = params[key]
+        if isinstance(value, list):
+            values = value
+        else:
+            values = [value]
+        for item in values:
+            item_text = "" if item is None else str(item)
+            encoded_parts.append(
+                f"{quote(str(key), safe='-_.~')}={quote(item_text, safe='-_.~')}"
+            )
+    return "&".join(encoded_parts)
+
+
+def _normalize_header_value(value: Any) -> str:
+    return " ".join(str(value).strip().split())
+
+
+def _build_volc_signature_headers(
+    *,
+    method: str,
+    path: str,
+    query_params: dict[str, Any] | None,
+    headers: dict[str, str],
+    body: str,
+    ak: str,
+    sk: str,
+    service: str,
+    region: str,
+) -> dict[str, str]:
+    x_date = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    short_x_date = x_date[:8]
+    x_content_sha256 = _hash_sha256(body)
+
+    signable_headers = {
+        "content-type": _normalize_header_value(headers.get("Content-Type", "")),
+        "host": _normalize_header_value(headers.get("Host", "")),
+        "v-account-id": _normalize_header_value(headers.get("V-Account-Id", "")),
+        "x-content-sha256": x_content_sha256,
+        "x-date": x_date,
+    }
+    signed_header_keys = sorted(signable_headers.keys())
+    signed_headers = ";".join(signed_header_keys)
+    canonical_headers = "\n".join(
+        f"{key}:{signable_headers[key]}" for key in signed_header_keys
+    )
+
+    canonical_request_str = "\n".join(
+        [
+            method.upper(),
+            path,
+            _normalize_query(query_params),
+            canonical_headers,
+            "",
+            signed_headers,
+            x_content_sha256,
+        ]
+    )
+    hashed_canonical_request = _hash_sha256(canonical_request_str)
+    credential_scope = "/".join([short_x_date, region, service, "request"])
+    string_to_sign = "\n".join(
+        ["HMAC-SHA256", x_date, credential_scope, hashed_canonical_request]
+    )
+
+    k_date = _hmac_sha256(sk.encode("utf-8"), short_x_date)
+    k_region = _hmac_sha256(k_date, region)
+    k_service = _hmac_sha256(k_region, service)
+    k_signing = _hmac_sha256(k_service, "request")
+    signature = _hmac_sha256(k_signing, string_to_sign).hex()
+
+    return {
+        "X-Date": x_date,
+        "X-Content-Sha256": x_content_sha256,
+        "Authorization": (
+            "HMAC-SHA256 Credential="
+            f"{ak}/{credential_scope}, SignedHeaders={signed_headers}, Signature={signature}"
+        ),
+    }
 
 
 def _to_positive_int(value: Any, default: int) -> int:
@@ -175,35 +260,34 @@ class VolcKnowledgeAskProviderAdapter:
             if isinstance(value, dict):
                 payload[field] = copy.deepcopy(value)
 
-        signer_timeout_seconds = provider_timeout_seconds()
-        signer_headers = {
+        request_timeout_seconds = provider_timeout_seconds()
+        unsigned_headers = {
             "Accept": "application/json",
             "Content-Type": "application/json; charset=utf-8",
             "Host": domain,
             "V-Account-Id": account_id,
         }
-
-        SignerV4, Request, Credentials = _get_volc_signing_components()
-        req = Request()
-        req.set_shema(scheme)
-        req.set_method("POST")
-        req.set_connection_timeout(10)
-        req.set_socket_timeout(signer_timeout_seconds)
-        req.set_headers(signer_headers)
-        req.set_host(domain)
-        req.set_path(path)
-        req.set_body(json.dumps(payload, ensure_ascii=False))
-
-        credentials = Credentials(ak, sk, service, region)
-        SignerV4.sign(req, credentials)
+        request_body = json.dumps(payload, ensure_ascii=False)
+        signed_headers = _build_volc_signature_headers(
+            method="POST",
+            path=path,
+            query_params=None,
+            headers=unsigned_headers,
+            body=request_body,
+            ak=ak,
+            sk=sk,
+            service=service,
+            region=region,
+        )
+        request_headers = {**unsigned_headers, **signed_headers}
 
         try:
             response = requests.request(
-                method=req.method,
+                method="POST",
                 url=f"{scheme}://{domain}{path}",
-                headers=req.headers,
-                data=req.body,
-                timeout=(5, signer_timeout_seconds),
+                headers=request_headers,
+                data=request_body,
+                timeout=(5, request_timeout_seconds),
             )
         except requests.Timeout as exc:
             raise AskProviderTimeoutError("volc_knowledge request timeout") from exc

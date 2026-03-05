@@ -76,11 +76,13 @@ Provider connection settings are persisted at shifu level inside
 
 1. Dify: `base_url`, `api_key`
 2. Coze: `base_url`, `api_key`, `bot_id` (plus optional fields)
+3. Volcengine Knowledge Base: `account_id`, `ak`, `sk`, `collection_name` (plus optional fields)
 
 Notes:
 
-1. Ask provider runtime does not read Dify/Coze credentials from `.env`.
-2. Existing global env keys can remain for other legacy flows, but are not used by ask provider routing.
+1. Ask provider runtime does not read Dify/Coze/Volcengine credentials from `.env`.
+2. Volcengine Knowledge Base request signing uses internal SigV4 logic in adapter code (no dedicated Volcengine SDK dependency required for ask provider routing).
+3. Existing global env keys can remain for other legacy flows, but are not used by ask provider routing.
 
 ## 5. Schema-Driven Config (TTS-like)
 
