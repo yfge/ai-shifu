@@ -75,13 +75,21 @@ def test_ask_provider_metadata_contains_shifu_level_defaults():
     coze = providers.get("coze", {})
     volc = providers.get("volc_knowledge", {})
 
-    assert "base_url" in dify.get("default_config", {})
-    assert "api_key" in dify.get("default_config", {})
-    assert "base_url" in coze.get("default_config", {})
-    assert "api_key" in coze.get("default_config", {})
-    assert "account_id" in volc.get("default_config", {})
-    assert "ak" in volc.get("default_config", {})
-    assert "sk" in volc.get("default_config", {})
+    assert dify.get("default_config", {}) == {
+        "base_url": "https://api.dify.ai/v1",
+        "api_key": "",
+    }
+    assert coze.get("default_config", {}) == {
+        "base_url": "https://api.coze.com",
+        "api_key": "",
+        "bot_id": "",
+    }
+    assert volc.get("default_config", {}) == {
+        "account_id": "",
+        "ak": "",
+        "sk": "",
+        "collection_name": "",
+    }
 
 
 def test_ask_provider_metadata_marks_api_key_as_password():
@@ -125,3 +133,25 @@ def test_ask_provider_metadata_includes_all_providers():
 
     assert metadata.get("feature_enabled") is True
     assert providers == {"llm", "dify", "coze", "volc_knowledge"}
+
+
+def test_ask_provider_metadata_exposes_minimal_schema_properties():
+    metadata = module.get_ask_provider_metadata()
+    providers = {item["provider"]: item for item in metadata.get("providers", [])}
+
+    dify_fields = (
+        providers.get("dify", {}).get("json_schema", {}).get("properties", {}).keys()
+    )
+    coze_fields = (
+        providers.get("coze", {}).get("json_schema", {}).get("properties", {}).keys()
+    )
+    volc_fields = (
+        providers.get("volc_knowledge", {})
+        .get("json_schema", {})
+        .get("properties", {})
+        .keys()
+    )
+
+    assert set(dify_fields) == {"base_url", "api_key"}
+    assert set(coze_fields) == {"base_url", "api_key", "bot_id"}
+    assert set(volc_fields) == {"account_id", "ak", "sk", "collection_name"}

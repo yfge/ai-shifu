@@ -36,12 +36,10 @@ def get_ask_provider_schema_registry() -> dict[str, dict[str, Any]]:
         },
         ASK_PROVIDER_DIFY: {
             "title": "Dify",
-            "description": "Route ask to Dify chat app with shifu-level config.",
+            "description": "Route ask to Dify chat app with minimal config.",
             "default_config": {
-                "base_url": "",
+                "base_url": "https://api.dify.ai/v1",
                 "api_key": "",
-                "conversation_id": "",
-                "inputs": {},
             },
             "json_schema": {
                 "type": "object",
@@ -57,16 +55,6 @@ def get_ask_provider_schema_registry() -> dict[str, dict[str, Any]]:
                         "title": "API Key",
                         "description": "Dify app API key.",
                     },
-                    "conversation_id": {
-                        "type": "string",
-                        "title": "Conversation ID",
-                        "description": "Optional existing Dify conversation_id.",
-                    },
-                    "inputs": {
-                        "type": "object",
-                        "title": "Inputs",
-                        "description": "Optional Dify workflow inputs object.",
-                    },
                 },
                 "required": ["base_url", "api_key"],
                 "additionalProperties": True,
@@ -74,14 +62,11 @@ def get_ask_provider_schema_registry() -> dict[str, dict[str, Any]]:
         },
         ASK_PROVIDER_COZE: {
             "title": "Coze",
-            "description": "Route ask to Coze bot chat API with shifu-level config.",
+            "description": "Route ask to Coze bot chat API with minimal config.",
             "default_config": {
-                "base_url": "",
+                "base_url": "https://api.coze.com",
                 "api_key": "",
                 "bot_id": "",
-                "conversation_id": "",
-                "api_path": "/v3/chat",
-                "extra_body": {},
             },
             "json_schema": {
                 "type": "object",
@@ -102,21 +87,6 @@ def get_ask_provider_schema_registry() -> dict[str, dict[str, Any]]:
                         "title": "Bot ID",
                         "description": "Coze bot identifier.",
                     },
-                    "conversation_id": {
-                        "type": "string",
-                        "title": "Conversation ID",
-                        "description": "Optional existing Coze conversation id.",
-                    },
-                    "api_path": {
-                        "type": "string",
-                        "title": "API Path",
-                        "description": "Relative API path on base_url.",
-                    },
-                    "extra_body": {
-                        "type": "object",
-                        "title": "Extra Body",
-                        "description": "Optional extra request body fields.",
-                    },
                 },
                 "required": ["base_url", "api_key", "bot_id"],
                 "additionalProperties": True,
@@ -124,58 +94,16 @@ def get_ask_provider_schema_registry() -> dict[str, dict[str, Any]]:
         },
         ASK_PROVIDER_VOLC_KNOWLEDGE: {
             "title": "Volcengine Knowledge Base",
-            "description": "Route ask to Volcengine Knowledge Base search API.",
+            "description": "Route ask to Volcengine Knowledge Base search API with minimal config.",
             "default_config": {
-                "domain": "api-knowledgebase.mlp.cn-beijing.volces.com",
-                "scheme": "https",
-                "path": "/api/knowledge/collection/search_knowledge",
-                "project": "default",
-                "service": "air",
-                "region": "cn-north-1",
                 "account_id": "",
                 "ak": "",
                 "sk": "",
                 "collection_name": "",
-                "limit": 20,
-                "dense_weight": 0.5,
-                "image_query": "",
-                "pre_processing": {},
-                "post_processing": {},
-                "query_param": {},
             },
             "json_schema": {
                 "type": "object",
                 "properties": {
-                    "domain": {
-                        "type": "string",
-                        "title": "Domain",
-                        "description": "Volcengine KB domain host.",
-                    },
-                    "scheme": {
-                        "type": "string",
-                        "title": "Scheme",
-                        "description": "Request scheme: http or https.",
-                    },
-                    "path": {
-                        "type": "string",
-                        "title": "Path",
-                        "description": "API path for search endpoint.",
-                    },
-                    "project": {
-                        "type": "string",
-                        "title": "Project",
-                        "description": "Volcengine KB project name.",
-                    },
-                    "service": {
-                        "type": "string",
-                        "title": "Service",
-                        "description": "Signer service name (default: air).",
-                    },
-                    "region": {
-                        "type": "string",
-                        "title": "Region",
-                        "description": "Signer region (default: cn-north-1).",
-                    },
                     "account_id": {
                         "type": "string",
                         "title": "Account ID",
@@ -197,36 +125,6 @@ def get_ask_provider_schema_registry() -> dict[str, dict[str, Any]]:
                         "type": "string",
                         "title": "Collection Name",
                         "description": "Knowledge base collection name.",
-                    },
-                    "limit": {
-                        "type": "integer",
-                        "title": "Limit",
-                        "description": "Max recall results.",
-                    },
-                    "dense_weight": {
-                        "type": "number",
-                        "title": "Dense Weight",
-                        "description": "Hybrid search dense weight.",
-                    },
-                    "image_query": {
-                        "type": "string",
-                        "title": "Image Query",
-                        "description": "Optional image URL or base64 query.",
-                    },
-                    "pre_processing": {
-                        "type": "object",
-                        "title": "Pre Processing",
-                        "description": "Optional pre_processing object.",
-                    },
-                    "post_processing": {
-                        "type": "object",
-                        "title": "Post Processing",
-                        "description": "Optional post_processing object.",
-                    },
-                    "query_param": {
-                        "type": "object",
-                        "title": "Query Param",
-                        "description": "Optional query_param object.",
                     },
                 },
                 "required": ["account_id", "ak", "sk", "collection_name"],
