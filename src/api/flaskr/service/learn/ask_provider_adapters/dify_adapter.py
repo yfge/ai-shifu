@@ -74,11 +74,8 @@ class DifyAskProviderAdapter:
                 "dify base_url/api_key are required in ask_provider_config.config"
             )
 
-        use_context = config.get("use_context")
-        if use_context is None:
-            use_context = True
         query = user_query
-        if bool(use_context) and messages:
+        if messages:
             rendered = self._render_messages_as_query(messages)
             if rendered:
                 query = rendered

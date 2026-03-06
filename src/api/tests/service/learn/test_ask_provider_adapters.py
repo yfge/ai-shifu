@@ -85,7 +85,7 @@ def test_dify_adapter_streams_success_content(app, monkeypatch):
     assert [chunk.content for chunk in chunks] == ["hello", " world"]
 
 
-def test_dify_adapter_uses_messages_as_query_when_use_context_enabled(app, monkeypatch):
+def test_dify_adapter_uses_messages_as_query_when_messages_present(app, monkeypatch):
     adapter = module.DifyAskProviderAdapter()
 
     monkeypatch.setattr(
@@ -124,7 +124,6 @@ def test_dify_adapter_uses_messages_as_query_when_use_context_enabled(app, monke
                 "config": {
                     "base_url": "https://dify.example.com",
                     "api_key": "test-key",
-                    "use_context": True,
                 }
             },
         )

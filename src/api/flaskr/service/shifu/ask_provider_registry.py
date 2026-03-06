@@ -41,9 +41,6 @@ def get_ask_provider_schema_registry() -> dict[str, dict[str, Any]]:
             "default_config": {
                 "base_url": "https://api.dify.ai/v1",
                 "api_key": "",
-                "use_context": True,
-                "conversation_id": "",
-                "inputs": {},
             },
             "json_schema": {
                 "type": "object",
@@ -58,21 +55,6 @@ def get_ask_provider_schema_registry() -> dict[str, dict[str, Any]]:
                         "format": "password",
                         "title": "API Key",
                         "description": "Dify app API key.",
-                    },
-                    "use_context": {
-                        "type": "boolean",
-                        "title": "Use Context",
-                        "description": "When enabled, send system prompt + chat history as a single query (similar to built-in LLM call).",
-                    },
-                    "conversation_id": {
-                        "type": "string",
-                        "title": "Conversation ID (optional)",
-                        "description": "Dify conversation id. If set, Dify will keep its own context.",
-                    },
-                    "inputs": {
-                        "type": "object",
-                        "title": "Inputs (JSON)",
-                        "description": "Extra inputs for Dify app variables.",
                     },
                 },
                 "required": ["base_url", "api_key"],
