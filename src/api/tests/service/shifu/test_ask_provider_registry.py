@@ -92,9 +92,6 @@ def test_ask_provider_metadata_contains_shifu_level_defaults():
     assert dify.get("default_config", {}) == {
         "base_url": "https://api.dify.ai/v1",
         "api_key": "",
-        "use_context": True,
-        "conversation_id": "",
-        "inputs": {},
     }
     assert coze.get("default_config", {}) == {
         "base_url": "https://api.coze.com",
@@ -189,13 +186,7 @@ def test_ask_provider_metadata_exposes_minimal_schema_properties():
         .keys()
     )
 
-    assert set(dify_fields) == {
-        "base_url",
-        "api_key",
-        "use_context",
-        "conversation_id",
-        "inputs",
-    }
+    assert set(dify_fields) == {"base_url", "api_key"}
     assert set(coze_fields) == {"base_url", "api_key", "bot_id"}
     assert set(coze_workflow_fields) >= {
         "base_url",
