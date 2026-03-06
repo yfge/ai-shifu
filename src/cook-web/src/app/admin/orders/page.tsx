@@ -499,7 +499,9 @@ const OrdersPage = () => {
 
   const syncShifuBidQuery = useCallback(
     (shifuBids: string[]) => {
-      const nextSearchParams = new URLSearchParams(searchParams?.toString() || '');
+      const nextSearchParams = new URLSearchParams(
+        searchParams?.toString() || '',
+      );
       const serializedShifuBid = serializeShifuBidQuery(shifuBids);
 
       if (serializedShifuBid) {
