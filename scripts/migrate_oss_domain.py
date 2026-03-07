@@ -48,19 +48,19 @@ log = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 TARGETS: list[tuple[str, str, bool]] = [
     # course outline content (MarkdownFlow – may embed multiple image URLs)
-    ("shifu_draft_outline_items",     "content",  True),
-    ("shifu_published_outline_items", "content",  True),
+    ("shifu_draft_outline_items", "content", True),
+    ("shifu_published_outline_items", "content", True),
     # course resource references
-    ("scenario_resource",             "url",      False),
+    ("scenario_resource", "url", False),
     # generic resource table
-    ("resource",                      "url",      False),
+    ("resource", "url", False),
     # TTS audio
-    ("learn_generated_audios",        "oss_url",  False),
+    ("learn_generated_audios", "oss_url", False),
     # user avatar
-    ("user_users",                    "avatar",   False),
+    ("user_users", "avatar", False),
 ]
 
-_ALLOWED_TABLES  = {t for t, _, _ in TARGETS}
+_ALLOWED_TABLES = {t for t, _, _ in TARGETS}
 _ALLOWED_COLUMNS = {c for _, c, _ in TARGETS}
 
 DEFAULT_BATCH_SIZE = 500
@@ -69,6 +69,7 @@ DEFAULT_BATCH_SIZE = 500
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _mask_url(url: str) -> str:
     """Replace credentials in a DB URL with ***."""
@@ -81,11 +82,11 @@ def get_db_url(args: argparse.Namespace) -> str:
     explicit = os.getenv("DATABASE_URL")
     if explicit:
         return explicit
-    host     = os.getenv("DB_HOST", "127.0.0.1")
-    port     = os.getenv("DB_PORT", "3306")
-    user     = os.getenv("DB_USER", "root")
+    host = os.getenv("DB_HOST", "127.0.0.1")
+    port = os.getenv("DB_PORT", "3306")
+    user = os.getenv("DB_USER", "root")
     password = os.getenv("DB_PASSWORD", "")
-    name     = os.getenv("DB_NAME", "")
+    name = os.getenv("DB_NAME", "")
     if not name:
         log.error(
             "Database name is not set. "
@@ -98,6 +99,7 @@ def get_db_url(args: argparse.Namespace) -> str:
 # ---------------------------------------------------------------------------
 # Core migration
 # ---------------------------------------------------------------------------
+
 
 def migrate(
     apply: bool,
@@ -119,7 +121,7 @@ def migrate(
     with engine.begin() as conn:
         for table, column, is_content in TARGETS:
             # Whitelist check (defence-in-depth; values come from the constant above)
-            assert table  in _ALLOWED_TABLES,  f"Unknown table: {table!r}"
+            assert table in _ALLOWED_TABLES, f"Unknown table: {table!r}"
             assert column in _ALLOWED_COLUMNS, f"Unknown column: {column!r}"
 
             # Check table exists in this deployment
@@ -130,10 +132,15 @@ def migrate(
                 log.info("skip  %s.%s — table not found", table, column)
                 continue
 
-            count: int = conn.execute(
-                sa.text(f"SELECT COUNT(*) FROM `{table}` WHERE `{column}` LIKE :pat"),
-                {"pat": pat},
-            ).scalar() or 0
+            count: int = (
+                conn.execute(
+                    sa.text(
+                        f"SELECT COUNT(*) FROM `{table}` WHERE `{column}` LIKE :pat"
+                    ),
+                    {"pat": pat},
+                ).scalar()
+                or 0
+            )
 
             if count == 0:
                 continue
@@ -142,7 +149,11 @@ def migrate(
             suffix = " (embedded URLs)" if is_content else ""
             log.info(
                 "%s  %s.%s: %d row(s)%s",
-                label, table, column, count, suffix,
+                label,
+                table,
+                column,
+                count,
+                suffix,
             )
 
             if apply:
@@ -183,29 +194,36 @@ def migrate(
 # Entry point
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "--apply", action="store_true",
+        "--apply",
+        action="store_true",
         help="Write changes to the database (default: dry run)",
     )
     parser.add_argument(
-        "--old-url", required=True,
+        "--old-url",
+        required=True,
         help="Old OSS base URL to replace (e.g. https://resource.ai-shifu.cn)",
     )
     parser.add_argument(
-        "--new-url", required=True,
+        "--new-url",
+        required=True,
         help="New OSS base URL (e.g. https://res.ai-shifu.cn)",
     )
     parser.add_argument(
-        "--db-url", default="",
+        "--db-url",
+        default="",
         help="SQLAlchemy DB URL (overrides DATABASE_URL env and DB_* vars)",
     )
     parser.add_argument(
-        "--batch-size", type=int, default=DEFAULT_BATCH_SIZE,
+        "--batch-size",
+        type=int,
+        default=DEFAULT_BATCH_SIZE,
         help=f"Rows per UPDATE batch (default: {DEFAULT_BATCH_SIZE})",
     )
     args = parser.parse_args()
