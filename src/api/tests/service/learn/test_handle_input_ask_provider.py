@@ -38,7 +38,7 @@ class _DummyLearnGeneratedBlockModel:
 
 class _DummyFollowUpInfo:
     def __init__(self, ask_provider_config):
-        self.ask_prompt = "{shifu_system_message}"
+        self.ask_prompt = "ASK_PROMPT::{shifu_system_message}"
         self.ask_model = "gpt-test"
         self.model_args = {"temperature": 0.2}
         self.ask_provider_config = ask_provider_config
@@ -80,7 +80,7 @@ class _Context:
         self._shifu_info = types.SimpleNamespace(use_learner_language=0)
 
     def get_system_prompt(self, _outline_bid: str):
-        return ""
+        return "COURSE_PROMPT"
 
 
 def _setup_handle_input_ask_patches(monkeypatch, module, ask_provider_config):
@@ -100,6 +100,11 @@ def _setup_handle_input_ask_patches(monkeypatch, module, ask_provider_config):
         module,
         "get_effective_ask_provider_config",
         lambda config: config,
+    )
+    monkeypatch.setattr(
+        module,
+        "get_fmt_prompt",
+        lambda *_args, **_kwargs: "COURSE_PROMPT",
     )
     monkeypatch.setattr(module.db.session, "add", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(module.db.session, "flush", lambda *_args, **_kwargs: None)
@@ -281,3 +286,54 @@ def test_handle_input_ask_provider_response_skips_llm(app, monkeypatch):
     assert contents == ["provider-", "answer"]
     assert llm_call_counter["count"] == 0
     assert events[-1].type == GeneratedType.BREAK
+
+
+def test_handle_input_ask_dify_uses_context_without_follow_up_prompt(app, monkeypatch):
+    from flaskr.service.learn import handle_input_ask as module
+
+    ask_provider_config = {
+        "provider": "dify",
+        "mode": "provider_then_llm",
+        "config": {"base_url": "https://dify.example.com", "api_key": "key"},
+    }
+    _setup_handle_input_ask_patches(monkeypatch, module, ask_provider_config)
+
+    captured = {"messages": None}
+
+    def _fake_stream_ask_provider_response(**kwargs):
+        if kwargs.get("provider") == "dify":
+            captured["messages"] = kwargs.get("messages")
+            return iter([types.SimpleNamespace(content="provider-answer")])
+        return iter([])
+
+    monkeypatch.setattr(
+        module,
+        "stream_ask_provider_response",
+        _fake_stream_ask_provider_response,
+    )
+    monkeypatch.setattr(module, "chat_llm", lambda *_args, **_kwargs: iter([]))
+
+    events = list(
+        module.handle_input_ask(
+            app=app,
+            context=_Context(),
+            user_info=types.SimpleNamespace(user_id="user-1"),
+            attend_id="attend-1",
+            input="hello",
+            outline_item_info=types.SimpleNamespace(
+                shifu_bid="shifu-1",
+                bid="outline-1",
+                title="Outline",
+                position=1,
+            ),
+            trace_args={"output": ""},
+            trace=_DummyTrace(),
+        )
+    )
+
+    contents = _collect_content_chunks(events)
+    assert contents == ["provider-answer"]
+    assert captured["messages"] == [
+        {"role": "system", "content": "COURSE_PROMPT"},
+        {"role": "user", "content": "hello"},
+    ]

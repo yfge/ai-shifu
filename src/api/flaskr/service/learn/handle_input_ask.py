@@ -103,12 +103,13 @@ def handle_input_ask(
 
     history_scripts = history_scripts[::-1]
 
-    messages = []  # List to store conversation messages
+    llm_messages = []  # Conversation messages for built-in LLM ask.
+    provider_messages = []  # Conversation messages for external ask providers.
     input = input.replace("{", "{{").replace(
         "}", "}}"
     )  # Escape braces to avoid formatting conflicts
     system_prompt_template = context.get_system_prompt(outline_item_info.bid)
-    system_prompt = (
+    base_system_prompt = (
         None
         if system_prompt_template is None or system_prompt_template == ""
         else get_fmt_prompt(
@@ -118,25 +119,30 @@ def handle_input_ask(
             system_prompt_template,
         )
     )
-    system_prompt = follow_up_info.ask_prompt.replace(
-        "{shifu_system_message}", system_prompt if system_prompt else ""
+    llm_system_prompt = follow_up_info.ask_prompt.replace(
+        "{shifu_system_message}", base_system_prompt if base_system_prompt else ""
     )
     # Append language instruction if use_learner_language is enabled
     use_learner_language = getattr(context._shifu_info, "use_learner_language", 0)
     if use_learner_language:
         output_language = get_markdownflow_output_language()
-        system_prompt += f"\n\nIMPORTANT: You MUST respond in {output_language}."
-    messages.append({"role": "system", "content": system_prompt})
+        llm_system_prompt += f"\n\nIMPORTANT: You MUST respond in {output_language}."
+    llm_messages.append({"role": "system", "content": llm_system_prompt})
+    if base_system_prompt:
+        provider_messages.append({"role": "system", "content": base_system_prompt})
     # Add historical conversation records to system messages
     for script in history_scripts:
         if script.type in [BLOCK_TYPE_MDASK_VALUE, BLOCK_TYPE_MDINTERACTION_VALUE]:
-            messages.append(
-                {"role": "user", "content": script.generated_content}
-            )  # Add user message
+            history_message = {"role": "user", "content": script.generated_content}
+            llm_messages.append(history_message)
+            provider_messages.append(history_message)
         elif script.type in [BLOCK_TYPE_MDANSWER_VALUE, BLOCK_TYPE_MDCONTENT_VALUE]:
-            messages.append(
-                {"role": "assistant", "content": script.generated_content}
-            )  # Add assistant message
+            history_message = {
+                "role": "assistant",
+                "content": script.generated_content,
+            }
+            llm_messages.append(history_message)
+            provider_messages.append(history_message)
 
     # RAG retrieval has been removed from this system
 
@@ -146,13 +152,14 @@ def handle_input_ask(
     if use_learner_language:
         output_language = get_markdownflow_output_language()
         user_content += f"\n\n(IMPORTANT: You MUST respond in {output_language}.)"
-    messages.append(
-        {
-            "role": "user",
-            "content": user_content,
-        }
-    )
-    app.logger.info(f"messages: {messages}")
+    user_message = {
+        "role": "user",
+        "content": user_content,
+    }
+    llm_messages.append(user_message)
+    provider_messages.append(user_message)
+    app.logger.info(f"llm_messages: {llm_messages}")
+    app.logger.info(f"provider_messages: {provider_messages}")
 
     # Get model for follow-up Q&A
     follow_up_model = follow_up_info.ask_model
@@ -264,7 +271,7 @@ def handle_input_ask(
                 "temperature"
             ],  # Use configured temperature parameter
             generation_name=generation_name,
-            messages=messages,  # Pass complete conversation history
+            messages=llm_messages,  # Pass complete conversation history
             usage_context=usage_context,
             usage_scene=usage_scene,
         )
@@ -279,7 +286,9 @@ def handle_input_ask(
             provider=provider_name,
             user_id=user_info.user_id,
             user_query=user_content,
-            messages=messages,
+            messages=llm_messages
+            if provider_name == ASK_PROVIDER_LLM
+            else provider_messages,
             provider_config=ask_provider_config,
             runtime=llm_runtime,
         )
