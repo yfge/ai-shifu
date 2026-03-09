@@ -149,8 +149,6 @@ interface Shifu {
 const MIN_SHIFU_PRICE = 0.5;
 const TEMPERATURE_MIN = 0;
 const TEMPERATURE_MAX = 2;
-const ASK_MODE_DEFAULT = 5101;
-const ASK_MODE_DISABLE = 5102;
 const ASK_MODE_ENABLE = 5103;
 const ASK_PROVIDER_LLM = 'llm';
 const ASK_PROVIDER_MODE_PROVIDER_ONLY = 'provider_only';
@@ -669,8 +667,6 @@ export default function ShifuSettingDialog({
 
   const { requestExclusive, releaseExclusive } = useExclusiveAudio();
   // Ask configuration state
-  const [askEnabledStatus, setAskEnabledStatus] =
-    useState<number>(ASK_MODE_DEFAULT);
   const [askModel, setAskModel] = useState('');
   const [askTemperature, setAskTemperature] =
     useState<number>(ASK_TEMPERATURE_MIN);
@@ -1355,7 +1351,7 @@ export default function ShifuSettingDialog({
           avatar: uploadedImageUrl,
           temperature: Number(data.temperature),
           system_prompt: data.systemPrompt,
-          ask_enabled_status: askEnabledStatus,
+          ask_enabled_status: ASK_MODE_ENABLE,
           ask_model: askModel,
           ask_temperature: askTemperatureForSubmit,
           ask_system_prompt: askSystemPrompt,
@@ -1417,7 +1413,6 @@ export default function ShifuSettingDialog({
       ttsEmotion,
       useLearnerLanguage,
       askConfigMeta,
-      askEnabledStatus,
       askModel,
       askSystemPrompt,
       askTemperature,
@@ -1461,7 +1456,6 @@ export default function ShifuSettingDialog({
         !Array.isArray(rawAskProviderConfig.config)
           ? rawAskProviderConfig.config
           : {};
-      setAskEnabledStatus(result.ask_enabled_status ?? ASK_MODE_DEFAULT);
       setAskModel(result.ask_model || '');
       setAskTemperature(result.ask_temperature ?? ASK_TEMPERATURE_MIN);
       setAskTemperatureInput(
@@ -2656,34 +2650,6 @@ export default function ShifuSettingDialog({
                     <p className='text-xs text-muted-foreground'>
                       {t('module.shifuSetting.askDescription')}
                     </p>
-                  </div>
-
-                  <div className='space-y-2 mb-4'>
-                    <FormLabel className='text-sm font-medium text-foreground'>
-                      {t('module.shifuSetting.askEnabledStatus')}
-                    </FormLabel>
-                    <Select
-                      value={String(askEnabledStatus)}
-                      onValueChange={value =>
-                        setAskEnabledStatus(Number(value))
-                      }
-                      disabled={currentShifu?.readonly}
-                    >
-                      <SelectTrigger className='h-9'>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={String(ASK_MODE_DEFAULT)}>
-                          {t('module.shifuSetting.askModeDefault')}
-                        </SelectItem>
-                        <SelectItem value={String(ASK_MODE_DISABLE)}>
-                          {t('module.shifuSetting.askModeDisabled')}
-                        </SelectItem>
-                        <SelectItem value={String(ASK_MODE_ENABLE)}>
-                          {t('module.shifuSetting.askModeEnabled')}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
 
                   <div className='space-y-2 mb-4'>
