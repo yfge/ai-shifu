@@ -20,8 +20,6 @@
   "askProviderConfigRequired": "{field} 为必填项",
   "askProviderHint": "选择服务商并仅填写必填项",
   "askProviderSelect": "请选择服务商",
-  "askSystemPrompt": "追问系统提示词",
-  "askSystemPromptHint": "可选：为追问回答设置系统级提示词",
   "askTemperature": "追问温度",
   "askTemperatureHint": "设置追问回答的创造力（0-2）",
   "askTitle": "追问设置",

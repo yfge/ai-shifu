@@ -20,8 +20,6 @@
   "askProviderConfigRequired": "{field} is required",
   "askProviderHint": "Choose a provider and fill required fields only",
   "askProviderSelect": "Select provider",
-  "askSystemPrompt": "Follow-up system prompt",
-  "askSystemPromptHint": "Optional system instruction for follow-up responses",
   "askTemperature": "Follow-up temperature",
   "askTemperatureHint": "Set follow-up generation creativity (0-2)",
   "askTitle": "Follow-up Settings",

@@ -519,8 +519,6 @@ export type I18nKey =
   | 'module.shifuSetting.askPreviewResult'
   | 'module.shifuSetting.askPreviewUsedFallback'
   | 'module.shifuSetting.askPreviewUsedProvider'
-  | 'module.shifuSetting.askSystemPrompt'
-  | 'module.shifuSetting.askSystemPromptHint'
   | 'module.shifuSetting.askTemperature'
   | 'module.shifuSetting.askTemperatureHint'
   | 'module.shifuSetting.askTitle'
