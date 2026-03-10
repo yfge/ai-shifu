@@ -64,6 +64,7 @@ from flaskr.service.shifu.shifu_import_export_funcs import export_shifu
 from flaskr.common.shifu_context import with_shifu_context
 from flaskr.common.cache_provider import cache as redis
 from flaskr.common.config import get_config
+from flaskr.api.langfuse import langfuse_client
 from flaskr.dao import db
 from flaskr.service.shifu.models import AiCourseAuth
 from flaskr.service.shifu.utils import get_shifu_creator_bid
@@ -119,6 +120,12 @@ from flaskr.service.shifu.permissions import (
 from flaskr.service.shifu.ask_provider_registry import (
     get_ask_provider_metadata,
     validate_ask_provider_specific_config,
+)
+from flaskr.service.learn.ask_provider_langfuse import stream_provider_with_langfuse
+from flaskr.service.learn.langfuse_naming import (
+    build_langfuse_generation_name,
+    build_langfuse_span_name,
+    build_langfuse_trace_name,
 )
 
 
@@ -2044,20 +2051,6 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
             ASK_PROVIDER_MODE_PROVIDER_THEN_LLM,
         )
 
-        class _NoopGeneration:
-            def end(self, **kwargs):
-                _ = kwargs
-
-        class _NoopSpan:
-            trace_id = ""
-
-            def generation(self, **kwargs):
-                _ = kwargs
-                return _NoopGeneration()
-
-            def update(self, **kwargs):
-                _ = kwargs
-
         json_data = request.get_json() or {}
 
         query = str(json_data.get("query") or "").strip()
@@ -2109,13 +2102,30 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
             str(getattr(getattr(request, "user", None), "user_id", "")).strip()
             or f"ask-preview-{uuid.uuid4().hex[:8]}"
         )
+        preview_scene = "ask_provider_preview"
+        preview_title = "ask_provider_preview"
+        preview_trace = langfuse_client.trace(
+            user_id=preview_user_id,
+            name=build_langfuse_trace_name(preview_title, preview_scene),
+            metadata={
+                "scene": preview_scene,
+                "requested_provider": requested_provider,
+                "mode": mode,
+            },
+        )
+        preview_span = preview_trace.span(
+            name=build_langfuse_span_name(
+                preview_title, preview_scene, "ask_provider_preview"
+            ),
+            input=query,
+        )
 
         def _build_llm_runtime() -> AskProviderRuntime:
             return AskProviderRuntime(
                 llm_stream_factory=lambda: chat_llm(
                     app,
                     preview_user_id,
-                    _NoopSpan(),
+                    preview_span,
                     model=ask_model,
                     messages=messages,
                     generation_name="ask_provider_preview",
@@ -2129,7 +2139,7 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
             runtime: AskProviderRuntime | None = None,
         ) -> str:
             chunks: list[str] = []
-            for chunk in stream_ask_provider_response(
+            provider_resp = stream_ask_provider_response(
                 app=app,
                 provider=provider_name,
                 user_id=preview_user_id,
@@ -2137,7 +2147,22 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                 messages=messages,
                 provider_config=ask_provider_config,
                 runtime=runtime,
-            ):
+            )
+            if provider_name != ASK_PROVIDER_LLM:
+                provider_resp = stream_provider_with_langfuse(
+                    provider_stream=provider_resp,
+                    span=preview_span,
+                    provider_name=provider_name,
+                    generation_name=build_langfuse_generation_name(
+                        preview_title,
+                        preview_scene,
+                        f"ask_provider_preview_{provider_name}",
+                    ),
+                    user_query=query,
+                    messages=messages,
+                    provider_config=ask_provider_config,
+                )
+            for chunk in provider_resp:
                 text = getattr(chunk, "content", "")
                 if isinstance(text, str) and text:
                     chunks.append(text)
@@ -2146,36 +2171,46 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
         used_provider = requested_provider
         fallback_used = False
         provider_error = ""
+        answer = ""
 
         try:
-            llm_runtime = (
-                _build_llm_runtime() if requested_provider == ASK_PROVIDER_LLM else None
+            try:
+                llm_runtime = (
+                    _build_llm_runtime()
+                    if requested_provider == ASK_PROVIDER_LLM
+                    else None
+                )
+                answer = _invoke_provider(requested_provider, runtime=llm_runtime)
+            except (AskProviderError, AskProviderTimeoutError) as error:
+                provider_error = str(error)
+                if (
+                    mode != ASK_PROVIDER_MODE_PROVIDER_THEN_LLM
+                    or requested_provider == ASK_PROVIDER_LLM
+                ):
+                    raise_param_error(provider_error)
+                used_provider = ASK_PROVIDER_LLM
+                fallback_used = True
+                answer = _invoke_provider(
+                    ASK_PROVIDER_LLM, runtime=_build_llm_runtime()
+                )
+
+            if not answer:
+                raise_param_error("ask preview returned empty response")
+
+            return make_common_response(
+                {
+                    "answer": answer,
+                    "provider": used_provider,
+                    "requested_provider": requested_provider,
+                    "mode": mode,
+                    "fallback_used": fallback_used,
+                    "provider_error": provider_error,
+                }
             )
-            answer = _invoke_provider(requested_provider, runtime=llm_runtime)
-        except (AskProviderError, AskProviderTimeoutError) as error:
-            provider_error = str(error)
-            if (
-                mode != ASK_PROVIDER_MODE_PROVIDER_THEN_LLM
-                or requested_provider == ASK_PROVIDER_LLM
-            ):
-                raise_param_error(provider_error)
-            used_provider = ASK_PROVIDER_LLM
-            fallback_used = True
-            answer = _invoke_provider(ASK_PROVIDER_LLM, runtime=_build_llm_runtime())
-
-        if not answer:
-            raise_param_error("ask preview returned empty response")
-
-        return make_common_response(
-            {
-                "answer": answer,
-                "provider": used_provider,
-                "requested_provider": requested_provider,
-                "mode": mode,
-                "fallback_used": fallback_used,
-                "provider_error": provider_error,
-            }
-        )
+        finally:
+            preview_output = answer or provider_error
+            preview_span.end(output=preview_output)
+            preview_trace.update(output=preview_output)
 
     @app.route(path_prefix + "/tts/config", methods=["GET"])
     @bypass_token_validation

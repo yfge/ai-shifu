@@ -4,7 +4,58 @@ from flaskr.service.common.models import ERROR_CODE
 from flaskr.service.learn.ask_provider_adapters import AskProviderError
 
 
+class _FakeGeneration:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+        self.end_kwargs = {}
+
+    def end(self, **kwargs):
+        self.end_kwargs = kwargs
+
+
+class _FakeSpan:
+    def __init__(self):
+        self.generations = []
+        self.end_kwargs = {}
+
+    def generation(self, **kwargs):
+        generation = _FakeGeneration(**kwargs)
+        self.generations.append(generation)
+        return generation
+
+    def end(self, **kwargs):
+        self.end_kwargs = kwargs
+
+
+class _FakeTrace:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+        self.updated = {}
+        self.span_calls = []
+        self.last_span = None
+
+    def span(self, **kwargs):
+        self.span_calls.append(kwargs)
+        self.last_span = _FakeSpan()
+        return self.last_span
+
+    def update(self, **kwargs):
+        self.updated = kwargs
+
+
+class _FakeLangfuseClient:
+    def __init__(self):
+        self.traces = []
+
+    def trace(self, **kwargs):
+        trace = _FakeTrace(**kwargs)
+        self.traces.append(trace)
+        return trace
+
+
 def test_ask_preview_route_success_with_provider(monkeypatch, test_client):
+    fake_langfuse = _FakeLangfuseClient()
+
     def fake_stream_ask_provider_response(*args, **kwargs):
         _ = args
         provider = kwargs.get("provider", "")
@@ -14,6 +65,11 @@ def test_ask_preview_route_success_with_provider(monkeypatch, test_client):
     monkeypatch.setattr(
         "flaskr.service.learn.ask_provider_adapters.stream_ask_provider_response",
         fake_stream_ask_provider_response,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "flaskr.service.shifu.route.langfuse_client",
+        fake_langfuse,
         raising=False,
     )
 
@@ -40,6 +96,18 @@ def test_ask_preview_route_success_with_provider(monkeypatch, test_client):
     assert payload["data"]["provider"] == "dify"
     assert payload["data"]["requested_provider"] == "dify"
     assert payload["data"]["fallback_used"] is False
+    assert len(fake_langfuse.traces) == 1
+    trace = fake_langfuse.traces[0]
+    assert trace.last_span is not None
+    assert len(trace.last_span.generations) == 1
+    generation = trace.last_span.generations[0]
+    assert generation.kwargs["model"] == "dify"
+    assert generation.end_kwargs["metadata"]["provider_config"]["config"][
+        "api_key"
+    ] == ("[REDACTED]")
+    assert generation.end_kwargs["output"] == "provider result"
+    assert trace.last_span.end_kwargs["output"] == "provider result"
+    assert trace.updated["output"] == "provider result"
 
 
 def test_ask_preview_route_fallbacks_to_llm(monkeypatch, test_client):

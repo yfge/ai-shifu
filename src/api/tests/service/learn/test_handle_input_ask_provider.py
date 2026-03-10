@@ -50,9 +50,24 @@ class _DummyFollowUpInfo:
         }
 
 
+class _DummyGeneration:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+        self.end_kwargs = {}
+
+    def end(self, **kwargs):
+        self.end_kwargs = kwargs
+
+
 class _DummySpan:
     def __init__(self):
         self.output = ""
+        self.generations = []
+
+    def generation(self, **kwargs):
+        generation = _DummyGeneration(**kwargs)
+        self.generations.append(generation)
+        return generation
 
     def end(self, output=None):
         self.output = output or ""
@@ -62,9 +77,11 @@ class _DummyTrace:
     def __init__(self):
         self.span_output = None
         self.updated = {}
+        self.last_span = None
 
     def span(self, **_kwargs):
-        return _DummySpan()
+        self.last_span = _DummySpan()
+        return self.last_span
 
     def update(self, **kwargs):
         self.updated = kwargs
@@ -136,7 +153,10 @@ def test_handle_input_ask_provider_only_returns_provider_error_without_llm(
     ask_provider_config = {
         "provider": "dify",
         "mode": "provider_only",
-        "config": {},
+        "config": {
+            "base_url": "https://api.example.com/v1",
+            "api_key": "secret-key",
+        },
     }
     _setup_handle_input_ask_patches(monkeypatch, module, ask_provider_config)
 
@@ -149,10 +169,13 @@ def test_handle_input_ask_provider_only_returns_provider_error_without_llm(
     monkeypatch.setattr(module, "chat_llm", _fake_chat_llm)
 
     def _raise_provider_error(**_kwargs):
+        if False:
+            yield None
         raise AskProviderError("provider failed")
 
     monkeypatch.setattr(module, "stream_ask_provider_response", _raise_provider_error)
 
+    dummy_trace = _DummyTrace()
     events = list(
         module.handle_input_ask(
             app=app,
@@ -167,7 +190,7 @@ def test_handle_input_ask_provider_only_returns_provider_error_without_llm(
                 position=1,
             ),
             trace_args={"output": ""},
-            trace=_DummyTrace(),
+            trace=dummy_trace,
         )
     )
 
@@ -175,6 +198,13 @@ def test_handle_input_ask_provider_only_returns_provider_error_without_llm(
     assert contents == ["server.learn.askProviderUnavailable"]
     assert llm_call_counter["count"] == 0
     assert events[-1].type == GeneratedType.BREAK
+    assert len(dummy_trace.last_span.generations) == 1
+    generation = dummy_trace.last_span.generations[0]
+    assert generation.kwargs["model"] == "dify"
+    assert generation.end_kwargs["metadata"]["status"] == "error"
+    assert generation.end_kwargs["metadata"]["provider_config"]["config"][
+        "api_key"
+    ] == ("[REDACTED]")
 
 
 def test_handle_input_ask_provider_then_llm_falls_back_to_llm(app, monkeypatch):
@@ -264,6 +294,7 @@ def test_handle_input_ask_provider_response_skips_llm(app, monkeypatch):
         lambda **_kwargs: iter(provider_chunks),
     )
 
+    dummy_trace = _DummyTrace()
     events = list(
         module.handle_input_ask(
             app=app,
@@ -278,7 +309,7 @@ def test_handle_input_ask_provider_response_skips_llm(app, monkeypatch):
                 position=1,
             ),
             trace_args={"output": ""},
-            trace=_DummyTrace(),
+            trace=dummy_trace,
         )
     )
 
@@ -286,6 +317,11 @@ def test_handle_input_ask_provider_response_skips_llm(app, monkeypatch):
     assert contents == ["provider-", "answer"]
     assert llm_call_counter["count"] == 0
     assert events[-1].type == GeneratedType.BREAK
+    assert len(dummy_trace.last_span.generations) == 1
+    generation = dummy_trace.last_span.generations[0]
+    assert generation.kwargs["model"] == "coze"
+    assert generation.end_kwargs["output"] == "provider-answer"
+    assert generation.end_kwargs["metadata"]["status"] == "success"
 
 
 def test_handle_input_ask_dify_uses_context_without_follow_up_prompt(app, monkeypatch):

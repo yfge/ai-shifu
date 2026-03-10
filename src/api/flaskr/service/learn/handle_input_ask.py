@@ -28,6 +28,7 @@ from flaskr.service.learn.langfuse_naming import (
     build_langfuse_generation_name,
     build_langfuse_span_name,
 )
+from flaskr.service.learn.ask_provider_langfuse import stream_provider_with_langfuse
 from flaskr.service.learn.ask_provider_adapters import (
     AskProviderError,
     AskProviderRuntime,
@@ -281,17 +282,32 @@ def handle_input_ask(
         provider_name: str,
     ) -> Generator[RunMarkdownFlowDTO, None, None]:
         nonlocal response_text
+        provider_input_messages = (
+            llm_messages if provider_name == ASK_PROVIDER_LLM else provider_messages
+        )
         provider_resp = stream_ask_provider_response(
             app=app,
             provider=provider_name,
             user_id=user_info.user_id,
             user_query=user_content,
-            messages=llm_messages
-            if provider_name == ASK_PROVIDER_LLM
-            else provider_messages,
+            messages=provider_input_messages,
             provider_config=ask_provider_config,
             runtime=llm_runtime,
         )
+        if provider_name != ASK_PROVIDER_LLM:
+            provider_resp = stream_provider_with_langfuse(
+                provider_stream=provider_resp,
+                span=span,
+                provider_name=provider_name,
+                generation_name=build_langfuse_generation_name(
+                    chapter_title,
+                    ask_scene,
+                    f"user_follow_ask_{provider_name}",
+                ),
+                user_query=user_content,
+                messages=provider_input_messages,
+                provider_config=ask_provider_config,
+            )
         for chunk in provider_resp:
             current_content = chunk.content
             if isinstance(current_content, str) and current_content:
