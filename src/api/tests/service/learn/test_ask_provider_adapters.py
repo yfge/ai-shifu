@@ -7,6 +7,7 @@ from flaskr.service.learn import ask_provider_adapters as module
 from flaskr.service.learn.ask_provider_adapters import (
     common,
     coze_adapter,
+    coze_workflow_adapter,
     dify_adapter,
     volc_knowledge_adapter,
 )
@@ -189,6 +190,115 @@ def test_coze_adapter_http_error_raises_provider_error(app, monkeypatch):
         )
 
 
+def test_coze_workflow_adapter_streams_success_content(app, monkeypatch):
+    adapter = module.CozeWorkflowAskProviderAdapter()
+    request_state = {}
+
+    monkeypatch.setattr(
+        common,
+        "get_config",
+        lambda key: {
+            "ASK_PROVIDER_TIMEOUT_SECONDS": 20,
+        }.get(key),
+    )
+
+    def _fake_post(url, **kwargs):
+        request_state["url"] = url
+        request_state["json"] = kwargs.get("json")
+        request_state["headers"] = kwargs.get("headers") or {}
+        return _FakeResponse(
+            json_data={
+                "code": 0,
+                "data": (
+                    '{"concepts":[{"output":"title:Workflow concept\\nsummary:Explain the concept."}],'
+                    '"values":[{"title":"Workflow value","summary":"Highlights the value."}]}'
+                ),
+            }
+        )
+
+    monkeypatch.setattr(
+        coze_workflow_adapter.requests,
+        "post",
+        _fake_post,
+    )
+
+    chunks = list(
+        adapter.stream_answer(
+            app=app,
+            user_id="user-1",
+            user_query="hello workflow",
+            messages=[],
+            provider_config={
+                "config": {
+                    "base_url": "https://api.coze.cn",
+                    "api_key": "test-key",
+                    "workflow_id": "workflow-1",
+                }
+            },
+        )
+    )
+
+    assert request_state["url"] == "https://api.coze.cn/v1/workflow/run"
+    assert request_state["json"] == {
+        "workflow_id": "workflow-1",
+        "parameters": {"query": "hello workflow"},
+    }
+    assert request_state["headers"]["Authorization"] == "Bearer test-key"
+    assert len(chunks) == 1
+    assert chunks[0].content == (
+        "## Concepts\n"
+        "1. Workflow concept\n"
+        "Explain the concept.\n\n"
+        "## Values\n"
+        "1. Workflow value\n"
+        "Highlights the value."
+    )
+
+
+def test_coze_workflow_adapter_nonzero_code_raises_provider_error(app, monkeypatch):
+    adapter = module.CozeWorkflowAskProviderAdapter()
+
+    monkeypatch.setattr(
+        common,
+        "get_config",
+        lambda key: {
+            "ASK_PROVIDER_TIMEOUT_SECONDS": 20,
+        }.get(key),
+    )
+
+    monkeypatch.setattr(
+        coze_workflow_adapter.requests,
+        "post",
+        lambda *_args, **_kwargs: _FakeResponse(
+            json_data={
+                "code": 5000,
+                "msg": "service internal error, please retry after",
+                "detail": {"logid": "coze-log-id"},
+            }
+        ),
+    )
+
+    with pytest.raises(
+        module.AskProviderError,
+        match="coze_workflow error \\[5000\\]: service internal error, please retry after",
+    ):
+        list(
+            adapter.stream_answer(
+                app=app,
+                user_id="user-1",
+                user_query="hello",
+                messages=[],
+                provider_config={
+                    "config": {
+                        "base_url": "https://api.coze.cn",
+                        "api_key": "test-key",
+                        "workflow_id": "workflow-1",
+                    }
+                },
+            )
+        )
+
+
 def test_dify_adapter_missing_shifu_config_raises_config_error(app):
     adapter = module.DifyAskProviderAdapter()
 
@@ -215,6 +325,23 @@ def test_coze_adapter_missing_shifu_config_raises_config_error(app):
                 user_query="hello",
                 messages=[],
                 provider_config={"config": {"bot_id": "bot-1"}},
+            )
+        )
+
+
+def test_coze_workflow_adapter_missing_shifu_config_raises_config_error(app):
+    adapter = module.CozeWorkflowAskProviderAdapter()
+
+    with pytest.raises(
+        module.AskProviderConfigError, match="base_url/api_key/workflow_id"
+    ):
+        list(
+            adapter.stream_answer(
+                app=app,
+                user_id="user-1",
+                user_query="hello",
+                messages=[],
+                provider_config={"config": {"workflow_id": "workflow-1"}},
             )
         )
 

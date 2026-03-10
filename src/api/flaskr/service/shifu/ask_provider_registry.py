@@ -6,6 +6,7 @@ from flaskr.service.shifu.shifu_draft_funcs import (
     ASK_PROVIDER_LLM,
     ASK_PROVIDER_DIFY,
     ASK_PROVIDER_COZE,
+    ASK_PROVIDER_COZE_WORKFLOW,
     ASK_PROVIDER_VOLC_KNOWLEDGE,
     ASK_PROVIDER_MODE_PROVIDER_ONLY,
     ASK_PROVIDER_MODE_PROVIDER_THEN_LLM,
@@ -92,6 +93,38 @@ def get_ask_provider_schema_registry() -> dict[str, dict[str, Any]]:
                 "additionalProperties": True,
             },
         },
+        ASK_PROVIDER_COZE_WORKFLOW: {
+            "title": "Coze Workflow",
+            "description": "Route ask to Coze workflow run API.",
+            "default_config": {
+                "base_url": "https://api.coze.cn",
+                "api_key": "",
+                "workflow_id": "",
+            },
+            "json_schema": {
+                "type": "object",
+                "properties": {
+                    "base_url": {
+                        "type": "string",
+                        "title": "Base URL",
+                        "description": "Coze base URL, e.g. https://api.coze.cn",
+                    },
+                    "api_key": {
+                        "type": "string",
+                        "format": "password",
+                        "title": "API Key",
+                        "description": "Coze personal access token.",
+                    },
+                    "workflow_id": {
+                        "type": "string",
+                        "title": "Workflow ID",
+                        "description": "Coze workflow identifier.",
+                    },
+                },
+                "required": ["base_url", "api_key", "workflow_id"],
+                "additionalProperties": True,
+            },
+        },
         ASK_PROVIDER_VOLC_KNOWLEDGE: {
             "title": "Volcengine Knowledge Base",
             "description": "Route ask to Volcengine Knowledge Base search API with minimal config.",
@@ -173,6 +206,7 @@ def get_ask_provider_metadata() -> dict[str, Any]:
         ASK_PROVIDER_LLM,
         ASK_PROVIDER_DIFY,
         ASK_PROVIDER_COZE,
+        ASK_PROVIDER_COZE_WORKFLOW,
         ASK_PROVIDER_VOLC_KNOWLEDGE,
     ]:
         item = registry[provider]

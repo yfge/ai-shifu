@@ -208,3 +208,43 @@ def test_ask_preview_route_provider_only_does_not_require_ask_model(
     assert payload["data"]["provider"] == "coze"
     assert payload["data"]["requested_provider"] == "coze"
     assert payload["data"]["fallback_used"] is False
+
+
+def test_ask_preview_route_provider_only_accepts_coze_workflow(
+    monkeypatch, test_client
+):
+    def fake_stream_ask_provider_response(*args, **kwargs):
+        _ = args
+        provider = kwargs.get("provider", "")
+        assert provider == "coze_workflow"
+        yield SimpleNamespace(content="workflow result")
+
+    monkeypatch.setattr(
+        "flaskr.service.learn.ask_provider_adapters.stream_ask_provider_response",
+        fake_stream_ask_provider_response,
+        raising=False,
+    )
+
+    resp = test_client.post(
+        "/api/shifu/ask/preview",
+        json={
+            "query": "hello",
+            "ask_provider_config": {
+                "provider": "coze_workflow",
+                "mode": "provider_only",
+                "config": {
+                    "base_url": "https://api.coze.cn",
+                    "api_key": "test-api-key",
+                    "workflow_id": "workflow-1",
+                },
+            },
+        },
+    )
+    payload = resp.get_json(force=True)
+
+    assert resp.status_code == 200
+    assert payload["code"] == 0
+    assert payload["data"]["answer"] == "workflow result"
+    assert payload["data"]["provider"] == "coze_workflow"
+    assert payload["data"]["requested_provider"] == "coze_workflow"
+    assert payload["data"]["fallback_used"] is False
