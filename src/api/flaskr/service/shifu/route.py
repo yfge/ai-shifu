@@ -76,7 +76,9 @@ from flaskr.service.user.repository import (
     set_user_state,
     upsert_credential,
 )
-from flaskr.i18n import _
+from flaskr.i18n import _, get_current_language, set_language
+from flaskr.service.user.common import validate_user
+from flaskr.service.user.utils import get_user_language
 from flaskr.util.uuid import generate_id
 
 
@@ -1979,7 +1981,24 @@ def register_shifu_routes(app: Flask, path_prefix="/api/shifu"):
                                 providers:
                                     type: array
         """
-        return make_common_response(get_ask_provider_metadata())
+        original_language = get_current_language()
+        token = request.cookies.get("token", None)
+        if not token:
+            token = request.args.get("token", None)
+        if not token:
+            token = request.headers.get("Token", None)
+
+        if token:
+            try:
+                user = validate_user(app, str(token))
+                set_language(get_user_language(user))
+            except Exception:
+                pass
+
+        try:
+            return make_common_response(get_ask_provider_metadata())
+        finally:
+            set_language(original_language)
 
     @app.route(path_prefix + "/ask/preview", methods=["POST"])
     @bypass_token_validation

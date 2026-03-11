@@ -88,22 +88,10 @@ export default function AskSettingsSection({
 
   return (
     <div className='mb-6'>
-      <div className='space-y-1 mb-4'>
+      <div className='space-y-2 mb-4'>
         <FormLabel className='text-sm font-medium text-foreground'>
           {t('module.shifuSetting.askTitle')}
         </FormLabel>
-        <p className='text-xs text-muted-foreground'>
-          {t('module.shifuSetting.askDescription')}
-        </p>
-      </div>
-
-      <div className='space-y-2 mb-4'>
-        <FormLabel className='text-sm font-medium text-foreground'>
-          {t('module.shifuSetting.askProvider')}
-        </FormLabel>
-        <p className='text-xs text-muted-foreground'>
-          {t('module.shifuSetting.askProviderHint')}
-        </p>
         <Select
           value={resolvedAskProvider}
           onValueChange={onAskProviderChange}
