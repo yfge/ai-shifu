@@ -86,6 +86,8 @@ type OrderFilters = {
 type SearchParamsLike = Pick<URLSearchParams, 'get' | 'toString'> | null;
 
 const PAGE_SIZE = 20;
+const QUERY_STATUS_KEY = 'status';
+const QUERY_SHIFU_BID_KEY = 'shifu_bid';
 const COLUMN_MIN_WIDTH = 80;
 const COLUMN_MAX_WIDTH = 360;
 const COLUMN_WIDTH_STORAGE_KEY = 'adminOrdersColumnWidths';
@@ -272,7 +274,8 @@ const createFiltersFromSearchParams = (
   searchParams: SearchParamsLike,
 ): OrderFilters => ({
   ...createDefaultFilters(),
-  shifu_bids: parseShifuBidQuery(searchParams?.get('shifu_bid') || null),
+  shifu_bids: parseShifuBidQuery(searchParams?.get(QUERY_SHIFU_BID_KEY) || null),
+  status: searchParams?.get(QUERY_STATUS_KEY) || '',
 });
 
 const OrdersPage = () => {
@@ -497,17 +500,24 @@ const OrdersPage = () => {
     filtersRef.current = filters;
   }, [filters]);
 
-  const syncShifuBidQuery = useCallback(
-    (shifuBids: string[]) => {
+  const syncJumpFiltersQuery = useCallback(
+    (nextFilters: Pick<OrderFilters, 'shifu_bids' | 'status'>) => {
       const nextSearchParams = new URLSearchParams(
         searchParams?.toString() || '',
       );
-      const serializedShifuBid = serializeShifuBidQuery(shifuBids);
+      const serializedShifuBid = serializeShifuBidQuery(nextFilters.shifu_bids);
+      const normalizedStatus = nextFilters.status.trim();
 
       if (serializedShifuBid) {
-        nextSearchParams.set('shifu_bid', serializedShifuBid);
+        nextSearchParams.set(QUERY_SHIFU_BID_KEY, serializedShifuBid);
       } else {
-        nextSearchParams.delete('shifu_bid');
+        nextSearchParams.delete(QUERY_SHIFU_BID_KEY);
+      }
+
+      if (normalizedStatus) {
+        nextSearchParams.set(QUERY_STATUS_KEY, normalizedStatus);
+      } else {
+        nextSearchParams.delete(QUERY_STATUS_KEY);
       }
 
       const query = nextSearchParams.toString();
@@ -834,7 +844,7 @@ const OrdersPage = () => {
   };
 
   const handleSearch = () => {
-    syncShifuBidQuery(filters.shifu_bids);
+    syncJumpFiltersQuery(filters);
     fetchOrders(1, filters);
   };
 
@@ -842,7 +852,7 @@ const OrdersPage = () => {
     const cleared = createDefaultFilters();
     setFilters(cleared);
     setCourseSearch('');
-    syncShifuBidQuery([]);
+    syncJumpFiltersQuery(cleared);
     fetchOrders(1, cleared);
   };
 
