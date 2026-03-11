@@ -22,6 +22,8 @@ from .common import (
     raise_for_provider_response,
 )
 
+DEFAULT_COZE_BASE_URL = "https://api.coze.cn"
+
 
 class CozeAskProviderAdapter:
     provider = ASK_PROVIDER_COZE
@@ -40,11 +42,11 @@ class CozeAskProviderAdapter:
         if not isinstance(config, dict):
             config = {}
 
-        base_url = str(config.get("base_url") or "").strip()
+        base_url = str(config.get("base_url") or DEFAULT_COZE_BASE_URL).strip()
         api_key = str(config.get("api_key") or "").strip()
-        if not base_url or not api_key:
+        if not api_key:
             raise AskProviderConfigError(
-                "coze base_url/api_key are required in ask_provider_config.config"
+                "coze api_key is required in ask_provider_config.config"
             )
 
         bot_id = str(config.get("bot_id") or "").strip()

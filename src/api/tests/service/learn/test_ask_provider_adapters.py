@@ -230,7 +230,6 @@ def test_coze_workflow_adapter_streams_success_content(app, monkeypatch):
             messages=[],
             provider_config={
                 "config": {
-                    "base_url": "https://api.coze.cn",
                     "api_key": "test-key",
                     "workflow_id": "workflow-1",
                 }
@@ -290,7 +289,6 @@ def test_coze_workflow_adapter_nonzero_code_raises_provider_error(app, monkeypat
                 messages=[],
                 provider_config={
                     "config": {
-                        "base_url": "https://api.coze.cn",
                         "api_key": "test-key",
                         "workflow_id": "workflow-1",
                     }
@@ -317,7 +315,7 @@ def test_dify_adapter_missing_shifu_config_raises_config_error(app):
 def test_coze_adapter_missing_shifu_config_raises_config_error(app):
     adapter = module.CozeAskProviderAdapter()
 
-    with pytest.raises(module.AskProviderConfigError, match="base_url/api_key"):
+    with pytest.raises(module.AskProviderConfigError, match="api_key is required"):
         list(
             adapter.stream_answer(
                 app=app,
@@ -333,7 +331,7 @@ def test_coze_workflow_adapter_missing_shifu_config_raises_config_error(app):
     adapter = module.CozeWorkflowAskProviderAdapter()
 
     with pytest.raises(
-        module.AskProviderConfigError, match="base_url/api_key/workflow_id"
+        module.AskProviderConfigError, match="api_key/workflow_id are required"
     ):
         list(
             adapter.stream_answer(
@@ -344,6 +342,48 @@ def test_coze_workflow_adapter_missing_shifu_config_raises_config_error(app):
                 provider_config={"config": {"workflow_id": "workflow-1"}},
             )
         )
+
+
+def test_coze_adapter_uses_default_base_url_when_missing(app, monkeypatch):
+    adapter = module.CozeAskProviderAdapter()
+    request_state = {}
+
+    monkeypatch.setattr(
+        common,
+        "get_config",
+        lambda key: {
+            "ASK_PROVIDER_TIMEOUT_SECONDS": 20,
+        }.get(key),
+    )
+
+    def _fake_post(url, **kwargs):
+        request_state["url"] = url
+        return _FakeResponse(
+            lines=[
+                'data: {"event":"message","content":"ok"}',
+                'data: {"event":"done"}',
+            ]
+        )
+
+    monkeypatch.setattr(coze_adapter.requests, "post", _fake_post)
+
+    chunks = list(
+        adapter.stream_answer(
+            app=app,
+            user_id="user-1",
+            user_query="hello",
+            messages=[],
+            provider_config={
+                "config": {
+                    "api_key": "test-key",
+                    "bot_id": "bot-1",
+                }
+            },
+        )
+    )
+
+    assert request_state["url"] == "https://api.coze.cn/v3/chat"
+    assert [chunk.content for chunk in chunks] == ["ok"]
 
 
 def test_volc_knowledge_adapter_streams_success_content(app, monkeypatch):

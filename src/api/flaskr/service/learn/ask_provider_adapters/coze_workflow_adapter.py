@@ -18,6 +18,7 @@ from .base import (
 from .common import extract_text, provider_timeout_seconds, raise_for_provider_response
 
 
+DEFAULT_COZE_WORKFLOW_BASE_URL = "https://api.coze.cn"
 WORKFLOW_PATH = "/v1/workflow/run"
 WORKFLOW_CATEGORY_ORDER = (
     "concepts",
@@ -196,12 +197,12 @@ class CozeWorkflowAskProviderAdapter:
         if not isinstance(config, dict):
             config = {}
 
-        base_url = str(config.get("base_url") or "").strip()
+        base_url = str(config.get("base_url") or DEFAULT_COZE_WORKFLOW_BASE_URL).strip()
         api_key = str(config.get("api_key") or "").strip()
         workflow_id = str(config.get("workflow_id") or "").strip()
-        if not base_url or not api_key or not workflow_id:
+        if not api_key or not workflow_id:
             raise AskProviderConfigError(
-                "coze_workflow base_url/api_key/workflow_id are required in ask_provider_config.config"
+                "coze_workflow api_key/workflow_id are required in ask_provider_config.config"
             )
 
         query_key = str(config.get("query_key") or "query").strip() or "query"

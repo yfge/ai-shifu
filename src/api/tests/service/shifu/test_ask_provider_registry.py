@@ -1,4 +1,5 @@
 from flaskr.service.shifu import ask_provider_registry as module
+from flaskr.i18n import set_language
 
 
 def test_validate_dify_requires_shifu_level_base_url_and_api_key():
@@ -24,11 +25,10 @@ def test_validate_dify_shifu_level_config_success():
     assert field is None
 
 
-def test_validate_coze_requires_base_url_api_key_and_bot_id():
+def test_validate_coze_requires_api_key_and_bot_id():
     is_valid, field = module.validate_ask_provider_specific_config(
         "coze",
         {
-            "base_url": "https://coze.example.com",
             "api_key": "coze-key",
         },
     )
@@ -37,11 +37,10 @@ def test_validate_coze_requires_base_url_api_key_and_bot_id():
     assert field == "bot_id"
 
 
-def test_validate_coze_workflow_requires_base_url_api_key_and_workflow_id():
+def test_validate_coze_workflow_requires_api_key_and_workflow_id():
     is_valid, field = module.validate_ask_provider_specific_config(
         "coze_workflow",
         {
-            "base_url": "https://api.coze.cn",
             "api_key": "coze-key",
         },
     )
@@ -104,16 +103,14 @@ def test_ask_provider_metadata_contains_shifu_level_defaults():
     volc = providers.get("volc_knowledge", {})
 
     assert dify.get("default_config", {}) == {
-        "base_url": "https://api.dify.ai/v1",
+        "base_url": "",
         "api_key": "",
     }
     assert coze.get("default_config", {}) == {
-        "base_url": "https://api.coze.com",
         "api_key": "",
         "bot_id": "",
     }
     assert coze_workflow.get("default_config", {}) == {
-        "base_url": "https://api.coze.cn",
         "api_key": "",
         "workflow_id": "",
     }
@@ -199,6 +196,24 @@ def test_ask_provider_metadata_exposes_minimal_schema_properties():
     )
 
     assert set(dify_fields) == {"base_url", "api_key"}
-    assert set(coze_fields) == {"base_url", "api_key", "bot_id"}
-    assert set(coze_workflow_fields) == {"base_url", "api_key", "workflow_id"}
+    assert set(coze_fields) == {"api_key", "bot_id"}
+    assert set(coze_workflow_fields) == {"api_key", "workflow_id"}
     assert set(volc_fields) == {"account_id", "ak", "sk", "collection_name"}
+
+
+def test_ask_provider_metadata_localizes_text_for_zh_cn(app):
+    _ = app
+    set_language("zh-CN")
+
+    metadata = module.get_ask_provider_metadata()
+    providers = {item["provider"]: item for item in metadata.get("providers", [])}
+    coze = providers["coze"]
+
+    assert coze["title"] == "Coze"
+    assert coze["description"] == "使用 Coze Bot 对话接口处理追问。"
+    assert coze["json_schema"]["properties"]["api_key"]["title"] == "API 密钥"
+    assert (
+        coze["json_schema"]["properties"]["bot_id"]["description"] == "Coze Bot 标识。"
+    )
+
+    set_language("en-US")
