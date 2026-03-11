@@ -274,7 +274,9 @@ const createFiltersFromSearchParams = (
   searchParams: SearchParamsLike,
 ): OrderFilters => ({
   ...createDefaultFilters(),
-  shifu_bids: parseShifuBidQuery(searchParams?.get(QUERY_SHIFU_BID_KEY) || null),
+  shifu_bids: parseShifuBidQuery(
+    searchParams?.get(QUERY_SHIFU_BID_KEY) || null,
+  ),
   status: searchParams?.get(QUERY_STATUS_KEY) || '',
 });
 
