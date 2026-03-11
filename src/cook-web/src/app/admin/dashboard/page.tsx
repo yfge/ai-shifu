@@ -598,6 +598,9 @@ export default function AdminDashboardEntryPage() {
               </div>
             </CardContent>
           </Card>
+          <p className='text-sm text-muted-foreground'>
+            {t('module.dashboard.entry.table.scopeNote')}
+          </p>
         </div>
       </div>
     </div>
