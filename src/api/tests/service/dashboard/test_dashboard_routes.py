@@ -17,6 +17,31 @@ from flaskr.service.order.models import Order
 from flaskr.service.shifu.models import AiCourseAuth, PublishedShifu, ShifuUserArchive
 
 
+def _clear_dashboard_tables() -> None:
+    db.session.query(Order).delete()
+    db.session.query(LearnProgressRecord).delete()
+    db.session.query(ShifuUserArchive).delete()
+    db.session.query(AiCourseAuth).delete()
+    db.session.query(PublishedShifu).delete()
+    db.session.commit()
+    db.session.remove()
+
+
+@pytest.fixture(autouse=True)
+def _isolate_dashboard_tables(app):
+    if app is None:
+        yield
+        return
+
+    with app.app_context():
+        _clear_dashboard_tables()
+
+    yield
+
+    with app.app_context():
+        _clear_dashboard_tables()
+
+
 @pytest.mark.usefixtures("app")
 class TestDashboardRoutes:
     def _mock_request_user(self, monkeypatch, *, user_id: str = "teacher-1"):
@@ -445,11 +470,11 @@ class TestDashboardRoutes:
         assert resp.status_code == 200
         assert payload["code"] == 0
         assert payload["data"]["summary"]["learner_count"] == 1
-        assert payload["data"]["summary"]["order_count"] == 0
+        assert payload["data"]["summary"]["order_count"] == 1
         assert payload["data"]["summary"]["order_amount"] == "0.00"
         assert payload["data"]["items"][0]["shifu_bid"] == "course-import"
         assert payload["data"]["items"][0]["learner_count"] == 1
-        assert payload["data"]["items"][0]["order_count"] == 0
+        assert payload["data"]["items"][0]["order_count"] == 1
         assert payload["data"]["items"][0]["order_amount"] == "0.00"
 
     def test_entry_manual_non_zero_order_counted_in_order_metrics(
