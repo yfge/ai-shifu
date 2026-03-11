@@ -390,17 +390,6 @@ Default: "phone".""",
         description="Alibaba Cloud Qwen API URL",
         group="llm",
     ),
-    "ASK_PROVIDER_ENABLED": EnvVar(
-        name="ASK_PROVIDER_ENABLED",
-        default=False,
-        type=bool,
-        description=(
-            "Deprecated: ask providers are always enabled. "
-            "This flag is ignored and kept only for backward compatibility."
-        ),
-        group="llm",
-        required=False,
-    ),
     "ASK_PROVIDER_TIMEOUT_SECONDS": EnvVar(
         name="ASK_PROVIDER_TIMEOUT_SECONDS",
         default=20,
