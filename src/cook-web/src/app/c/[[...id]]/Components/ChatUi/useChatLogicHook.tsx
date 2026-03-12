@@ -22,7 +22,6 @@ import {
   AudioCompleteData,
   type AudioSegmentData,
   type ListenSlideData,
-  type ViewingModePayload,
   getRunMessage,
   SSE_INPUT_TYPE,
   getLessonStudyRecord,
@@ -129,7 +128,6 @@ export interface UseChatSessionParams {
   chapterId?: string;
   previewMode?: boolean;
   isListenMode?: boolean;
-  viewingMode?: ViewingModePayload;
   trackEvent: (name: string, payload?: Record<string, any>) => void;
   trackTrailProgress: (courseId: string, generatedBlockBid: string) => void;
   lessonUpdate?: (params: Record<string, any>) => void;
@@ -180,7 +178,6 @@ function useChatLogicHook({
   chapterId,
   previewMode,
   isListenMode = false,
-  viewingMode,
   trackEvent,
   chatBoxBottomRef,
   trackTrailProgress,
@@ -786,7 +783,7 @@ function useChatLogicHook({
         shifuBid,
         outlineBid,
         effectivePreviewMode,
-        { ...sseParams, listen: isListenMode, viewing_mode: viewingMode },
+        { ...sseParams, listen: isListenMode },
         async response => {
           if (
             sseRef.current !== source ||
@@ -1174,7 +1171,6 @@ function useChatLogicHook({
       openLessonFeedbackPopup,
       upsertListenSlide,
       updateUserInfo,
-      viewingMode,
     ],
   );
 

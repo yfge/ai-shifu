@@ -14,7 +14,6 @@ import {
   getRunMessage,
   SSE_INPUT_TYPE,
   SSE_OUTPUT_TYPE,
-  type ViewingModePayload,
 } from '@/c-api/studyV2';
 import { fixMarkdownStream } from '@/c-utils/markdownUtils';
 import LoadingBar from './LoadingBar';
@@ -41,7 +40,6 @@ export interface AskBlockProps {
   preview_mode?: boolean;
   generated_block_bid: string;
   onToggleAskExpanded?: (generated_block_bid: string) => void;
-  viewingMode?: ViewingModePayload;
 }
 
 /**
@@ -57,7 +55,6 @@ export default function AskBlock({
   preview_mode = false,
   generated_block_bid,
   onToggleAskExpanded,
-  viewingMode,
 }: AskBlockProps) {
   const { t } = useTranslation();
   const copyButtonText = t('module.renderUi.core.copyCode');
@@ -141,7 +138,6 @@ export default function AskBlock({
         input_type: SSE_INPUT_TYPE.ASK,
         reload_generated_block_bid: generated_block_bid,
         listen: false,
-        viewing_mode: viewingMode,
       },
       async response => {
         try {
@@ -240,7 +236,6 @@ export default function AskBlock({
     generated_block_bid,
     inputValue,
     showOutputInProgressToast,
-    viewingMode,
   ]);
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
