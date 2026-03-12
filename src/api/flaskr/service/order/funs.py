@@ -626,7 +626,9 @@ def _format_response_channel(payment_channel: str, provider_channel: str) -> str
     return provider_channel
 
 
-def _sanitize_pingxx_text(value: Optional[str], *, fallback: str, max_length: int) -> str:
+def _sanitize_pingxx_text(
+    value: Optional[str], *, fallback: str, max_length: int
+) -> str:
     text = (value or fallback or "").strip()
     text = re.sub(r"[\r\n\t]+", " ", text)
     text = re.sub(r"\s{2,}", " ", text).strip()
