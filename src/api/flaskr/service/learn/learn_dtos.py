@@ -562,7 +562,7 @@ class ViewingModeDTO(BaseModel):
     container_size: str = Field(
         ..., description="Measured render container size like 358*608px"
     )
-    device_type: Literal["mobile", "tablet", "desktop"] = Field(
+    device_type: Literal["mobile", "desktop"] = Field(
         ..., description="Canonical device type"
     )
 
@@ -580,8 +580,8 @@ class ViewingModeDTO(BaseModel):
     @classmethod
     def normalize_device_type(cls, value: str) -> str:
         normalized = (value or "").strip().lower()
-        if normalized not in {"mobile", "tablet", "desktop"}:
-            raise ValueError("device_type must be one of: mobile, tablet, desktop")
+        if normalized not in {"mobile", "desktop"}:
+            raise ValueError("device_type must be one of: mobile, desktop")
         return normalized
 
 

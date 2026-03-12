@@ -31,7 +31,6 @@ export type SSE_INPUT_TYPE =
 
 export const VIEWING_MODE_DEVICE_TYPE = {
   MOBILE: 'mobile',
-  TABLET: 'tablet',
   DESKTOP: 'desktop',
 } as const;
 export type ViewingModeDeviceType =

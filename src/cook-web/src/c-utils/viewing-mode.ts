@@ -2,11 +2,7 @@ import type {
   ViewingModeDeviceType,
   ViewingModePayload,
 } from '@/c-api/studyV2';
-import {
-  FRAME_LAYOUT_MOBILE,
-  FRAME_LAYOUT_PAD,
-  FRAME_LAYOUT_PAD_INTENSIVE,
-} from '@/c-constants/uiConstants';
+import { FRAME_LAYOUT_MOBILE } from '@/c-constants/uiConstants';
 
 export interface ViewingModeSize {
   width: number;
@@ -54,12 +50,6 @@ export const resolveViewingModeDeviceType = ({
 }): ViewingModeDeviceType => {
   if (inMobile || frameLayout === FRAME_LAYOUT_MOBILE) {
     return 'mobile';
-  }
-  if (
-    frameLayout === FRAME_LAYOUT_PAD ||
-    frameLayout === FRAME_LAYOUT_PAD_INTENSIVE
-  ) {
-    return 'tablet';
   }
   return 'desktop';
 };

@@ -34,13 +34,13 @@ describe('viewing-mode utilities', () => {
         frameLayout: FRAME_LAYOUT_PAD,
         inMobile: false,
       }),
-    ).toBe('tablet');
+    ).toBe('desktop');
     expect(
       resolveViewingModeDeviceType({
         frameLayout: FRAME_LAYOUT_PAD_INTENSIVE,
         inMobile: false,
       }),
-    ).toBe('tablet');
+    ).toBe('desktop');
     expect(
       resolveViewingModeDeviceType({
         frameLayout: FRAME_LAYOUT_PC,

@@ -5,7 +5,6 @@ from flaskr.util.prompt_loader import load_prompt_template
 
 DEVICE_TYPE_LABELS = {
     "mobile": "移动端",
-    "tablet": "平板端",
     "desktop": "桌面端",
 }
 

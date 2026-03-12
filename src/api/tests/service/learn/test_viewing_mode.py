@@ -35,3 +35,10 @@ class ViewingModePromptTests(unittest.TestCase):
                 container_size="390x844",
                 device_type="mobile",
             )
+
+    def test_viewing_mode_dto_rejects_tablet_device_type(self):
+        with self.assertRaises(ValueError):
+            ViewingModeDTO(
+                container_size="834*1112px",
+                device_type="tablet",
+            )
