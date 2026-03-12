@@ -29,6 +29,19 @@ export const SSE_INPUT_TYPE = {
 export type SSE_INPUT_TYPE =
   (typeof SSE_INPUT_TYPE)[keyof typeof SSE_INPUT_TYPE];
 
+export const VIEWING_MODE_DEVICE_TYPE = {
+  MOBILE: 'mobile',
+  TABLET: 'tablet',
+  DESKTOP: 'desktop',
+} as const;
+export type ViewingModeDeviceType =
+  (typeof VIEWING_MODE_DEVICE_TYPE)[keyof typeof VIEWING_MODE_DEVICE_TYPE];
+
+export interface ViewingModePayload {
+  container_size: string;
+  device_type: ViewingModeDeviceType;
+}
+
 // export const PREVIEW_MODE = {
 //   COOK: 'cook',
 //   PREVIEW: 'preview',
@@ -187,9 +200,12 @@ export const getRunMessage = (
   outline_bid: string,
   preview_mode: boolean,
   body: {
-    input: Record<string, any> | string;
+    input: Record<string, unknown> | string;
     listen?: boolean;
-    [key: string]: any;
+    input_type?: SSE_INPUT_TYPE;
+    reload_generated_block_bid?: string;
+    viewing_mode?: ViewingModePayload;
+    [key: string]: unknown;
   },
   onMessage: (data: any) => void,
 ) => {

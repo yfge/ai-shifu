@@ -8,6 +8,7 @@ import {
   useCallback,
   useState,
   useEffect,
+  useLayoutEffect,
   useMemo,
 } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -19,6 +20,7 @@ import { useTracking } from '@/c-common/hooks/useTracking';
 import { useEnvStore } from '@/c-store/envStore';
 import { useUserStore } from '@/store';
 import { useCourseStore } from '@/c-store/useCourseStore';
+import { useUiLayoutStore } from '@/c-store/useUiLayoutStore';
 import { fail, toast } from '@/hooks/useToast';
 import useExclusiveAudio from '@/hooks/useExclusiveAudio';
 import InteractionBlock from './InteractionBlock';
@@ -34,6 +36,13 @@ import {
   getAudioTrackByPosition,
   hasAudioContentInTrack,
 } from '@/c-utils/audio-utils';
+import {
+  buildViewingModePayload,
+  getCurrentWindowSize,
+  measureViewingModeContainerSize,
+  resolveViewingModeDeviceType,
+  type ViewingModeSize,
+} from '@/c-utils/viewing-mode';
 import { stripCustomButtonAfterContent } from './chatUiUtils';
 import {
   Dialog,
@@ -79,9 +88,11 @@ export const NewChatComponents = ({
       refreshUserInfo: state.refreshUserInfo,
     })),
   );
-  const { mobileStyle } = useContext(AppContext);
+  const { mobileStyle, frameLayout } = useContext(AppContext);
+  const inMobile = useUiLayoutStore(state => state.inMobile);
 
   const chatRef = useRef<HTMLDivElement | null>(null);
+  const viewingModeContainerRef = useRef<HTMLDivElement | null>(null);
   const { scrollToLesson } = useChatComponentsScroll({
     chatRef,
     containerStyle: styles.chatComponents,
@@ -97,6 +108,10 @@ export const NewChatComponents = ({
 
   const [showScrollDown, setShowScrollDown] = useState(false);
   const listenTtsToastShownRef = useRef(false);
+  const [windowSize, setWindowSize] = useState<ViewingModeSize | null>(null);
+  const [containerSize, setContainerSize] = useState<ViewingModeSize | null>(
+    null,
+  );
 
   const scrollToBottom = useCallback(() => {
     chatBoxBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -158,6 +173,20 @@ export const NewChatComponents = ({
   const isListenModeActive = isListenMode && isListenModeAvailable;
   const shouldShowAudioAction = previewMode || isListenModeActive;
   const { requestExclusive, releaseExclusive } = useExclusiveAudio();
+  const deviceType = useMemo(
+    () => resolveViewingModeDeviceType({ frameLayout, inMobile }),
+    [frameLayout, inMobile],
+  );
+  const effectiveWindowSize = windowSize ?? getCurrentWindowSize();
+  const viewingMode = useMemo(
+    () =>
+      buildViewingModePayload({
+        deviceType,
+        windowSize: effectiveWindowSize,
+        containerSize,
+      }),
+    [containerSize, deviceType, effectiveWindowSize],
+  );
 
   const onPayModalOpen = useCallback(() => {
     openPayModal();
@@ -221,6 +250,60 @@ export const NewChatComponents = ({
     listenTtsToastShownRef.current = true;
   }, [isListenMode, isListenModeAvailable, t]);
 
+  const updateWindowSize = useCallback(() => {
+    setWindowSize(prev => {
+      const next = getCurrentWindowSize();
+      if (!next) {
+        return prev;
+      }
+      if (prev?.width === next.width && prev?.height === next.height) {
+        return prev;
+      }
+      return next;
+    });
+  }, []);
+
+  const syncMeasuredContainerSize = useCallback(
+    (element?: HTMLElement | null) => {
+      setContainerSize(prev => {
+        const next = measureViewingModeContainerSize(element);
+        if (!next) {
+          return prev ? null : prev;
+        }
+        if (prev?.width === next.width && prev?.height === next.height) {
+          return prev;
+        }
+        return next;
+      });
+    },
+    [],
+  );
+
+  const updateContainerSize = useCallback(() => {
+    syncMeasuredContainerSize(viewingModeContainerRef.current);
+  }, [syncMeasuredContainerSize]);
+
+  useEffect(() => {
+    updateWindowSize();
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const handleResize = () => {
+      updateWindowSize();
+    };
+
+    window.addEventListener('resize', handleResize, { passive: true });
+    window.addEventListener('orientationchange', handleResize);
+    window.visualViewport?.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+      window.visualViewport?.removeEventListener('resize', handleResize);
+    };
+  }, [updateWindowSize]);
+
   const {
     items,
     isLoading,
@@ -238,6 +321,7 @@ export const NewChatComponents = ({
     chapterId,
     previewMode,
     isListenMode: isListenModeActive,
+    viewingMode,
     trackEvent,
     chatBoxBottomRef,
     trackTrailProgress,
@@ -250,6 +334,31 @@ export const NewChatComponents = ({
     showOutputInProgressToast,
     onPayModalOpen,
   });
+
+  useLayoutEffect(() => {
+    updateContainerSize();
+    if (typeof ResizeObserver === 'undefined') {
+      return;
+    }
+
+    const container = viewingModeContainerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateContainerSize();
+    });
+
+    resizeObserver.observe(container);
+    if (container.parentElement) {
+      resizeObserver.observe(container.parentElement);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [isListenModeActive, isLoading, lessonId, updateContainerSize]);
 
   useEffect(() => {
     if (isListenModeActive && !isLoading) {
@@ -491,6 +600,22 @@ export const NewChatComponents = ({
     [toggleAskExpanded],
   );
 
+  const setViewingModeContainerNode = useCallback(
+    (node: HTMLDivElement | null) => {
+      viewingModeContainerRef.current = node;
+      syncMeasuredContainerSize(node);
+    },
+    [syncMeasuredContainerSize],
+  );
+
+  const setReadModeContainerRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      setViewingModeContainerNode(node);
+      chatRef.current = node;
+    },
+    [setViewingModeContainerNode],
+  );
+
   useEffect(() => {
     const container = chatRef.current;
     const parentContainer = container?.parentElement;
@@ -571,40 +696,46 @@ export const NewChatComponents = ({
       style={{ position: 'relative', overflow: 'hidden', padding: 0 }}
     >
       {isListenMode ? (
-        isListenModeAvailable ? (
-          isLoading ? (
-            <div className='w-full h-full flex items-center justify-center'>
-              <Loader2 className='animate-spin size-6 text-primary' />
-            </div>
+        <div
+          className={containerClassName}
+          ref={setViewingModeContainerNode}
+          style={{ width: '100%', height: '100%', overflow: 'hidden' }}
+        >
+          {isListenModeAvailable ? (
+            isLoading ? (
+              <div className='w-full h-full flex items-center justify-center'>
+                <Loader2 className='animate-spin size-6 text-primary' />
+              </div>
+            ) : (
+              <ListenModeRenderer
+                items={listenModeItems}
+                mobileStyle={mobileStyle}
+                chatRef={chatRef as React.RefObject<HTMLDivElement>}
+                isLoading={isLoading}
+                sectionTitle={lessonTitle}
+                lessonId={lessonId}
+                lessonStatus={lessonStatus}
+                previewMode={previewMode}
+                onRequestAudioForBlock={requestAudioForBlock}
+                onSend={memoizedOnSend}
+                onPlayerVisibilityChange={onListenPlayerVisibilityChange}
+              />
+            )
           ) : (
-            <ListenModeRenderer
-              items={listenModeItems}
-              mobileStyle={mobileStyle}
-              chatRef={chatRef as React.RefObject<HTMLDivElement>}
-              isLoading={isLoading}
-              sectionTitle={lessonTitle}
-              lessonId={lessonId}
-              lessonStatus={lessonStatus}
-              previewMode={previewMode}
-              onRequestAudioForBlock={requestAudioForBlock}
-              onSend={memoizedOnSend}
-              onPlayerVisibilityChange={onListenPlayerVisibilityChange}
+            <div
+              className={cn(
+                containerClassName,
+                'listen-reveal-wrapper',
+                mobileStyle ? 'mobile' : '',
+                'bg-[var(--color-4)]',
+              )}
             />
-          )
-        ) : (
-          <div
-            className={cn(
-              containerClassName,
-              'listen-reveal-wrapper',
-              mobileStyle ? 'mobile' : '',
-              'bg-[var(--color-4)]',
-            )}
-          />
-        )
+          )}
+        </div>
       ) : (
         <div
           className={containerClassName}
-          ref={chatRef}
+          ref={setReadModeContainerRef}
           style={{ width: '100%', height: '100%', overflowY: 'auto' }}
         >
           <div>
@@ -633,6 +764,7 @@ export const NewChatComponents = ({
                         shifu_bid={shifuBid}
                         outline_bid={lessonId}
                         preview_mode={previewMode}
+                        viewingMode={viewingMode}
                         generated_block_bid={item.parent_block_bid || ''}
                         onToggleAskExpanded={toggleAskExpanded}
                         askList={(item.ask_list || []) as any[]}
