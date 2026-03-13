@@ -49,53 +49,11 @@ export const LogoWithText = ({ direction, size = 64 }) => {
         // ...commonStyles,
       }}
     >
-      {homeUrl ? (
-        <a
-          href={homeUrl}
-          target='_blank'
-          rel='noreferrer'
-        >
-          <div
-            style={{
-              height: size,
-              position: 'relative',
-            }}
-          >
-            <Image
-              src={wideLogoSrc}
-              alt='logo'
-              width={wideWidth}
-              height={size}
-              style={{
-                width: 'auto',
-                height: size,
-                position: isRow ? 'relative' : 'absolute',
-                top: 0,
-                left: 0,
-                opacity: isRow ? 1 : 0,
-                transition: 'opacity 200ms ease',
-              }}
-              priority
-            />
-            <Image
-              src={squareLogoSrc}
-              alt='logo'
-              width={size}
-              height={size}
-              style={{
-                width: size,
-                height: size,
-                position: !isRow ? 'relative' : 'absolute',
-                top: 0,
-                left: 0,
-                opacity: isRow ? 0 : 1,
-                transition: 'opacity 200ms ease',
-              }}
-              priority
-            />
-          </div>
-        </a>
-      ) : (
+      <a
+        href={homeUrl || undefined}
+        target={homeUrl ? '_blank' : undefined}
+        rel={homeUrl ? 'noreferrer' : undefined}
+      >
         <div
           style={{
             height: size,
@@ -135,7 +93,7 @@ export const LogoWithText = ({ direction, size = 64 }) => {
             priority
           />
         </div>
-      )}
+      </a>
     </div>
   );
 };
