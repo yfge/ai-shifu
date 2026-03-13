@@ -40,48 +40,6 @@ export const LogoWithText = ({ direction, size = 64 }) => {
     return Math.round(size * (imgLogoRow.width / imgLogoRow.height));
   }, [size, wideLogoSrc]);
 
-  const logoContent = (
-    <div
-      style={{
-        height: size,
-        position: 'relative',
-      }}
-    >
-      <Image
-        src={wideLogoSrc}
-        alt='logo'
-        width={wideWidth}
-        height={size}
-        style={{
-          width: 'auto',
-          height: size,
-          position: isRow ? 'relative' : 'absolute',
-          top: 0,
-          left: 0,
-          opacity: isRow ? 1 : 0,
-          transition: 'opacity 200ms ease',
-        }}
-        priority
-      />
-      <Image
-        src={squareLogoSrc}
-        alt='logo'
-        width={size}
-        height={size}
-        style={{
-          width: size,
-          height: size,
-          position: !isRow ? 'relative' : 'absolute',
-          top: 0,
-          left: 0,
-          opacity: isRow ? 0 : 1,
-          transition: 'opacity 200ms ease',
-        }}
-        priority
-      />
-    </div>
-  );
-
   return (
     <div
       style={{
@@ -97,10 +55,86 @@ export const LogoWithText = ({ direction, size = 64 }) => {
           target='_blank'
           rel='noreferrer'
         >
-          {logoContent}
+          <div
+            style={{
+              height: size,
+              position: 'relative',
+            }}
+          >
+            <Image
+              src={wideLogoSrc}
+              alt='logo'
+              width={wideWidth}
+              height={size}
+              style={{
+                width: 'auto',
+                height: size,
+                position: isRow ? 'relative' : 'absolute',
+                top: 0,
+                left: 0,
+                opacity: isRow ? 1 : 0,
+                transition: 'opacity 200ms ease',
+              }}
+              priority
+            />
+            <Image
+              src={squareLogoSrc}
+              alt='logo'
+              width={size}
+              height={size}
+              style={{
+                width: size,
+                height: size,
+                position: !isRow ? 'relative' : 'absolute',
+                top: 0,
+                left: 0,
+                opacity: isRow ? 0 : 1,
+                transition: 'opacity 200ms ease',
+              }}
+              priority
+            />
+          </div>
         </a>
       ) : (
-        logoContent
+        <div
+          style={{
+            height: size,
+            position: 'relative',
+          }}
+        >
+          <Image
+            src={wideLogoSrc}
+            alt='logo'
+            width={wideWidth}
+            height={size}
+            style={{
+              width: 'auto',
+              height: size,
+              position: isRow ? 'relative' : 'absolute',
+              top: 0,
+              left: 0,
+              opacity: isRow ? 1 : 0,
+              transition: 'opacity 200ms ease',
+            }}
+            priority
+          />
+          <Image
+            src={squareLogoSrc}
+            alt='logo'
+            width={size}
+            height={size}
+            style={{
+              width: size,
+              height: size,
+              position: !isRow ? 'relative' : 'absolute',
+              top: 0,
+              left: 0,
+              opacity: isRow ? 0 : 1,
+              transition: 'opacity 200ms ease',
+            }}
+            priority
+          />
+        </div>
       )}
     </div>
   );
