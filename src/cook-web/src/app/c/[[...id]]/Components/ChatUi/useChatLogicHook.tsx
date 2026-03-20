@@ -42,6 +42,8 @@ import {
   getAudioSegmentDataListFromTracks,
   getAudioTrackByPosition,
   mergeAudioSegmentDataList,
+  mergeAudioCompleteIntoTracks,
+  mergeAudioSegmentsIntoTracks,
   upsertAudioComplete,
   upsertAudioSegment,
   type AudioTrack,
@@ -419,50 +421,35 @@ function useChatLogicHook({
   );
 
   const normalizeHistoryAudioTracks = useCallback(
-    (audios: AudioSegmentData[] = []): AudioTrack[] => {
-      if (!audios.length) {
-        return [];
+    (
+      record: StudyRecordItem,
+      previousItem?: Pick<
+        ChatContentItem,
+        'audioTracks' | 'audioDurationMs'
+      > | null,
+    ): AudioTrack[] => {
+      const audios = Array.isArray(record.audio_segments)
+        ? record.audio_segments
+        : [];
+
+      const itemBid =
+        resolveElementItemBid(record) || record.generated_block_bid || '';
+      let nextTracks = previousItem?.audioTracks ?? [];
+
+      if (audios.length && itemBid) {
+        nextTracks = mergeAudioSegmentsIntoTracks(itemBid, nextTracks, audios);
       }
 
-      const trackByPosition = new Map<number, AudioTrack>();
-
-      [...audios]
-        .sort(
-          (a, b) =>
-            Number(a.position ?? 0) - Number(b.position ?? 0) ||
-            Number(a.segment_index ?? 0) - Number(b.segment_index ?? 0),
-        )
-        .forEach(audio => {
-          const position = Number(audio.position ?? 0);
-          const track = trackByPosition.get(position) ?? {
-            position,
-            audioSegments: [],
-            isAudioStreaming: false,
-          };
-
-          track.audioSegments = [
-            ...(track.audioSegments ?? []),
-            {
-              segmentIndex: Number(audio.segment_index ?? 0),
-              audioData: audio.audio_data,
-              durationMs: Number(audio.duration_ms ?? 0),
-              isFinal: Boolean(audio.is_final),
-              position,
-              elementId: audio.element_id,
-              slideId: audio.slide_id,
-              avContract: audio.av_contract ?? null,
-            },
-          ];
-          track.isAudioStreaming = Boolean(
-            track.audioSegments?.some(segment => !segment.isFinal),
-          );
-
-          trackByPosition.set(position, track);
+      if (record.audio_url) {
+        nextTracks = mergeAudioCompleteIntoTracks(nextTracks, {
+          audio_url: record.audio_url,
+          duration_ms: previousItem?.audioDurationMs ?? 0,
         });
+      }
 
-      return [...trackByPosition.values()];
+      return nextTracks;
     },
-    [],
+    [resolveElementItemBid],
   );
 
   const buildElementContentItem = useCallback(
@@ -475,6 +462,11 @@ function useChatLogicHook({
         previousItem?: ChatContentItem;
       },
     ): ChatContentItem => {
+      const historyTracks = normalizeHistoryAudioTracks(
+        record,
+        options?.previousItem,
+      );
+      const primaryTrack = getAudioTrackByPosition(historyTracks);
       const itemBid = resolveElementItemBid(record);
       const previousAudioSegments = Array.isArray(
         options?.previousItem?.audio_segments,
@@ -492,8 +484,6 @@ function useChatLogicHook({
         ...previousTrackAudioSegments,
         ...incomingAudioSegments,
       ]);
-      const historyTracks = normalizeHistoryAudioTracks(mergedAudioSegments);
-      const singleTrack = historyTracks.length === 1 ? historyTracks[0] : null;
       const isInteractionElement =
         record.element_type === ELEMENT_TYPE.INTERACTION;
       const rawContent = record.content ?? '';
@@ -522,11 +512,11 @@ function useChatLogicHook({
           ? ChatContentItemType.INTERACTION
           : ChatContentItemType.CONTENT,
         audioUrl:
-          singleTrack?.audioUrl ??
+          primaryTrack?.audioUrl ??
           record.audio_url ??
           options?.previousItem?.audioUrl,
         audioDurationMs:
-          singleTrack?.durationMs ?? options?.previousItem?.audioDurationMs,
+          primaryTrack?.durationMs ?? options?.previousItem?.audioDurationMs,
         audioTracks:
           historyTracks.length > 0
             ? historyTracks
@@ -535,6 +525,10 @@ function useChatLogicHook({
           mergedAudioSegments.length > 0
             ? mergedAudioSegments
             : options?.previousItem?.audio_segments,
+        isAudioStreaming:
+          historyTracks.length > 0
+            ? historyTracks.some(track => Boolean(track.isAudioStreaming))
+            : options?.previousItem?.isAudioStreaming,
         listenSlides:
           options?.listenSlides ?? options?.previousItem?.listenSlides,
       };
@@ -1338,6 +1332,7 @@ function useChatLogicHook({
   const mapRecordsToContent = useCallback(
     (records: StudyRecordItem[]) => {
       const result: ChatContentItem[] = [];
+      const indexByElementBid = new Map<string, number>();
 
       records.forEach((item: StudyRecordItem) => {
         const itemBid = resolveElementItemBid(item);
@@ -1346,15 +1341,15 @@ function useChatLogicHook({
           return;
         }
 
+        const hitIndex = indexByElementBid.get(itemBid);
         const nextItem = buildElementContentItem(item, {
           appendAskButton: true,
           isHistory: true,
-        });
-        const hitIndex = result.findIndex(
-          contentItem => contentItem.element_bid === itemBid,
+          previousItem: hitIndex === undefined ? undefined : result[hitIndex],
         );
 
-        if (hitIndex < 0) {
+        if (hitIndex === undefined) {
+          indexByElementBid.set(itemBid, result.length);
           result.push(nextItem);
         } else {
           result[hitIndex] = {
