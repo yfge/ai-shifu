@@ -1474,7 +1474,7 @@ function useChatLogicHook({
           appendAskButton: true,
           isHistory: true,
           previousItem: hitIndex === undefined ? undefined : result[hitIndex],
-        );
+        });
 
         if (hitIndex === undefined) {
           indexByElementBid.set(itemBid, result.length);
