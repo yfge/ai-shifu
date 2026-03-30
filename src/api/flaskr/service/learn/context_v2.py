@@ -2976,6 +2976,9 @@ class RunScriptContextV2:
                         tts_processor, \
                         tts_enabled, \
                         current_tts_stream_key
+                    app.logger.info(
+                        f"process_stream_chunk: {stream_element_type}, {stream_element_number}"
+                    )
                     if not chunk_content:
                         return
                     generated_content += chunk_content
