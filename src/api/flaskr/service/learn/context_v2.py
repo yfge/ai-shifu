@@ -2925,23 +2925,34 @@ class RunScriptContextV2:
                 self._current_attend.status = LEARN_STATUS_IN_PROGRESS
         elif self._run_type == RunType.OUTPUT:
             if block.block_type == BlockType.INTERACTION:
-                generated_block: LearnGeneratedBlock | None = (
-                    LearnGeneratedBlock.query.filter(
-                        LearnGeneratedBlock.progress_record_bid
-                        == run_script_info.attend.progress_record_bid,
-                        LearnGeneratedBlock.outline_item_bid
-                        == run_script_info.outline_bid,
-                        LearnGeneratedBlock.user_bid == self._user_info.user_id,
-                        LearnGeneratedBlock.type == BLOCK_TYPE_MDINTERACTION_VALUE,
-                        LearnGeneratedBlock.position == run_script_info.block_position,
-                        LearnGeneratedBlock.status == 1,
-                        LearnGeneratedBlock.deleted == 0,
-                    )
-                    .order_by(LearnGeneratedBlock.id.desc())
-                    .first()
+                interaction_parser: InteractionParser = InteractionParser()
+                parsed_interaction = interaction_parser.parse(block.content)
+                should_reuse_access_gate = self._is_access_gate_blocking_interaction(
+                    parsed_interaction
                 )
-                if not generated_block:
-                    generated_block = init_generated_block(
+                existing_access_gate_block: LearnGeneratedBlock | None = None
+                if should_reuse_access_gate:
+                    existing_access_gate_block = (
+                        LearnGeneratedBlock.query.filter(
+                            LearnGeneratedBlock.progress_record_bid
+                            == run_script_info.attend.progress_record_bid,
+                            LearnGeneratedBlock.outline_item_bid
+                            == run_script_info.outline_bid,
+                            LearnGeneratedBlock.user_bid == self._user_info.user_id,
+                            LearnGeneratedBlock.type == BLOCK_TYPE_MDINTERACTION_VALUE,
+                            LearnGeneratedBlock.position
+                            == run_script_info.block_position,
+                            LearnGeneratedBlock.generated_content == "",
+                            LearnGeneratedBlock.status == 1,
+                            LearnGeneratedBlock.deleted == 0,
+                        )
+                        .order_by(LearnGeneratedBlock.id.desc())
+                        .first()
+                    )
+                generated_block: LearnGeneratedBlock = (
+                    existing_access_gate_block
+                    if existing_access_gate_block
+                    else init_generated_block(
                         app,
                         shifu_bid=run_script_info.attend.shifu_bid,
                         outline_item_bid=run_script_info.outline_bid,
@@ -2951,8 +2962,7 @@ class RunScriptContextV2:
                         mdflow=block.content,
                         block_index=block.index,
                     )
-                interaction_parser: InteractionParser = InteractionParser()
-                parsed_interaction = interaction_parser.parse(block.content)
+                )
                 yield from self._maybe_emit_feedback_before_access_gate(
                     parsed_interaction=parsed_interaction,
                     progress_record=run_script_info.attend,
@@ -2982,13 +2992,12 @@ class RunScriptContextV2:
                                 return
 
                 rendered_content = (
-                    generated_block.block_content_conf
-                    if generated_block and generated_block.block_content_conf
+                    existing_access_gate_block.block_content_conf
+                    if existing_access_gate_block
+                    and existing_access_gate_block.block_content_conf
                     else ""
                 )
                 if not rendered_content:
-                    # Render interaction content with translation only when there is
-                    # no persisted interaction snapshot to reuse.
                     app.logger.info(
                         f"render_interaction: {run_script_info.block_position}"
                     )
@@ -3005,7 +3014,6 @@ class RunScriptContextV2:
                     )
 
                 generated_block.type = BLOCK_TYPE_MDINTERACTION_VALUE
-                generated_block.role = ROLE_TEACHER
                 # Store translated interaction block for future retrieval
                 generated_block.block_content_conf = rendered_content
                 # Keep generated_content empty, will be filled with user input later

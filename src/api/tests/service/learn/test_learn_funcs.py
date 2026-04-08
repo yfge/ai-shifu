@@ -756,6 +756,8 @@ class LearnRecordLoadTests(unittest.TestCase):
                 self.index = index
 
         class FakeMarkdownFlow:
+            process_called = False
+
             def __init__(self, *args, **kwargs):
                 self.blocks = [
                     DummyBlock(
@@ -780,6 +782,7 @@ class LearnRecordLoadTests(unittest.TestCase):
             def process(
                 self, block_index, mode, variables=None, context=None, user_input=None
             ):
+                FakeMarkdownFlow.process_called = True
                 block = self.blocks[block_index]
                 return types.SimpleNamespace(content=block.content)
 
@@ -805,6 +808,7 @@ class LearnRecordLoadTests(unittest.TestCase):
         self.assertEqual(events[0].generated_block_bid, "pay-interaction-1")
         self.assertEqual(events[0].content, "?[去支付//_sys_pay]")
         self.assertFalse(ctx._can_continue)
+        self.assertFalse(FakeMarkdownFlow.process_called)
         mock_create_trace.assert_not_called()
         self.assertEqual(
             LearnGeneratedBlock.query.filter(
@@ -814,6 +818,150 @@ class LearnRecordLoadTests(unittest.TestCase):
                 LearnGeneratedBlock.status == 1,
             ).count(),
             1,
+        )
+
+    def test_run_inner_does_not_reuse_non_access_interaction_block(self):
+        """Non-access interactions should keep the upstream render-and-persist path."""
+        progress = LearnProgressRecord(
+            progress_record_bid="progress-plain-interaction",
+            shifu_bid="shifu-plain-interaction",
+            outline_item_bid="outline-plain-interaction",
+            user_bid="user-plain-interaction",
+            status=LEARN_STATUS_IN_PROGRESS,
+            block_position=0,
+        )
+        dao.db.session.add(progress)
+        existing_interaction_block = LearnGeneratedBlock(
+            generated_block_bid="plain-interaction-1",
+            progress_record_bid=progress.progress_record_bid,
+            user_bid=progress.user_bid,
+            block_bid="plain-block-1",
+            outline_item_bid=progress.outline_item_bid,
+            shifu_bid=progress.shifu_bid,
+            type=BLOCK_TYPE_MDINTERACTION_VALUE,
+            generated_content="",
+            block_content_conf="stale cached interaction",
+            position=0,
+            status=1,
+        )
+        dao.db.session.add(existing_interaction_block)
+        dao.db.session.commit()
+
+        ctx = RunScriptContextV2.__new__(RunScriptContextV2)
+        ctx.app = self.app
+        ctx._trace_args = {}
+        ctx._trace = types.SimpleNamespace(update=lambda **kwargs: None)
+        ctx._trace_root_span = None
+        ctx._outline_item_info = types.SimpleNamespace(
+            bid=progress.outline_item_bid,
+            shifu_bid=progress.shifu_bid,
+            position=0,
+            title="Plain Interaction",
+        )
+        ctx._shifu_info = types.SimpleNamespace(use_learner_language=False)
+        ctx._user_info = types.SimpleNamespace(user_id=progress.user_bid, mobile="")
+        ctx._preview_mode = False
+        ctx._struct = None
+        ctx._is_paid = True
+        ctx._run_type = RunType.OUTPUT
+        ctx._can_continue = True
+        ctx._input_type = "normal"
+        ctx._input = None
+        ctx._last_position = -1
+        ctx._listen = False
+        ctx._element_index_cursor = 0
+        ctx._current_attend = progress
+        ctx._get_current_attend = types.MethodType(
+            lambda self, outline_bid: progress, ctx
+        )
+        ctx._get_next_outline_item = types.MethodType(lambda self: [], ctx)
+        ctx.get_llm_settings = types.MethodType(
+            lambda self, outline_bid: LLMSettings(model="fake", temperature=0.0), ctx
+        )
+        ctx.get_system_prompt = types.MethodType(lambda self, outline_bid: None, ctx)
+        ctx._get_run_script_info = types.MethodType(
+            lambda self, attend, is_ask=False: RunScriptInfo(
+                attend=attend,
+                outline_bid=attend.outline_item_bid,
+                block_position=0,
+                mdflow="doc",
+            ),
+            ctx,
+        )
+        ctx._maybe_emit_feedback_before_access_gate = types.MethodType(
+            lambda self, **kwargs: iter(()),
+            ctx,
+        )
+
+        class DummyBlock:
+            def __init__(self, block_type, content, index):
+                self.block_type = block_type
+                self.content = content
+                self.index = index
+
+        class FakeMarkdownFlow:
+            process_called = False
+
+            def __init__(self, *args, **kwargs):
+                self.blocks = [
+                    DummyBlock(
+                        MarkdownFlowBlockType.INTERACTION,
+                        "?[继续//continue]",
+                        0,
+                    )
+                ]
+
+            def set_visual_mode(self, *_args, **_kwargs):
+                pass
+
+            def set_output_language(self, *_args, **_kwargs):
+                return self
+
+            def get_all_blocks(self):
+                return self.blocks
+
+            def get_block(self, block_index):
+                return self.blocks[block_index]
+
+            def process(
+                self, block_index, mode, variables=None, context=None, user_input=None
+            ):
+                FakeMarkdownFlow.process_called = True
+                block = self.blocks[block_index]
+                return types.SimpleNamespace(content=block.content)
+
+        with (
+            unittest.mock.patch(
+                "flaskr.service.learn.context_v2.MarkdownFlow", FakeMarkdownFlow
+            ),
+            unittest.mock.patch(
+                "flaskr.service.learn.context_v2.get_user_profiles", return_value={}
+            ),
+            unittest.mock.patch(
+                "flaskr.service.learn.context_v2.get_profile_item_definition_list",
+                return_value=[],
+            ),
+            unittest.mock.patch(
+                "flaskr.service.learn.context_v2.create_trace_with_root_span"
+            ) as mock_create_trace,
+        ):
+            events = list(ctx.run_inner(self.app))
+
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0].type, GeneratedType.INTERACTION)
+        self.assertNotEqual(events[0].generated_block_bid, "plain-interaction-1")
+        self.assertEqual(events[0].content, "?[继续//continue]")
+        self.assertFalse(ctx._can_continue)
+        self.assertTrue(FakeMarkdownFlow.process_called)
+        mock_create_trace.assert_not_called()
+        self.assertEqual(
+            LearnGeneratedBlock.query.filter(
+                LearnGeneratedBlock.progress_record_bid == progress.progress_record_bid,
+                LearnGeneratedBlock.type == BLOCK_TYPE_MDINTERACTION_VALUE,
+                LearnGeneratedBlock.position == 0,
+                LearnGeneratedBlock.status == 1,
+            ).count(),
+            2,
         )
 
     def test_run_inner_realigns_index_to_pending_interaction_after_submit(self):
