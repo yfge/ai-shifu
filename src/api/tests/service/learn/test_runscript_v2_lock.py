@@ -1,9 +1,90 @@
+# ruff: noqa: E402
+import sys
+import types
 import json
 from types import SimpleNamespace
 
 import pytest
 from flask import Flask, has_app_context
 
+
+def _install_litellm_stub() -> None:
+    if "litellm" in sys.modules:
+        return
+
+    litellm_stub = types.ModuleType("litellm")
+    litellm_stub.get_max_tokens = lambda _model: 4096
+    litellm_stub.completion = lambda *args, **kwargs: iter([])
+    sys.modules["litellm"] = litellm_stub
+
+
+def _install_openai_responses_stub() -> None:
+    if "openai.types.responses" in sys.modules:
+        return
+
+    responses_pkg = types.ModuleType("openai.types.responses")
+    responses_pkg.__path__ = []
+    response_mod = types.ModuleType("openai.types.responses.response")
+    response_create_mod = types.ModuleType(
+        "openai.types.responses.response_create_params"
+    )
+    response_function_mod = types.ModuleType(
+        "openai.types.responses.response_function_tool_call"
+    )
+    response_text_mod = types.ModuleType(
+        "openai.types.responses.response_text_config_param"
+    )
+
+    for name in [
+        "IncompleteDetails",
+        "Response",
+        "ResponseOutputItem",
+        "Tool",
+        "ToolChoice",
+    ]:
+        setattr(response_mod, name, type(name, (), {}))
+
+    for name in [
+        "Reasoning",
+        "ResponseIncludable",
+        "ResponseInputParam",
+        "ToolChoice",
+        "ToolParam",
+        "Text",
+    ]:
+        setattr(response_create_mod, name, type(name, (), {}))
+
+    response_function_tool_call = type("ResponseFunctionToolCall", (), {})
+    response_text_config = type("ResponseTextConfigParam", (), {})
+    setattr(
+        response_function_mod,
+        "ResponseFunctionToolCall",
+        response_function_tool_call,
+    )
+    setattr(
+        response_text_mod,
+        "ResponseTextConfigParam",
+        response_text_config,
+    )
+    setattr(
+        responses_pkg,
+        "ResponseFunctionToolCall",
+        response_function_tool_call,
+    )
+
+    sys.modules["openai.types.responses"] = responses_pkg
+    sys.modules["openai.types.responses.response"] = response_mod
+    sys.modules["openai.types.responses.response_create_params"] = response_create_mod
+    sys.modules["openai.types.responses.response_function_tool_call"] = (
+        response_function_mod
+    )
+    sys.modules["openai.types.responses.response_text_config_param"] = response_text_mod
+
+
+_install_litellm_stub()
+_install_openai_responses_stub()
+
+from flaskr.common.cache_provider import CacheUnavailableError
 from flaskr.service.learn import runscript_v2
 from flaskr.service.learn.learn_dtos import (
     GeneratedType,
@@ -113,6 +194,7 @@ def _make_test_app() -> Flask:
     app = Flask(__name__)
     app.config["REDIS_KEY_PREFIX"] = "test"
     app.config["SSE_HEARTBEAT_INTERVAL"] = 0
+    app.config["TESTING"] = True
     return app
 
 
@@ -768,6 +850,35 @@ def test_run_script_listen_done_uses_element_protocol(monkeypatch):
         assert events[0]["run_event_seq"] == 1
         assert events[0]["run_session_bid"]
         assert events[0]["is_terminal"] is True
+
+
+def test_run_script_fails_closed_when_distributed_lock_is_unavailable(monkeypatch):
+    app = Flask(__name__)
+    app.config["REDIS_KEY_PREFIX"] = "test"
+    app.config["SSE_HEARTBEAT_INTERVAL"] = 0
+    _patch_fake_element_adapter(monkeypatch)
+    monkeypatch.setattr(
+        runscript_v2,
+        "_get_run_script_cache_provider",
+        lambda _app: (_ for _ in ()).throw(CacheUnavailableError("redis down")),
+    )
+    monkeypatch.setattr(runscript_v2, "_", lambda key: f"translated:{key}")
+
+    chunks = list(
+        runscript_v2.run_script(
+            app=app,
+            shifu_bid="shifu-1",
+            outline_bid="outline-1",
+            user_bid="user-1",
+            input={"input": ["x"]},
+            input_type="normal",
+        )
+    )
+    events = _parse_sse_events(chunks)
+
+    assert [event["type"] for event in events] == ["error", "done"]
+    assert events[0]["content"] == "translated:server.learn.outputInProgress"
+    assert events[1]["is_terminal"] is True
 
 
 def test_get_run_status_ignores_lock_when_running_marker_missing(monkeypatch):

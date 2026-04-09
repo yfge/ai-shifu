@@ -8,6 +8,7 @@ from typing import Any, Generator, Optional
 
 from flask import Flask
 
+from flaskr.common.cache_provider import CacheUnavailableError
 from flaskr.service.common.models import AppException, raise_error
 from flaskr.service.user.repository import load_user_aggregate
 from flaskr.i18n import _
@@ -46,6 +47,21 @@ RUN_SCRIPT_TIMEOUT_SECONDS = 5 * 60
 RUN_SCRIPT_STATUS_REFRESH_SECONDS = 30
 
 
+def _should_require_distributed_run_lock(app: Flask) -> bool:
+    return not bool(app.testing or app.debug)
+
+
+def _get_run_script_cache_provider(app: Flask):
+    if not _should_require_distributed_run_lock(app):
+        return cache_provider
+
+    from flaskr.dao import redis_client
+
+    if redis_client is None:
+        raise CacheUnavailableError("Redis is not configured for run_script lock")
+    return redis_client
+
+
 def _get_run_script_lock_key(app: Flask, user_bid: str, outline_bid: str) -> str:
     return (
         app.config.get("REDIS_KEY_PREFIX")
@@ -64,7 +80,7 @@ def _set_run_script_status(
     app: Flask, user_bid: str, outline_bid: str, started_at: int
 ) -> None:
     try:
-        cache_provider.setex(
+        _get_run_script_cache_provider(app).setex(
             _get_run_script_status_key(app, user_bid, outline_bid),
             RUN_SCRIPT_TIMEOUT_SECONDS,
             str(started_at),
@@ -80,7 +96,9 @@ def _set_run_script_status(
 
 def _clear_run_script_status(app: Flask, user_bid: str, outline_bid: str) -> None:
     try:
-        cache_provider.delete(_get_run_script_status_key(app, user_bid, outline_bid))
+        _get_run_script_cache_provider(app).delete(
+            _get_run_script_status_key(app, user_bid, outline_bid)
+        )
     except Exception as exc:
         app.logger.warning(
             "failed to clear run_script status: user_bid=%s outline_bid=%s error=%s",
@@ -94,7 +112,9 @@ def _get_run_script_started_at(
     app: Flask, user_bid: str, outline_bid: str
 ) -> Optional[int]:
     try:
-        raw = cache_provider.get(_get_run_script_status_key(app, user_bid, outline_bid))
+        raw = _get_run_script_cache_provider(app).get(
+            _get_run_script_status_key(app, user_bid, outline_bid)
+        )
     except Exception as exc:
         app.logger.warning(
             "failed to read run_script status: user_bid=%s outline_bid=%s error=%s",
@@ -334,9 +354,37 @@ def run_script(
         user_bid=user_bid,
     )
     stream_element_adapter = element_adapter
-    lock = cache_provider.lock(
-        lock_key, timeout=timeout, blocking_timeout=blocking_timeout
-    )
+    try:
+        lock = _get_run_script_cache_provider(app).lock(
+            lock_key, timeout=timeout, blocking_timeout=blocking_timeout
+        )
+    except Exception as exc:
+        app.logger.error(
+            "run_script distributed lock unavailable: user_bid=%s outline_bid=%s error=%s",
+            user_bid,
+            outline_bid,
+            repr(exc),
+        )
+        busy_content = str(_("server.learn.outputInProgress"))
+        for event_type, content in [
+            ("error", busy_content),
+            (GeneratedType.DONE.value, ""),
+        ]:
+            yield _to_sse_chunk(
+                _make_terminal_event(
+                    outline_bid=outline_bid,
+                    event_type=event_type,
+                    content=content,
+                    element_adapter=stream_element_adapter,
+                    is_terminal=(
+                        True
+                        if use_element_protocol
+                        and event_type == GeneratedType.DONE.value
+                        else None
+                    ),
+                )
+            )
+        return
     acquired = False
     for attempt in range(lock_retry_count + 1):
         if lock.acquire(blocking=True):
