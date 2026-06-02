@@ -8,6 +8,7 @@ import {
 
 import { PhoneLogin } from './PhoneLogin';
 import apiService from '@/api';
+import { useSystemStore } from '@/c-store/useSystemStore';
 import { useUserStore } from '@/store';
 
 const mockToast = jest.fn();
@@ -111,6 +112,7 @@ describe('PhoneLogin captcha flow', () => {
     mockStoreState.logout.mockClear();
     mockStoreState.getToken.mockClear();
     (useUserStore as unknown as jest.Mock).mockClear();
+    useSystemStore.getState().updateChannel('');
   });
 
   test('exchanges captcha for ticket before sending SMS', async () => {
@@ -234,6 +236,7 @@ describe('PhoneLogin captcha flow', () => {
 
   test('logs in through SMS login after code is entered', async () => {
     const onLoginSuccess = jest.fn();
+    useSystemStore.getState().updateChannel('shingler');
     render(
       <PhoneLogin
         onLoginSuccess={onLoginSuccess}
@@ -265,6 +268,7 @@ describe('PhoneLogin captcha flow', () => {
         language: 'en-US',
         login_context: 'admin',
         course_id: 'course-1',
+        source: 'shingler',
       }),
     );
     expect((useUserStore as any).getState().login).toHaveBeenCalled();

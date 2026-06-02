@@ -23,8 +23,8 @@ from flaskr.service.billing.models import (
     CreditLedgerEntry,
     CreditWallet,
 )
-from flaskr.service.user.consts import USER_STATE_REGISTERED
-from flaskr.service.user.models import UserInfo as UserEntity
+from flaskr.service.user.consts import USER_STATE_REGISTERED, USER_STATE_UNREGISTERED
+from flaskr.service.user.models import UserConversion, UserInfo as UserEntity
 from flaskr.service.user.password_utils import hash_password
 from flaskr.service.user.repository import (
     create_user_entity,
@@ -205,6 +205,51 @@ def test_sms_login_admin_login_bootstraps_trial_once(
             BillingOrder.query.filter_by(creator_bid=user.user_bid, deleted=0).count()
             == 1
         )
+
+
+def test_sms_login_preserves_channel_for_existing_guest_conversion(user_trial_client):
+    app = user_trial_client.application
+    phone = f"155{uuid.uuid4().int % 100000000:08d}"
+    guest_bid = uuid.uuid4().hex
+    conversion_id = uuid.uuid4().hex
+
+    with app.app_context():
+        create_user_entity(
+            user_bid=guest_bid,
+            identify=guest_bid,
+            nickname="",
+            language="en-US",
+            state=USER_STATE_UNREGISTERED,
+        )
+        dao.db.session.add(
+            UserConversion(
+                user_id=guest_bid,
+                conversion_id=conversion_id,
+                conversion_uuid=conversion_id,
+                conversion_source="",
+                conversion_status=0,
+            )
+        )
+        token = generate_token(app, guest_bid)
+        dao.db.session.commit()
+
+    response = _post_json(
+        user_trial_client,
+        "/api/user/login_sms",
+        {
+            "mobile": phone,
+            "sms_code": "9999",
+            "source": "shingler",
+        },
+        headers={"Token": token},
+    )
+
+    assert response.status_code == 200
+    assert response.get_json(force=True)["code"] == 0
+
+    with app.app_context():
+        conversion = UserConversion.query.filter_by(user_id=guest_bid).one()
+        assert conversion.conversion_source == "shingler"
 
 
 def test_ensure_admin_creator_bootstraps_trial_for_existing_user_once(

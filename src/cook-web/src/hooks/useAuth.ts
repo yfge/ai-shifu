@@ -1,4 +1,5 @@
 import { useToast } from '@/hooks/useToast';
+import { useSystemStore } from '@/c-store/useSystemStore';
 import { useUserStore } from '@/store';
 import apiService from '@/api';
 import { useTranslation } from 'react-i18next';
@@ -162,6 +163,8 @@ export function useAuth(options: UseAuthOptions = {}) {
     language: string,
   ) => {
     try {
+      const { channel } = useSystemStore.getState();
+      const source = (channel || '').trim() || 'web';
       const response = await callWithTokenRefresh(() =>
         apiService.smsLogin({
           mobile,
@@ -169,6 +172,7 @@ export function useAuth(options: UseAuthOptions = {}) {
           language,
           login_context: options.loginContext,
           course_id: options.courseId,
+          source,
         }),
       );
 

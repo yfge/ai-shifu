@@ -458,6 +458,7 @@ def register_user_handler(app: Flask, path_prefix: str) -> Flask:
             course_id = payload.get("course_id", None)
             language = payload.get("language", None)
             login_context = payload.get("login_context", None)
+            source = str(payload.get("source") or "web").strip() or "web"
             current_user = getattr(request, "user", None)
             # Only pass an anonymous/guest token through SMS login so temporary
             # learning records can be claimed. If a real authenticated account
@@ -484,6 +485,7 @@ def register_user_handler(app: Flask, path_prefix: str) -> Flask:
                         "course_id": course_id,
                         "language": language,
                         "login_context": login_context,
+                        "source": source,
                     },
                 ),
             )

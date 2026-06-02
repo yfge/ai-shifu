@@ -52,6 +52,7 @@ class PhoneAuthProvider(AuthProvider):
             course_id=request.metadata.get("course_id"),
             language=request.metadata.get("language"),
             login_context=request.metadata.get("login_context"),
+            source=request.metadata.get("source"),
         )
 
         aggregate = load_user_aggregate(user_token.userInfo.user_id)

@@ -21,7 +21,11 @@ from flaskr.service.user.consts import (
     USER_STATE_TRAIL,
     USER_STATE_PAID,
 )
-from flaskr.service.user.models import UserInfo as UserEntity, UserVerifyCode
+from flaskr.service.user.models import (
+    UserConversion,
+    UserInfo as UserEntity,
+    UserVerifyCode,
+)
 from flaskr.service.common.phone_numbers import normalize_phone_identifier
 from flaskr.service.user.utils import (
     generate_token,
@@ -270,6 +274,29 @@ def init_first_course(app: Flask, user_id: str) -> bool:
             _release_bootstrap_lock()
 
 
+def _sync_guest_conversion_source(
+    user_id: Optional[str], source: Optional[str]
+) -> None:
+    normalized_source = str(source or "").strip()
+    if not user_id or not normalized_source or normalized_source == "web":
+        return
+
+    conversion = (
+        UserConversion.query.filter(UserConversion.user_id == user_id)
+        .order_by(UserConversion.created.desc(), UserConversion.id.desc())
+        .first()
+    )
+    if not conversion:
+        return
+
+    current_source = str(conversion.conversion_source or "").strip()
+    if current_source and current_source != "web":
+        return
+
+    conversion.conversion_source = normalized_source
+    db.session.flush()
+
+
 def verify_phone_code(
     app: Flask,
     user_id: Optional[str],
@@ -278,6 +305,7 @@ def verify_phone_code(
     course_id: Optional[str] = None,
     language: Optional[str] = None,
     login_context: Optional[str] = None,
+    source: Optional[str] = None,
 ) -> Tuple[UserToken, bool, Dict[str, Optional[str]]]:
     # Local import avoids circular dependency during module initialization.
     from flaskr.service.profile.funcs import (
@@ -433,6 +461,9 @@ def verify_phone_code(
                     creator_granted_now = (
                         init_first_course(app, entity.user_bid) or creator_granted_now
                     )
+
+        if user_id and target_aggregate and target_aggregate.user_bid == user_id:
+            _sync_guest_conversion_source(user_id, source)
 
         upsert_credential(
             app,
